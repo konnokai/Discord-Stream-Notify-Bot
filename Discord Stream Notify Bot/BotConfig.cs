@@ -28,7 +28,7 @@ public class BotConfig
         {
             if (string.IsNullOrWhiteSpace(config.DiscordToken))
             {
-                Log.Error("DiscordToken遺失，請輸入至credentials.json後重開Bot");
+                Log.Error("DiscordToken遺失，請輸入至bot_config.json後重開Bot");
                 if (!Console.IsInputRedirected)
                     Console.ReadKey();
                 Environment.Exit(3);
@@ -36,7 +36,7 @@ public class BotConfig
 
             if (string.IsNullOrWhiteSpace(config.WebHookUrl))
             {
-                Log.Error("WebHookUrl遺失，請輸入至credentials.json後重開Bot");
+                Log.Error("WebHookUrl遺失，請輸入至bot_config.json後重開Bot");
                 if (!Console.IsInputRedirected)
                     Console.ReadKey();
                 Environment.Exit(3);
@@ -44,7 +44,7 @@ public class BotConfig
 
             if (string.IsNullOrWhiteSpace(config.GoogleApiKey))
             {
-                Log.Error("GoogleApiKey遺失，請輸入至credentials.json後重開Bot");
+                Log.Error("GoogleApiKey遺失，請輸入至bot_config.json後重開Bot");
                 if (!Console.IsInputRedirected)
                     Console.ReadKey();
                 Environment.Exit(3);
