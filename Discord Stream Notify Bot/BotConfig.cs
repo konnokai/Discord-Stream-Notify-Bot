@@ -71,6 +71,7 @@ public class BotConfig
             GoogleApiKey = config.GoogleApiKey;
             GoogleClientId = config.GoogleClientId;
             GoogleClientSecret = config.GoogleClientSecret;
+            RedisOption = config.RedisOption;
         }
         catch (Exception ex)
         {

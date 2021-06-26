@@ -358,7 +358,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                     catch (Exception ex)
                     {
                         Log.Error($"Notice {item.GuildId} / {item.ChannelId}\r\n{ex.Message}");
-                        if (ex.Message.Contains("50013")) db.NoticeStreamChannel.Remove(db.NoticeStreamChannel.First((x) => x.ChannelId == item.ChannelId));
+                        if (ex.Message.Contains("50013") || ex.Message.Contains("50001")) db.NoticeStreamChannel.Remove(db.NoticeStreamChannel.First((x) => x.ChannelId == item.ChannelId));
                         await db.SaveChangesAsync();
                     }
                 }
