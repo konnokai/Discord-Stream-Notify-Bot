@@ -205,7 +205,7 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
                             {
                                 Log.Info($"({i++}/{num}) {item.Name}");
                             }
-                        }                 
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -214,6 +214,37 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
 
                     await Context.Channel.SendConfirmAsync("已發送完成");
                 }
+            }
+        }
+
+        [Command("GuildInfo")]
+        [Summary("顯示伺服器資訊")]
+        [Alias("ginfo")]
+        [RequireOwner]
+        public async Task GuildInfo(ulong gid = 0)
+        {
+            try
+            {
+                if (gid == 0) gid = Context.Guild.Id;
+                var guild = _client.GetGuild(gid);
+
+                if (guild == null)
+                {
+                    await Context.Channel.SendErrorAsync("找不到指定的伺服器").ConfigureAwait(false);
+                    return;
+                }
+
+                using var db = new DBContext();
+                var channelList = db.NoticeStreamChannel.Where((x) => x.GuildId == guild.Id).Select((x) => $"<#{x.ChannelId}>: {x.NoticeStreamChannelId}").ToList();
+
+                await Context.Channel.SendConfirmAsync($"伺服器名稱: {guild.Name}\n" +
+                        $"伺服器Id: {guild.Id}\n" +
+                        $"擁有者: {guild.Owner.Username} ({guild.Owner.Id})" +
+                        $"設定通知的頻道: \n{string.Join('\n', channelList)}").ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Message + "\r\n" + ex.StackTrace);
             }
         }
     }
