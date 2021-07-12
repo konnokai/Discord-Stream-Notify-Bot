@@ -793,7 +793,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
             "(考慮到有伺服器需Ping特定用戶組的情況，故Bot需提及所有身分組權限)\r\n" +
             "(建議在私人頻道中設定以免Ping到用戶組造成不必要的誤會)\r\n\r\n" +
             "例:\r\n" +
-            "`s!snm UCXRlIK3Cw_TJIQC5kSJJQMg strat @通知用的用戶組 阿床開台了`\r\n" +
+            "`s!snm UCXRlIK3Cw_TJIQC5kSJJQMg start @通知用的用戶組 阿床開台了`\r\n" +
             "`s!snm holo newstream @某人 新待機所建立`\r\n" +
             "`s!snm UCXRlIK3Cw_TJIQC5kSJJQMg end`")]
         [Alias("SNM")]

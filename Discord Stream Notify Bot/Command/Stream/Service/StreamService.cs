@@ -98,7 +98,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                         if (streamRecordJson.IsReRecord)
                         {
                             if (noticeRecordChannel == null) noticeRecordChannel = _client.GetGuild(744593681587241041).GetTextChannel(752815296452231238); //Todo: 要自訂義
-                            await noticeRecordChannel.SendMessageAsync(Program.ApplicatonOwner.ToString(), false, embedBuilder.Build()).ConfigureAwait(false);
+                            await noticeRecordChannel.SendMessageAsync(Program.ApplicatonOwner.Mention, false, embedBuilder.Build()).ConfigureAwait(false);
                         }
                         else
                         {

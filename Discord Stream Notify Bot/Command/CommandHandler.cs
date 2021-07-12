@@ -48,12 +48,12 @@ namespace Discord_Stream_Notify_Bot.Command
                     {
                         Log.FormatColorWrite($"[{context.Guild.Name}/{context.Message.Channel.Name}] {message.Author.Username} 執行 {context.Message} 發生錯誤", ConsoleColor.Red);
                         Log.FormatColorWrite(result.ErrorReason, ConsoleColor.Red);
-                        await context.Channel.SendMessageAsync(result.ErrorReason);
+                        await context.Channel.SendErrorAsync(result.ErrorReason);
                     }
                     else
                     {
                         try { if (context.Message.Author.Id == Program.ApplicatonOwner.Id) await message.DeleteAsync(); }
-                        catch (Exception) { }
+                        catch { }
                         Log.FormatColorWrite($"[{context.Guild.Name}/{context.Message.Channel.Name}] {message.Author.Username} 執行 {context.Message}", ConsoleColor.DarkYellow);
                     }
                 }
