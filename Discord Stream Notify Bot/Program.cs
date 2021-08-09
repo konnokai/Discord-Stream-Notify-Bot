@@ -29,13 +29,22 @@ namespace Discord_Stream_Notify_Bot
 
         public static IUser ApplicatonOwner { get; private set; } = null;
         public static DiscordSocketClient _client;
-        public static UpdateStatus updateStatus = UpdateStatus.Guild;
+        public static BotPlayingStatus Status = BotPlayingStatus.Guild;
         public static Stopwatch stopWatch = new Stopwatch();
         public static bool isConnect = false, isDisconnect = false;
+        public static ChannelSpider CheckSpiderList = 0;
         static Timer timerUpdateStatus;
         static BotConfig botConfig = new();
 
-        public enum UpdateStatus { Guild, Member, Stream, Info }
+        public enum BotPlayingStatus { Guild, Member, Stream, Info }
+
+        [Flags]
+        public enum ChannelSpider
+        {
+            Holo        = 0b_0000_0001,
+            Nijisanji   = 0b_0000_0010,
+            Other       = 0b_0000_0100
+        }
 
         static void Main(string[] args)
         {
@@ -173,6 +182,12 @@ namespace Discord_Stream_Notify_Bot
             do { await Task.Delay(1000); }
             while (!isDisconnect);
 
+            while (CheckSpiderList.HasFlag(ChannelSpider.Holo) || CheckSpiderList.HasFlag(ChannelSpider.Nijisanji) || CheckSpiderList.HasFlag(ChannelSpider.Other))
+            {                
+                Log.Info($"等待 {CheckSpiderList} 完成");
+                await Task.Delay(5000);
+            }
+
             await _client.StopAsync();
             await Command.Stream.Service.StreamService.SaveDateBase();
         }
@@ -188,22 +203,22 @@ namespace Discord_Stream_Notify_Bot
         {
             Action<string> setGame = new Action<string>((string text) => { _client.SetGameAsync($"s!h | {text}"); });
 
-            switch (updateStatus)
+            switch (Status)
             {
-                case UpdateStatus.Guild:
+                case BotPlayingStatus.Guild:
                     setGame($"在 {_client.Guilds.Count} 個伺服器");
-                    updateStatus = UpdateStatus.Member;
+                    Status = BotPlayingStatus.Member;
                     break;
-                case UpdateStatus.Member:
+                case BotPlayingStatus.Member:
                     try
                     {
                         setGame($"服務 {_client.Guilds.Sum((x) => x.MemberCount)} 個成員");
-                        updateStatus = UpdateStatus.Info;
+                        Status = BotPlayingStatus.Info;
                     }
-                    catch (Exception) { updateStatus = UpdateStatus.Stream; ChangeStatus(); }
+                    catch (Exception) { Status = BotPlayingStatus.Stream; ChangeStatus(); }
                     break;
-                case UpdateStatus.Stream:
-                    updateStatus = UpdateStatus.Info;
+                case BotPlayingStatus.Stream:
+                    Status = BotPlayingStatus.Info;
                     try
                     {
                         using (var uow = new DBContext())
@@ -232,9 +247,9 @@ namespace Discord_Stream_Notify_Bot
                         ChangeStatus();
                     }
                     break;
-                case UpdateStatus.Info:
+                case BotPlayingStatus.Info:
                     setGame("去看你的直播啦");
-                    updateStatus = UpdateStatus.Guild;
+                    Status = BotPlayingStatus.Guild;
                     break;
             }
         }

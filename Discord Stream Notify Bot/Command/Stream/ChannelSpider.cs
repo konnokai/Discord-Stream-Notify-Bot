@@ -148,15 +148,17 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
             "例:\r\n" +
             "`s!lcs`")]
         [Alias("lcs")]
-        public async Task ListChannelSpider()
+        public async Task ListChannelSpider(int page = 0)
         {
+            if (page < 0) page = 0;
+
             using (var db = new DBContext())
             {
                 var list = db.ChannelSpider.ToList().Where((x) => !x.IsWarningChannel).Select((x) => Format.Url(x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}") +
-                $" 由 `" + (x.GuildId == 0 ? "Bot擁有者" : $"{ _client.GetGuild(x.GuildId).Name}") + "` 新增");
+                $" 由 `" + (x.GuildId == 0 ? "Bot擁有者" : (_client.GetGuild(x.GuildId) != null ? _client.GetGuild(x.GuildId).Name : "已退出的伺服器")) + "` 新增");
                 int warningChannelNum = db.ChannelSpider.Count((x) => x.IsWarningChannel);
 
-                await Context.SendPaginatedConfirmAsync(0, page =>
+                await Context.SendPaginatedConfirmAsync(page, page =>
                 {
                     return new EmbedBuilder()
                         .WithOkColor()

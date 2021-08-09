@@ -3,14 +3,13 @@ using Discord_Stream_Notify_Bot.DataBase;
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using HtmlAgilityPack;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Threading.Tasks;
 using System.Text.RegularExpressions;
-using Newtonsoft.Json.Linq;
-using System.Threading;
+using System.Threading.Tasks;
 
 namespace Discord_Stream_Notify_Bot.Command.Stream.Service
 {
@@ -19,6 +18,8 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
         Dictionary<string, List<string>> otherVideoDic = new Dictionary<string, List<string>>();
         private async Task HoloScheduleAsync()
         {
+            Program.CheckSpiderList |= Program.ChannelSpider.Holo;
+
             try
             {
                 HtmlWeb htmlWeb = new HtmlWeb();
@@ -142,11 +143,15 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                     Log.Error("HoloStream\r\n" + ex.Message + "\r\n" + ex.StackTrace);
             }
 
+            if (Program.CheckSpiderList.HasFlag(Program.ChannelSpider.Holo))
+                Program.CheckSpiderList ^= Program.ChannelSpider.Holo;
             Log.Info("Holo影片清單整理完成");
         }
 
         private async Task NijisanjiScheduleAsync()
         {
+            Program.CheckSpiderList |= Program.ChannelSpider.Nijisanji;
+
             try
             {
                 using (WebClient webClient = new WebClient())
@@ -278,11 +283,15 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                 Log.Error("NijisanjiStream\r\n" + ex.Message + "\r\n" + ex.StackTrace);
             }
 
+            if (Program.CheckSpiderList.HasFlag(Program.ChannelSpider.Nijisanji))
+                Program.CheckSpiderList ^= Program.ChannelSpider.Nijisanji;
             Log.Info("彩虹社影片清單整理完成");
         }
 
         private async Task OtherScheduleAsync()
         {
+            Program.CheckSpiderList |= Program.ChannelSpider.Other;
+
             using (var db = new DBContext())
             {
                 string redisStr;
@@ -463,6 +472,8 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                 }
             }
 
+            if (Program.CheckSpiderList.HasFlag(Program.ChannelSpider.Other))
+                Program.CheckSpiderList ^= Program.ChannelSpider.Other;
             Log.Info("個人勢影片清單整理完成");
         }
 
@@ -475,7 +486,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                 try
                 {
                     redisStr = await Program.RedisDb.StringGetAsync("streambot.save.schedule.holo");
-                    if (redisStr != "[]")
+                    if (!Program.CheckSpiderList.HasFlag( Program.ChannelSpider.Holo) && redisStr != "[]")
                     {
                         foreach (var item in JsonConvert.DeserializeObject<List<HoloStreamVideo>>(redisStr).Distinct((x) => x.VideoId))
                         {
@@ -484,11 +495,13 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                 await db.HoloStreamVideo.AddAsync(item); saveNum++;
                             }
                         }
+
                         Log.Info("Holo資料庫已儲存");
+                        await Program.RedisDb.StringSetAsync("streambot.save.schedule.holo", "[]");
                     }
 
                     redisStr = await Program.RedisDb.StringGetAsync("streambot.save.schedule.nijisanji");
-                    if (redisStr != "[]")
+                    if (!Program.CheckSpiderList.HasFlag(Program.ChannelSpider.Nijisanji) && redisStr != "[]")
                     {
                         foreach (var item in JsonConvert.DeserializeObject<List<NijisanjiStreamVideo>>(redisStr).Distinct((x) => x.VideoId))
                         {
@@ -497,11 +510,13 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                 await db.NijisanjiStreamVideo.AddAsync(item); saveNum++;
                             }
                         }
+
                         Log.Info("2434資料庫已儲存");
+                        await Program.RedisDb.StringSetAsync("streambot.save.schedule.nijisanji", "[]");
                     }
 
                     redisStr = await Program.RedisDb.StringGetAsync("streambot.save.schedule.other");
-                    if (redisStr != "[]")
+                    if (!Program.CheckSpiderList.HasFlag(Program.ChannelSpider.Other) && redisStr != "[]")
                     {
                         foreach (var item in JsonConvert.DeserializeObject<List<OtherStreamVideo>>(redisStr).Distinct((x) => x.VideoId))
                         {
@@ -510,14 +525,12 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                 await db.OtherStreamVideo.AddAsync(item); saveNum++;
                             }
                         }
+
                         Log.Info("Other資料庫已儲存");
+                        await Program.RedisDb.StringSetAsync("streambot.save.schedule.other", "[]");
                     }
 
                     if (saveNum != 0) Log.Info($"資料庫已儲存: {await db.SaveChangesAsync()}筆");
-
-                    await Program.RedisDb.StringSetAsync("streambot.save.schedule.holo", "[]");
-                    await Program.RedisDb.StringSetAsync("streambot.save.schedule.nijisanji", "[]");
-                    await Program.RedisDb.StringSetAsync("streambot.save.schedule.other", "[]");
                 }
 
                 catch (Exception ex)

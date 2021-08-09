@@ -35,16 +35,16 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
             switch (stats.ToLowerInvariant())
             {
                 case "guild":
-                    Program.updateStatus = Program.UpdateStatus.Guild;
+                    Program.Status = Program.BotPlayingStatus.Guild;
                     break;
                 case "member":
-                    Program.updateStatus = Program.UpdateStatus.Member;
+                    Program.Status = Program.BotPlayingStatus.Member;
                     break;
                 case "stream":
-                    Program.updateStatus = Program.UpdateStatus.Stream;
+                    Program.Status = Program.BotPlayingStatus.Stream;
                     break;
                 case "info":
-                    Program.updateStatus = Program.UpdateStatus.Info;
+                    Program.Status = Program.BotPlayingStatus.Info;
                     break;
                 default:
                     await Context.Channel.SendConfirmAsync(string.Format("找不到 {0} 狀態", stats));
