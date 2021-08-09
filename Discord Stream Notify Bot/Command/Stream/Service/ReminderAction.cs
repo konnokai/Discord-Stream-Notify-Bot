@@ -291,28 +291,21 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
             {
                 try
                 {
-                    db.NoticeStreamChannel.ToList().ForEach((item) =>
-                    {
-                        if (item.NoticeStreamChannelId == streamVideo.ChannelId)
-                            noticeGuildList.Add(item);
-                    });
+                    noticeGuildList.AddRange(db.NoticeStreamChannel.ToList().Where((x) => x.NoticeStreamChannelId == streamVideo.ChannelId));
                 }
                 catch (Exception ex)
                 {
                     Log.Error($"SendStreamMessageAsyncChannel {streamVideo.VideoId} - {ex.Message}\r\n{ex.StackTrace}");
                 }
 
+                //類型檢查
                 try
                 {
-                    if (type != "other" || 
-                        !db.ChannelSpider.Any((x) => x.ChannelId == streamVideo.ChannelId) ||
-                        !db.ChannelSpider.FirstOrDefault((x) => x.ChannelId == streamVideo.ChannelId).IsWarningChannel)
+                    if (type != "other" || //如果不是其他類的頻道
+                        !db.ChannelSpider.Any((x) => x.ChannelId == streamVideo.ChannelId) || //或該頻道非在爬蟲清單內
+                        !db.ChannelSpider.FirstOrDefault((x) => x.ChannelId == streamVideo.ChannelId).IsWarningChannel) //或該爬蟲非警告類的頻道
                     {
-                        db.NoticeStreamChannel.ToList().ForEach((item) =>
-                        {
-                            if (item.NoticeStreamChannelId == "all" || item.NoticeStreamChannelId == type)
-                                noticeGuildList.Add(item);
-                        });
+                        noticeGuildList.AddRange(db.NoticeStreamChannel.ToList().Where((x) => x.NoticeStreamChannelId == "all" || x.NoticeStreamChannelId == type));
                     }
                 }
                 catch (Exception ex)
@@ -329,8 +322,27 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                         var channel = guild.GetTextChannel(item.ChannelId);
                         if (channel == null) continue;
 
-                        string sendMessage = "";
+                        if (guild.Id == 186006081753841664)
+                        {
+                            EmbedBuilder embedBuilder = new EmbedBuilder();
 
+                            if (noticeType == NoticeType.NewStream || noticeType == NoticeType.Start)
+                            {
+                                if (noticeType == NoticeType.NewStream) embedBuilder.WithErrorColor();
+                                else embedBuilder.WithOkColor();
+
+                                embedBuilder.WithTitle(streamVideo.VideoTitle)
+                                .WithDescription(Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}"))
+                                .WithImageUrl($"https://i.ytimg.com/vi/{streamVideo.VideoId}/maxresdefault.jpg")
+                                .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
+                                .AddField("排定開台時間", streamVideo.ScheduledStartTime, true);
+
+                                embed = embedBuilder.Build();
+                            }
+                            else continue;
+                        }
+
+                        string sendMessage = "";
                         switch (noticeType)
                         {
                             case NoticeType.NewStream:

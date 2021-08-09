@@ -383,7 +383,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                             .WithImageUrl($"https://i.ytimg.com/vi/{streamVideo.VideoId}/maxresdefault.jpg")
                                             .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
                                             .AddField("所屬", streamVideo.GetProduction())
-                                            .AddField("上傳時間", item2.Snippet.PublishedAt.Value, true);
+                                            .AddField("上傳時間", streamVideo.ScheduledStartTime, true);
 
                                             await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.NewVideo).ConfigureAwait(false);
                                         }
