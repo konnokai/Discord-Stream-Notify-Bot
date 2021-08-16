@@ -22,7 +22,7 @@ namespace Discord_Stream_Notify_Bot
 {
     class Program
     {
-        public const string VERSION = "V1.0.2";
+        public const string VERSION = "V1.0.3";
         public static ConnectionMultiplexer Redis { get; set; }
         public static ISubscriber RedisSub { get; set; }
         public static IDatabase RedisDb { get; set; }
@@ -82,12 +82,6 @@ namespace Discord_Stream_Notify_Bot
                 {
                     Log.Warn("Redis Sub不存在，請開啟錄影工具");
                 }
-
-                void SetKey(string key) {
-                    if (!RedisDb.KeyExists($"streambot.save.schedule.{key}")) RedisDb.StringSet($"streambot.save.schedule.{key}", "[]");
-                }                
-
-                SetKey("holo"); SetKey("nijisanji"); SetKey("other");
             }
             catch (Exception ex)
             {

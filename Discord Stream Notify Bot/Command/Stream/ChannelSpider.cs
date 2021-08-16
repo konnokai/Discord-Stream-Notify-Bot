@@ -11,12 +11,15 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
     {
         [RequireContext(ContextType.Guild)]
         [RequireUserPermission(GuildPermission.Administrator)]
+        [RequireGuildMemberCount(500)]
         [Command("AddChannelSpider")]
         [Summary("新增非兩大箱的頻道檢測爬蟲\r\n" +
            "頻道Id必須為24字數+UC開頭\r\n" +
            "或是完整的Youtube頻道網址\r\n" +
            "每個伺服器可新增最多五個頻道爬蟲\r\n" +
+            "(伺服器需大於500人才可使用)\r\n" +
             "(未來會根據情況增減可新增的頻道數量)\r\n" +
+            "(如有任何需要請向擁有者詢問)\r\n" +
            "\r\n" +
            "例:\r\n" +
            "`s!acs UC0qt9BfrpQo-drjuPKl_vdA`")]
@@ -137,8 +140,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
 
                 await Context.Channel.SendConfirmAsync($"已移除 {channelId}").ConfigureAwait(false);
                 Program.SendMessageToDiscord($"{Context.Guild.Name} 已移除檢測頻道 <https://www.youtube.com/channel/{channelId}>");
-            }
-            
+            }            
         }
 
         [RequireContext(ContextType.Guild)]

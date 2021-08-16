@@ -29,8 +29,25 @@ namespace Discord_Stream_Notify_Bot.Command
 
         public static DateTime ConvertToDateTime(this string str) =>
            DateTime.Parse(str);
-        public static string GetProduction(this StreamVideo streamVideo) =>
-           (streamVideo.ChannelType == StreamService.ChannelType.Holo ? "Hololive" : streamVideo.ChannelType == StreamService.ChannelType.Nijisamji ? "彩虹社" : "個人勢/其他企業");
+
+        public static StreamService.ChannelType GetProductionType(this StreamVideo streamVideo)
+        {
+            using (var db = new DBContext())
+            {
+                StreamService.ChannelType type;
+                var channel = db.ChannelOwnedType.FirstOrDefault((x) => x.ChannelId == streamVideo.ChannelId);
+
+                if (channel != null)
+                    type = channel.ChannelType;
+                else
+                    type = streamVideo.ChannelType;
+
+                return type;
+            }
+        }
+
+        public static string GetProductionName(this StreamService.ChannelType channelType) =>        
+                channelType == StreamService.ChannelType.Holo ? "Hololive" : channelType == StreamService.ChannelType.Nijisanji ? "彩虹社" : "其他";
 
         public static string GetCommandLine(this Process process)
         {
@@ -120,6 +137,7 @@ namespace Discord_Stream_Notify_Bot.Command
         }
         public static StreamVideo GetLastStreamVideoByChannelId(this DBContext dBContext, string channelId)
         {
+            channelId = channelId.Trim();
             if (dBContext.HoloStreamVideo.Any((x) => x.ChannelId == channelId))
             {
                 return dBContext.HoloStreamVideo.ToList().Last((x) => x.ChannelId == channelId);

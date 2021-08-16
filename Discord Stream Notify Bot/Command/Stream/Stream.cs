@@ -46,23 +46,9 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
                 return;
             }
 
-            List<string> videoList = new List<string>();
-            try
-            {
-                foreach (var item in Process.GetProcessesByName("streamlink"))
-                {
-                    try
-                    {
-                        string cmdLine = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? item.GetCommandLine() : File.ReadAllText($"/proc/{item.Id}/cmdline");
-                        string temp = cmdLine.Split(".ts", StringSplitOptions.RemoveEmptyEntries)[0];
-                        videoList.Add(temp.Substring(temp.Length - 11, 11));
-                    }
-                    catch { }
-                }
-            }
-            catch { }
+            var nowRecordStreamList = Utility.GetNowRecordStreamList();
 
-            if (videoList.Contains(videoId))
+            if (nowRecordStreamList.ContainsKey(videoId))
             {
                 await Context.Channel.SendConfirmAsync($"{videoId} 已經在錄影了").ConfigureAwait(false);
                 return;
@@ -267,20 +253,9 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
         {
             await Context.Channel.TriggerTypingAsync().ConfigureAwait(false);
 
-            Dictionary<string, int> videoList = new Dictionary<string, int>();
+            var newRecordStreamList = Utility.GetNowRecordStreamList();
 
-            foreach (var item in Process.GetProcessesByName("streamlink"))
-            {
-                try
-                {
-                    string cmdLine = (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? item.GetCommandLine() : File.ReadAllText($"/proc/{item.Id}/cmdline"));
-                    string temp = cmdLine.Split(".ts", StringSplitOptions.RemoveEmptyEntries)[0];
-                    videoList.Add(temp.Substring(temp.Length - 11, 11), item.Id);
-                }
-                catch { }
-            }
-
-            if (videoList.Count == 0)
+            if (newRecordStreamList.Count == 0)
             {
                 await Context.Channel.SendConfirmAsync("現在沒有直播記錄").ConfigureAwait(false);
                 return;
@@ -289,13 +264,13 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
             try
             {
                 var yt = _service.yt.Videos.List("Snippet");
-                yt.Id = string.Join(',', videoList.Keys);
+                yt.Id = string.Join(',', newRecordStreamList.Keys);
                 var result = await yt.ExecuteAsync().ConfigureAwait(false);
                 await Context.Channel.SendMessageAsync(embed: new EmbedBuilder()
                     .WithOkColor()
                     .WithTitle("正在錄影的直播")
                     .WithDescription(string.Join("\n\n",
-                    result.Items.Select((x) => $"{Format.Url(x.Snippet.Title, $"https://www.youtube.com/watch?v={x.Id}")}\n{x.Snippet.ChannelTitle} - {videoList[x.Id]}")))
+                    result.Items.Select((x) => $"{Format.Url(x.Snippet.Title, $"https://www.youtube.com/watch?v={x.Id}")}\n{x.Snippet.ChannelTitle} - {newRecordStreamList[x.Id]}")))
                     .WithFooter($"{result.Items.Count}個頻道")
                     .Build())
                     .ConfigureAwait(false);

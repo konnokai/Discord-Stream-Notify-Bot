@@ -19,7 +19,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
     {
         public enum ChannelType
         {
-            Holo, Nijisamji, Other
+            Holo, Nijisanji, Other
         }
         public enum NoticeType
         {
@@ -56,7 +56,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
 
                 foreach (var streamVideo in uow.NijisanjiStreamVideo.ToList().Where((x) => x.ScheduledStartTime > DateTime.Now))
                 {
-                    StartReminder(streamVideo, ChannelType.Nijisamji);
+                    StartReminder(streamVideo, ChannelType.Nijisanji);
                 }
 
                 foreach (var streamVideo in uow.OtherStreamVideo.ToList().Where((x) => x.ScheduledStartTime > DateTime.Now))
@@ -91,9 +91,9 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                         .WithImageUrl($"https://i.ytimg.com/vi/{item.Id}/maxresdefault.jpg")
                         .WithUrl($"https://www.youtube.com/watch?v={item.Id}")
                         .AddField("直播狀態", "開台中", true)
-                        .AddField("開台時間", startTime, true)
-                        .AddField("是否記錄直播", "是", true)
-                        .AddField("存檔名稱", streamRecordJson.RecordFileName, false);
+                        .AddField("開台時間", startTime, true);
+                        //.AddField("是否記錄直播", "是", true)
+                        //.AddField("存檔名稱", streamRecordJson.RecordFileName, false);
 
                         if (streamRecordJson.IsReRecord)
                         {
@@ -144,8 +144,8 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                         .WithUrl($"https://www.youtube.com/watch?v={item.Id}")
                         .AddField("直播狀態", "已關台", true)
                         .AddField("關台時間", endTime, true)
-                        .AddField("直播時間", $"{endTime.Subtract(startTime):hh'時'mm'分'ss'秒'}", true)
-                        .AddField("存檔名稱", streamRecordJson.RecordFileName, false);
+                        .AddField("直播時間", $"{endTime.Subtract(startTime):hh'時'mm'分'ss'秒'}", true);
+                       // .AddField("存檔名稱", streamRecordJson.RecordFileName, false);
 
                         await SendStreamMessageAsync(item.Id, embedBuilder.Build(), NoticeType.End).ConfigureAwait(false);
                     }
@@ -174,6 +174,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                 .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
                                 .AddField("直播狀態", "已刪除直播", true)
                                 .AddField("排定開台時間", streamVideo.ScheduledStartTime, true);
+
                                 await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.Delete).ConfigureAwait(false);
                             }
                         }
@@ -320,7 +321,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                         case ChannelType.Holo:
                                             uow.HoloStreamVideo.Update(streamVideo.ConvertToHoloStreamVideo());
                                             break;
-                                        case ChannelType.Nijisamji:
+                                        case ChannelType.Nijisanji:
                                             uow.NijisanjiStreamVideo.Update(streamVideo.ConvertToNijisanjiStreamVideo());
                                             break;
                                         case ChannelType.Other:
@@ -359,6 +360,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
 
             saveDateBase = new Timer(async (onjState) => await SaveDateBase(), null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(3));
         }
+
         public async Task<Embed> GetNowStreamingChannel()
         {
             try

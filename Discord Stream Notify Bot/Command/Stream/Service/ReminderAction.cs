@@ -2,7 +2,6 @@
 using Discord_Stream_Notify_Bot.DataBase;
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using Google.Apis.YouTube.v3.Data;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -88,7 +87,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                         uow.HoloStreamVideo.Update(streamVideo.ConvertToHoloStreamVideo());
                                     }
                                     break;
-                                case ChannelType.Nijisamji:
+                                case ChannelType.Nijisanji:
                                     try
                                     {
                                         var data1 = uow.NijisanjiStreamVideo.First((x) => x.VideoId == streamVideo.VideoId);
@@ -128,6 +127,12 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
 
                                 if (Program.Redis != null)
                                 {
+                                    if (Utility.GetNowRecordStreamList().ContainsKey(streamVideo.VideoId))
+                                    {
+                                        Log.Warn($"{streamVideo.VideoId} 已經在錄影了");
+                                        return;
+                                    }
+
                                     if (await Program.RedisSub.PublishAsync("youtube.record", streamVideo.VideoId) != 0)
                                     {
                                         Log.Info($"已發送錄影請求: {streamVideo.VideoId}");
@@ -158,8 +163,8 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                             .WithImageUrl($"https://i.ytimg.com/vi/{streamVideo.VideoId}/maxresdefault.jpg")
                             .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
                             .AddField("排定開台時間", streamVideo.ScheduledStartTime, true)
-                            .AddField("直播狀態", "開台中", true)
-                            .AddField("是否記錄直播", "否", true);
+                            .AddField("直播狀態", "開台中", true);
+                            //.AddField("是否記錄直播", "否", true);
 
                             await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.Start).ConfigureAwait(false);
                         }
@@ -197,7 +202,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                     uow.HoloStreamVideo.Update(streamVideo.ConvertToHoloStreamVideo());
                                 }
                                 break;
-                            case ChannelType.Nijisamji:
+                            case ChannelType.Nijisanji:
                                 try
                                 {
                                     var data1 = uow.NijisanjiStreamVideo.First((x) => x.VideoId == streamVideo.VideoId);
@@ -253,23 +258,21 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                     {
                         var item = await GetVideoAsync(videolId).ConfigureAwait(false);
 
-                        var addNewStreamVideo = new List<OtherStreamVideo>();
-                        string redisStr;
-                        if ((redisStr = await Program.RedisDb.StringGetAsync("streambot.save.schedule.other")) != "[]")
-                            addNewStreamVideo = JsonConvert.DeserializeObject<List<OtherStreamVideo>>(redisStr);
-
+                        var startTime = item.LiveStreamingDetails.ActualStartTime.Value;
                         streamVideo = new StreamVideo()
                         {
                             ChannelId = item.Snippet.ChannelId,
                             ChannelTitle = item.Snippet.ChannelTitle,
                             VideoId = item.Id,
                             VideoTitle = item.Snippet.Title,
-                            ScheduledStartTime = item.LiveStreamingDetails.ActualStartTime.Value,
+                            ScheduledStartTime = startTime,
                             ChannelType = ChannelType.Other
                         };
 
-                        addNewStreamVideo.Add(streamVideo.ConvertToOtherStreamVideo());
-                        await Program.Redis.GetDatabase().StringSetAsync("streambot.save.schedule.other", JsonConvert.SerializeObject(addNewStreamVideo));
+                        Log.NewStream($"SendStreamMessageAsync: {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
+
+                        if (!addNewStreamVideo.TryAdd(streamVideo, streamVideo.ChannelType))
+                            return;
                     }
                     catch (Exception ex)
                     {
@@ -284,7 +287,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
 
         private async Task SendStreamMessageAsync(StreamVideo streamVideo, Embed embed, NoticeType noticeType)
         {
-            string type = streamVideo.ChannelType == ChannelType.Holo ? "holo" : streamVideo.ChannelType == ChannelType.Nijisamji ? "2434" : "other";
+            string type = streamVideo.ChannelType == ChannelType.Holo ? "holo" : streamVideo.ChannelType == ChannelType.Nijisanji ? "2434" : "other";
             List<NoticeStreamChannel> noticeGuildList = new List<NoticeStreamChannel>();
 
             using (var db = new DBContext())
