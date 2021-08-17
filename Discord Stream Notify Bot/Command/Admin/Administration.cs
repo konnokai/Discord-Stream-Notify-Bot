@@ -94,6 +94,9 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
         public async Task DieAsync()
         {
             Program.isDisconnect = true;
+            Program.isHoloChannelSpider = false;
+            Program.isNijisanjiChannelSpider = false;
+            Program.isOtherChannelSpider = false;
             await Context.Channel.SendConfirmAsync("關閉中");
         }
 
@@ -161,7 +164,7 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
                 using (var uow = new DBContext())
                 {
                     EmbedBuilder embedBuilder = new EmbedBuilder().WithOkColor()
-                        .WithUrl("https://twitter.com/jun112561")
+                        .WithUrl("https://junrasp.com/")
                         .WithTitle("來自開發者消息")
                         .WithAuthor(Context.Message.Author)
                         .WithDescription(message)

@@ -19,8 +19,9 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
 
         private async Task HoloScheduleAsync()
         {
-            if (Program.CheckSpiderList.HasFlag(Program.ChannelSpider.Holo)) return;
-            Program.CheckSpiderList |= Program.ChannelSpider.Holo;
+            if (Program.isHoloChannelSpider) return;
+            Log.Info("Holo影片清單整理開始");
+            Program.isHoloChannelSpider = true;
 
             try
             {
@@ -43,6 +44,8 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
 
                     if (idList.Count > 0)
                     {
+                        Log.NewStream($"Holo Id: {string.Join(", ", idList)}");
+
                         for (int i = 0; i < idList.Count; i += 50)
                         {
                             var video = yt.Videos.List("snippet,liveStreamingDetails");
@@ -115,6 +118,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                         if (addNewStreamVideo.TryAdd(streamVideo, streamVideo.ChannelType))
                                             StartReminder(streamVideo, ChannelType.Holo);
                                     }
+                                    else addNewStreamVideo.TryAdd(streamVideo, streamVideo.ChannelType);
                                 }
                                 else if (item.LiveStreamingDetails.ActualStartTime != null) //未排程直播
                                 {
@@ -144,16 +148,16 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                 if (!ex.Message.Contains("EOF or 0 bytes"))
                     Log.Error("HoloStream\r\n" + ex.Message + "\r\n" + ex.StackTrace);
             }
-            
-            if (Program.CheckSpiderList.HasFlag(Program.ChannelSpider.Holo))
-                Program.CheckSpiderList ^= Program.ChannelSpider.Holo;
+
+            Program.isHoloChannelSpider = false;
             Log.Info("Holo影片清單整理完成");
         }
 
         private async Task NijisanjiScheduleAsync()
         {
-            if (Program.CheckSpiderList.HasFlag(Program.ChannelSpider.Nijisanji)) return;
-            Program.CheckSpiderList |= Program.ChannelSpider.Nijisanji;
+            if (Program.isNijisanjiChannelSpider) return;
+            Log.Info("彩虹社影片清單整理開始");
+            Program.isNijisanjiChannelSpider = true;
 
             try
             {
@@ -183,6 +187,8 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
 
                         if (idList.Count > 0)
                         {
+                            Log.NewStream($"Nijisanji Id: {string.Join(", ", idList)}");
+
                             for (int i = 0; i < idList.Count; i += 50)
                             {
                                 var video = yt.Videos.List("snippet,liveStreamingDetails");
@@ -256,6 +262,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                             if (addNewStreamVideo.TryAdd(streamVideo, streamVideo.ChannelType))
                                                 StartReminder(streamVideo, ChannelType.Nijisanji);
                                         }
+                                        else addNewStreamVideo.TryAdd(streamVideo, streamVideo.ChannelType);
                                     }
                                     else if (item.LiveStreamingDetails.ActualStartTime != null) //未排程直播
                                     {
@@ -286,16 +293,15 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                 Log.Error("NijisanjiStream\r\n" + ex.Message + "\r\n" + ex.StackTrace);
             }
 
-            if (Program.CheckSpiderList.HasFlag(Program.ChannelSpider.Nijisanji))
-                Program.CheckSpiderList ^= Program.ChannelSpider.Nijisanji;
+            Program.isNijisanjiChannelSpider = false;
             Log.Info("彩虹社影片清單整理完成");
         }
 
         private async Task OtherScheduleAsync()
         {
-            if (Program.CheckSpiderList.HasFlag(Program.ChannelSpider.Other)) return;
-            Program.CheckSpiderList |= Program.ChannelSpider.Other;
-
+            if (Program.isOtherChannelSpider) return;
+            Log.Info("其他勢影片清單整理開始");
+            Program.isOtherChannelSpider = true;
             Dictionary<string, List<string>> otherVideoDic = new Dictionary<string, List<string>>();
 
             using (var db = new DBContext())
@@ -355,7 +361,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                     if (!otherVideoDic[item.ChannelId].Contains(videoId))
                                     {
                                         otherVideoDic[item.ChannelId].Add(videoId);
-                                        if (!db.OtherStreamVideo.Any((x) => x.VideoId == videoId)) addVideoIdList.Add(videoId);
+                                        if (!db.HasStreamVideoByVideoId(videoId)) addVideoIdList.Add(videoId);
                                     }
                                 }
                                 catch (Exception ex)
@@ -383,6 +389,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                                 ChannelType = ChannelType.Other
                                             };
 
+                                            streamVideo.ChannelType = streamVideo.GetProductionType();
                                             Log.NewStream($"{streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
 
                                             EmbedBuilder embedBuilder = new EmbedBuilder();
@@ -410,6 +417,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                                 ChannelType = ChannelType.Other
                                             };
 
+                                            streamVideo.ChannelType = streamVideo.GetProductionType();
                                             Log.NewStream($"{streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
 
                                             if (startTime > DateTime.Now && startTime < DateTime.Now.AddDays(7))
@@ -436,6 +444,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                                 if (addNewStreamVideo.TryAdd(streamVideo, streamVideo.ChannelType))
                                                     StartReminder(streamVideo, ChannelType.Other);
                                             }
+                                            else addNewStreamVideo.TryAdd(streamVideo, streamVideo.ChannelType);
                                         }
                                         else if (item2.LiveStreamingDetails.ActualStartTime != null) //未排程直播
                                         {
@@ -448,8 +457,9 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                                 VideoTitle = item2.Snippet.Title,
                                                 ScheduledStartTime = startTime,
                                                 ChannelType = ChannelType.Other
-                                            }; 
+                                            };
 
+                                            streamVideo.ChannelType = streamVideo.GetProductionType();
                                             Log.NewStream($"{streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
 
                                             if (item2.Snippet.LiveBroadcastContent == "live" && addNewStreamVideo.TryAdd(streamVideo, streamVideo.ChannelType))
@@ -475,8 +485,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                 }
             }
 
-            if (Program.CheckSpiderList.HasFlag(Program.ChannelSpider.Other))
-                Program.CheckSpiderList ^= Program.ChannelSpider.Other;
+            Program.isOtherChannelSpider = false;
             Log.Info("其他勢影片清單整理完成");
         }
 

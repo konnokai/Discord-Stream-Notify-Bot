@@ -5,9 +5,7 @@ using Discord_Stream_Notify_Bot.DataBase;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
 namespace Discord_Stream_Notify_Bot.Command.Stream
@@ -887,7 +885,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
         [Summary("從資料庫取得已刪檔的直播資訊\r\n\r\n" +
             "例:\r\n" +
             "`s!gvi GzWDcutkMQw`")]
-        [Alias("gvi")]
+        [Alias("GVI")]
         public async Task GetVideoInfo(string videoId = "")
         {
             videoId = videoId.Trim();
@@ -915,6 +913,52 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
 
                 await ReplyAsync(embed: embedBuilder.Build()).ConfigureAwait(false);
             }
+        }
+
+        [RequireOwner]
+        [Command("SetChannelType")]
+        [Summary("設定頻道的所屬\r\n" +
+            "0: Hololive\r\n" +
+            "1: 彩虹社\r\n" +
+            "2: 其他\r\n\r\n" +
+            "例:\r\n" +
+            "`s!sct UCXRlIK3Cw_TJIQC5kSJJQMg 1`")]
+        [Alias("SCT")]
+        public async Task SetChannelType(string channelId = "", Service.StreamService.ChannelType channelType = Service.StreamService.ChannelType.Other)
+        {
+            channelId = channelId.GetChannelId();
+
+            if (string.IsNullOrWhiteSpace(channelId))
+            {
+                await Context.Channel.SendErrorAsync("ChannelId空白").ConfigureAwait(false);
+                return;
+            }
+
+            var title = await GetChannelTitle(channelId);
+            if (string.IsNullOrWhiteSpace(title))
+            {
+                await Context.Channel.SendErrorAsync($"{channelId} 不存在頻道").ConfigureAwait(false);
+                return;
+            }
+
+            using (var db = new DBContext())
+            {
+                var channel = db.ChannelOwnedType.FirstOrDefault((x) => x.ChannelId == channelId);
+                if (channel == null)
+                {
+                    db.ChannelOwnedType.Add(new DataBase.Table.ChannelOwnedType() { ChannelId = channelId, ChannelTitle = title, ChannelType = channelType });
+                }
+                else
+                {
+                    channel.ChannelTitle = title;
+                    channel.ChannelType = channelType;
+                    db.ChannelOwnedType.Update(channel);
+                }
+
+                await db.SaveChangesAsync();
+            }
+
+            await Context.Channel.SendConfirmAsync($"`{title}` 的所屬已改為 `{channelType.GetProductionName()}`");
         }
 
         private async Task<string> GetChannelTitle(string channelId)

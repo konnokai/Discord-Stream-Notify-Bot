@@ -1,6 +1,7 @@
 ﻿using Discord_Stream_Notify_Bot.Command.Stream.Service;
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
 
 namespace Discord_Stream_Notify_Bot.DataBase.Table
 {
@@ -21,5 +22,13 @@ namespace Discord_Stream_Notify_Bot.DataBase.Table
         public OtherStreamVideo ConvertToOtherStreamVideo() =>
             new OtherStreamVideo() { ChannelId = ChannelId, ChannelTitle = ChannelTitle, VideoId = VideoId, VideoTitle = VideoTitle, ChannelType = ChannelType, ScheduledStartTime = ScheduledStartTime };
 
+        public override int GetHashCode()
+        {
+            return VideoId.ToCharArray().Sum((x) => x);
+        }
+        public override string ToString()
+        {
+            return ChannelTitle + " - " + VideoTitle;
+        }
     }
 }

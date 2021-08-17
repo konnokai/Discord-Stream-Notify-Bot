@@ -22,7 +22,7 @@ namespace Discord_Stream_Notify_Bot
 {
     class Program
     {
-        public const string VERSION = "V1.0.3";
+        public const string VERSION = "V1.0.4";
         public static ConnectionMultiplexer Redis { get; set; }
         public static ISubscriber RedisSub { get; set; }
         public static IDatabase RedisDb { get; set; }
@@ -32,19 +32,11 @@ namespace Discord_Stream_Notify_Bot
         public static BotPlayingStatus Status = BotPlayingStatus.Guild;
         public static Stopwatch stopWatch = new Stopwatch();
         public static bool isConnect = false, isDisconnect = false;
-        public static ChannelSpider CheckSpiderList = 0;
+        public static bool isHoloChannelSpider = false, isNijisanjiChannelSpider = false, isOtherChannelSpider = false;
         static Timer timerUpdateStatus;
         static BotConfig botConfig = new();
 
         public enum BotPlayingStatus { Guild, Member, Stream, Info }
-
-        [Flags]
-        public enum ChannelSpider
-        {
-            Holo        = 0b_0000_0001,
-            Nijisanji   = 0b_0000_0010,
-            Other       = 0b_0000_0100
-        }
 
         static void Main(string[] args)
         {
@@ -176,9 +168,15 @@ namespace Discord_Stream_Notify_Bot
             do { await Task.Delay(1000); }
             while (!isDisconnect);
 
-            while (CheckSpiderList.HasFlag(ChannelSpider.Holo) || CheckSpiderList.HasFlag(ChannelSpider.Nijisanji) || CheckSpiderList.HasFlag(ChannelSpider.Other))
-            {                
-                Log.Info($"等待 {CheckSpiderList} 完成");
+            while (isHoloChannelSpider || isNijisanjiChannelSpider || isOtherChannelSpider)
+            {
+                List<string> str = new List<string>();
+
+                if (isHoloChannelSpider) str.Add("Holo");
+                if (isNijisanjiChannelSpider) str.Add("Nijisanji");
+                if (isOtherChannelSpider) str.Add("Other");
+
+                Log.Info($"等待 {string.Join(", ", str)} 完成");
                 await Task.Delay(5000);
             }
 
