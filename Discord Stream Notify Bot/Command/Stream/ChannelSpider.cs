@@ -58,16 +58,26 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
                 if (db.ChannelSpider.Any((x) => x.ChannelId == channelId))
                 {
                     var item = db.ChannelSpider.First((x) => x.ChannelId == channelId);
-                    var guild = item.GuildId == 0 ? "Bot擁有者" : $"{_client.GetGuild(item.GuildId).Name}";
+                    string guild = "";
+                    try
+                    {
+                        guild = item.GuildId == 0 ? "Bot擁有者" : $"{_client.GetGuild(item.GuildId).Name}";
+                    }
+                    catch (Exception)
+                    {
+                        guild = "已退出的伺服器";
+                    }
 
                     await Context.Channel.SendConfirmAsync($"{channelId} 已在檢測清單內\r\n" +
                         $"可直接到通知頻道內使用 `s!ansc {channelId}` 開啟通知\r\n" +
-                        $"(設定的伺服器 `{guild}`)").ConfigureAwait(false);
+                        $"(由 `{guild}` 設定)").ConfigureAwait(false);
                     return;
                 }
+
                 if (db.ChannelSpider.Count((x) => x.GuildId == Context.Guild.Id) >= 5)
                 {
-                    await Context.Channel.SendConfirmAsync($"此伺服器已設定五個檢測頻道，請移除後再試").ConfigureAwait(false);
+                    await Context.Channel.SendConfirmAsync($"此伺服器已設定五個檢測頻道，請移除後再試\r\n" +
+                        $"如有特殊需求請向Bot擁有者詢問").ConfigureAwait(false);
                     return;
                 }
 
@@ -186,7 +196,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
             using (var db = new DBContext())
             {
                 var list = db.ChannelSpider.ToList().Where((x) => x.IsWarningChannel).Select((x) => Format.Url(x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}") +
-                $" 由 `" + (x.GuildId == 0 ? "Bot擁有者" : $"{ _client.GetGuild(x.GuildId).Name}") + "` 新增");
+                $" 由 `" + (x.GuildId == 0 ? "Bot擁有者" : $"{_client.GetGuild(x.GuildId).Name}") + "` 新增");
 
                 await Context.SendPaginatedConfirmAsync(0, page =>
                 {
