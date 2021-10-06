@@ -449,7 +449,8 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
         [Summary("設定伺服器橫幅使用指定頻道的最新影片(直播)縮圖\r\n" +
             "若未輸入頻道Id則關閉本設定\r\n\r\n" +
             "Bot需要有管理伺服器權限\r\n" +
-            "且伺服器需有Boost Lv2才可使用本設定")]
+            "且伺服器需有Boost Lv2才可使用本設定\r\n" +
+            "(此功能依賴直播通知，請確保設定的頻道在兩大箱或是爬蟲清單內)")]
         [Alias("SBC")]
         [RequireBotPermission(GuildPermission.ManageGuild)]
         [RequireUserPermission(GuildPermission.ManageGuild)]
@@ -535,14 +536,15 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
             "\r\n" +
             "輸入holo通知全部`Holo成員`的直播\r\n" +
             "輸入2434通知全部`彩虹社成員`的直播\r\n" +
+            "(海外勢僅部分成員歸類在此選項內，建議改用`s!acs`設定)\r\n" +
             "輸入other通知部分`非兩大箱`的直播\r\n" +
-            "(可以使用 `s!lcs` 查詢有哪些頻道)\r\n" +
+            "(可以使用`s!lcs`查詢有哪些頻道)\r\n" +
             "輸入all通知全部`Holo + 2434 + 非兩大箱`的直播\r\n" +
-            "且會覆蓋所有前面項目的通知設定\r\n" +
+            "此選項會覆蓋所有的通知設定\r\n" +
             "\r\n" +
             "例:\r\n" +
             "`s!ansc UCdn5BQ06XqgXoAxIhbqw5Rg` 或\r\n" +
-            "`s!ansc all` 或 `s!ansc holo`")]
+            "`s!ansc all` 或 `s!ansc 2434`")]
         [Alias("ANSC")]
         public async Task AddNoticeStreamChannel(string channelId = "")
         {
@@ -640,7 +642,8 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
             "輸入all移除全部`Holo + 2434 + 非兩大箱`的直播通知\r\n\r\n" +
             "例:\r\n" +
             "`s!rnsc UCdn5BQ06XqgXoAxIhbqw5Rg` 或\r\n" +
-            "`s!rnsc all` 或 `s!rnsc holo`")]
+            "`s!rnsc all` 或 `s!rnsc 2434`")]
+        
         [Alias("RNSC")]
         public async Task RemoveNoticeStreamChannel(string channelId = "")
         {

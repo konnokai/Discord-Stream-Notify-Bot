@@ -3,7 +3,7 @@ using System;
 using System.Threading.Tasks;
 using Discord.WebSocket;
 
-namespace Discord_Stream_Notify_Bot.Command
+namespace Discord_Stream_Notify_Bot.Command.Attribute
 {
     public class RequireGuildMemberCountAttribute : PreconditionAttribute
     {

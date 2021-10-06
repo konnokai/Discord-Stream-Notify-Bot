@@ -4,6 +4,7 @@ using Discord_Stream_Notify_Bot.DataBase;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Discord_Stream_Notify_Bot.Command.Attribute;
 
 namespace Discord_Stream_Notify_Bot.Command.Stream
 {

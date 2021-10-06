@@ -1,6 +1,7 @@
 ﻿using Discord;
 using Discord.Commands;
 using System;
+using Discord_Stream_Notify_Bot.Command.Attribute;
 using System.Linq;
 
 namespace Discord_Stream_Notify_Bot.Command.Help
@@ -34,7 +35,7 @@ namespace Discord_Stream_Notify_Bot.Command.Help
             var botReqs = GetBotCommandRequirements(com);
             if (botReqs.Any()) em.AddField("Bot權限要求", string.Join("\n", botReqs));
 
-            em.WithFooter(efb => efb.WithText("模組: " +  com.Module.Name))
+            em.WithFooter(efb => efb.WithText("模組: " + com.Module.Name))
               .WithOkColor();
 
             return em;
@@ -78,5 +79,14 @@ namespace Discord_Stream_Notify_Bot.Command.Help
                                        .Replace("Guild", "Server", StringComparison.InvariantCulture);
                   })
                 .ToArray();
+
+        public static string GetCommandExampleString(CommandInfo cmd)
+        {
+            var att = cmd.Attributes.FirstOrDefault((x) => x is CommandExampleAttribute);
+            if (att == null) return "";
+                        
+            System.Attribute.GetCustomAttribute(cmd.GetType().Assembly, typeof(CommandExampleAttribute));
+             att = cmd.Attributes.FirstOrDefault((x) => x is CommandExampleAttribute);
+        }
     }
 }
