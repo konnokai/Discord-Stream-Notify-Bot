@@ -1,6 +1,5 @@
 ﻿using Discord;
 using Discord.WebSocket;
-using Discord_Stream_Notify_Bot.DataBase;
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using Google.Apis.Services;
 using Google.Apis.YouTube.v3;
@@ -46,20 +45,17 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
 #if DEBUG
             return;
 #endif
-
-            using (var uow = new DBContext())
+            using (var db = DataBase.DBContext.GetDbContext())
             {
-                foreach (var streamVideo in uow.HoloStreamVideo.ToList().Where((x) => x.ScheduledStartTime > DateTime.Now))
+                foreach (var streamVideo in db.HoloStreamVideo.ToList().Where((x) => x.ScheduledStartTime > DateTime.Now))
                 {
                     StartReminder(streamVideo, ChannelType.Holo);
                 }
-
-                foreach (var streamVideo in uow.NijisanjiStreamVideo.ToList().Where((x) => x.ScheduledStartTime > DateTime.Now))
+                foreach (var streamVideo in db.NijisanjiStreamVideo.ToList().Where((x) => x.ScheduledStartTime > DateTime.Now))
                 {
                     StartReminder(streamVideo, ChannelType.Nijisanji);
                 }
-
-                foreach (var streamVideo in uow.OtherStreamVideo.ToList().Where((x) => x.ScheduledStartTime > DateTime.Now))
+                foreach (var streamVideo in db.OtherStreamVideo.ToList().Where((x) => x.ScheduledStartTime > DateTime.Now))
                 {
                     StartReminder(streamVideo, ChannelType.Other);
                 }
@@ -145,7 +141,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                         .AddField("直播狀態", "已關台", true)
                         .AddField("關台時間", endTime, true)
                         .AddField("直播時間", $"{endTime.Subtract(startTime):hh'時'mm'分'ss'秒'}", true);
-                       // .AddField("存檔名稱", streamRecordJson.RecordFileName, false);
+                        // .AddField("存檔名稱", streamRecordJson.RecordFileName, false);
 
                         await SendStreamMessageAsync(item.Id, embedBuilder.Build(), NoticeType.End).ConfigureAwait(false);
                     }
@@ -159,13 +155,13 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                 {
                     Log.Info($"{channel} - {videoId}");
 
-                    try
+                    using (var db = DataBase.DBContext.GetDbContext())
                     {
-                        using (var uow = new DBContext())
+                        try
                         {
-                            if (uow.HasStreamVideoByVideoId(videoId))
+                            if (db.HasStreamVideoByVideoId(videoId))
                             {
-                                var streamVideo = uow.GetStreamVideoByVideoId(videoId);
+                                var streamVideo = db.GetStreamVideoByVideoId(videoId);
 
                                 EmbedBuilder embedBuilder = new EmbedBuilder();
                                 embedBuilder.WithErrorColor()
@@ -177,11 +173,44 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
 
                                 await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.Delete).ConfigureAwait(false);
                             }
+
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Error($"Record-DeleteStream {ex.Message}\r\n{ex.StackTrace}");
                         }
                     }
-                    catch (Exception ex)
+                });
+
+                Program.RedisSub.Subscribe("youtube.429error", async (channel, videoId) =>
+                {
+                    Log.Info($"{channel} - {videoId}");
+                    IsRecord = false;
+
+                    using (var db = DataBase.DBContext.GetDbContext())
                     {
-                        Log.Error($"Record-DeleteStream {ex.Message}\r\n{ex.StackTrace}");
+                        try
+                        {
+                            if (db.HasStreamVideoByVideoId(videoId))
+                            {
+                                var streamVideo = db.GetStreamVideoByVideoId(videoId);
+                                EmbedBuilder embedBuilder = new EmbedBuilder();
+                                embedBuilder.WithTitle(streamVideo.VideoTitle)
+                                .WithOkColor()
+                                .WithDescription(Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}"))
+                                .WithImageUrl($"https://i.ytimg.com/vi/{streamVideo.VideoId}/maxresdefault.jpg")
+                                .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
+                                .AddField("直播狀態", "開台中", true)
+                                .AddField("排定開台時間", streamVideo.ScheduledStartTime, true);
+
+                                if (Program.ApplicatonOwner != null) await Program.ApplicatonOwner.SendMessageAsync("429錯誤", false, embedBuilder.Build()).ConfigureAwait(false); 
+                                await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.Start).ConfigureAwait(false);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Error($"Record-429Error {ex.Message}\r\n{ex.StackTrace}");
+                        }
                     }
                 });
 
@@ -278,33 +307,52 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
 
             holoSchedule = new Timer(async (objState) => await HoloScheduleAsync(), null, TimeSpan.FromSeconds(15), TimeSpan.FromMinutes(5));
 
-            nijisanjiSchedule = new Timer(async (objState) => await NijisanjiScheduleAsync(), null, TimeSpan.FromSeconds(10), TimeSpan.FromMinutes(3));
+            nijisanjiSchedule = new Timer(async (objState) => await NijisanjiScheduleAsync(), null, TimeSpan.FromSeconds(10), TimeSpan.FromMinutes(5));
 
             otherSchedule = new Timer(async (onjState) => await OtherScheduleAsync(), null, TimeSpan.FromSeconds(20), TimeSpan.FromMinutes(15));
 
             checkScheduleTime = new Timer(async (objState) =>
             {
-                for (int i = 0; i < Reminders.Count; i += 50)
+                using (var db = DataBase.DBContext.GetDbContext())
                 {
-                    var video = yt.Videos.List("snippet,liveStreamingDetails");
-                    video.Id = string.Join(",", Reminders.Skip(i).Take(50).Select((x) => x.Value.StreamVideo.VideoId));
-                    var videoResult = await video.ExecuteAsync().ConfigureAwait(false);
-
-                    foreach (var item in videoResult.Items)
+                    for (int i = 0; i < Reminders.Count; i += 50)
                     {
-                        var stream = Reminders.First((x) => x.Key.VideoId == item.Id).Key;
-                        if (stream.ScheduledStartTime != item.LiveStreamingDetails.ScheduledStartTime.Value)
-                        {
-                            try
-                            {
-                                if (Reminders.TryRemove(stream, out var t))
-                                {
-                                    t.Timer.Change(Timeout.Infinite, Timeout.Infinite);
-                                    t.Timer.Dispose();
-                                }
+                        var video = yt.Videos.List("snippet,liveStreamingDetails");
+                        video.Id = string.Join(",", Reminders.Skip(i).Take(50).Select((x) => x.Value.StreamVideo.VideoId));
+                        var videoResult = await video.ExecuteAsync().ConfigureAwait(false);
 
-                                using (var uow = new DBContext())
+                        foreach (var item in videoResult.Items)
+                        {
+                            var stream = Reminders.First((x) => x.Key.VideoId == item.Id).Key;
+                            if (!item.LiveStreamingDetails.ScheduledStartTime.HasValue)
+                            {
+                                Reminders.TryRemove(stream, out var reminderItem);
+
+                                EmbedBuilder embedBuilder = new EmbedBuilder();
+                                embedBuilder.WithTitle(stream.VideoTitle)
+                                .WithOkColor()
+                                .WithDescription(Format.Url(stream.ChannelTitle, $"https://www.youtube.com/channel/{stream.ChannelId}"))
+                                .WithImageUrl($"https://i.ytimg.com/vi/{stream.VideoId}/maxresdefault.jpg")
+                                .WithUrl($"https://www.youtube.com/watch?v={stream.VideoId}")
+                                .AddField("直播狀態", "無開始時間", true)
+                                .AddField("排定開台時間", stream.ScheduledStartTime, true)
+                                .AddField("更改開台時間", "無時間", true);
+
+                                if (Program.ApplicatonOwner != null) await Program.ApplicatonOwner.SendMessageAsync("429錯誤", false, embedBuilder.Build()).ConfigureAwait(false);
+                                //await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.Start).ConfigureAwait(false);
+                                continue;
+                            }
+
+                            if (stream.ScheduledStartTime != item.LiveStreamingDetails.ScheduledStartTime.Value)
+                            {
+                                try
                                 {
+                                    if (Reminders.TryRemove(stream, out var t))
+                                    {
+                                        t.Timer.Change(Timeout.Infinite, Timeout.Infinite);
+                                        t.Timer.Dispose();
+                                    }
+
                                     var startTime = item.LiveStreamingDetails.ScheduledStartTime.Value;
                                     var streamVideo = new StreamVideo()
                                     {
@@ -319,16 +367,16 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                     switch (stream.ChannelType)
                                     {
                                         case ChannelType.Holo:
-                                            uow.HoloStreamVideo.Update(streamVideo.ConvertToHoloStreamVideo());
+                                            db.HoloStreamVideo.Update(streamVideo.ConvertToHoloStreamVideo());
                                             break;
                                         case ChannelType.Nijisanji:
-                                            uow.NijisanjiStreamVideo.Update(streamVideo.ConvertToNijisanjiStreamVideo());
+                                            db.NijisanjiStreamVideo.Update(streamVideo.ConvertToNijisanjiStreamVideo());
                                             break;
                                         case ChannelType.Other:
-                                            uow.OtherStreamVideo.Update(streamVideo.ConvertToOtherStreamVideo());
+                                            db.OtherStreamVideo.Update(streamVideo.ConvertToOtherStreamVideo());
                                             break;
                                     }
-                                    await uow.SaveChangesAsync();
+                                    await db.SaveChangesAsync();
 
                                     Log.Info($"時間已更改 {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
 
@@ -348,10 +396,10 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                         StartReminder(streamVideo, stream.ChannelType);
                                     }
                                 }
-                            }
-                            catch (Exception ex)
-                            {
-                                Log.Error($"CheckScheduleTime\r\n{ex.Message}\r\n{ex.StackTrace}");
+                                catch (Exception ex)
+                                {
+                                    Log.Error($"CheckScheduleTime\r\n{ex.Message}\r\n{ex.StackTrace}");
+                                }
                             }
                         }
                     }
@@ -393,8 +441,8 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
             }
         }
 
-        private bool CanRecord(DBContext uow, StreamVideo streamVideo) =>
-             IsRecord && uow.RecordChannel.Any((x) => x.ChannelId.Trim() == streamVideo.ChannelId.Trim());
+        private bool CanRecord(DataBase.DBContext db ,StreamVideo streamVideo) =>
+             IsRecord && db.RecordChannel.Any((x) => x.ChannelId.Trim() == streamVideo.ChannelId.Trim());
 
         #region scnse
         //holoScheduleEmoji = new Timer(async (objState) =>

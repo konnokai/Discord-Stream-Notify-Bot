@@ -2,7 +2,7 @@
 
 namespace Discord_Stream_Notify_Bot.DataBase.Table
 {
-    class ChannelSpider
+    public class ChannelSpider
     {
         [Key]
         public string ChannelId { get; set; }

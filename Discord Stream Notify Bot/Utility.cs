@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Linq;
 
 namespace Discord_Stream_Notify_Bot
 {
@@ -26,5 +27,21 @@ namespace Discord_Stream_Notify_Bot
 
             return streamList;
         }
+
+        public static int GetDbStreamCount()
+        {
+            try
+            {
+                using (var db = DataBase.DBContext.GetDbContext())
+                {
+                    return db.HoloStreamVideo.Count() + db.NijisanjiStreamVideo.Count() + db.OtherStreamVideo.Count();
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"{ex.Message}\r\n{ex.StackTrace}");
+                return 0;
+            }
+        }
     }
-}
+ }

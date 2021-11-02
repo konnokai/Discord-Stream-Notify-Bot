@@ -1,5 +1,4 @@
 ﻿using Discord;
-using Discord_Stream_Notify_Bot.DataBase;
 using System;
 using System.IO;
 using System.Linq;
@@ -12,7 +11,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
     {
         private async Task ChangeGuildBannerAsync(string channelId, string videoId)
         {
-            using (var db = new DBContext())
+            using (var db = DataBase.DBContext.GetDbContext())
             {
                 foreach (var item in db.BannerChange.ToList().Where(x => x.ChannelId == channelId))
                 {
@@ -73,7 +72,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                         continue;
                     }
                 }
-            }
+            }            
         }
     }
 }

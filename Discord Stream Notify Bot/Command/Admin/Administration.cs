@@ -1,7 +1,6 @@
 ﻿using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
-using Discord_Stream_Notify_Bot.DataBase;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -27,7 +26,7 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
         }
 
         [Command("UpdateStatus")]
-        [Summary("更新機器人的狀態\n參數: Guild, Member, Stream, Info")]
+        [Summary("更新機器人的狀態\n參數: Guild, Member, Stream, StreamCount, Info")]
         [Alias("UpStats")]
         [RequireOwner]
         public async Task UpdateStatusAsync([Summary("狀態")] string stats)
@@ -42,6 +41,9 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
                     break;
                 case "stream":
                     Program.Status = Program.BotPlayingStatus.Stream;
+                    break;
+                case "streamcount":
+                    Program.Status = Program.BotPlayingStatus.StreamCount;
                     break;
                 case "info":
                     Program.Status = Program.BotPlayingStatus.Info;
@@ -161,20 +163,20 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
 
             if (await PromptUserConfirmAsync(new EmbedBuilder().WithOkColor().WithDescription(message).WithImageUrl(imageUrl)))
             {
-                using (var uow = new DBContext())
-                {
-                    EmbedBuilder embedBuilder = new EmbedBuilder().WithOkColor()
-                        .WithUrl("https://junrasp.com/")
-                        .WithTitle("來自開發者消息")
-                        .WithAuthor(Context.Message.Author)
-                        .WithDescription(message)
-                        .WithImageUrl(imageUrl)
-                        .WithFooter("若看到此消息出現在非通知頻道上，請通知管理員重新設定直播通知");
+                EmbedBuilder embedBuilder = new EmbedBuilder().WithOkColor()
+                    .WithUrl("https://junrasp.com/")
+                    .WithTitle("來自開發者消息")
+                    .WithAuthor(Context.Message.Author)
+                    .WithDescription(message)
+                    .WithImageUrl(imageUrl)
+                    .WithFooter("若看到此消息出現在非通知頻道上，請通知管理員重新設定直播通知");
 
+                using (var db = DataBase.DBContext.GetDbContext())
+                {
                     try
                     {
                         int i = 1, num = _client.Guilds.Count;
-                        var list = uow.NoticeStreamChannel.Distinct((x) => x.GuildId).Select((x) => new KeyValuePair<ulong, ulong>(x.GuildId, x.ChannelId));
+                        var list = db.NoticeStreamChannel.Distinct((x) => x.GuildId).Select((x) => new KeyValuePair<ulong, ulong>(x.GuildId, x.ChannelId));
                         foreach (var item in _client.Guilds)
                         {
                             try
@@ -199,8 +201,8 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
 
                                 try
                                 {
-                                    uow.NoticeStreamChannel.RemoveRange(Queryable.Where(uow.NoticeStreamChannel, (x) => x.GuildId == item.Id));
-                                    await uow.SaveChangesAsync();
+                                    db.NoticeStreamChannel.RemoveRange(Queryable.Where(db.NoticeStreamChannel, (x) => x.GuildId == item.Id));
+                                    await db.SaveChangesAsync();
                                 }
                                 catch { }
                             }
@@ -237,13 +239,15 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
                     return;
                 }
 
-                using var db = new DBContext();
-                var channelList = db.NoticeStreamChannel.Where((x) => x.GuildId == guild.Id).Select((x) => $"<#{x.ChannelId}>: {x.NoticeStreamChannelId}").ToList();
+                using (var db = DataBase.DBContext.GetDbContext())
+                {
+                    var channelList = db.NoticeStreamChannel.Where((x) => x.GuildId == guild.Id).Select((x) => $"<#{x.ChannelId}>: {x.NoticeStreamChannelId}").ToList();
 
-                await Context.Channel.SendConfirmAsync($"伺服器名稱: {guild.Name}\n" +
-                        $"伺服器Id: {guild.Id}\n" +
-                        $"擁有者: {guild.Owner.Username} ({guild.Owner.Id})" +
-                        $"設定通知的頻道: \n{string.Join('\n', channelList)}").ConfigureAwait(false);
+                    await Context.Channel.SendConfirmAsync($"伺服器名稱: {guild.Name}\n" +
+                            $"伺服器Id: {guild.Id}\n" +
+                            $"擁有者: {guild.Owner.Username} ({guild.Owner.Id})" +
+                            $"設定通知的頻道: \n{string.Join('\n', channelList)}").ConfigureAwait(false);
+                }
             }
             catch (Exception ex)
             {

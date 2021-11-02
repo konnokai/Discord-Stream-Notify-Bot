@@ -3,6 +3,7 @@ using Discord.Commands;
 using System;
 using Discord_Stream_Notify_Bot.Command.Attribute;
 using System.Linq;
+using System.Reflection;
 
 namespace Discord_Stream_Notify_Bot.Command.Help
 {
@@ -34,6 +35,9 @@ namespace Discord_Stream_Notify_Bot.Command.Help
 
             var botReqs = GetBotCommandRequirements(com);
             if (botReqs.Any()) em.AddField("Bot權限要求", string.Join("\n", botReqs));
+
+            var exp = GetCommandExampleString(com);
+            if (!string.IsNullOrEmpty(exp)) em.AddField("例子", exp);
 
             em.WithFooter(efb => efb.WithText("模組: " + com.Module.Name))
               .WithOkColor();
@@ -84,9 +88,12 @@ namespace Discord_Stream_Notify_Bot.Command.Help
         {
             var att = cmd.Attributes.FirstOrDefault((x) => x is CommandExampleAttribute);
             if (att == null) return "";
-                        
-            System.Attribute.GetCustomAttribute(cmd.GetType().Assembly, typeof(CommandExampleAttribute));
-             att = cmd.Attributes.FirstOrDefault((x) => x is CommandExampleAttribute);
+
+            var commandExampleAttribute = att as CommandExampleAttribute;
+
+            return string.Join("\r\n", commandExampleAttribute.ExpArray
+                .Select((x) => "`s!" + (cmd.Aliases.Count >= 2 ? cmd.Aliases.Last() : cmd.Name) + $" {x}`")
+                .ToArray());
         }
     }
 }

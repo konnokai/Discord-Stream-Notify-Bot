@@ -2,7 +2,6 @@
 using Discord.Commands;
 using Discord.WebSocket;
 using Discord_Stream_Notify_Bot.Command;
-using Discord_Stream_Notify_Bot.DataBase;
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
@@ -22,7 +21,7 @@ namespace Discord_Stream_Notify_Bot
 {
     class Program
     {
-        public const string VERSION = "V1.0.4";
+        public const string VERSION = "V1.0.7.1";
         public static ConnectionMultiplexer Redis { get; set; }
         public static ISubscriber RedisSub { get; set; }
         public static IDatabase RedisDb { get; set; }
@@ -36,7 +35,7 @@ namespace Discord_Stream_Notify_Bot
         static Timer timerUpdateStatus;
         static BotConfig botConfig = new();
 
-        public enum BotPlayingStatus { Guild, Member, Stream, Info }
+        public enum BotPlayingStatus { Guild, Member, Stream, StreamCount, Info }
 
         static void Main(string[] args)
         {
@@ -52,9 +51,9 @@ namespace Discord_Stream_Notify_Bot
             if (!Directory.Exists(Path.GetDirectoryName(GetDataFilePath(""))))
                 Directory.CreateDirectory(Path.GetDirectoryName(GetDataFilePath("")));
 
-            using (var db = new DBContext())
+            using (var db = DataBase.DBContext.GetDbContext())
             {
-                db.Database.EnsureCreated();                
+                db.Database.EnsureCreated();
             }
 
             try
@@ -106,17 +105,16 @@ namespace Discord_Stream_Notify_Bot
 
             _client.Ready += () =>
             {
-                using (var db = new DBContext())
+                using (var db = DataBase.DBContext.GetDbContext())
                 {
                     foreach (var guild in _client.Guilds)
                     {
                         if (!db.GuildConfig.Any(x => x.GuildId == guild.Id))
                         {
                             db.GuildConfig.Add(new GuildConfig() { GuildId = guild.Id });
+                            db.SaveChanges();
                         }
                     }
-
-                    db.SaveChanges();
                 }
 
                 stopWatch.Start();
@@ -130,14 +128,14 @@ namespace Discord_Stream_Notify_Bot
 
             _client.JoinedGuild += async (guild) =>
             {
-                using (var db = new DBContext())
+                using (var db = DataBase.DBContext.GetDbContext())
                 {
                     if (!db.GuildConfig.Any(x => x.GuildId == guild.Id))
                     {
                         db.GuildConfig.Add(new GuildConfig() { GuildId = guild.Id });
                         await db.SaveChangesAsync().ConfigureAwait(false);
                     }
-                }
+                }         
 
                 SendMessageToDiscord($"加入 {guild.Name}({guild.Id})\n擁有者: {guild.Owner.Username}({guild.Owner.Mention})");
             };
@@ -210,22 +208,22 @@ namespace Discord_Stream_Notify_Bot
                     catch (Exception) { Status = BotPlayingStatus.Stream; ChangeStatus(); }
                     break;
                 case BotPlayingStatus.Stream:
-                    Status = BotPlayingStatus.Info;
+                    Status = BotPlayingStatus.StreamCount;
                     try
                     {
-                        using (var uow = new DBContext())
+                        using (var db = DataBase.DBContext.GetDbContext())
                         {
                             List<StreamVideo> list = null;
                             switch (new Random().Next(0, 2))
                             {
                                 case 0:
-                                    list = Queryable.Select(uow.HoloStreamVideo, (x) => (StreamVideo)x).ToList();
+                                    list = Queryable.Select(db.HoloStreamVideo, (x) => (StreamVideo)x).ToList();
                                     break;
                                 case 1:
-                                    list = Queryable.Select(uow.NijisanjiStreamVideo, (x) => (StreamVideo)x).ToList();
+                                    list = Queryable.Select(db.NijisanjiStreamVideo, (x) => (StreamVideo)x).ToList();
                                     break;
                                 case 2:
-                                    list = Queryable.Select(uow.OtherStreamVideo, (x) => (StreamVideo)x).ToList();
+                                    list = Queryable.Select(db.OtherStreamVideo, (x) => (StreamVideo)x).ToList();
                                     break;
                             }
                             var item = list[new Random().Next(0, list.Count)];
@@ -238,6 +236,10 @@ namespace Discord_Stream_Notify_Bot
                         Log.Error(ex.Message);
                         ChangeStatus();
                     }
+                    break;
+                case BotPlayingStatus.StreamCount:
+                    Status = BotPlayingStatus.Info;
+                    setGame($"看了 {Utility.GetDbStreamCount()} 個直播");
                     break;
                 case BotPlayingStatus.Info:
                     setGame("去看你的直播啦");

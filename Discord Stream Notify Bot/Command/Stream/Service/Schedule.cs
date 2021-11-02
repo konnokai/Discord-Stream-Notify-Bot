@@ -1,5 +1,4 @@
 ﻿using Discord;
-using Discord_Stream_Notify_Bot.DataBase;
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using HtmlAgilityPack;
 using Newtonsoft.Json;
@@ -16,6 +15,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
     public partial class StreamService
     {
         private static Dictionary<StreamVideo, ChannelType> addNewStreamVideo = new();
+        private bool isFirstHolo = true, isFirst2434 = true, isFirstOther = true;
 
         private async Task HoloScheduleAsync()
         {
@@ -29,8 +29,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                 HtmlDocument htmlDocument = htmlWeb.Load("https://schedule.hololive.tv/simple");
                 var aList = htmlDocument.DocumentNode.Descendants().Where((x) => x.Name == "a");
                 List<string> idList = new List<string>();
-
-                using (var uow = new DBContext())
+                using (var db = DataBase.DBContext.GetDbContext())
                 {
                     foreach (var item in aList)
                     {
@@ -38,7 +37,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                         if (url.StartsWith("https://www.youtube.com/watch"))
                         {
                             string videoId = url.Split("?v=")[1].Trim();
-                            if (!uow.HasStreamVideoByVideoId(videoId)) idList.Add(videoId);
+                            if (!db.HasStreamVideoByVideoId(videoId)) idList.Add(videoId);
                         }
                     }
 
@@ -76,7 +75,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                     .AddField("所屬", streamVideo.GetProductionType().GetProductionName())
                                     .AddField("上傳時間", item.Snippet.PublishedAt.Value, true);
 
-                                   if (addNewStreamVideo.TryAdd(streamVideo, streamVideo.ChannelType))
+                                    if (addNewStreamVideo.TryAdd(streamVideo, streamVideo.ChannelType) && !isFirstHolo)
                                         await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.NewVideo).ConfigureAwait(false);
                                 }
                                 else if (item.LiveStreamingDetails.ScheduledStartTime != null) //首播 & 直播
@@ -105,18 +104,18 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                         .AddField("所屬", streamVideo.GetProductionType().GetProductionName())
                                         .AddField("直播狀態", "尚未開台", true)
                                         .AddField("排定開台時間", startTime, true);
-                                        //.AddField("是否記錄直播", (CanRecord(uow, streamVideo) ? "是" : "否"), true);
+                                        //.AddField("是否記錄直播", (CanRecord(db, streamVideo) ? "是" : "否"), true);
 
                                         if (addNewStreamVideo.TryAdd(streamVideo, streamVideo.ChannelType))
                                         {
-                                            await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.NewStream).ConfigureAwait(false);
-                                            StartReminder(streamVideo, ChannelType.Holo);
+                                            if (!isFirstHolo) await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.NewStream).ConfigureAwait(false);
+                                            StartReminder(streamVideo, streamVideo.ChannelType);
                                         }
                                     }
                                     else if (startTime < DateTime.Now && item.Snippet.LiveBroadcastContent == "live")
                                     {
-                                        if (addNewStreamVideo.TryAdd(streamVideo, streamVideo.ChannelType))
-                                            StartReminder(streamVideo, ChannelType.Holo);
+                                        if (addNewStreamVideo.TryAdd(streamVideo, streamVideo.ChannelType) && !isFirstHolo)
+                                            StartReminder(streamVideo, streamVideo.ChannelType);
                                     }
                                     else addNewStreamVideo.TryAdd(streamVideo, streamVideo.ChannelType);
                                 }
@@ -135,8 +134,8 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
 
                                     Log.NewStream($"{streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
 
-                                    if (item.Snippet.LiveBroadcastContent == "live" && addNewStreamVideo.TryAdd(streamVideo, streamVideo.ChannelType)) 
-                                        StartReminder(streamVideo, ChannelType.Holo);
+                                    if (addNewStreamVideo.TryAdd(streamVideo, streamVideo.ChannelType) && item.Snippet.LiveBroadcastContent == "live")
+                                        StartReminder(streamVideo, streamVideo.ChannelType);
                                 }
                             }
                         }
@@ -149,7 +148,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                     Log.Error("HoloStream\r\n" + ex.Message + "\r\n" + ex.StackTrace);
             }
 
-            Program.isHoloChannelSpider = false;
+            Program.isHoloChannelSpider = false; isFirstHolo = false;
             Log.Info("Holo影片清單整理完成");
         }
 
@@ -173,16 +172,18 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                     {
                         if (!ex.Message.Contains("EOF or 0 bytes") && !ex.Message.Contains("504") && !ex.Message.Contains("500"))
                             Log.Error("NijisanjiStream\r\n" + ex.Message + "\r\n" + ex.StackTrace);
+                        Program.isNijisanjiChannelSpider = false;
                         return;
                     }
 
                     List<string> idList = new List<string>();
-                    using (var uow = new DBContext())
+
+                    using (var db = DataBase.DBContext.GetDbContext())
                     {
                         foreach (var item in nijisanjiJson.data.events)
                         {
                             string videoId = item.url.Split("?v=")[1].Trim();
-                            if (!uow.HasStreamVideoByVideoId(videoId)) idList.Add(videoId);
+                            if (!db.HasStreamVideoByVideoId(videoId)) idList.Add(videoId);
                         }
 
                         if (idList.Count > 0)
@@ -220,7 +221,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                         .AddField("所屬", streamVideo.GetProductionType().GetProductionName())
                                         .AddField("上傳時間", item.Snippet.PublishedAt.Value, true);
 
-                                        if (addNewStreamVideo.TryAdd(streamVideo, streamVideo.ChannelType))
+                                        if (addNewStreamVideo.TryAdd(streamVideo, streamVideo.ChannelType) && !isFirst2434)
                                             await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.NewVideo).ConfigureAwait(false);
                                     }
                                     else if (item.LiveStreamingDetails.ScheduledStartTime != null)
@@ -234,7 +235,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                             VideoTitle = item.Snippet.Title,
                                             ScheduledStartTime = startTime,
                                             ChannelType = ChannelType.Nijisanji
-                                        };                                        
+                                        };
 
                                         Log.NewStream($"{streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
 
@@ -249,18 +250,18 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                             .AddField("所屬", streamVideo.GetProductionType().GetProductionName())
                                             .AddField("直播狀態", "尚未開台", true)
                                             .AddField("排定開台時間", startTime, true);
-                                            //.AddField("是否記錄直播", (CanRecord(uow, streamVideo) ? "是" : "否"), true);
+                                            //.AddField("是否記錄直播", (CanRecord(db, streamVideo) ? "是" : "否"), true);
 
                                             if (addNewStreamVideo.TryAdd(streamVideo, streamVideo.ChannelType))
                                             {
-                                                await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.NewStream).ConfigureAwait(false);
-                                                StartReminder(streamVideo, ChannelType.Nijisanji);
+                                                if (!isFirst2434) await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.NewStream).ConfigureAwait(false);
+                                                StartReminder(streamVideo, streamVideo.ChannelType);
                                             }
                                         }
                                         else if (startTime < DateTime.Now && item.Snippet.LiveBroadcastContent == "live")
                                         {
                                             if (addNewStreamVideo.TryAdd(streamVideo, streamVideo.ChannelType))
-                                                StartReminder(streamVideo, ChannelType.Nijisanji);
+                                                StartReminder(streamVideo, streamVideo.ChannelType);
                                         }
                                         else addNewStreamVideo.TryAdd(streamVideo, streamVideo.ChannelType);
                                     }
@@ -279,8 +280,8 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
 
                                         Log.NewStream($"{streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
 
-                                        if (item.Snippet.LiveBroadcastContent == "live" && addNewStreamVideo.TryAdd(streamVideo, streamVideo.ChannelType))
-                                            StartReminder(streamVideo, ChannelType.Nijisanji);
+                                        if (addNewStreamVideo.TryAdd(streamVideo, streamVideo.ChannelType) && item.Snippet.LiveBroadcastContent == "live")
+                                            StartReminder(streamVideo, streamVideo.ChannelType);
                                     }
                                 }
                             }
@@ -293,7 +294,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                 Log.Error("NijisanjiStream\r\n" + ex.Message + "\r\n" + ex.StackTrace);
             }
 
-            Program.isNijisanjiChannelSpider = false;
+            Program.isNijisanjiChannelSpider = false; isFirst2434 = false;
             Log.Info("彩虹社影片清單整理完成");
         }
 
@@ -304,7 +305,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
             Program.isOtherChannelSpider = true;
             Dictionary<string, List<string>> otherVideoDic = new Dictionary<string, List<string>>();
 
-            using (var db = new DBContext())
+            using (var db = DataBase.DBContext.GetDbContext())
             {
                 foreach (var item in db.ChannelSpider)
                 {
@@ -401,7 +402,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                             .AddField("所屬", streamVideo.GetProductionType().GetProductionName())
                                             .AddField("上傳時間", streamVideo.ScheduledStartTime, true);
 
-                                            if (addNewStreamVideo.TryAdd(streamVideo, streamVideo.ChannelType))
+                                            if (addNewStreamVideo.TryAdd(streamVideo, streamVideo.ChannelType) && !isFirstOther)
                                                 await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.NewVideo).ConfigureAwait(false);
                                         }
                                         else if (item2.LiveStreamingDetails.ScheduledStartTime != null)
@@ -435,14 +436,14 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
 
                                                 if (addNewStreamVideo.TryAdd(streamVideo, streamVideo.ChannelType))
                                                 {
-                                                    await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.NewStream).ConfigureAwait(false);
-                                                    StartReminder(streamVideo, ChannelType.Other);
+                                                    if (!isFirstOther) await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.NewStream).ConfigureAwait(false);
+                                                    StartReminder(streamVideo, streamVideo.ChannelType);
                                                 }
                                             }
                                             else if (startTime < DateTime.Now && item2.Snippet.LiveBroadcastContent == "live")
                                             {
                                                 if (addNewStreamVideo.TryAdd(streamVideo, streamVideo.ChannelType))
-                                                    StartReminder(streamVideo, ChannelType.Other);
+                                                    StartReminder(streamVideo, streamVideo.ChannelType);
                                             }
                                             else addNewStreamVideo.TryAdd(streamVideo, streamVideo.ChannelType);
                                         }
@@ -462,8 +463,8 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                             streamVideo.ChannelType = streamVideo.GetProductionType();
                                             Log.NewStream($"{streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
 
-                                            if (item2.Snippet.LiveBroadcastContent == "live" && addNewStreamVideo.TryAdd(streamVideo, streamVideo.ChannelType))
-                                                StartReminder(streamVideo, ChannelType.Nijisanji);
+                                            if (addNewStreamVideo.TryAdd(streamVideo, streamVideo.ChannelType) && item2.Snippet.LiveBroadcastContent == "live")
+                                                StartReminder(streamVideo, streamVideo.ChannelType);
                                         }
                                     }
                                     catch (Exception ex)
@@ -485,7 +486,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                 }
             }
 
-            Program.isOtherChannelSpider = false;
+            Program.isOtherChannelSpider = false; isFirstOther = false;
             Log.Info("其他勢影片清單整理完成");
         }
 
@@ -493,64 +494,87 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
         {
             int saveNum = 0;
 
-            using (var db = new DBContext())
+            try
             {
-                try
+                using (var db = DataBase.DBContext.GetDbContext())
                 {
-                    if (addNewStreamVideo.Any((x) => x.Value == ChannelType.Holo))
+                    if (!Program.isHoloChannelSpider && addNewStreamVideo.Any((x) => x.Value == ChannelType.Holo))
                     {
                         foreach (var item in addNewStreamVideo.Where((x) => x.Value == ChannelType.Holo))
                         {
                             if (!db.HoloStreamVideo.Any((x) => x.VideoId == item.Key.VideoId))
                             {
-                                await db.HoloStreamVideo.AddAsync(item.Key.ConvertToHoloStreamVideo()); saveNum++;
+                                try
+                                {
+                                    await db.HoloStreamVideo.AddAsync(item.Key.ConvertToHoloStreamVideo()); saveNum++;
+                                }
+                                catch (Exception ex)
+                                {
+                                    Log.Error($"SaveHoloDateBase {ex.Message}\r\n{ex.StackTrace}");
+                                    if (ex.InnerException != null) Log.Error($"{ex.InnerException.Message}\r\n{ex.InnerException.StackTrace}");
+                                }
                             }
 
                             addNewStreamVideo.Remove(item.Key);
                         }
 
-                        Log.Info("Holo資料庫已儲存");
+                        Log.Info($"Holo資料庫已儲存: {await db.SaveChangesAsync()}筆");
                     }
 
-                    if (addNewStreamVideo.Any((x) => x.Value == ChannelType.Nijisanji))
+                    if (!Program.isNijisanjiChannelSpider && addNewStreamVideo.Any((x) => x.Value == ChannelType.Nijisanji))
                     {
                         foreach (var item in addNewStreamVideo.Where((x) => x.Value == ChannelType.Nijisanji))
                         {
                             if (!db.NijisanjiStreamVideo.Any((x) => x.VideoId == item.Key.VideoId))
                             {
-                                await db.NijisanjiStreamVideo.AddAsync(item.Key.ConvertToNijisanjiStreamVideo()); saveNum++;
+                                try
+                                {
+                                    await db.NijisanjiStreamVideo.AddAsync(item.Key.ConvertToNijisanjiStreamVideo()); saveNum++;
+                                }
+                                catch (Exception ex)
+                                {
+                                    Log.Error($"SaveOtherDateBase {ex.Message}\r\n{ex.StackTrace}");
+                                    if (ex.InnerException != null) Log.Error($"{ex.InnerException.Message}\r\n{ex.InnerException.StackTrace}");
+                                }
                             }
 
                             addNewStreamVideo.Remove(item.Key);
                         }
 
-                        Log.Info("2434資料庫已儲存");
+                        Log.Info($"2434資料庫已儲存: {await db.SaveChangesAsync()}筆");
                     }
 
-                    if (addNewStreamVideo.Any((x) => x.Value == ChannelType.Other))
+                    if (!Program.isOtherChannelSpider && addNewStreamVideo.Any((x) => x.Value == ChannelType.Other))
                     {
                         foreach (var item in addNewStreamVideo.Where((x) => x.Value == ChannelType.Other))
                         {
                             if (!db.OtherStreamVideo.Any((x) => x.VideoId == item.Key.VideoId))
                             {
-                                await db.OtherStreamVideo.AddAsync(item.Key.ConvertToOtherStreamVideo()); saveNum++;
+                                try
+                                {
+                                    await db.OtherStreamVideo.AddAsync(item.Key.ConvertToOtherStreamVideo()); saveNum++;
+                                }
+                                catch (Exception ex)
+                                {
+                                    Log.Error($"SaveOtherDateBase {ex.Message}\r\n{ex.StackTrace}");
+                                    if (ex.InnerException != null) Log.Error($"{ex.InnerException.Message}\r\n{ex.InnerException.StackTrace}");
+                                }
                             }
 
                             addNewStreamVideo.Remove(item.Key);
                         }
 
-                        Log.Info("Other資料庫已儲存");
+                        Log.Info($"Other資料庫已儲存: {await db.SaveChangesAsync()}筆");
                     }
-
-                    if (saveNum != 0) Log.Info($"資料庫已儲存完畢: {await db.SaveChangesAsync()}筆");
-                }
-
-                catch (Exception ex)
-                {
-                    Log.Error($"SaveDateBase {ex.Message}\r\n{ex.StackTrace}");
-                    Log.Error($"{ex.InnerException.Message}\r\n{ex.InnerException.StackTrace}");
                 }
             }
+            catch (Exception ex)
+            {
+                Log.Error($"SaveDateBase {ex.Message}\r\n{ex.StackTrace}");
+                if (ex.InnerException != null) Log.Error($"{ex.InnerException.Message}\r\n{ex.InnerException.StackTrace}");
+            }
+
+            if (saveNum != 0) Log.Info($"資料庫已儲存完畢: {saveNum}筆");
         }
-    }
+    }    
 }

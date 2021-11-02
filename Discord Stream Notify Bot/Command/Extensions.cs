@@ -1,7 +1,8 @@
 ﻿using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
-using Discord_Stream_Notify_Bot.DataBase;
+using Discord_Stream_Notify_Bot.Command.Stream.Service;
+using Discord_Stream_Notify_Bot.DataBase.Table;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
@@ -10,8 +11,6 @@ using System.Linq;
 using System.Management;
 using System.Reflection;
 using System.Threading.Tasks;
-using Discord_Stream_Notify_Bot.Command.Stream.Service;
-using Discord_Stream_Notify_Bot.DataBase.Table;
 
 namespace Discord_Stream_Notify_Bot.Command
 {
@@ -32,7 +31,7 @@ namespace Discord_Stream_Notify_Bot.Command
 
         public static StreamService.ChannelType GetProductionType(this StreamVideo streamVideo)
         {
-            using (var db = new DBContext())
+            using (var db = DataBase.DBContext.GetDbContext())
             {
                 StreamService.ChannelType type;
                 var channel = db.ChannelOwnedType.FirstOrDefault((x) => x.ChannelId == streamVideo.ChannelId);
@@ -107,7 +106,7 @@ namespace Discord_Stream_Notify_Bot.Command
             return source.Distinct(new CommonEqualityComparer<T, V>(keySelector));
         }
 
-        public static bool HasStreamVideoByVideoId(this DBContext dBContext, string videoId)
+        public static bool HasStreamVideoByVideoId(this DataBase.DBContext dBContext, string videoId)
         {
             videoId = videoId.Trim();
             return dBContext.HoloStreamVideo.Any((x) => x.VideoId == videoId) ||
@@ -115,7 +114,7 @@ namespace Discord_Stream_Notify_Bot.Command
                 dBContext.OtherStreamVideo.Any((x) => x.VideoId == videoId);
         }
 
-        public static StreamVideo GetStreamVideoByVideoId(this DBContext dBContext, string videoId)
+        public static StreamVideo GetStreamVideoByVideoId(this DataBase.DBContext dBContext, string videoId)
         {
             videoId = videoId.Trim();
             if (dBContext.HoloStreamVideo.Any((x) => x.VideoId == videoId))
@@ -135,7 +134,7 @@ namespace Discord_Stream_Notify_Bot.Command
                 return null;
             }
         }
-        public static StreamVideo GetLastStreamVideoByChannelId(this DBContext dBContext, string channelId)
+        public static StreamVideo GetLastStreamVideoByChannelId(this DataBase.DBContext dBContext, string channelId)
         {
             channelId = channelId.Trim();
             if (dBContext.HoloStreamVideo.Any((x) => x.ChannelId == channelId))

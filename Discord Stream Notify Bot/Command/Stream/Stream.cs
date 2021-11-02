@@ -1,12 +1,12 @@
 ﻿using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
-using Discord_Stream_Notify_Bot.DataBase;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using Discord_Stream_Notify_Bot.Command.Attribute;
 
 namespace Discord_Stream_Notify_Bot.Command.Stream
 {
@@ -52,25 +52,22 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
                 return;
             }
 
-            using (var db = new DBContext())
+            var video = await _service.GetVideoAsync(videoId);
+
+            if (video == null)
             {
-                var video = await _service.GetVideoAsync(videoId);
+                await Context.Channel.SendConfirmAsync($"{videoId} 不存在").ConfigureAwait(false);
+                return;
+            }
 
-                if (video == null)
-                {
-                    await Context.Channel.SendConfirmAsync($"{videoId} 不存在").ConfigureAwait(false);
-                    return;
-                }
-
-                var description = $"{Format.Url(video.Snippet.Title, $"https://www.youtube.com/watch?v={videoId}")}\n" +
-                        $"{Format.Url(video.Snippet.ChannelTitle, $"https://www.youtube.com/channel/{video.Snippet.ChannelId}")}";
-                if (await PromptUserConfirmAsync(new EmbedBuilder().WithTitle("現在錄影?").WithDescription(description)))
-                {
-                    if (await Program.RedisSub.PublishAsync("youtube.record", videoId).ConfigureAwait(false) != 0)
-                        await Context.Channel.SendConfirmAsync("已開始錄影", description).ConfigureAwait(false);
-                    else
-                        await Context.Channel.SendConfirmAsync($"Redis錯誤，請確認後端狀態").ConfigureAwait(false);
-                }
+            var description = $"{Format.Url(video.Snippet.Title, $"https://www.youtube.com/watch?v={videoId}")}\n" +
+                    $"{Format.Url(video.Snippet.ChannelTitle, $"https://www.youtube.com/channel/{video.Snippet.ChannelId}")}";
+            if (await PromptUserConfirmAsync(new EmbedBuilder().WithTitle("現在錄影?").WithDescription(description)))
+            {
+                if (await Program.RedisSub.PublishAsync("youtube.record", videoId).ConfigureAwait(false) != 0)
+                    await Context.Channel.SendConfirmAsync("已開始錄影", description).ConfigureAwait(false);
+                else
+                    await Context.Channel.SendConfirmAsync($"Redis錯誤，請確認後端狀態").ConfigureAwait(false);
             }
         }
 
@@ -95,8 +92,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
                 await Context.Channel.SendConfirmAsync("頻道Id格式錯誤，需為24字數").ConfigureAwait(false);
                 return;
             }
-
-            using (var db = new DBContext())
+            using (var db = DataBase.DBContext.GetDbContext())
             {
                 if (db.RecordChannel.Any((x) => x.ChannelId == channelId))
                 {
@@ -142,8 +138,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
                 await Context.Channel.SendConfirmAsync("頻道Id格式錯誤，需為24字數").ConfigureAwait(false);
                 return;
             }
-
-            using (var db = new DBContext())
+            using (var db = DataBase.DBContext.GetDbContext())
             {
                 if (!db.RecordChannel.Any((x) => x.ChannelId == channelId))
                 {
@@ -174,8 +169,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
         public async Task ListRecordChannel()
         {
             await Context.Channel.TriggerTypingAsync().ConfigureAwait(false);
-
-            using (var db = new DBContext())
+            using (var db = DataBase.DBContext.GetDbContext())
             {
                 var nowRecordList = db.RecordChannel.ToList().Select((x) => x.ChannelId).ToList();
 
@@ -213,8 +207,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
         public async Task ListWarningRecordChannel()
         {
             await Context.Channel.TriggerTypingAsync().ConfigureAwait(false);
-
-            using (var db = new DBContext())
+            using (var db = DataBase.DBContext.GetDbContext())
             {
                 var dbRecordList = db.RecordChannel.ToList().Select((x) => x.ChannelId).ToList();
                 var nowRecordList = new List<string>();
@@ -264,14 +257,17 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
                 var yt = _service.yt.Videos.List("Snippet");
                 yt.Id = string.Join(',', newRecordStreamList.Keys);
                 var result = await yt.ExecuteAsync().ConfigureAwait(false);
-                await Context.Channel.SendMessageAsync(embed: new EmbedBuilder()
-                    .WithOkColor()
-                    .WithTitle("正在錄影的直播")
-                    .WithDescription(string.Join("\n\n",
-                    result.Items.Select((x) => $"{Format.Url(x.Snippet.Title, $"https://www.youtube.com/watch?v={x.Id}")}\n{x.Snippet.ChannelTitle} - {newRecordStreamList[x.Id]}")))
-                    .WithFooter($"{result.Items.Count}個頻道")
-                    .Build())
-                    .ConfigureAwait(false);
+                await Context.SendPaginatedConfirmAsync(0, (page) =>
+                {
+                    return new EmbedBuilder()
+                        .WithOkColor()
+                        .WithTitle("正在錄影的直播")
+                        .WithDescription(string.Join("\n\n",
+                            result.Items.Skip(page * 9).Take(9)
+                            .Select((x) => $"{Format.Url(x.Snippet.Title, $"https://www.youtube.com/watch?v={x.Id}")}\n" +
+                                $"{x.Snippet.ChannelTitle} - {newRecordStreamList[x.Id]}")))
+                        .WithFooter($"{result.Items.Count}個頻道");
+                }, result.Items.Count, 9, false).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -344,10 +340,9 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
                     yt.Id = string.Join(',', _service.Reminders.Values.Select((x) => x.StreamVideo.VideoId).Skip(i).Take(50));
                     result.AddRange((await yt.ExecuteAsync().ConfigureAwait(false)).Items);
                 }
-
-                result = result.OrderBy((x) => x.LiveStreamingDetails.ScheduledStartTime.Value).ToList();
-                using (var db = new DBContext())
+                using (var db = DataBase.DBContext.GetDbContext())
                 {
+                    result = result.OrderBy((x) => x.LiveStreamingDetails.ScheduledStartTime.Value).ToList();
                     await Context.SendPaginatedConfirmAsync(0, (act) =>
                     {
                         return new EmbedBuilder().WithOkColor()
@@ -456,9 +451,9 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
         [RequireUserPermission(GuildPermission.ManageGuild)]
         public async Task SetBannerChange(string channelId = "")
         {
-            if (channelId == "")
+            using (var db = DataBase.DBContext.GetDbContext())
             {
-                using (var db = new DBContext())
+                if (channelId == "")
                 {
                     if (db.BannerChange.Any((x) => x.GuildId == Context.Guild.Id))
                     {
@@ -474,35 +469,32 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
                         return;
                     }
                 }
-            }
-            else
-            {
-                if (!channelId.Contains("UC"))
+                else
                 {
-                    await Context.Channel.SendConfirmAsync("頻道Id錯誤").ConfigureAwait(false);
+                    if (!channelId.Contains("UC"))
+                    {
+                        await Context.Channel.SendConfirmAsync("頻道Id錯誤").ConfigureAwait(false);
+                        return;
+                    }
+
+                    try
+                    {
+                        channelId = channelId.Substring(channelId.IndexOf("UC"), 24);
+                    }
+                    catch
+                    {
+                        await Context.Channel.SendConfirmAsync("頻道Id格式錯誤，需為24字數").ConfigureAwait(false);
+                        return;
+                    }
+                }
+
+                if (Context.Guild.PremiumTier < PremiumTier.Tier2)
+                {
+                    await Context.Channel.SendConfirmAsync("本伺服器未達Boost Lv2，不可設定橫幅\r\n" +
+                        "故無法設定本功能");
                     return;
                 }
 
-                try
-                {
-                    channelId = channelId.Substring(channelId.IndexOf("UC"), 24);
-                }
-                catch
-                {
-                    await Context.Channel.SendConfirmAsync("頻道Id格式錯誤，需為24字數").ConfigureAwait(false);
-                    return;
-                }
-            }
-
-            if (Context.Guild.PremiumTier < PremiumTier.Tier2)
-            {
-                await Context.Channel.SendConfirmAsync("本伺服器未達Boost Lv2，不可設定橫幅\r\n" +
-                    "故無法設定本功能");
-                return;
-            }
-
-            using (var db = new DBContext())
-            {
                 string channelTitle = await GetChannelTitle(channelId);
 
                 if (channelTitle == "")
@@ -540,11 +532,8 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
             "輸入other通知部分`非兩大箱`的直播\r\n" +
             "(可以使用`s!lcs`查詢有哪些頻道)\r\n" +
             "輸入all通知全部`Holo + 2434 + 非兩大箱`的直播\r\n" +
-            "此選項會覆蓋所有的通知設定\r\n" +
-            "\r\n" +
-            "例:\r\n" +
-            "`s!ansc UCdn5BQ06XqgXoAxIhbqw5Rg` 或\r\n" +
-            "`s!ansc all` 或 `s!ansc 2434`")]
+            "(此選項會覆蓋所有的通知設定)")]
+        [CommandExample("UCdn5BQ06XqgXoAxIhbqw5Rg", "all", "2434")]
         [Alias("ANSC")]
         public async Task AddNoticeStreamChannel(string channelId = "")
         {
@@ -557,8 +546,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
                 await Context.Channel.SendConfirmAsync(ex.Message).ConfigureAwait(false);
                 return;
             }
-
-            using (var db = new DBContext())
+            using (var db = DataBase.DBContext.GetDbContext())
             {
                 if (db.NoticeStreamChannel.Any((x) => x.GuildId == Context.Guild.Id && x.NoticeStreamChannelId == channelId))
                 {
@@ -625,7 +613,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
                     }
                 }
 
-                await db.SaveChangesAsync();
+                await db.SaveChangesAsync().ConfigureAwait(false);
             }
         }
 
@@ -639,11 +627,8 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
             "輸入holo移除全部`Holo成員`的直播通知\r\n" +
             "輸入2434移除全部`彩虹社成員`的直播通知\r\n" +
             "輸入other移除部分`非兩大箱`的直播通知\r\n" +
-            "輸入all移除全部`Holo + 2434 + 非兩大箱`的直播通知\r\n\r\n" +
-            "例:\r\n" +
-            "`s!rnsc UCdn5BQ06XqgXoAxIhbqw5Rg` 或\r\n" +
-            "`s!rnsc all` 或 `s!rnsc 2434`")]
-        
+            "輸入all移除全部`Holo + 2434 + 非兩大箱`的直播通知")]
+        [CommandExample("UCdn5BQ06XqgXoAxIhbqw5Rg", "all", "2434")]
         [Alias("RNSC")]
         public async Task RemoveNoticeStreamChannel(string channelId = "")
         {
@@ -656,8 +641,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
                 await Context.Channel.SendConfirmAsync(ex.Message).ConfigureAwait(false);
                 return;
             }
-
-            using (var db = new DBContext())
+            using (var db = DataBase.DBContext.GetDbContext())
             {
                 if (!db.NoticeStreamChannel.Any((x) => x.GuildId == Context.Guild.Id))
                 {
@@ -701,23 +685,21 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
                         await Context.Channel.SendConfirmAsync($"已移除 {channelTitle}").ConfigureAwait(false);
                     }
 
-                    await db.SaveChangesAsync();
+                    await db.SaveChangesAsync().ConfigureAwait(false);
                 }
             }
         }
 
         [RequireContext(ContextType.Guild)]
         [Command("ListNoticeStreamChannel")]
-        [Summary("顯示現在已加入通知清單的直播頻道\r\n\r\n" +
-            "例:\r\n" +
-            "`s!lnsc`")]
+        [Summary("顯示現在已加入通知清單的直播頻道")]
         [Alias("LNSC")]
         public async Task ListNoticeStreamChannel()
         {
-            using (var db = new DBContext())
+            using (var db = DataBase.DBContext.GetDbContext())
             {
                 var list = Queryable.Where(db.NoticeStreamChannel, (x) => x.GuildId == Context.Guild.Id)
-                    .Select((x) => new KeyValuePair<string, ulong>(x.NoticeStreamChannelId, x.ChannelId)).ToList();
+                .Select((x) => new KeyValuePair<string, ulong>(x.NoticeStreamChannelId, x.ChannelId)).ToList();
                 if (list.Count() == 0) { await Context.Channel.SendConfirmAsync("直播通知清單為空").ConfigureAwait(false); return; }
 
                 var ytChannelList = list.Select(x => x.Key).Where((x) => x.StartsWith("UC")).ToList();
@@ -767,13 +749,12 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
             "ChangeTime: 變更直播時間\r\n" +
             "Delete: 刪除直播\r\n\r\n" +
             "(考慮到有伺服器需Ping特定用戶組的情況，故Bot需提及所有身分組權限)\r\n" +
-            "(建議在私人頻道中設定以免Ping到用戶組造成不必要的誤會)\r\n\r\n" +
-            "例:\r\n" +
-            "`s!snm UCXRlIK3Cw_TJIQC5kSJJQMg start @通知用的用戶組 阿床開台了`\r\n" +
-            "`s!snm holo newstream @某人 新待機所建立`\r\n" +
-            "`s!snm UCXRlIK3Cw_TJIQC5kSJJQMg end`")]
+            "(建議在私人頻道中設定以免Ping到用戶組造成不必要的誤會)")]
+        [CommandExample("start @通知用的用戶組 阿床開台了", 
+            "holo newstream @某人 新待機所建立", 
+            "UCXRlIK3Cw_TJIQC5kSJJQMg end")]
         [Alias("SNM")]
-        public async Task SetNoticeMessage([Summary("頻道Id")]string channelId,[Summary("通知類型")] Service.StreamService.NoticeType noticeType, [Summary("通知訊息")][Remainder] string message = "")
+        public async Task SetNoticeMessage([Summary("頻道Id")] string channelId, [Summary("通知類型")] Service.StreamService.NoticeType noticeType, [Summary("通知訊息")][Remainder] string message = "")
         {
             try
             {
@@ -784,8 +765,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
                 await Context.Channel.SendConfirmAsync(ex.Message).ConfigureAwait(false);
                 return;
             }
-
-            using (var db = new DBContext())
+            using (var db = DataBase.DBContext.GetDbContext())
             {
                 if (db.NoticeStreamChannel.Any((x) => x.GuildId == Context.Guild.Id && x.NoticeStreamChannelId == channelId))
                 {
@@ -835,13 +815,11 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
 
         [RequireContext(ContextType.Guild)]
         [Command("ListNoticeMessage")]
-        [Summary("列出已設定的通知訊息\r\n\r\n" +
-            "例:\r\n" +
-            "`s!lnm`")]
+        [Summary("列出已設定的通知訊息")]
         [Alias("LNM")]
         public async Task ListNoticeMessage(int page = 0)
         {
-            using (var db = new DBContext())
+            using (var db = DataBase.DBContext.GetDbContext())
             {
                 if (db.NoticeStreamChannel.Any((x) => x.GuildId == Context.Guild.Id))
                 {
@@ -885,9 +863,8 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
         [RequireContext(ContextType.Guild)]
         [RequireOwner]
         [Command("GetVideoInfo")]
-        [Summary("從資料庫取得已刪檔的直播資訊\r\n\r\n" +
-            "例:\r\n" +
-            "`s!gvi GzWDcutkMQw`")]
+        [Summary("從資料庫取得已刪檔的直播資訊")]
+        [CommandExample("GzWDcutkMQw")]
         [Alias("GVI")]
         public async Task GetVideoInfo(string videoId = "")
         {
@@ -898,8 +875,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
                 await ReplyAsync("VideoId空白").ConfigureAwait(false);
                 return;
             }
-
-            using (var db = new DBContext())
+            using (var db = DataBase.DBContext.GetDbContext())
             {
                 if (!db.HasStreamVideoByVideoId(videoId))
                 {
@@ -923,9 +899,8 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
         [Summary("設定頻道的所屬\r\n" +
             "0: Hololive\r\n" +
             "1: 彩虹社\r\n" +
-            "2: 其他\r\n\r\n" +
-            "例:\r\n" +
-            "`s!sct UCXRlIK3Cw_TJIQC5kSJJQMg 1`")]
+            "2: 其他")]
+        [CommandExample("UCXRlIK3Cw_TJIQC5kSJJQMg 1")]
         [Alias("SCT")]
         public async Task SetChannelType(string channelId = "", Service.StreamService.ChannelType channelType = Service.StreamService.ChannelType.Other)
         {
@@ -943,8 +918,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
                 await Context.Channel.SendErrorAsync($"{channelId} 不存在頻道").ConfigureAwait(false);
                 return;
             }
-
-            using (var db = new DBContext())
+            using (var db = DataBase.DBContext.GetDbContext())
             {
                 var channel = db.ChannelOwnedType.FirstOrDefault((x) => x.ChannelId == channelId);
                 if (channel == null)
@@ -959,9 +933,8 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
                 }
 
                 await db.SaveChangesAsync();
+                await Context.Channel.SendConfirmAsync($"`{title}` 的所屬已改為 `{channelType.GetProductionName()}`");
             }
-
-            await Context.Channel.SendConfirmAsync($"`{title}` 的所屬已改為 `{channelType.GetProductionName()}`");
         }
 
         private async Task<string> GetChannelTitle(string channelId)

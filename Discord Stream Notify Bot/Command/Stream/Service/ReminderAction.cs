@@ -1,5 +1,4 @@
 ﻿using Discord;
-using Discord_Stream_Notify_Bot.DataBase;
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using Google.Apis.YouTube.v3.Data;
 using System;
@@ -63,114 +62,114 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                 if (videoResult.LiveStreamingDetails.ScheduledStartTime.HasValue) startTime = videoResult.LiveStreamingDetails.ScheduledStartTime.Value;
                 else startTime = videoResult.LiveStreamingDetails.ActualStartTime.Value;
 
-                using (var uow = new DBContext())
+                using (var db = DataBase.DBContext.GetDbContext())
                 {
                     if (startTime.AddMinutes(-2) < DateTime.Now)
                     {
                         bool isRecord = false;
                         streamVideo.VideoTitle = videoResult.Snippet.Title;
 
-                        if (uow.HasStreamVideoByVideoId(streamVideo.VideoId))
+                        if (db.HasStreamVideoByVideoId(streamVideo.VideoId))
                         {
                             switch (streamVideo.ChannelType)
                             {
                                 case ChannelType.Holo:
                                     try
                                     {
-                                        var data = uow.HoloStreamVideo.First((x) => x.VideoId == streamVideo.VideoId);
+                                        var data = db.HoloStreamVideo.First((x) => x.VideoId == streamVideo.VideoId);
                                         data.VideoTitle = streamVideo.VideoTitle;
-                                        uow.HoloStreamVideo.Update(data);
+                                        db.HoloStreamVideo.Update(data);
                                     }
                                     catch (Exception ex)
                                     {
                                         Log.Error(ex.Message + "\r\n" + ex.StackTrace);
-                                        uow.HoloStreamVideo.Update(streamVideo.ConvertToHoloStreamVideo());
+                                        db.HoloStreamVideo.Update(streamVideo.ConvertToHoloStreamVideo());
                                     }
                                     break;
                                 case ChannelType.Nijisanji:
                                     try
                                     {
-                                        var data1 = uow.NijisanjiStreamVideo.First((x) => x.VideoId == streamVideo.VideoId);
+                                        var data1 = db.NijisanjiStreamVideo.First((x) => x.VideoId == streamVideo.VideoId);
                                         data1.VideoTitle = streamVideo.VideoTitle;
-                                        uow.NijisanjiStreamVideo.Update(data1);
+                                        db.NijisanjiStreamVideo.Update(data1);
                                     }
                                     catch (Exception ex)
                                     {
 
                                         Log.Error(ex.Message + "\r\n" + ex.StackTrace);
-                                        uow.NijisanjiStreamVideo.Update(streamVideo.ConvertToNijisanjiStreamVideo());
+                                        db.NijisanjiStreamVideo.Update(streamVideo.ConvertToNijisanjiStreamVideo());
                                     }
                                     break;
                                 case ChannelType.Other:
                                     try
                                     {
-                                        var data1 = uow.OtherStreamVideo.First((x) => x.VideoId == streamVideo.VideoId);
+                                        var data1 = db.OtherStreamVideo.First((x) => x.VideoId == streamVideo.VideoId);
                                         data1.VideoTitle = streamVideo.VideoTitle;
-                                        uow.OtherStreamVideo.Update(data1);
+                                        db.OtherStreamVideo.Update(data1);
                                     }
                                     catch (Exception ex)
                                     {
 
                                         Log.Error(ex.Message + "\r\n" + ex.StackTrace);
-                                        uow.OtherStreamVideo.Update(streamVideo.ConvertToOtherStreamVideo());
+                                        db.OtherStreamVideo.Update(streamVideo.ConvertToOtherStreamVideo());
                                     }
                                     break;
                             }
-                        }
 
 #if RELEASE
-                        try
-                        {
-                            if (CanRecord(uow, streamVideo))
+                            try
                             {
-                                if (noticeRecordChannel == null) noticeRecordChannel = _client.GetGuild(738734668882640938).GetTextChannel(805134765191462942);
-
-                                if (Program.Redis != null)
+                                if (CanRecord(db, streamVideo))
                                 {
-                                    if (Utility.GetNowRecordStreamList().ContainsKey(streamVideo.VideoId))
-                                    {
-                                        Log.Warn($"{streamVideo.VideoId} 已經在錄影了");
-                                        return;
-                                    }
+                                    if (noticeRecordChannel == null) noticeRecordChannel = _client.GetGuild(738734668882640938).GetTextChannel(805134765191462942);
 
-                                    if (await Program.RedisSub.PublishAsync("youtube.record", streamVideo.VideoId) != 0)
+                                    if (Program.Redis != null)
                                     {
-                                        Log.Info($"已發送錄影請求: {streamVideo.VideoId}");
-                                        isRecord = true;
+                                        if (Utility.GetNowRecordStreamList().ContainsKey(streamVideo.VideoId))
+                                        {
+                                            Log.Warn($"{streamVideo.VideoId} 已經在錄影了");
+                                            return;
+                                        }
 
-                                        await noticeRecordChannel.SendConfirmAsync($"{Format.Url(streamVideo.VideoTitle, $"https://www.youtube.com/watch?v={streamVideo.VideoId}")}\n" +
-                                            $"{Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}")}\n\n" +
-                                            $"{$"youtube_{streamVideo.ChannelId}_{streamVideo.ScheduledStartTime:yyyyMMdd_HHmmss}_{streamVideo.VideoId}.ts"}");
+                                        if (await Program.RedisSub.PublishAsync("youtube.record", streamVideo.VideoId) != 0)
+                                        {
+                                            Log.Info($"已發送錄影請求: {streamVideo.VideoId}");
+                                            isRecord = true;
+
+                                            await noticeRecordChannel.SendConfirmAsync($"{Format.Url(streamVideo.VideoTitle, $"https://www.youtube.com/watch?v={streamVideo.VideoId}")}\n" +
+                                                $"{Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}")}\n\n" +
+                                                $"{$"youtube_{streamVideo.ChannelId}_{streamVideo.ScheduledStartTime:yyyyMMdd_HHmmss}_{streamVideo.VideoId}.ts"}");
+                                        }
+                                        else Log.Warn($"Redis Sub頻道不存在，請開啟錄影工具: {streamVideo.VideoId}");
                                     }
-                                    else Log.Warn($"Redis Sub頻道不存在，請開啟錄影工具: {streamVideo.VideoId}");
                                 }
                             }
-                        }
-                        catch (Exception ex)
-                        {
-                            Log.Error($"ReminderTimerAction-Record {ex.Message}\r\n{ex.StackTrace}");
-                        }
+                            catch (Exception ex)
+                            {
+                                Log.Error($"ReminderTimerAction-Record {ex.Message}\r\n{ex.StackTrace}");
+                            }
 #endif
 
-                        await ChangeGuildBannerAsync(streamVideo.ChannelId, streamVideo.VideoId);
+                            await ChangeGuildBannerAsync(streamVideo.ChannelId, streamVideo.VideoId);
 
-                        if (!isRecord)
-                        {
-                            EmbedBuilder embedBuilder = new EmbedBuilder();
-                            embedBuilder.WithTitle(streamVideo.VideoTitle)
-                            .WithOkColor()
-                            .WithDescription(Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}"))
-                            .WithImageUrl($"https://i.ytimg.com/vi/{streamVideo.VideoId}/maxresdefault.jpg")
-                            .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
-                            .AddField("排定開台時間", streamVideo.ScheduledStartTime, true)
-                            .AddField("直播狀態", "開台中", true);
-                            //.AddField("是否記錄直播", "否", true);
+                            if (!isRecord)
+                            {
+                                EmbedBuilder embedBuilder = new EmbedBuilder();
+                                embedBuilder.WithTitle(streamVideo.VideoTitle)
+                                .WithOkColor()
+                                .WithDescription(Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}"))
+                                .WithImageUrl($"https://i.ytimg.com/vi/{streamVideo.VideoId}/maxresdefault.jpg")
+                                .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
+                                .AddField("排定開台時間", streamVideo.ScheduledStartTime, true)
+                                .AddField("直播狀態", "開台中", true);
+                                //.AddField("是否記錄直播", "否", true);
 
-                            await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.Start).ConfigureAwait(false);
+                                await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.Start).ConfigureAwait(false);
+                            }
+
+                            if (Reminders.TryRemove(streamVideo, out var t))
+                                t.Timer.Change(Timeout.Infinite, Timeout.Infinite);
                         }
-
-                        if (Reminders.TryRemove(streamVideo, out var t))
-                            t.Timer.Change(Timeout.Infinite, Timeout.Infinite);
                     }
                     else
                     {
@@ -192,42 +191,42 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                             case ChannelType.Holo:
                                 try
                                 {
-                                    var data = uow.HoloStreamVideo.First((x) => x.VideoId == streamVideo.VideoId);
+                                    var data = db.HoloStreamVideo.First((x) => x.VideoId == streamVideo.VideoId);
                                     data.ScheduledStartTime = streamVideo.ScheduledStartTime;
-                                    uow.HoloStreamVideo.Update(data);
+                                    db.HoloStreamVideo.Update(data);
                                 }
                                 catch (Exception ex)
                                 {
                                     Log.Error(ex.Message + "\r\n" + ex.StackTrace);
-                                    uow.HoloStreamVideo.Update(streamVideo.ConvertToHoloStreamVideo());
+                                    db.HoloStreamVideo.Update(streamVideo.ConvertToHoloStreamVideo());
                                 }
                                 break;
                             case ChannelType.Nijisanji:
                                 try
                                 {
-                                    var data1 = uow.NijisanjiStreamVideo.First((x) => x.VideoId == streamVideo.VideoId);
+                                    var data1 = db.NijisanjiStreamVideo.First((x) => x.VideoId == streamVideo.VideoId);
                                     data1.ScheduledStartTime = streamVideo.ScheduledStartTime;
-                                    uow.NijisanjiStreamVideo.Update(data1);
+                                    db.NijisanjiStreamVideo.Update(data1);
                                 }
                                 catch (Exception ex)
                                 {
 
                                     Log.Error(ex.Message + "\r\n" + ex.StackTrace);
-                                    uow.NijisanjiStreamVideo.Update(streamVideo.ConvertToNijisanjiStreamVideo());
+                                    db.NijisanjiStreamVideo.Update(streamVideo.ConvertToNijisanjiStreamVideo());
                                 }
                                 break;
                             case ChannelType.Other:
                                 try
                                 {
-                                    var data1 = uow.OtherStreamVideo.First((x) => x.VideoId == streamVideo.VideoId);
+                                    var data1 = db.OtherStreamVideo.First((x) => x.VideoId == streamVideo.VideoId);
                                     data1.ScheduledStartTime = streamVideo.ScheduledStartTime;
-                                    uow.OtherStreamVideo.Update(data1);
+                                    db.OtherStreamVideo.Update(data1);
                                 }
                                 catch (Exception ex)
                                 {
 
                                     Log.Error(ex.Message + "\r\n" + ex.StackTrace);
-                                    uow.OtherStreamVideo.Update(streamVideo.ConvertToOtherStreamVideo());
+                                    db.OtherStreamVideo.Update(streamVideo.ConvertToOtherStreamVideo());
                                 }
                                 break;
                         }
@@ -240,7 +239,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                         StartReminder(streamVideo, streamVideo.ChannelType);
                     }
 
-                    await uow.SaveChangesAsync();
+                    await db.SaveChangesAsync();
                 }
             }
             catch (Exception ex) { Log.Error($"ReminderAction {ex.Message} ({streamVideo.VideoId})\r\n{ex.StackTrace}"); }
@@ -248,9 +247,9 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
 
         private async Task SendStreamMessageAsync(string videolId, Embed embed, NoticeType noticeType)
         {
-            using (var uow = new DBContext())
+            using (var db = DataBase.DBContext.GetDbContext())
             {
-                StreamVideo streamVideo = uow.GetStreamVideoByVideoId(videolId);
+                StreamVideo streamVideo = db.GetStreamVideoByVideoId(videolId);
 
                 if (streamVideo == null)
                 {
@@ -269,8 +268,6 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                             ChannelType = ChannelType.Other
                         };
 
-                        Log.NewStream($"SendStreamMessageAsync: {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
-
                         if (!addNewStreamVideo.TryAdd(streamVideo, streamVideo.ChannelType))
                             return;
                     }
@@ -284,13 +281,14 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                 await SendStreamMessageAsync(streamVideo, embed, noticeType).ConfigureAwait(false);
             }
         }
+        
 
         private async Task SendStreamMessageAsync(StreamVideo streamVideo, Embed embed, NoticeType noticeType)
         {
             string type = streamVideo.ChannelType == ChannelType.Holo ? "holo" : streamVideo.ChannelType == ChannelType.Nijisanji ? "2434" : "other";
             List<NoticeStreamChannel> noticeGuildList = new List<NoticeStreamChannel>();
 
-            using (var db = new DBContext())
+            using (var db = DataBase.DBContext.GetDbContext())
             {
                 try
                 {
@@ -315,6 +313,8 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                 {
                     Log.Error($"SendStreamMessageAsyncOtherChannel {streamVideo.VideoId} - {ex.Message}\r\n{ex.StackTrace}");
                 }
+
+                Log.NewStream($"發送直播通知 ({noticeGuildList.Count} / {noticeType}): {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
 
                 foreach (var item in noticeGuildList)
                 {
