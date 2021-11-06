@@ -335,10 +335,9 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                 .WithImageUrl($"https://i.ytimg.com/vi/{stream.VideoId}/maxresdefault.jpg")
                                 .WithUrl($"https://www.youtube.com/watch?v={stream.VideoId}")
                                 .AddField("直播狀態", "無開始時間", true)
-                                .AddField("排定開台時間", stream.ScheduledStartTime, true)
-                                .AddField("更改開台時間", "無時間", true);
+                                .AddField("開台時間", stream.ScheduledStartTime, true);
 
-                                if (Program.ApplicatonOwner != null) await Program.ApplicatonOwner.SendMessageAsync("429錯誤", false, embedBuilder.Build()).ConfigureAwait(false);
+                                if (Program.ApplicatonOwner != null) await Program.ApplicatonOwner.SendMessageAsync(null, false, embedBuilder.Build()).ConfigureAwait(false);
                                 //await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.Start).ConfigureAwait(false);
                                 continue;
                             }

@@ -135,7 +135,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                     Log.NewStream($"{streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
 
                                     if (addNewStreamVideo.TryAdd(streamVideo, streamVideo.ChannelType) && item.Snippet.LiveBroadcastContent == "live")
-                                        StartReminder(streamVideo, streamVideo.ChannelType);
+                                        ReminderTimerAction(streamVideo);
                                 }
                             }
                         }
@@ -281,7 +281,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                         Log.NewStream($"{streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
 
                                         if (addNewStreamVideo.TryAdd(streamVideo, streamVideo.ChannelType) && item.Snippet.LiveBroadcastContent == "live")
-                                            StartReminder(streamVideo, streamVideo.ChannelType);
+                                            ReminderTimerAction(streamVideo);
                                     }
                                 }
                             }
@@ -464,7 +464,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                             Log.NewStream($"{streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
 
                                             if (addNewStreamVideo.TryAdd(streamVideo, streamVideo.ChannelType) && item2.Snippet.LiveBroadcastContent == "live")
-                                                StartReminder(streamVideo, streamVideo.ChannelType);
+                                                ReminderTimerAction(streamVideo);
                                         }
                                     }
                                     catch (Exception ex)

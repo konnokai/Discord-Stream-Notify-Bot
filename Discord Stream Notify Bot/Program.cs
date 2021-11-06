@@ -21,7 +21,7 @@ namespace Discord_Stream_Notify_Bot
 {
     class Program
     {
-        public const string VERSION = "V1.0.7.1";
+        public const string VERSION = "V1.0.7.3";
         public static ConnectionMultiplexer Redis { get; set; }
         public static ISubscriber RedisSub { get; set; }
         public static IDatabase RedisDb { get; set; }
@@ -155,10 +155,7 @@ namespace Discord_Stream_Notify_Bot
             await service.GetService<CommandHandler>().InitializeAsync();
             #endregion
 
-            #region Login
-            await _client.LoginAsync(TokenType.Bot, botConfig.DiscordToken);
-            #endregion
-
+            await _client.LoginAsync(TokenType.Bot, botConfig.DiscordToken); 
             await _client.StartAsync();
 
             Log.Info("已初始化完成!");

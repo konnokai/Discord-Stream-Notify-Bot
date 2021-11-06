@@ -11,13 +11,13 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
     {
         [RequireContext(ContextType.Guild)]
         [RequireUserPermission(GuildPermission.Administrator)]
-        [RequireGuildMemberCount(500)]
+        [RequireGuildMemberCount(300)]
         [Command("AddChannelSpider")]
         [Summary("新增非兩大箱的頻道檢測爬蟲\r\n" +
            "頻道Id必須為24字數+UC開頭\r\n" +
            "或是完整的Youtube頻道網址\r\n" +
            "每個伺服器可新增最多五個頻道爬蟲\r\n" +
-            "(伺服器需大於500人才可使用)\r\n" +
+            "(伺服器需大於300人才可使用)\r\n" +
             "(未來會根據情況增減可新增的頻道數量)\r\n" +
             "(如有任何需要請向擁有者詢問)")]
         [CommandExample("UC0qt9BfrpQo-drjuPKl_vdA")]
@@ -72,12 +72,12 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
                     return;
                 }
 
-                if (db.ChannelSpider.Count((x) => x.GuildId == Context.Guild.Id) >= 5)
-                {
-                    await Context.Channel.SendConfirmAsync($"此伺服器已設定五個檢測頻道，請移除後再試\r\n" +
-                        $"如有特殊需求請向Bot擁有者詢問").ConfigureAwait(false);
-                    return;
-                }
+                //if (db.ChannelSpider.Count((x) => x.GuildId == Context.Guild.Id) >= 5)
+                //{
+                //    await Context.Channel.SendConfirmAsync($"此伺服器已設定五個檢測頻道，請移除後再試\r\n" +
+                //        $"如有特殊需求請向Bot擁有者詢問").ConfigureAwait(false);
+                //    return;
+                //}
 
                 string channelTitle = await GetChannelTitle(channelId).ConfigureAwait(false);
                 if (channelTitle == "")

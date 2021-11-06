@@ -19,7 +19,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
             {
                 TimeSpan ts = streamVideo.ScheduledStartTime.AddMinutes(-1).Subtract(DateTime.Now);
 
-                var remT = new Timer(ReminderTimerAction, streamVideo, Math.Max(0, (long)ts.TotalMilliseconds), Timeout.Infinite);
+                var remT = new Timer(ReminderTimerAction, streamVideo, Math.Max(0, (long)ts.TotalMilliseconds), Timeout.Infinite); //Todo: 修正直接開始直播時，無法直接執行ReminderTimerAction的問題
 
                 if (!Reminders.TryAdd(streamVideo, new ReminderItem() { StreamVideo = streamVideo, Timer = remT, ChannelType = channelType }))
                 {
