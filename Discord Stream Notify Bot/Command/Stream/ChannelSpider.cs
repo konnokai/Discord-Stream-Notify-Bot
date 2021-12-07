@@ -16,10 +16,10 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
         [Summary("新增非兩大箱的頻道檢測爬蟲\r\n" +
            "頻道Id必須為24字數+UC開頭\r\n" +
            "或是完整的Youtube頻道網址\r\n" +
-           "每個伺服器可新增最多五個頻道爬蟲\r\n" +
-            "(伺服器需大於300人才可使用)\r\n" +
-            "(未來會根據情況增減可新增的頻道數量)\r\n" +
-            "(如有任何需要請向擁有者詢問)")]
+            //"每個伺服器可新增最多五個頻道爬蟲\r\n" +
+            "伺服器需大於300人才可使用\r\n" +
+            "未來會根據情況增減可新增的頻道數量\r\n" +
+            "如有任何需要請向擁有者詢問")]
         [CommandExample("UC0qt9BfrpQo-drjuPKl_vdA")]
         [Alias("ACS")]
         public async Task AddChannelSpider(string channelId = "")
@@ -47,15 +47,15 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
 
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                if ((db.HoloStreamVideo.Any((x) => x.ChannelId == channelId) || db.NijisanjiStreamVideo.Any((x) => x.ChannelId == channelId)) && !db.ChannelOwnedType.Any((x) => x.ChannelId == channelId))
+                if ((db.HoloStreamVideo.Any((x) => x.ChannelId == channelId) || db.NijisanjiStreamVideo.Any((x) => x.ChannelId == channelId)) && !db.YoutubeChannelOwnedType.Any((x) => x.ChannelId == channelId))
                 {
                     await Context.Channel.SendConfirmAsync($"不可新增兩大箱的頻道").ConfigureAwait(false);
                     return;
                 }
 
-                if (db.ChannelSpider.Any((x) => x.ChannelId == channelId))
+                if (db.YoutubeChannelSpider.Any((x) => x.ChannelId == channelId))
                 {
-                    var item = db.ChannelSpider.First((x) => x.ChannelId == channelId);
+                    var item = db.YoutubeChannelSpider.FirstOrDefault((x) => x.ChannelId == channelId);
                     string guild = "";
                     try
                     {
@@ -66,7 +66,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
                         guild = "已退出的伺服器";
                     }
 
-                    await Context.Channel.SendConfirmAsync($"{channelId} 已在檢測清單內\r\n" +
+                    await Context.Channel.SendConfirmAsync($"{channelId} 已在爬蟲清單內\r\n" +
                         $"可直接到通知頻道內使用 `s!ansc {channelId}` 開啟通知\r\n" +
                         $"(由 `{guild}` 設定)").ConfigureAwait(false);
                     return;
@@ -86,10 +86,10 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
                     return;
                 }
 
-                db.ChannelSpider.Add(new DataBase.Table.ChannelSpider() { GuildId = Context.Message.Author.Id == Program.ApplicatonOwner.Id ? 0 : Context.Guild.Id, ChannelId = channelId, ChannelTitle = channelTitle });
+                db.YoutubeChannelSpider.Add(new DataBase.Table.YoutubeChannelSpider() { GuildId = Context.Message.Author.Id == Program.ApplicatonOwner.Id ? 0 : Context.Guild.Id, ChannelId = channelId, ChannelTitle = channelTitle });
                 await db.SaveChangesAsync();
 
-                await Context.Channel.SendConfirmAsync($"已將 {channelTitle} 加入到檢測清單內\r\n" +
+                await Context.Channel.SendConfirmAsync($"已將 {channelTitle} 加入到爬蟲清單內\r\n" +
                     $"請到通知頻道內使用 `s!ansc {channelId}` 來開啟通知").ConfigureAwait(false);
                 Program.SendMessageToDiscord($"{Context.Guild.Name} 已新增檢測頻道 {Format.Url(channelTitle, $"https://www.youtube.com/channel/{channelId}")}");
             }
@@ -99,7 +99,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
         [RequireUserPermission(GuildPermission.Administrator)]
         [Command("RemoveChannelSpider")]
         [Summary("移除非兩大箱的頻道檢測爬蟲\r\n" +
-            "檢測必須由本伺服器新增才可移除\r\n" +
+            "爬蟲必須由本伺服器新增才可移除\r\n" +
             "頻道Id必須為24字數+UC開頭\r\n" +
             "或是完整的Youtube頻道網址")]
         [CommandExample("UC0qt9BfrpQo-drjuPKl_vdA")]
@@ -129,19 +129,19 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
 
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                if (!db.ChannelSpider.Any((x) => x.ChannelId == channelId))
+                if (!db.YoutubeChannelSpider.Any((x) => x.ChannelId == channelId))
                 {
                     await Context.Channel.SendConfirmAsync($"並未設定 {channelId} 頻道檢測爬蟲...").ConfigureAwait(false);
                     return;
                 }
 
-                if (Context.Message.Author.Id != Program.ApplicatonOwner.Id && !db.ChannelSpider.Any((x) => x.ChannelId == channelId && x.GuildId == Context.Guild.Id))
+                if (Context.Message.Author.Id != Program.ApplicatonOwner.Id && !db.YoutubeChannelSpider.Any((x) => x.ChannelId == channelId && x.GuildId == Context.Guild.Id))
                 {
                     await Context.Channel.SendConfirmAsync($"該頻道爬蟲並非本伺服器新增，無法移除").ConfigureAwait(false);
                     return;
                 }
 
-                db.ChannelSpider.Remove(db.ChannelSpider.First((x) => x.ChannelId == channelId));
+                db.YoutubeChannelSpider.Remove(db.YoutubeChannelSpider.First((x) => x.ChannelId == channelId));
                 await db.SaveChangesAsync().ConfigureAwait(false);
             }
             await Context.Channel.SendConfirmAsync($"已移除 {channelId}").ConfigureAwait(false);
@@ -158,9 +158,9 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
 
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                var list = db.ChannelSpider.ToList().Where((x) => !x.IsWarningChannel).Select((x) => Format.Url(x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}") +
+                var list = db.YoutubeChannelSpider.ToList().Where((x) => !x.IsWarningChannel).Select((x) => Format.Url(x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}") +
                     $" 由 `" + (x.GuildId == 0 ? "Bot擁有者" : (_client.GetGuild(x.GuildId) != null ? _client.GetGuild(x.GuildId).Name : "已退出的伺服器")) + "` 新增");
-                int warningChannelNum = db.ChannelSpider.Count((x) => x.IsWarningChannel);
+                int warningChannelNum = db.YoutubeChannelSpider.Count((x) => x.IsWarningChannel);
 
                 await Context.SendPaginatedConfirmAsync(page, page =>
                 {
@@ -184,7 +184,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
         {
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                var list = db.ChannelSpider.ToList().Where((x) => x.IsWarningChannel).Select((x) => Format.Url(x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}") +
+                var list = db.YoutubeChannelSpider.ToList().Where((x) => x.IsWarningChannel).Select((x) => Format.Url(x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}") +
                     $" 由 `" + (x.GuildId == 0 ? "Bot擁有者" : $"{_client.GetGuild(x.GuildId).Name}") + "` 新增");
 
                 await Context.SendPaginatedConfirmAsync(0, page =>
@@ -229,11 +229,11 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
 
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                if (db.ChannelSpider.Any((x) => x.ChannelId == channelId))
+                if (db.YoutubeChannelSpider.Any((x) => x.ChannelId == channelId))
                 {
-                    var channel = db.ChannelSpider.First((x) => x.ChannelId == channelId);
+                    var channel = db.YoutubeChannelSpider.First((x) => x.ChannelId == channelId);
                     channel.IsWarningChannel = !channel.IsWarningChannel;
-                    db.ChannelSpider.Update(channel);
+                    db.YoutubeChannelSpider.Update(channel);
                     await db.SaveChangesAsync().ConfigureAwait(false);
 
                     await Context.Channel.SendConfirmAsync($"已設定 {channel.ChannelTitle} 為 " + (channel.IsWarningChannel ? "警告" : "普通") + " 狀態").ConfigureAwait(false);

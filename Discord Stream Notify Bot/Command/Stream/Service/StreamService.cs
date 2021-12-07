@@ -65,10 +65,10 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
             {
                 Program.RedisSub.Subscribe("youtube.startstream", async (channel, json) =>
                 {
+                    StreamRecordJson streamRecordJson = JsonConvert.DeserializeObject<StreamRecordJson>(json.ToString());
+
                     try
                     {
-                        StreamRecordJson streamRecordJson = JsonConvert.DeserializeObject<StreamRecordJson>(json.ToString());
-
                         Log.Info($"{channel} - {streamRecordJson.VideoId}");
 
                         var item = await GetVideoAsync(streamRecordJson.VideoId).ConfigureAwait(false);
@@ -104,7 +104,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                     }
                     catch (Exception ex)
                     {
-                        Log.Error($"Record-StartStream {ex.Message}\r\n{ex.StackTrace}");
+                        Log.Error($"Record-StartStream {streamRecordJson.IsReRecord} {ex.Message}\r\n{ex.StackTrace}");
                     }
                 });
 
@@ -441,7 +441,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
         }
 
         private bool CanRecord(DataBase.DBContext db ,StreamVideo streamVideo) =>
-             IsRecord && db.RecordChannel.Any((x) => x.ChannelId.Trim() == streamVideo.ChannelId.Trim());
+             IsRecord && db.RecordYoutubeChannel.Any((x) => x.YoutubeChannelId.Trim() == streamVideo.ChannelId.Trim());
 
         #region scnse
         //holoScheduleEmoji = new Timer(async (objState) =>

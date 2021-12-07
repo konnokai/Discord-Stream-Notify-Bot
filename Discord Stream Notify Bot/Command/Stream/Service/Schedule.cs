@@ -9,6 +9,7 @@ using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Data;
 
 namespace Discord_Stream_Notify_Bot.Command.Stream.Service
 {
@@ -64,7 +65,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                         ChannelType = ChannelType.Holo
                                     };
 
-                                    Log.NewStream($"{streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
+                                    Log.NewStream($"(新影片) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
 
                                     EmbedBuilder embedBuilder = new EmbedBuilder();
                                     embedBuilder.WithOkColor()
@@ -91,7 +92,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                         ChannelType = ChannelType.Holo
                                     };
 
-                                    Log.NewStream($"{streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
+                                    Log.NewStream($"(排程) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
 
                                     if (startTime > DateTime.Now && startTime < DateTime.Now.AddDays(7))
                                     {
@@ -114,7 +115,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                     }
                                     else if (startTime < DateTime.Now && item.Snippet.LiveBroadcastContent == "live")
                                     {
-                                        if (addNewStreamVideo.TryAdd(streamVideo, streamVideo.ChannelType) && !isFirstHolo)
+                                        if (addNewStreamVideo.TryAdd(streamVideo, streamVideo.ChannelType))
                                             StartReminder(streamVideo, streamVideo.ChannelType);
                                     }
                                     else addNewStreamVideo.TryAdd(streamVideo, streamVideo.ChannelType);
@@ -132,7 +133,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                         ChannelType = ChannelType.Holo
                                     };
 
-                                    Log.NewStream($"{streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
+                                    Log.NewStream($"(未排程) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
 
                                     if (addNewStreamVideo.TryAdd(streamVideo, streamVideo.ChannelType) && item.Snippet.LiveBroadcastContent == "live")
                                         ReminderTimerAction(streamVideo);
@@ -210,7 +211,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                             ChannelType = ChannelType.Nijisanji
                                         };
 
-                                        Log.NewStream($"{streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
+                                        Log.NewStream($"(新影片) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
 
                                         EmbedBuilder embedBuilder = new EmbedBuilder();
                                         embedBuilder.WithOkColor()
@@ -237,7 +238,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                             ChannelType = ChannelType.Nijisanji
                                         };
 
-                                        Log.NewStream($"{streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
+                                        Log.NewStream($"(排程) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
 
                                         if (startTime > DateTime.Now && startTime < DateTime.Now.AddDays(7))
                                         {
@@ -278,7 +279,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                             ChannelType = ChannelType.Nijisanji
                                         };
 
-                                        Log.NewStream($"{streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
+                                        Log.NewStream($"(未排程) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
 
                                         if (addNewStreamVideo.TryAdd(streamVideo, streamVideo.ChannelType) && item.Snippet.LiveBroadcastContent == "live")
                                             ReminderTimerAction(streamVideo);
@@ -307,7 +308,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
 
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                foreach (var item in db.ChannelSpider)
+                foreach (var item in db.YoutubeChannelSpider)
                 {
                     try
                     {
@@ -316,7 +317,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                             var ytChannel = yt.Channels.List("snippet");
                             ytChannel.Id = item.ChannelId;
                             item.ChannelTitle = (await ytChannel.ExecuteAsync().ConfigureAwait(false)).Items[0].Snippet.Title;
-                            db.ChannelSpider.Update(item);
+                            db.YoutubeChannelSpider.Update(item);
                             await db.SaveChangesAsync();
                         }
                     }
@@ -391,7 +392,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                             };
 
                                             streamVideo.ChannelType = streamVideo.GetProductionType();
-                                            Log.NewStream($"{streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
+                                            Log.NewStream($"(新影片) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
 
                                             EmbedBuilder embedBuilder = new EmbedBuilder();
                                             embedBuilder.WithOkColor()
@@ -419,7 +420,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                             };
 
                                             streamVideo.ChannelType = streamVideo.GetProductionType();
-                                            Log.NewStream($"{streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
+                                            Log.NewStream($"(排程) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
 
                                             if (startTime > DateTime.Now && startTime < DateTime.Now.AddDays(7))
                                             {
@@ -461,7 +462,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                             };
 
                                             streamVideo.ChannelType = streamVideo.GetProductionType();
-                                            Log.NewStream($"{streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
+                                            Log.NewStream($"(未排程) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
 
                                             if (addNewStreamVideo.TryAdd(streamVideo, streamVideo.ChannelType) && item2.Snippet.LiveBroadcastContent == "live")
                                                 ReminderTimerAction(streamVideo);

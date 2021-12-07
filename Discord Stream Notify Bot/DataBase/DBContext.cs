@@ -5,16 +5,20 @@ namespace Discord_Stream_Notify_Bot.DataBase
 {
     public class DBContext : DbContext
     {
+        public DbSet<BannerChange> BannerChange { get; set; }
         public DbSet<GuildConfig> GuildConfig { get; set; }
         public DbSet<HoloStreamVideo> HoloStreamVideo { get; set; }
-        public DbSet<NijisanjiStreamVideo> NijisanjiStreamVideo { get; set; }
-        public DbSet<OtherStreamVideo> OtherStreamVideo { get; set; }
-        public DbSet<NoticeStreamChannel> NoticeStreamChannel { get; set; }
-        public DbSet<RecordChannel> RecordChannel { get; set; }
-        public DbSet<BannerChange> BannerChange { get; set; }
-        public DbSet<ChannelSpider> ChannelSpider { get; set; }
-        public DbSet<ChannelOwnedType> ChannelOwnedType { get; set; }
         public DbSet<MemberAccessToken> MemberAccessToken { get; set; }
+        public DbSet<NijisanjiStreamVideo> NijisanjiStreamVideo { get; set; }
+        public DbSet<NoticeTwitterSpaceChannel> NoticeTwitterSpaceChannel { get; set; }
+        public DbSet<NoticeYoutubeStreamChannel> NoticeYoutubeStreamChannel { get; set; }
+        public DbSet<OtherStreamVideo> OtherStreamVideo { get; set; }
+        public DbSet<RecordTwitterSpaceChannel> RecordTwitterSpaceChannel { get; set; }
+        public DbSet<RecordYoutubeChannel> RecordYoutubeChannel { get; set; }
+        public DbSet<TwitterSpace> TwitterSpace { get; set; }
+        public DbSet<TwitterSpaecSpider> TwitterSpaecSpider { get; set; }
+        public DbSet<YoutubeChannelOwnedType> YoutubeChannelOwnedType { get; set; }
+        public DbSet<YoutubeChannelSpider> YoutubeChannelSpider { get; set; }
         public DbSet<YoutubeMemberCheck> YoutubeMemberCheck { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder options)

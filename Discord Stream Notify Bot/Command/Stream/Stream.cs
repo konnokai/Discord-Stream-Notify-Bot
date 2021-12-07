@@ -94,7 +94,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
             }
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                if (db.RecordChannel.Any((x) => x.ChannelId == channelId))
+                if (db.RecordYoutubeChannel.Any((x) => x.YoutubeChannelId == channelId))
                 {
                     await Context.Channel.SendConfirmAsync($"{channelId} 已存在於直播記錄清單");
                     return;
@@ -110,7 +110,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
 
                 if (await PromptUserConfirmAsync(new EmbedBuilder().WithTitle("新增頻道至直播記錄清單?").WithDescription(channelTitle)))
                 {
-                    db.RecordChannel.Add(new DataBase.Table.RecordChannel() { ChannelId = channelId });
+                    db.RecordYoutubeChannel.Add(new DataBase.Table.RecordYoutubeChannel() { YoutubeChannelId = channelId });
                     await db.SaveChangesAsync();
                     await Context.Channel.SendConfirmAsync($"已新增 {channelTitle} 至直播記錄清單").ConfigureAwait(false);
                 }
@@ -140,23 +140,18 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
             }
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                if (!db.RecordChannel.Any((x) => x.ChannelId == channelId))
+                if (!db.RecordYoutubeChannel.Any((x) => x.YoutubeChannelId == channelId))
                 {
                     await Context.Channel.SendConfirmAsync($"直播記錄清單中沒有 {channelId}").ConfigureAwait(false);
                     return;
                 }
 
                 string channelTitle = await GetChannelTitle(channelId);
-
-                if (channelTitle == "")
-                {
-                    await Context.Channel.SendConfirmAsync($"頻道 {channelId} 不存在").ConfigureAwait(false);
-                    return;
-                }
+                if (string.IsNullOrEmpty(channelTitle)) channelTitle = channelId;
 
                 if (await PromptUserConfirmAsync(new EmbedBuilder().WithTitle("從直播記錄清單移除頻道?").WithDescription(channelTitle)))
                 {
-                    db.RecordChannel.Remove(db.RecordChannel.First((x) => x.ChannelId == channelId));
+                    db.RecordYoutubeChannel.Remove(db.RecordYoutubeChannel.First((x) => x.YoutubeChannelId == channelId));
                     await db.SaveChangesAsync();
                     await Context.Channel.SendConfirmAsync($"已從直播記錄清單中移除 {channelTitle}").ConfigureAwait(false);
                 }
@@ -171,10 +166,10 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
             await Context.Channel.TriggerTypingAsync().ConfigureAwait(false);
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                var nowRecordList = db.RecordChannel.ToList().Select((x) => x.ChannelId).ToList();
+                var nowRecordList = db.RecordYoutubeChannel.ToList().Select((x) => x.YoutubeChannelId).ToList();
 
-                db.ChannelSpider.ToList().ForEach((item) => { if (item.IsWarningChannel && nowRecordList.Contains(item.ChannelId)) nowRecordList.Remove(item.ChannelId); });
-                int warningChannelNum = db.ChannelSpider.Count((x) => x.IsWarningChannel);
+                db.YoutubeChannelSpider.ToList().ForEach((item) => { if (item.IsWarningChannel && nowRecordList.Contains(item.ChannelId)) nowRecordList.Remove(item.ChannelId); });
+                int warningChannelNum = db.YoutubeChannelSpider.Count((x) => x.IsWarningChannel);
 
                 if (nowRecordList.Count > 0)
                 {
@@ -209,10 +204,10 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
             await Context.Channel.TriggerTypingAsync().ConfigureAwait(false);
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                var dbRecordList = db.RecordChannel.ToList().Select((x) => x.ChannelId).ToList();
+                var dbRecordList = db.RecordYoutubeChannel.ToList().Select((x) => x.YoutubeChannelId).ToList();
                 var nowRecordList = new List<string>();
 
-                db.ChannelSpider.ToList().ForEach((item) => { if (item.IsWarningChannel && dbRecordList.Contains(item.ChannelId)) nowRecordList.Add(item.ChannelId); });
+                db.YoutubeChannelSpider.ToList().ForEach((item) => { if (item.IsWarningChannel && dbRecordList.Contains(item.ChannelId)) nowRecordList.Add(item.ChannelId); });
 
                 if (nowRecordList.Count > 0)
                 {
@@ -352,7 +347,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
                            .Select((x) => $"{Format.Url(x.Snippet.Title, $"https://www.youtube.com/watch?v={x.Id}")}" +
                            $"\n{Format.Url(x.Snippet.ChannelTitle, $"https://www.youtube.com/channel/{x.Snippet.ChannelId}")}" +
                            $"\n直播時間: {x.LiveStreamingDetails.ScheduledStartTime.Value}" +
-                           "\n是否在直播錄影清單內: " + (db.RecordChannel.Any((x2) => x2.ChannelId.Trim() == x.Snippet.ChannelId) ? "是" : "否"))));
+                           "\n是否在直播錄影清單內: " + (db.RecordYoutubeChannel.Any((x2) => x2.YoutubeChannelId.Trim() == x.Snippet.ChannelId) ? "是" : "否"))));
                     }, result.Count, 7).ConfigureAwait(false);
                 }
             }
@@ -548,7 +543,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
             }
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                if (db.NoticeStreamChannel.Any((x) => x.GuildId == Context.Guild.Id && x.NoticeStreamChannelId == channelId))
+                if (db.NoticeYoutubeStreamChannel.Any((x) => x.GuildId == Context.Guild.Id && x.NoticeStreamChannelId == channelId))
                 {
                     await Context.Channel.SendConfirmAsync($"{channelId} 已在直播通知清單內").ConfigureAwait(false);
                     return;
@@ -556,34 +551,34 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
 
                 if (channelId == "all")
                 {
-                    if (db.NoticeStreamChannel.Any((x) => x.GuildId == Context.Guild.Id))
+                    if (db.NoticeYoutubeStreamChannel.Any((x) => x.GuildId == Context.Guild.Id))
                     {
                         if (await PromptUserConfirmAsync(new EmbedBuilder().WithOkColor().WithDescription("直播通知清單已有需通知的頻道\r\n" +
                             $"是否更改為通知全部頻道的直播?\r\n" +
                             $"注意: 將會把原先設定的直播通知清單重置")).ConfigureAwait(false))
                         {
-                            db.NoticeStreamChannel.RemoveRange(Queryable.Where(db.NoticeStreamChannel, (x) => x.GuildId == Context.Guild.Id));
+                            db.NoticeYoutubeStreamChannel.RemoveRange(Queryable.Where(db.NoticeYoutubeStreamChannel, (x) => x.GuildId == Context.Guild.Id));
                         }
                         else return;
                     }
-                    db.NoticeStreamChannel.Add(new DataBase.Table.NoticeStreamChannel() { GuildId = Context.Guild.Id, ChannelId = Context.Channel.Id, NoticeStreamChannelId = "all" });
+                    db.NoticeYoutubeStreamChannel.Add(new DataBase.Table.NoticeYoutubeStreamChannel() { GuildId = Context.Guild.Id, DiscordChannelId = Context.Channel.Id, NoticeStreamChannelId = "all" });
                     await Context.Channel.SendConfirmAsync($"將會通知全部的直播").ConfigureAwait(false);
                 }
                 else if (channelId == "holo" || channelId == "2434" || channelId == "other")
                 {
-                    if (db.NoticeStreamChannel.Any((x) => x.GuildId == Context.Guild.Id && x.NoticeStreamChannelId == "all"))
+                    if (db.NoticeYoutubeStreamChannel.Any((x) => x.GuildId == Context.Guild.Id && x.NoticeStreamChannelId == "all"))
                     {
                         if (await PromptUserConfirmAsync(new EmbedBuilder().WithOkColor().WithDescription("已設定為通知全部頻道的直播\r\n" +
                             $"是否更改為僅通知 `{channelId}` 的直播?")))
                         {
-                            db.NoticeStreamChannel.Remove(db.NoticeStreamChannel.First((x) => x.GuildId == Context.Guild.Id && x.NoticeStreamChannelId == "all"));
-                            db.NoticeStreamChannel.Add(new DataBase.Table.NoticeStreamChannel() { GuildId = Context.Guild.Id, ChannelId = Context.Channel.Id, NoticeStreamChannelId = channelId });
+                            db.NoticeYoutubeStreamChannel.Remove(db.NoticeYoutubeStreamChannel.First((x) => x.GuildId == Context.Guild.Id && x.NoticeStreamChannelId == "all"));
+                            db.NoticeYoutubeStreamChannel.Add(new DataBase.Table.NoticeYoutubeStreamChannel() { GuildId = Context.Guild.Id, DiscordChannelId = Context.Channel.Id, NoticeStreamChannelId = channelId });
                             await Context.Channel.SendConfirmAsync($"已將 {channelId} 加入到通知頻道清單內").ConfigureAwait(false);
                         }
                     }
                     else
                     {
-                        db.NoticeStreamChannel.Add(new DataBase.Table.NoticeStreamChannel() { GuildId = Context.Guild.Id, ChannelId = Context.Channel.Id, NoticeStreamChannelId = channelId });
+                        db.NoticeYoutubeStreamChannel.Add(new DataBase.Table.NoticeYoutubeStreamChannel() { GuildId = Context.Guild.Id, DiscordChannelId = Context.Channel.Id, NoticeStreamChannelId = channelId });
                         await Context.Channel.SendConfirmAsync($"已將 {channelId} 加入到通知頻道清單內").ConfigureAwait(false);
                     }
                 }
@@ -596,19 +591,19 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
                         return;
                     }
 
-                    if (db.NoticeStreamChannel.Any((x) => x.GuildId == Context.Guild.Id && x.NoticeStreamChannelId == "all"))
+                    if (db.NoticeYoutubeStreamChannel.Any((x) => x.GuildId == Context.Guild.Id && x.NoticeStreamChannelId == "all"))
                     {
                         if (await PromptUserConfirmAsync(new EmbedBuilder().WithOkColor().WithDescription("已設定為通知全部頻道的直播\r\n" +
                             $"是否更改為僅通知 `{channelTitle}` 的直播?")))
                         {
-                            db.NoticeStreamChannel.Remove(db.NoticeStreamChannel.First((x) => x.GuildId == Context.Guild.Id && x.NoticeStreamChannelId == "all"));
-                            db.NoticeStreamChannel.Add(new DataBase.Table.NoticeStreamChannel() { GuildId = Context.Guild.Id, ChannelId = Context.Channel.Id, NoticeStreamChannelId = channelId });
+                            db.NoticeYoutubeStreamChannel.Remove(db.NoticeYoutubeStreamChannel.First((x) => x.GuildId == Context.Guild.Id && x.NoticeStreamChannelId == "all"));
+                            db.NoticeYoutubeStreamChannel.Add(new DataBase.Table.NoticeYoutubeStreamChannel() { GuildId = Context.Guild.Id, DiscordChannelId = Context.Channel.Id, NoticeStreamChannelId = channelId });
                             await Context.Channel.SendConfirmAsync($"已將 {channelTitle} 加入到通知頻道清單內").ConfigureAwait(false);
                         }
                     }
                     else
                     {
-                        db.NoticeStreamChannel.Add(new DataBase.Table.NoticeStreamChannel() { GuildId = Context.Guild.Id, ChannelId = Context.Channel.Id, NoticeStreamChannelId = channelId });
+                        db.NoticeYoutubeStreamChannel.Add(new DataBase.Table.NoticeYoutubeStreamChannel() { GuildId = Context.Guild.Id, DiscordChannelId = Context.Channel.Id, NoticeStreamChannelId = channelId });
                         await Context.Channel.SendConfirmAsync($"已將 {channelTitle} 加入到通知頻道清單內").ConfigureAwait(false);
                     }
                 }
@@ -643,7 +638,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
             }
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                if (!db.NoticeStreamChannel.Any((x) => x.GuildId == Context.Guild.Id))
+                if (!db.NoticeYoutubeStreamChannel.Any((x) => x.GuildId == Context.Guild.Id))
                 {
                     await Context.Channel.SendConfirmAsync("並未設定直播通知...").ConfigureAwait(false);
                     return;
@@ -653,14 +648,14 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
                 {
                     if (await PromptUserConfirmAsync(new EmbedBuilder().WithOkColor().WithDescription("將移除全部的直播通知\r\n是否繼續?")).ConfigureAwait(false))
                     {
-                        db.NoticeStreamChannel.RemoveRange(Queryable.Where(db.NoticeStreamChannel, (x) => x.GuildId == Context.Guild.Id));
+                        db.NoticeYoutubeStreamChannel.RemoveRange(Queryable.Where(db.NoticeYoutubeStreamChannel, (x) => x.GuildId == Context.Guild.Id));
                         await Context.Channel.SendConfirmAsync("已全部清除").ConfigureAwait(false);
                         await db.SaveChangesAsync();
                         return;
                     }
                 }
 
-                if (!db.NoticeStreamChannel.Any((x) => x.GuildId == Context.Guild.Id && x.NoticeStreamChannelId == channelId))
+                if (!db.NoticeYoutubeStreamChannel.Any((x) => x.GuildId == Context.Guild.Id && x.NoticeStreamChannelId == channelId))
                 {
                     await Context.Channel.SendConfirmAsync($"並未設定`{channelId}`的直播通知...").ConfigureAwait(false);
                     return;
@@ -669,10 +664,10 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
                 {
                     if (channelId == "holo" || channelId == "2434" || channelId == "other")
                     {
-                        db.NoticeStreamChannel.Remove(db.NoticeStreamChannel.First((x) => x.GuildId == Context.Guild.Id && x.NoticeStreamChannelId == channelId));
+                        db.NoticeYoutubeStreamChannel.Remove(db.NoticeYoutubeStreamChannel.First((x) => x.GuildId == Context.Guild.Id && x.NoticeStreamChannelId == channelId));
                         await Context.Channel.SendConfirmAsync($"已移除 {channelId}").ConfigureAwait(false);
                     }
-                    else if (db.NoticeStreamChannel.Any((x) => x.GuildId == Context.Guild.Id && x.NoticeStreamChannelId == channelId))
+                    else if (db.NoticeYoutubeStreamChannel.Any((x) => x.GuildId == Context.Guild.Id && x.NoticeStreamChannelId == channelId))
                     {
                         string channelTitle = await GetChannelTitle(channelId).ConfigureAwait(false);
                         if (channelTitle == "")
@@ -681,7 +676,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
                             return;
                         }
 
-                        db.NoticeStreamChannel.Remove(db.NoticeStreamChannel.First((x) => x.GuildId == Context.Guild.Id && x.NoticeStreamChannelId == channelId));
+                        db.NoticeYoutubeStreamChannel.Remove(db.NoticeYoutubeStreamChannel.First((x) => x.GuildId == Context.Guild.Id && x.NoticeStreamChannelId == channelId));
                         await Context.Channel.SendConfirmAsync($"已移除 {channelTitle}").ConfigureAwait(false);
                     }
 
@@ -698,8 +693,8 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
         {
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                var list = Queryable.Where(db.NoticeStreamChannel, (x) => x.GuildId == Context.Guild.Id)
-                .Select((x) => new KeyValuePair<string, ulong>(x.NoticeStreamChannelId, x.ChannelId)).ToList();
+                var list = Queryable.Where(db.NoticeYoutubeStreamChannel, (x) => x.GuildId == Context.Guild.Id)
+                .Select((x) => new KeyValuePair<string, ulong>(x.NoticeStreamChannelId, x.DiscordChannelId)).ToList();
                 if (list.Count() == 0) { await Context.Channel.SendConfirmAsync("直播通知清單為空").ConfigureAwait(false); return; }
 
                 var ytChannelList = list.Select(x => x.Key).Where((x) => x.StartsWith("UC")).ToList();
@@ -727,7 +722,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
                 {
                     return new EmbedBuilder()
                         .WithOkColor()
-                        .WithTitle("直播記錄清單")
+                        .WithTitle("直播通知清單為空")
                         .WithDescription(string.Join('\n', channelTitleList.Skip(page * 20).Take(20)))
                         .WithFooter($"{Math.Min(channelTitleList.Count, (page + 1) * 20)} / {channelTitleList.Count}個頻道");
                 }, channelTitleList.Count, 20, false);
@@ -750,7 +745,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
             "Delete: 刪除直播\r\n\r\n" +
             "(考慮到有伺服器需Ping特定用戶組的情況，故Bot需提及所有身分組權限)\r\n" +
             "(建議在私人頻道中設定以免Ping到用戶組造成不必要的誤會)")]
-        [CommandExample("start @通知用的用戶組 阿床開台了", 
+        [CommandExample("UCXRlIK3Cw_TJIQC5kSJJQMg start @通知用的用戶組 阿床開台了", 
             "holo newstream @某人 新待機所建立", 
             "UCXRlIK3Cw_TJIQC5kSJJQMg end")]
         [Alias("SNM")]
@@ -767,9 +762,9 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
             }
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                if (db.NoticeStreamChannel.Any((x) => x.GuildId == Context.Guild.Id && x.NoticeStreamChannelId == channelId))
+                if (db.NoticeYoutubeStreamChannel.Any((x) => x.GuildId == Context.Guild.Id && x.NoticeStreamChannelId == channelId))
                 {
-                    var noticeStreamChannel = db.NoticeStreamChannel.First((x) => x.GuildId == Context.Guild.Id && x.NoticeStreamChannelId == channelId);
+                    var noticeStreamChannel = db.NoticeYoutubeStreamChannel.First((x) => x.GuildId == Context.Guild.Id && x.NoticeStreamChannelId == channelId);
                     string noticeTypeString = "";
 
                     switch (noticeType)
@@ -800,7 +795,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
                             break;
                     }
 
-                    db.NoticeStreamChannel.Update(noticeStreamChannel);
+                    db.NoticeYoutubeStreamChannel.Update(noticeStreamChannel);
                     await db.SaveChangesAsync();
 
                     if (message != "") await Context.Channel.SendConfirmAsync($"已設定 {channelId} 的 {noticeTypeString} 通知訊息為:\r\n{message}").ConfigureAwait(false);
@@ -813,6 +808,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
             }
         }
 
+
         [RequireContext(ContextType.Guild)]
         [Command("ListNoticeMessage")]
         [Summary("列出已設定的通知訊息")]
@@ -821,9 +817,9 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
         {
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                if (db.NoticeStreamChannel.Any((x) => x.GuildId == Context.Guild.Id))
+                if (db.NoticeYoutubeStreamChannel.Any((x) => x.GuildId == Context.Guild.Id))
                 {
-                    var noticeStreamChannels = db.NoticeStreamChannel.ToList().Where((x) => x.GuildId == Context.Guild.Id);
+                    var noticeStreamChannels = db.NoticeYoutubeStreamChannel.ToList().Where((x) => x.GuildId == Context.Guild.Id);
                     Dictionary<string, string> dic = new Dictionary<string, string>();
 
                     foreach (var item in noticeStreamChannels)
@@ -920,16 +916,16 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
             }
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                var channel = db.ChannelOwnedType.FirstOrDefault((x) => x.ChannelId == channelId);
+                var channel = db.YoutubeChannelOwnedType.FirstOrDefault((x) => x.ChannelId == channelId);
                 if (channel == null)
                 {
-                    db.ChannelOwnedType.Add(new DataBase.Table.ChannelOwnedType() { ChannelId = channelId, ChannelTitle = title, ChannelType = channelType });
+                    db.YoutubeChannelOwnedType.Add(new DataBase.Table.YoutubeChannelOwnedType() { ChannelId = channelId, ChannelTitle = title, ChannelType = channelType });
                 }
                 else
                 {
                     channel.ChannelTitle = title;
                     channel.ChannelType = channelType;
-                    db.ChannelOwnedType.Update(channel);
+                    db.YoutubeChannelOwnedType.Update(channel);
                 }
 
                 await db.SaveChangesAsync();

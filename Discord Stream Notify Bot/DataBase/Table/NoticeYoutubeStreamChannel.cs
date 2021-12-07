@@ -1,9 +1,9 @@
 ﻿namespace Discord_Stream_Notify_Bot.DataBase.Table
 {
-    public class NoticeStreamChannel : DbEntity
+    public class NoticeYoutubeStreamChannel : DbEntity
     {
         public ulong GuildId { get; set; }
-        public ulong ChannelId { get; set; }
+        public ulong DiscordChannelId { get; set; }
         public string NoticeStreamChannelId { get; set; }
         public string NewStreamMessage { get; set; } = "";
         public string NewVideoMessage { get; set; } = "";

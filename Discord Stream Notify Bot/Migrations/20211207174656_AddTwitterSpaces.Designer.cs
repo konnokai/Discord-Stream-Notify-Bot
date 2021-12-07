@@ -3,14 +3,16 @@ using System;
 using Discord_Stream_Notify_Bot.DataBase;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Discord_Stream_Notify_Bot.Migrations
 {
     [DbContext(typeof(DBContext))]
-    partial class DBContextModelSnapshot : ModelSnapshot
+    [Migration("20211207174656_AddTwitterSpaces")]
+    partial class AddTwitterSpaces
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -147,9 +149,6 @@ namespace Discord_Stream_Notify_Bot.Migrations
                     b.Property<string>("NoticeTwitterSpaceUserId")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("NoticeTwitterSpaceUserScreenName")
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("StratTwitterSpaceMessage")
                         .HasColumnType("TEXT");
 
@@ -226,9 +225,6 @@ namespace Discord_Stream_Notify_Bot.Migrations
                     b.Property<string>("TwitterUserId")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("TwitterScreenName")
-                        .HasColumnType("TEXT");
-
                     b.HasKey("TwitterUserId");
 
                     b.ToTable("RecordTwitterSpaceChannel");
@@ -265,9 +261,6 @@ namespace Discord_Stream_Notify_Bot.Migrations
                     b.Property<string>("UserName")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("UserScreenName")
-                        .HasColumnType("TEXT");
-
                     b.HasKey("Id");
 
                     b.ToTable("TwitterSpace");
@@ -285,9 +278,6 @@ namespace Discord_Stream_Notify_Bot.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("UserName")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("UserScreenName")
                         .HasColumnType("TEXT");
 
                     b.HasKey("UserId");

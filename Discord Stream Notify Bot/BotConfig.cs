@@ -7,6 +7,8 @@ public class BotConfig
     public string DiscordToken { get; set; } = "";
     public string WebHookUrl { get; set; } = "";
     public string GoogleApiKey { get; set; } = "";
+    public string TwitterApiKey { get; set; } = "";
+    public string TwitterApiKeySecret { get; set; } = "";
     public string GoogleClientId { get; set; } = "";
     public string GoogleClientSecret { get; set; } = "";
     public string RedisOption { get; set; } = "127.0.0.1,syncTimeout=3000";
@@ -50,6 +52,22 @@ public class BotConfig
                 Environment.Exit(3);
             }
 
+            //if (string.IsNullOrWhiteSpace(config.TwitterApiKey))
+            //{
+            //    Log.Error("TwitterApiKey遺失，請輸入至bot_config.json後重開Bot");
+            //    if (!Console.IsInputRedirected)
+            //        Console.ReadKey();
+            //    Environment.Exit(3);
+            //}
+
+            //if (string.IsNullOrWhiteSpace(config.TwitterApiKeySecret))
+            //{
+            //    Log.Error("TwitterApiKeySecret遺失，請輸入至bot_config.json後重開Bot");
+            //    if (!Console.IsInputRedirected)
+            //        Console.ReadKey();
+            //    Environment.Exit(3);
+            //}
+
             //if (string.IsNullOrWhiteSpace(config.GoogleClientId))
             //{
             //    Log.Error("GoogleClientId遺失，請輸入至credentials.json後重開Bot");
@@ -69,6 +87,8 @@ public class BotConfig
             DiscordToken = config.DiscordToken;
             WebHookUrl = config.WebHookUrl;
             GoogleApiKey = config.GoogleApiKey;
+            TwitterApiKey = config.TwitterApiKey;
+            TwitterApiKeySecret = config.TwitterApiKeySecret;
             GoogleClientId = config.GoogleClientId;
             GoogleClientSecret = config.GoogleClientSecret;
             RedisOption = config.RedisOption;

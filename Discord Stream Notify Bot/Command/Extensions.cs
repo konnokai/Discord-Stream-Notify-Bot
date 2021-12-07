@@ -10,7 +10,9 @@ using System.Diagnostics;
 using System.Linq;
 using System.Management;
 using System.Reflection;
+using System.Data;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 
 namespace Discord_Stream_Notify_Bot.Command
 {
@@ -34,7 +36,7 @@ namespace Discord_Stream_Notify_Bot.Command
             using (var db = DataBase.DBContext.GetDbContext())
             {
                 StreamService.ChannelType type;
-                var channel = db.ChannelOwnedType.FirstOrDefault((x) => x.ChannelId == streamVideo.ChannelId);
+                var channel = db.YoutubeChannelOwnedType.AsNoTracking().FirstOrDefault((x) => x.ChannelId == streamVideo.ChannelId);
 
                 if (channel != null)
                     type = channel.ChannelType;
@@ -109,25 +111,25 @@ namespace Discord_Stream_Notify_Bot.Command
         public static bool HasStreamVideoByVideoId(this DataBase.DBContext dBContext, string videoId)
         {
             videoId = videoId.Trim();
-            return dBContext.HoloStreamVideo.Any((x) => x.VideoId == videoId) ||
-                dBContext.NijisanjiStreamVideo.Any((x) => x.VideoId == videoId) || 
-                dBContext.OtherStreamVideo.Any((x) => x.VideoId == videoId);
+            return dBContext.HoloStreamVideo.AsNoTracking().Any((x) => x.VideoId == videoId) ||
+                dBContext.NijisanjiStreamVideo.AsNoTracking().Any((x) => x.VideoId == videoId) || 
+                dBContext.OtherStreamVideo.AsNoTracking().Any((x) => x.VideoId == videoId);
         }
 
         public static StreamVideo GetStreamVideoByVideoId(this DataBase.DBContext dBContext, string videoId)
         {
             videoId = videoId.Trim();
-            if (dBContext.HoloStreamVideo.Any((x) => x.VideoId == videoId))
+            if (dBContext.HoloStreamVideo.AsNoTracking().Any((x) => x.VideoId == videoId))
             {
-                return dBContext.HoloStreamVideo.First((x) => x.VideoId == videoId);
+                return dBContext.HoloStreamVideo.AsNoTracking().First((x) => x.VideoId == videoId);
             }
-            else if (dBContext.NijisanjiStreamVideo.Any((x) => x.VideoId == videoId))
+            else if (dBContext.NijisanjiStreamVideo.AsNoTracking().Any((x) => x.VideoId == videoId))
             {
-                return dBContext.NijisanjiStreamVideo.First((x) => x.VideoId == videoId);
+                return dBContext.NijisanjiStreamVideo.AsNoTracking().First((x) => x.VideoId == videoId);
             }
-            else if (dBContext.OtherStreamVideo.Any((x) => x.VideoId == videoId))
+            else if (dBContext.OtherStreamVideo.AsNoTracking().Any((x) => x.VideoId == videoId))
             {
-                return dBContext.OtherStreamVideo.First((x) => x.VideoId == videoId);
+                return dBContext.OtherStreamVideo.AsNoTracking().First((x) => x.VideoId == videoId);
             }
             else
             {
@@ -137,17 +139,17 @@ namespace Discord_Stream_Notify_Bot.Command
         public static StreamVideo GetLastStreamVideoByChannelId(this DataBase.DBContext dBContext, string channelId)
         {
             channelId = channelId.Trim();
-            if (dBContext.HoloStreamVideo.Any((x) => x.ChannelId == channelId))
+            if (dBContext.HoloStreamVideo.AsNoTracking().Any((x) => x.ChannelId == channelId))
             {
-                return dBContext.HoloStreamVideo.ToList().Last((x) => x.ChannelId == channelId);
+                return dBContext.HoloStreamVideo.AsNoTracking().ToList().Last((x) => x.ChannelId == channelId);
             }
-            else if (dBContext.NijisanjiStreamVideo.Any((x) => x.ChannelId == channelId))
+            else if (dBContext.NijisanjiStreamVideo.AsNoTracking().Any((x) => x.ChannelId == channelId))
             {
-                return dBContext.NijisanjiStreamVideo.ToList().Last((x) => x.ChannelId == channelId);
+                return dBContext.NijisanjiStreamVideo.AsNoTracking().ToList().Last((x) => x.ChannelId == channelId);
             }
-            else if (dBContext.OtherStreamVideo.Any((x) => x.ChannelId == channelId))
+            else if (dBContext.OtherStreamVideo.AsNoTracking().Any((x) => x.ChannelId == channelId))
             {
-                return dBContext.OtherStreamVideo.ToList().Last((x) => x.ChannelId == channelId);
+                return dBContext.OtherStreamVideo.AsNoTracking().ToList().Last((x) => x.ChannelId == channelId);
             }
             else
             {

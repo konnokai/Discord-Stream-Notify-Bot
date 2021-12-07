@@ -176,7 +176,7 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
                     try
                     {
                         int i = 1, num = _client.Guilds.Count;
-                        var list = db.NoticeStreamChannel.Distinct((x) => x.GuildId).Select((x) => new KeyValuePair<ulong, ulong>(x.GuildId, x.ChannelId));
+                        var list = db.NoticeYoutubeStreamChannel.Distinct((x) => x.GuildId).Select((x) => new KeyValuePair<ulong, ulong>(x.GuildId, x.DiscordChannelId));
                         foreach (var item in _client.Guilds)
                         {
                             try
@@ -201,7 +201,7 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
 
                                 try
                                 {
-                                    db.NoticeStreamChannel.RemoveRange(Queryable.Where(db.NoticeStreamChannel, (x) => x.GuildId == item.Id));
+                                    db.NoticeYoutubeStreamChannel.RemoveRange(Queryable.Where(db.NoticeYoutubeStreamChannel, (x) => x.GuildId == item.Id));
                                     await db.SaveChangesAsync();
                                 }
                                 catch { }
@@ -241,7 +241,7 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
 
                 using (var db = DataBase.DBContext.GetDbContext())
                 {
-                    var channelList = db.NoticeStreamChannel.Where((x) => x.GuildId == guild.Id).Select((x) => $"<#{x.ChannelId}>: {x.NoticeStreamChannelId}").ToList();
+                    var channelList = db.NoticeYoutubeStreamChannel.Where((x) => x.GuildId == guild.Id).Select((x) => $"<#{x.DiscordChannelId}>: {x.NoticeStreamChannelId}").ToList();
 
                     await Context.Channel.SendConfirmAsync($"伺服器名稱: {guild.Name}\n" +
                             $"伺服器Id: {guild.Id}\n" +

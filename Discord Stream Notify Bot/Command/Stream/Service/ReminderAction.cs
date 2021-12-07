@@ -286,13 +286,13 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
         private async Task SendStreamMessageAsync(StreamVideo streamVideo, Embed embed, NoticeType noticeType)
         {
             string type = streamVideo.ChannelType == ChannelType.Holo ? "holo" : streamVideo.ChannelType == ChannelType.Nijisanji ? "2434" : "other";
-            List<NoticeStreamChannel> noticeGuildList = new List<NoticeStreamChannel>();
+            List<NoticeYoutubeStreamChannel> noticeGuildList = new List<NoticeYoutubeStreamChannel>();
 
             using (var db = DataBase.DBContext.GetDbContext())
             {
                 try
                 {
-                    noticeGuildList.AddRange(db.NoticeStreamChannel.ToList().Where((x) => x.NoticeStreamChannelId == streamVideo.ChannelId));
+                    noticeGuildList.AddRange(db.NoticeYoutubeStreamChannel.ToList().Where((x) => x.NoticeStreamChannelId == streamVideo.ChannelId));
                 }
                 catch (Exception ex)
                 {
@@ -303,10 +303,10 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                 try
                 {
                     if (type != "other" || //如果不是其他類的頻道
-                        !db.ChannelSpider.Any((x) => x.ChannelId == streamVideo.ChannelId) || //或該頻道非在爬蟲清單內
-                        !db.ChannelSpider.FirstOrDefault((x) => x.ChannelId == streamVideo.ChannelId).IsWarningChannel) //或該爬蟲非警告類的頻道
+                        !db.YoutubeChannelSpider.Any((x) => x.ChannelId == streamVideo.ChannelId) || //或該頻道非在爬蟲清單內
+                        !db.YoutubeChannelSpider.FirstOrDefault((x) => x.ChannelId == streamVideo.ChannelId).IsWarningChannel) //或該爬蟲非警告類的頻道
                     {
-                        noticeGuildList.AddRange(db.NoticeStreamChannel.ToList().Where((x) => x.NoticeStreamChannelId == "all" || x.NoticeStreamChannelId == type));
+                        noticeGuildList.AddRange(db.NoticeYoutubeStreamChannel.ToList().Where((x) => x.NoticeStreamChannelId == "all" || x.NoticeStreamChannelId == type));
                     }
                 }
                 catch (Exception ex)
@@ -322,28 +322,10 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                     {
                         var guild = _client.GetGuild(item.GuildId);
                         if (guild == null) continue;
-                        var channel = guild.GetTextChannel(item.ChannelId);
+                        var channel = guild.GetTextChannel(item.DiscordChannelId);
                         if (channel == null) continue;
 
-                        if (guild.Id == 186006081753841664)
-                        {
-                            EmbedBuilder embedBuilder = new EmbedBuilder();
-
-                            if (noticeType == NoticeType.NewStream || noticeType == NoticeType.Start)
-                            {
-                                if (noticeType == NoticeType.NewStream) embedBuilder.WithErrorColor();
-                                else embedBuilder.WithOkColor();
-
-                                embedBuilder.WithTitle(streamVideo.VideoTitle)
-                                .WithDescription(Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}"))
-                                .WithImageUrl($"https://i.ytimg.com/vi/{streamVideo.VideoId}/maxresdefault.jpg")
-                                .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
-                                .AddField("排定開台時間", streamVideo.ScheduledStartTime, true);
-
-                                embed = embedBuilder.Build();
-                            }
-                            else continue;
-                        }
+                        if (guild.Id == 186006081753841664 && noticeType != NoticeType.NewStream && noticeType != NoticeType.NewVideo && noticeType != NoticeType.Start) continue;
 
                         string sendMessage = "";
                         switch (noticeType)
@@ -372,8 +354,8 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                     }
                     catch (Exception ex)
                     {
-                        Log.Error($"Notice {item.GuildId} / {item.ChannelId}\r\n{ex.Message}");
-                        if (ex.Message.Contains("50013") || ex.Message.Contains("50001")) db.NoticeStreamChannel.Remove(db.NoticeStreamChannel.First((x) => x.ChannelId == item.ChannelId));
+                        Log.Error($"Notice Youtube {item.GuildId} / {item.DiscordChannelId}\r\n{ex.Message}");
+                        if (ex.Message.Contains("50013") || ex.Message.Contains("50001")) db.NoticeYoutubeStreamChannel.Remove(db.NoticeYoutubeStreamChannel.First((x) => x.DiscordChannelId == item.DiscordChannelId));
                         await db.SaveChangesAsync();
                     }
                 }
