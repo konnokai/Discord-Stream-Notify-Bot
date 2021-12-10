@@ -184,30 +184,36 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
         {
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                if (db.NoticeTwitterSpaceChannel.Any((x) => x.GuildId == Context.Guild.Id))
+               if (db.NoticeTwitterSpaceChannel.Any((x) => x.GuildId == Context.Guild.Id))
                 {
                     var noticeTwitterSpaces = db.NoticeTwitterSpaceChannel.ToList().Where((x) => x.GuildId == Context.Guild.Id);
                     Dictionary<string, string> dic = new Dictionary<string, string>();
 
                     foreach (var item in noticeTwitterSpaces)
                     {
-                        var channelTitle = item.NoticeTwitterSpaceUserScreenName;
-
-                        dic.Add(channelTitle, item.StratTwitterSpaceMessage);
+                        string message = string.IsNullOrWhiteSpace(item.StratTwitterSpaceMessage) ? "無" : item.StratTwitterSpaceMessage;
+                        dic.Add(item.NoticeTwitterSpaceUserScreenName, message);
                     }
 
-                    await Context.SendPaginatedConfirmAsync(page, (page) =>
+                    try
                     {
-                        EmbedBuilder embedBuilder = new EmbedBuilder().WithOkColor().WithTitle("推特語音空間通知訊息清單")
-                            .WithDescription("如果沒訊息的話就代表沒設定\r\n不用擔心會Tag到用戶組，Embed不會有Ping的反應");
-
-                        foreach (var item in dic.Skip(page * 10).Take(10))
+                        await Context.SendPaginatedConfirmAsync(page, (page) =>
                         {
-                            embedBuilder.AddField(item.Key, item.Value);
-                        }
+                            EmbedBuilder embedBuilder = new EmbedBuilder().WithOkColor().WithTitle("推特語音空間通知訊息清單")
+                                .WithDescription("如果沒訊息的話就代表沒設定\r\n不用擔心會Tag到用戶組，Embed不會有Ping的反應");
 
-                        return embedBuilder;
-                    }, dic.Count, 10).ConfigureAwait(false);
+                            foreach (var item in dic.Skip(page * 10).Take(10))
+                            {
+                                embedBuilder.AddField(item.Key, item.Value);
+                            }
+
+                            return embedBuilder;
+                        }, dic.Count, 10).ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error(ex.Message + "\r\n" + ex.StackTrace);
+                    }
                 }
                 else
                 {
