@@ -11,11 +11,11 @@ using System.Collections.Generic;
 
 namespace Discord_Stream_Notify_Bot.Command.Twitter
 {
-    public partial class Twitter : TopLevelModule<Service.TwitterService>
+    public class TwitterSpaces : TopLevelModule<Service.TwitterSpacesService>
     {
         private readonly DiscordSocketClient _client;
 
-        public Twitter(DiscordSocketClient client)
+        public TwitterSpaces(DiscordSocketClient client)
         {
             _client = client;
         }
@@ -53,7 +53,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
                     return;
                 }
 
-                db.NoticeTwitterSpaceChannel.Add(new NoticeTwitterSpaceChannel() { GuildId = Context.Guild.Id, DiscordChannelId = Context.Channel.Id, NoticeTwitterSpaceUserId = user.data.id, NoticeTwitterSpaceUserScreenName = user.data.username });
+                db.NoticeTwitterSpaceChannel.Add(new NoticeTwitterSpaceChannel() { GuildId = Context.Guild.Id, DiscordChannelId = Context.Channel.Id, NoticeTwitterSpaceUserId = user.data.id, NoticeTwitterSpaceUserScreenName = user.data.username.ToLower() });
                 await Context.Channel.SendConfirmAsync($"已將 {user.data.name} 加入到語音空間通知頻道清單內").ConfigureAwait(false);
 
                 await db.SaveChangesAsync().ConfigureAwait(false);
@@ -74,6 +74,8 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
                 await Context.Channel.SendErrorAsync("使用者名稱不可空白").ConfigureAwait(false);
                 return;
             }
+
+            userScreenName = userScreenName.Replace("@", "").ToLower();
 
             using (var db = DataBase.DBContext.GetDbContext())
             {
@@ -118,7 +120,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
                         .WithOkColor()
                         .WithTitle("推特語音空間通知清單")
                         .WithDescription(string.Join('\n', twitterSpaceList.Skip(page * 20).Take(20)))
-                        .WithFooter($"{Math.Min(twitterSpaceList.Count, (page + 1) * 20)} / {twitterSpaceList.Count}個頻道");
+                        .WithFooter($"{Math.Min(twitterSpaceList.Count, (page + 1) * 20)} / {twitterSpaceList.Count}個使用者");
                 }, twitterSpaceList.Count, 20, false);
             }
         }
@@ -205,7 +207,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
                         }
 
                         return embedBuilder;
-                    }, dic.Count, 10);
+                    }, dic.Count, 10).ConfigureAwait(false);
                 }
                 else
                 {
@@ -277,7 +279,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
                     return;
                 }
 
-                db.TwitterSpaecSpider.Add(new TwitterSpaecSpider() { GuildId = Context.Message.Author.Id == Program.ApplicatonOwner.Id ? 0 : Context.Guild.Id, UserId = user.data.id, UserName = user.data.name, UserScreenName = user.data.username });
+                db.TwitterSpaecSpider.Add(new TwitterSpaecSpider() { GuildId = Context.Message.Author.Id == Program.ApplicatonOwner.Id ? 0 : Context.Guild.Id, UserId = user.data.id, UserName = user.data.name, UserScreenName = user.data.username.ToLower() });
                 await db.SaveChangesAsync();
 
                 await Context.Channel.SendConfirmAsync($"已將 {userScreenName} 加入到推特語音爬蟲清單內\r\n" +
@@ -301,7 +303,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
                 return;
             }
 
-            userScreenName = userScreenName.Replace("@", "");
+            userScreenName = userScreenName.Replace("@", "").ToLower();
 
             using (var db = DataBase.DBContext.GetDbContext())
             {
@@ -327,7 +329,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
 
         [RequireContext(ContextType.Guild)]
         [Command("ListTwitterSpaceSpider")]
-        [Summary("顯示已加入的推特語音空間爬蟲")]
+        [Summary("顯示推特語音空間爬蟲")]
         [Alias("ltss")]
         public async Task ListTwitterSpaceSpider(int page = 0)
         {
@@ -345,17 +347,103 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
                         .WithOkColor()
                         .WithTitle("推特語音空間爬蟲清單")
                         .WithDescription(string.Join('\n', list.Skip(page * 10).Take(10)))
-                        .WithFooter($"{Math.Min(list.Count(), (page + 1) * 10)} / {list.Count()}個頻道 ({warningChannelNum}個隱藏的警告爬蟲)");
+                        .WithFooter($"{Math.Min(list.Count(), (page + 1) * 10)} / {list.Count()}個使用者 ({warningChannelNum}個隱藏的警告使用者)");
                 }, list.Count(), 10, false).ConfigureAwait(false);
             }
         }
 
-        [Command("AddRecordTwitterSpace")]
-        [Summary("新增要錄影的推特語音空間")]
-        [Alias("arts")]
+
+        [RequireContext(ContextType.Guild)]
+        [RequireUserPermission(GuildPermission.Administrator)]
+        [Command("ListWarningTwitterSpaceSpider")]
+        [Summary("顯示警告的推特語音空間爬蟲")]
+        [Alias("lwtss")]
+        public async Task ListWarningTwitterSpaceSpider(int page = 0)
+        {
+            if (page < 0) page = 0;
+
+            using (var db = DataBase.DBContext.GetDbContext())
+            {
+                var list = db.TwitterSpaecSpider.ToList().Where((x) => x.IsWarningUser).Select((x) => Format.Url(x.UserScreenName, $"https://twitter.com/{x.UserScreenName}") +
+                    $" 由 `" + (x.GuildId == 0 ? "Bot擁有者" : (_client.GetGuild(x.GuildId) != null ? _client.GetGuild(x.GuildId).Name : "已退出的伺服器")) + "` 新增");
+
+                await Context.SendPaginatedConfirmAsync(page, page =>
+                {
+                    return new EmbedBuilder()
+                        .WithOkColor()
+                        .WithTitle("警告的推特語音空間爬蟲清單")
+                        .WithDescription(string.Join('\n', list.Skip(page * 10).Take(10)))
+                        .WithFooter($"{Math.Min(list.Count(), (page + 1) * 10)} / {list.Count()}個使用者");
+                }, list.Count(), 10, false).ConfigureAwait(false);
+            }
+        }
+
+
+        [RequireContext(ContextType.Guild)]
+        [Command("ListTwitterSpaceRecord")]
+        [Summary("顯示推特語音空間錄影清單")]
+        [Alias("ltsr")]
+        public async Task ListTwitterSpaceRecord(int page = 0)
+        {
+            await Context.Channel.TriggerTypingAsync().ConfigureAwait(false);
+            if (page < 0) page = 0;
+
+            using (var db = DataBase.DBContext.GetDbContext())
+            {
+                var nowRecordList = db.TwitterSpaecSpider.Where((x) => x.IsRecord && !x.IsWarningUser).Select((x) => $"{x.UserName} ({Format.Url($"{x.UserScreenName}", $"https://twitter.com/{x.UserScreenName}")})").ToList();
+                int warningUserNum = db.TwitterSpaecSpider.Count((x) => x.IsWarningUser);
+
+                if (nowRecordList.Count > 0)
+                {
+                    nowRecordList.Sort();
+                    await Context.SendPaginatedConfirmAsync(0, page =>
+                    {
+                        return new EmbedBuilder()
+                            .WithOkColor()
+                            .WithTitle("推特語音空間記錄清單")
+                            .WithDescription(string.Join('\n', nowRecordList.Skip(page * 20).Take(20)))
+                            .WithFooter($"{Math.Min(nowRecordList.Count, (page + 1) * 20)} / {nowRecordList.Count}個使用者 ({warningUserNum}個隱藏的警告頻道)");
+                    }, nowRecordList.Count, 20, false);
+                }
+                else await Context.Channel.SendConfirmAsync($"語音空間記錄清單中沒有任何使用者").ConfigureAwait(false);
+            }
+        }
+
+        [RequireContext(ContextType.Guild)]
+        [Command("ListWarningTwitterSpaceRecord")]
+        [Summary("顯示警告的推特語音空間錄影清單")]
+        [Alias("lwtsr")]
+        public async Task ListWarningTwitterSpaceRecord(int page = 0)
+        {
+            await Context.Channel.TriggerTypingAsync().ConfigureAwait(false);
+            if (page < 0) page = 0;
+
+            using (var db = DataBase.DBContext.GetDbContext())
+            {
+                var nowRecordList = db.TwitterSpaecSpider.Where((x) => x.IsRecord && x.IsWarningUser).Select((x) => $"{x.UserName} ({Format.Url($"{x.UserScreenName}", $"https://twitter.com/{x.UserScreenName}")})").ToList();
+
+                if (nowRecordList.Count > 0)
+                {
+                    nowRecordList.Sort();
+                    await Context.SendPaginatedConfirmAsync(0, page =>
+                    {
+                        return new EmbedBuilder()
+                            .WithOkColor()
+                            .WithTitle("警告的推特語音空間記錄清單")
+                            .WithDescription(string.Join('\n', nowRecordList.Skip(page * 20).Take(20)))
+                            .WithFooter($"{Math.Min(nowRecordList.Count, (page + 1) * 20)} / {nowRecordList.Count}個使用者");
+                    }, nowRecordList.Count, 20, false);
+                }
+                else await Context.Channel.SendConfirmAsync($"警告的直播記錄清單中沒有任何頻道").ConfigureAwait(false);
+            }
+        }
+
+        [Command("ToggleTwitterSpaceRecord")]
+        [Summary("切換要錄影的推特語音空間")]
+        [Alias("ttsr")]
         [RequireOwner]
         [CommandExample("LaplusDarknesss", "@inui_toko")]
-        public async Task AddRecordTwitterSpace(string userScreenName = null)
+        public async Task ToggleTwitterSpaceRecord(string userScreenName = null)
         {
             if (string.IsNullOrWhiteSpace(userScreenName))
             {
@@ -375,32 +463,41 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
                     return;
                 }
 
-                if (db.RecordTwitterSpaceChannel.Any((x) => x.TwitterUserId == user.data.id))
+                TwitterSpaecSpider twitterSpaecSpider = null;
+                if (db.TwitterSpaecSpider.Any((x) => x.UserId == user.data.id))
                 {
-                    await Context.Channel.SendErrorAsync($"{userScreenName} 已存在於推特語音空間記錄清單");
-                    return;
+                    twitterSpaecSpider = db.TwitterSpaecSpider.First((x) => x.UserId == user.data.id);
+                    twitterSpaecSpider.IsRecord = !twitterSpaecSpider.IsRecord;
+                }
+                else
+                {
+                    if (user.data.is_protected)
+                    {
+                        await Context.Channel.SendErrorAsync($"使用者推文被保護，無法查看").ConfigureAwait(false);
+                        return;
+                    }
+
+                    if (await PromptUserConfirmAsync(new EmbedBuilder().WithOkColor().WithDescription($"{userScreenName} 未在推特語音空間爬蟲清單，新增?")))
+                    {
+                        twitterSpaecSpider = new TwitterSpaecSpider() { GuildId = 0, UserId = user.data.id, UserScreenName = user.data.username.ToLower(), UserName = user.data.name, IsRecord = true };
+                        db.TwitterSpaecSpider.Add(twitterSpaecSpider);
+                    }
                 }
 
-                if (user.data.is_protected)
-                {
-                    await Context.Channel.SendErrorAsync($"使用者推文被保護，無法查看").ConfigureAwait(false);
-                    return;
-                }
-
-                if (await PromptUserConfirmAsync(new EmbedBuilder().WithTitle("新增頻道至推特語音空間記錄清單?").WithDescription(user.data.name)))
-                {
-                    db.RecordTwitterSpaceChannel.Add(new RecordTwitterSpaceChannel() { TwitterUserId = user.data.id, TwitterScreenName = user.data.username });
-                    await db.SaveChangesAsync();
-                    await Context.Channel.SendConfirmAsync($"已新增 {user.data.name} 至推特語音空間記錄清單").ConfigureAwait(false);
-                }
+                if (await db.SaveChangesAsync() >= 1)
+                    await Context.Channel.SendConfirmAsync($"已設定 {user.data.name} 的推特語音紀錄為: " + (twitterSpaecSpider.IsRecord ? "開啟" : "關閉")).ConfigureAwait(false);
+                else
+                    await Context.Channel.SendErrorAsync("未保存").ConfigureAwait(false);
             }
         }
 
-        [Command("RemoveRecordTwitterSpace")]
-        [Summary("移除直播記錄頻道")]
-        [Alias("rrts")]
+        [RequireContext(ContextType.Guild)]
         [RequireOwner]
-        public async Task RemoveRecordTwitterSpace(string userScreenName = null)
+        [Command("ToggleWarningTwitterUser")]
+        [Summary("切換推特使用者狀態")]
+        [CommandExample("LaplusDarknesss")]
+        [Alias("twtu")]
+        public async Task ToggleWarningTwitterUser(string userScreenName = null)
         {
             if (string.IsNullOrWhiteSpace(userScreenName))
             {
@@ -412,22 +509,14 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
 
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                if (!db.RecordTwitterSpaceChannel.Any((x) => x.TwitterScreenName == userScreenName))
+                if (db.TwitterSpaecSpider.Any((x) => x.UserScreenName == userScreenName))
                 {
-                    await Context.Channel.SendErrorAsync($"推特語音空間記錄清單中沒有 {userScreenName}");
-                    return;
-                }
-
-                var userName = "";
-                UserModel user = _service.GetTwitterUser(userScreenName);
-                if (user != null) userName = user.data.name;
-                else userName = userScreenName;
-
-                if (await PromptUserConfirmAsync(new EmbedBuilder().WithTitle("從推特語音空間記錄清單移除頻道?").WithDescription(userName)))
-                {
-                    db.RecordTwitterSpaceChannel.Remove(db.RecordTwitterSpaceChannel.First((x) => x.TwitterUserId == user.data.id));
+                    var twitterSpaec  = db.TwitterSpaecSpider.First((x) => x.UserScreenName == userScreenName);
+                    twitterSpaec.IsWarningUser = !twitterSpaec.IsWarningUser;
+                    db.TwitterSpaecSpider.Update(twitterSpaec);
                     await db.SaveChangesAsync();
-                    await Context.Channel.SendConfirmAsync($"已從推特語音空間記錄清單中移除 {userName}").ConfigureAwait(false);
+
+                    await Context.Channel.SendConfirmAsync($"已設定 {twitterSpaec.UserName} 為 " + (twitterSpaec.IsWarningUser ? "警告" : "普通") + " 狀態").ConfigureAwait(false);
                 }
             }
         }

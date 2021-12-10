@@ -38,6 +38,7 @@ namespace Discord_Stream_Notify_Bot.Migrations
                     GuildId = table.Column<ulong>(type: "INTEGER", nullable: false),
                     DiscordChannelId = table.Column<ulong>(type: "INTEGER", nullable: false),
                     NoticeTwitterSpaceUserId = table.Column<string>(type: "TEXT", nullable: true),
+                    NoticeTwitterSpaceUserScreenName = table.Column<string>(type: "TEXT", nullable: true),
                     StratTwitterSpaceMessage = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
@@ -70,7 +71,8 @@ namespace Discord_Stream_Notify_Bot.Migrations
                 name: "RecordTwitterSpaceChannel",
                 columns: table => new
                 {
-                    TwitterUserId = table.Column<string>(type: "TEXT", nullable: false)
+                    TwitterUserId = table.Column<string>(type: "TEXT", nullable: false),
+                    TwitterScreenName = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -95,6 +97,7 @@ namespace Discord_Stream_Notify_Bot.Migrations
                     Id = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
                     UserId = table.Column<string>(type: "TEXT", nullable: true),
+                    UserScreenName = table.Column<string>(type: "TEXT", nullable: true),
                     UserName = table.Column<string>(type: "TEXT", nullable: true),
                     SpaecId = table.Column<string>(type: "TEXT", nullable: true),
                     SpaecTitle = table.Column<string>(type: "TEXT", nullable: true),
@@ -110,6 +113,7 @@ namespace Discord_Stream_Notify_Bot.Migrations
                 columns: table => new
                 {
                     UserId = table.Column<string>(type: "TEXT", nullable: false),
+                    UserScreenName = table.Column<string>(type: "TEXT", nullable: true),
                     UserName = table.Column<string>(type: "TEXT", nullable: true),
                     GuildId = table.Column<ulong>(type: "INTEGER", nullable: false),
                     IsWarningUser = table.Column<bool>(type: "INTEGER", nullable: false)

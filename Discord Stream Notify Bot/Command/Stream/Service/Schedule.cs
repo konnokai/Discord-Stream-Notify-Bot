@@ -113,7 +113,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                             StartReminder(streamVideo, streamVideo.ChannelType);
                                         }
                                     }
-                                    else if (startTime < DateTime.Now && item.Snippet.LiveBroadcastContent == "live")
+                                    else if (item.Snippet.LiveBroadcastContent == "live")
                                     {
                                         if (addNewStreamVideo.TryAdd(streamVideo, streamVideo.ChannelType))
                                             StartReminder(streamVideo, streamVideo.ChannelType);
@@ -259,7 +259,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                                 StartReminder(streamVideo, streamVideo.ChannelType);
                                             }
                                         }
-                                        else if (startTime < DateTime.Now && item.Snippet.LiveBroadcastContent == "live")
+                                        else if (item.Snippet.LiveBroadcastContent == "live")
                                         {
                                             if (addNewStreamVideo.TryAdd(streamVideo, streamVideo.ChannelType))
                                                 StartReminder(streamVideo, streamVideo.ChannelType);
@@ -441,7 +441,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                                     StartReminder(streamVideo, streamVideo.ChannelType);
                                                 }
                                             }
-                                            else if (startTime < DateTime.Now && item2.Snippet.LiveBroadcastContent == "live")
+                                            else if (item2.Snippet.LiveBroadcastContent == "live")
                                             {
                                                 if (addNewStreamVideo.TryAdd(streamVideo, streamVideo.ChannelType))
                                                     StartReminder(streamVideo, streamVideo.ChannelType);

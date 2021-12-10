@@ -200,11 +200,11 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
 
         [RequireContext(ContextType.Guild)]
         [RequireOwner]
-        [Command("SetWarningChannel")]
+        [Command("ToggleWarningChannel")]
         [Summary("切換警告頻道狀態")]
         [CommandExample("UCbfv8uuUXt3RSJGEwxny5Rw")]
-        [Alias("swc")]
-        public async Task SetWarningChannel(string channelId = "")
+        [Alias("twc")]
+        public async Task ToggleWarningChannel(string channelId = "")
         {
             channelId = channelId.Trim();
             if (string.IsNullOrEmpty(channelId))

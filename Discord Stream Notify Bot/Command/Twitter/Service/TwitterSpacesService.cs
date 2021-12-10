@@ -1,26 +1,24 @@
-﻿using Newtonsoft.Json;
+﻿using Discord;
+using Discord.WebSocket;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using SocialOpinionAPI.Core;
+using SocialOpinionAPI.Models.Users;
 using SocialOpinionAPI.Services.Spaces;
 using SocialOpinionAPI.Services.Users;
 using System;
-using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using Discord_Stream_Notify_Bot.DataBase.Table;
-using Discord.WebSocket;
-using Discord;
-using System.Runtime.InteropServices;
-using System.Diagnostics;
-using SocialOpinionAPI.Models.Users;
 
 namespace Discord_Stream_Notify_Bot.Command.Twitter.Service
 {
-    public partial class TwitterService
+    public partial class TwitterSpacesService : IService
     {
         public bool IsEnbale { get; private set; } = true;
         public UserService UserService { get; private set; }
@@ -28,11 +26,10 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter.Service
 
         OAuthInfo oAuthInfo;
         bool isRuning = false;
-        //List<string> spaceRunningList = new();
         DiscordSocketClient _client;
         Timer timer;
 
-        public TwitterService(DiscordSocketClient client, BotConfig botConfig)
+        public TwitterSpacesService(DiscordSocketClient client, BotConfig botConfig)
         {
             if (string.IsNullOrWhiteSpace(botConfig.TwitterApiKey) || string.IsNullOrWhiteSpace(botConfig.TwitterApiKeySecret))
             {
@@ -78,18 +75,18 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter.Service
                                             await db.SaveChangesAsync();
                                         }
 
-                                        var spaceData = new TwitterSpace() { UserId = item.creator_id, UserName = user.UserName, UserScreenName = user.UserScreenName, SpaecId = item.id, SpaecTitle = item.title, SpaecActualStartTime = (DateTime)(item?.started_at).GetValueOrDefault().AddHours(8) };
+                                        var spaceData = new DataBase.Table.TwitterSpace() { UserId = item.creator_id, UserName = user.UserName, UserScreenName = user.UserScreenName, SpaecId = item.id, SpaecTitle = item.title, SpaecActualStartTime = (DateTime)(item?.started_at).GetValueOrDefault().AddHours(8) };
                                         db.TwitterSpace.Add(spaceData);
 
                                         if (IsRecordSpace(spaceData))
                                         {
                                             try
                                             {
-                                                await SendSpaceMessageAsync(userData, spaceData, true);
-
                                                 var metadataJson = GetTwitterSpaceMetadata(item.id);
                                                 var masterUrl = GetTwitterSpaceMasterUrl(metadataJson["media_key"].ToString());
                                                 RecordSpace(spaceData, masterUrl);
+
+                                                await SendSpaceMessageAsync(userData, spaceData, true);
                                             }
                                             catch (Exception ex)
                                             {
@@ -124,7 +121,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter.Service
             catch (Exception) { return null; }
         }
 
-        private bool IsRecordSpace(TwitterSpace twitterSpace)
+        private bool IsRecordSpace(DataBase.Table.TwitterSpace twitterSpace)
         {
             using (var db = DataBase.DBContext.GetDbContext())
             {
@@ -140,7 +137,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter.Service
             }
         }
 
-        private async Task SendSpaceMessageAsync(UserModel userModel, TwitterSpace twitterSpace, bool isRecord = false)
+        private async Task SendSpaceMessageAsync(UserModel userModel, DataBase.Table.TwitterSpace twitterSpace, bool isRecord = false)
         {
             using (var db = DataBase.DBContext.GetDbContext())
             {
@@ -277,7 +274,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter.Service
             }
         }
 
-        private void RecordSpace(TwitterSpace twitterSpace ,string masterUrl)
+        private void RecordSpace(DataBase.Table.TwitterSpace twitterSpace ,string masterUrl)
         {
             Log.Info($"{twitterSpace.UserName} ({twitterSpace.SpaecTitle}): {masterUrl}");
 

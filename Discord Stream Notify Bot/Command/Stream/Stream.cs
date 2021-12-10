@@ -197,7 +197,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
         [RequireContext(ContextType.Guild)]
         [RequireUserPermission(GuildPermission.Administrator)]
         [Command("ListWarningRecordChannel")]
-        [Summary("顯示直播記錄頻道")]
+        [Summary("顯示警告的直播記錄頻道")]
         [Alias("LWRC")]
         public async Task ListWarningRecordChannel()
         {
@@ -318,10 +318,10 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
             else await Context.Channel.SendMessageAsync(null, false, embed).ConfigureAwait(false);
         }
 
-        [Command("ComingSoomStream")]
+        [Command("ComingSoonStream")]
         [Summary("顯示接下來直播的清單")]
         [Alias("CSS")]
-        public async Task ComingSoomStream()
+        public async Task ComingSoonStream()
         {
             await Context.Channel.TriggerTypingAsync().ConfigureAwait(false);
 
@@ -956,7 +956,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
                 var channel = _service.yt.Channels.List("snippet");
                 channel.Id = string.Join(",", channelId);
                 var response = await channel.ExecuteAsync().ConfigureAwait(false);
-                return response.Items.Select((x) => $"{x.Snippet.Title} / {x.Id}").ToList();
+                return response.Items.Select((x) => Format.Url(x.Snippet.Title, $"https://www.youtube.com/channel/{x.Id}")).ToList();
             }
             catch (Exception ex)
             {

@@ -9,8 +9,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Discord_Stream_Notify_Bot.Migrations
 {
     [DbContext(typeof(DBContext))]
-    [Migration("20211207182004_AddScreenNameFidle")]
-    partial class AddScreenNameFidle
+    [Migration("20211207203454_AddTwitterSpaces")]
+    partial class AddTwitterSpaces
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -149,6 +149,9 @@ namespace Discord_Stream_Notify_Bot.Migrations
                     b.Property<string>("NoticeTwitterSpaceUserId")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("NoticeTwitterSpaceUserScreenName")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("StratTwitterSpaceMessage")
                         .HasColumnType("TEXT");
 
@@ -223,6 +226,9 @@ namespace Discord_Stream_Notify_Bot.Migrations
             modelBuilder.Entity("Discord_Stream_Notify_Bot.DataBase.Table.RecordTwitterSpaceChannel", b =>
                 {
                     b.Property<string>("TwitterUserId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TwitterScreenName")
                         .HasColumnType("TEXT");
 
                     b.HasKey("TwitterUserId");

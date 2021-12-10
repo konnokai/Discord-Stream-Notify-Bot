@@ -10,5 +10,6 @@ namespace Discord_Stream_Notify_Bot.DataBase.Table
         public string UserName { get; set; } = null;
         public ulong GuildId { get; set; }
         public bool IsWarningUser { get; set; } = false;
+        public bool IsRecord { get; set; } = false;
     }
 }
