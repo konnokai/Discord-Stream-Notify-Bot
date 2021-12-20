@@ -16,6 +16,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
     public partial class StreamService
     {
         private static Dictionary<StreamVideo, ChannelType> addNewStreamVideo = new();
+        private static HashSet<string> newStreamList = new();
         private bool isFirstHolo = true, isFirst2434 = true, isFirstOther = true;
 
         private async Task HoloScheduleAsync()
@@ -38,7 +39,8 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                         if (url.StartsWith("https://www.youtube.com/watch"))
                         {
                             string videoId = url.Split("?v=")[1].Trim();
-                            if (!db.HasStreamVideoByVideoId(videoId)) idList.Add(videoId);
+                            if (!db.HasStreamVideoByVideoId(videoId) && !newStreamList.Contains(videoId)) idList.Add(videoId);
+                            newStreamList.Add(videoId);
                         }
                     }
 
@@ -184,7 +186,8 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                         foreach (var item in nijisanjiJson.data.events)
                         {
                             string videoId = item.url.Split("?v=")[1].Trim();
-                            if (!db.HasStreamVideoByVideoId(videoId)) idList.Add(videoId);
+                            if (!db.HasStreamVideoByVideoId(videoId) && !newStreamList.Contains(videoId)) idList.Add(videoId);
+                            newStreamList.Add(videoId);
                         }
 
                         if (idList.Count > 0)
@@ -363,7 +366,8 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                     if (!otherVideoDic[item.ChannelId].Contains(videoId))
                                     {
                                         otherVideoDic[item.ChannelId].Add(videoId);
-                                        if (!db.HasStreamVideoByVideoId(videoId)) addVideoIdList.Add(videoId);
+                                        if (!db.HasStreamVideoByVideoId(videoId) && !newStreamList.Contains(videoId)) addVideoIdList.Add(videoId);
+                                        newStreamList.Add(videoId);
                                     }
                                 }
                                 catch (Exception ex)

@@ -104,7 +104,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                     }
                     catch (Exception ex)
                     {
-                        Log.Error($"Record-StartStream {streamRecordJson.IsReRecord} {ex.Message}\r\n{ex.StackTrace}");
+                        Log.Error($"Record-StartStream {streamRecordJson.IsReRecord} {ex}");
                     }
                 });
 
@@ -147,7 +147,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                     }
                     catch (Exception ex)
                     {
-                        Log.Error($"Record-EndStream {ex.Message}\r\n{ex.StackTrace}");
+                        Log.Error($"Record-EndStream {ex}");
                     }
                 });
 
@@ -177,7 +177,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                         }
                         catch (Exception ex)
                         {
-                            Log.Error($"Record-DeleteStream {ex.Message}\r\n{ex.StackTrace}");
+                            Log.Error($"Record-DeleteStream {ex}");
                         }
                     }
                 });
@@ -209,7 +209,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                         }
                         catch (Exception ex)
                         {
-                            Log.Error($"Record-429Error {ex.Message}\r\n{ex.StackTrace}");
+                            Log.Error($"Record-429Error {ex}");
                         }
                     }
                 });
@@ -397,7 +397,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                 }
                                 catch (Exception ex)
                                 {
-                                    Log.Error($"CheckScheduleTime\r\n{ex.Message}\r\n{ex.StackTrace}");
+                                    Log.Error($"CheckScheduleTime\r\n{ex}");
                                 }
                             }
                         }
@@ -434,8 +434,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Message);
-                Log.Error(ex.StackTrace);
+                Log.Error(ex.ToString());
                 return null;
             }
         }
@@ -548,7 +547,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
         //    }
         //    catch (Exception ex)
         //    {
-        //        Log.Error($"CheckHoloNowStream\r\n{ex.Message}\r\n{ex.StackTrace}");
+        //        Log.Error($"CheckHoloNowStream\r\n{ex}");
         //    }
         //}, null, TimeSpan.FromSeconds(10), TimeSpan.FromMinutes(3));
 

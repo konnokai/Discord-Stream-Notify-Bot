@@ -75,17 +75,22 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter.Service
                                             await db.SaveChangesAsync();
                                         }
 
-                                        var spaceData = new DataBase.Table.TwitterSpace() { UserId = item.creator_id, UserName = user.UserName, UserScreenName = user.UserScreenName, SpaecId = item.id, SpaecTitle = item.title, SpaecActualStartTime = (DateTime)(item?.started_at).GetValueOrDefault().AddHours(8) };
+                                        string masterUrl = "";
+                                        try
+                                        {
+                                            var metadataJson = GetTwitterSpaceMetadata(item.id);
+                                            masterUrl = GetTwitterSpaceMasterUrl(metadataJson["media_key"].ToString());
+                                        }
+                                        catch (Exception ex) { Log.Error($"GetTwitterSpaceMasterUrl: {item.id}\r\n{ex}"); }
+
+                                        var spaceData = new DataBase.Table.TwitterSpace() { UserId = item.creator_id, UserName = user.UserName, UserScreenName = user.UserScreenName, SpaecId = item.id, SpaecTitle = item.title, SpaecActualStartTime = (item?.started_at).GetValueOrDefault().AddHours(8), SpaecMasterPlaylistUrl = masterUrl.Replace("dynamic_playlist.m3u8?type=live", "master_playlist.m3u8") };
                                         db.TwitterSpace.Add(spaceData);
 
-                                        if (IsRecordSpace(spaceData))
+                                        if (IsRecordSpace(spaceData) && !string.IsNullOrEmpty(masterUrl))
                                         {
                                             try
                                             {
-                                                var metadataJson = GetTwitterSpaceMetadata(item.id);
-                                                var masterUrl = GetTwitterSpaceMasterUrl(metadataJson["media_key"].ToString());
                                                 RecordSpace(spaceData, masterUrl);
-
                                                 await SendSpaceMessageAsync(userData, spaceData, true);
                                             }
                                             catch (Exception ex)
@@ -144,6 +149,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter.Service
                 var noticeGuildList = db.NoticeTwitterSpaceChannel.Where((x) => x.NoticeTwitterSpaceUserId == twitterSpace.UserId).ToList();
                 Log.NewStream($"發送推特空間開台通知 ({noticeGuildList.Count}): {twitterSpace.UserScreenName} - {twitterSpace.SpaecTitle}");
 
+#if RELEASE
                 EmbedBuilder embedBuilder = new EmbedBuilder()
                     .WithTitle(twitterSpace.SpaecTitle)
                     .WithDescription(Format.Url($"{twitterSpace.UserName}", $"https://twitter.com/{twitterSpace.UserScreenName}"))
@@ -172,23 +178,24 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter.Service
                         await db.SaveChangesAsync();
                     }
                 }
+#endif
             }
         }
 
-        private JToken GetTwitterSpaceMetadata(string spaceId)
+        private JToken GetTwitterSpaceMetadata(string spaceId, bool isError = false)
         {
             string query = WebUtility.UrlEncode(JsonConvert.SerializeObject(new
             {
                 id = spaceId,
                 isMetatagsQuery = false,
-                withSuperFollowsUserFields = true,
-                withUserResults = true,
+                withSuperFollowsUserFields = false,
+                withUserResults = false,
                 withBirdwatchPivots = false,
                 withReactionsMetadata = false,
                 withReactionsPerspective = false,
-                withSuperFollowsTweetFields = true,
-                withReplays = true,
-                withScheduledSpaces = true
+                withSuperFollowsTweetFields = false,
+                withReplays = !isError,
+                withScheduledSpaces = !isError
             }));
 
             try
@@ -212,9 +219,13 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter.Service
                     }
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                throw;
+                if (ex.Message.Contains("403"))
+                {
+                    return GetTwitterSpaceMetadata(spaceId, true);
+                }
+                else throw;
             }
         }
 
@@ -274,7 +285,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter.Service
             }
         }
 
-        private void RecordSpace(DataBase.Table.TwitterSpace twitterSpace ,string masterUrl)
+        private void RecordSpace(DataBase.Table.TwitterSpace twitterSpace, string masterUrl)
         {
             Log.Info($"{twitterSpace.UserName} ({twitterSpace.SpaecTitle}): {masterUrl}");
 

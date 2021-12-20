@@ -21,7 +21,7 @@ namespace Discord_Stream_Notify_Bot
 {
     class Program
     {
-        public const string VERSION = "V1.1.2";
+        public const string VERSION = "V1.1.2.4";
         public static ConnectionMultiplexer Redis { get; set; }
         public static ISubscriber RedisSub { get; set; }
         public static IDatabase RedisDb { get; set; }
