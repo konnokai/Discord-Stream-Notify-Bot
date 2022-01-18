@@ -360,7 +360,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
 
 
         [RequireContext(ContextType.Guild)]
-        [RequireUserPermission(GuildPermission.Administrator)]
+        [RequireOwner]
         [Command("ListWarningTwitterSpaceSpider")]
         [Summary("顯示警告的推特語音空間爬蟲")]
         [Alias("lwtss")]
@@ -416,6 +416,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
         }
 
         [RequireContext(ContextType.Guild)]
+        [RequireOwner]
         [Command("ListWarningTwitterSpaceRecord")]
         [Summary("顯示警告的推特語音空間錄影清單")]
         [Alias("lwtsr")]

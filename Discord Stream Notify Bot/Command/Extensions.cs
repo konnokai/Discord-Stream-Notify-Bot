@@ -31,6 +31,12 @@ namespace Discord_Stream_Notify_Bot.Command
         public static DateTime ConvertToDateTime(this string str) =>
            DateTime.Parse(str);
 
+        public static string ConvertDateTimeToDiscordMarkdown(this DateTime dateTime)
+        {
+            long UTCTime = ((DateTimeOffset)dateTime).ToUnixTimeSeconds();
+            return $"<t:{UTCTime}:F> (<t:{UTCTime}:R>)";
+        }
+
         public static StreamService.ChannelType GetProductionType(this StreamVideo streamVideo)
         {
             using (var db = DataBase.DBContext.GetDbContext())

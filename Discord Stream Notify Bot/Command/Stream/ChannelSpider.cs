@@ -174,11 +174,9 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
         }
 
         [RequireContext(ContextType.Guild)]
-        [RequireUserPermission(GuildPermission.Administrator)]
+        [RequireOwner]
         [Command("ListWarningChannelSpider")]
-        [Summary("顯示已加入爬蟲檢測的\"警告\"頻道\r\n" +
-            "注意: 本指令會出現衝塔或非V的頻道\r\n" +
-            "所以需要伺服器管理員才可執行，請小心使用")]
+        [Summary("顯示已加入爬蟲檢測的\"警告\"頻道")]
         [Alias("lwcs")]
         public async Task ListWarningChannelSpider()
         {

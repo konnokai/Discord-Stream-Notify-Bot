@@ -49,11 +49,12 @@ namespace Discord_Stream_Notify_Bot.Command.Normal
         public async Task StatusAsync()
         {
             EmbedBuilder embedBuilder = new EmbedBuilder().WithOkColor();
-            embedBuilder.Title = "直播小幫手 " + Program.VERSION;
+            embedBuilder.WithTitle("直播小幫手");
 #if DEBUG
             embedBuilder.Title += " (測試版)";
 #endif
 
+            embedBuilder.WithDescription($"建置版本 {Program.VERSION}");
             embedBuilder.AddField("作者", "孤之界#1121", true);
             embedBuilder.AddField("擁有者", $"{Program.ApplicatonOwner.Username}#{Program.ApplicatonOwner.Discriminator}", true);
             embedBuilder.AddField("狀態", $"伺服器 {_client.Guilds.Count}\n服務成員數 {_client.Guilds.Sum((x) => x.MemberCount)}", false);

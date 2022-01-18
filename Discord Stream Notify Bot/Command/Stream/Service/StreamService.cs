@@ -41,7 +41,6 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                 ApplicationName = "DiscordStreamBot",
                 ApiKey = botConfig.GoogleApiKey,
             });
-
 #if DEBUG
             return;
 #endif
@@ -87,7 +86,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                         .WithImageUrl($"https://i.ytimg.com/vi/{item.Id}/maxresdefault.jpg")
                         .WithUrl($"https://www.youtube.com/watch?v={item.Id}")
                         .AddField("直播狀態", "開台中", true)
-                        .AddField("開台時間", startTime, true);
+                        .AddField("開台時間", startTime.ConvertDateTimeToDiscordMarkdown());
                         //.AddField("是否記錄直播", "是", true)
                         //.AddField("存檔名稱", streamRecordJson.RecordFileName, false);
 
@@ -139,8 +138,8 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                         .WithImageUrl($"https://i.ytimg.com/vi/{item.Id}/maxresdefault.jpg")
                         .WithUrl($"https://www.youtube.com/watch?v={item.Id}")
                         .AddField("直播狀態", "已關台", true)
-                        .AddField("關台時間", endTime, true)
-                        .AddField("直播時間", $"{endTime.Subtract(startTime):hh'時'mm'分'ss'秒'}", true);
+                        .AddField("直播時間", $"{endTime.Subtract(startTime):hh'時'mm'分'ss'秒'}", true)
+                        .AddField("關台時間", endTime.ConvertDateTimeToDiscordMarkdown());
                         // .AddField("存檔名稱", streamRecordJson.RecordFileName, false);
 
                         await SendStreamMessageAsync(item.Id, embedBuilder.Build(), NoticeType.End).ConfigureAwait(false);
@@ -169,7 +168,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                 .WithDescription(Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}"))
                                 .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
                                 .AddField("直播狀態", "已刪除直播", true)
-                                .AddField("排定開台時間", streamVideo.ScheduledStartTime, true);
+                                .AddField("排定開台時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
 
                                 await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.Delete).ConfigureAwait(false);
                             }
@@ -201,7 +200,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                 .WithImageUrl($"https://i.ytimg.com/vi/{streamVideo.VideoId}/maxresdefault.jpg")
                                 .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
                                 .AddField("直播狀態", "開台中", true)
-                                .AddField("排定開台時間", streamVideo.ScheduledStartTime, true);
+                                .AddField("排定開台時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
 
                                 if (Program.ApplicatonOwner != null) await Program.ApplicatonOwner.SendMessageAsync("429錯誤", false, embedBuilder.Build()).ConfigureAwait(false); 
                                 await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.Start).ConfigureAwait(false);
@@ -335,7 +334,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                 .WithImageUrl($"https://i.ytimg.com/vi/{stream.VideoId}/maxresdefault.jpg")
                                 .WithUrl($"https://www.youtube.com/watch?v={stream.VideoId}")
                                 .AddField("直播狀態", "無開始時間", true)
-                                .AddField("開台時間", stream.ScheduledStartTime, true);
+                                .AddField("開台時間", stream.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
 
                                 if (Program.ApplicatonOwner != null) await Program.ApplicatonOwner.SendMessageAsync(null, false, embedBuilder.Build()).ConfigureAwait(false);
                                 //await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.Start).ConfigureAwait(false);
@@ -388,8 +387,8 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                         .WithImageUrl($"https://i.ytimg.com/vi/{streamVideo.VideoId}/maxresdefault.jpg")
                                         .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
                                         .AddField("直播狀態", "尚未開台(已更改時間)", true)
-                                        .AddField("排定開台時間", stream.ScheduledStartTime, true)
-                                        .AddField("更改開台時間", streamVideo.ScheduledStartTime, true);
+                                        .AddField("排定開台時間", stream.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown())
+                                        .AddField("更改開台時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
 
                                         await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.ChangeTime).ConfigureAwait(false);
                                         StartReminder(streamVideo, stream.ChannelType);

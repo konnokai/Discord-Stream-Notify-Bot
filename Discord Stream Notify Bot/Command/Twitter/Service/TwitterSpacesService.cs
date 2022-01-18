@@ -62,13 +62,14 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter.Service
                                 foreach (var item in spaces.data)
                                 {
                                     if (db.TwitterSpace.Any((x) => x.SpaecId == item.id)) continue;
+                                    if (item.state != "live") continue;
 
                                     try
                                     {
                                         var user = db.TwitterSpaecSpider.FirstOrDefault((x) => x.UserId == item.creator_id);
                                         var userData = UserService.GetUser(user.UserScreenName);
 
-                                        if (user.UserScreenName == null || user.UserName == null)
+                                        if (user.UserScreenName != userData.data.username || user.UserName != userData.data.name)
                                         {
                                             user.UserScreenName = userData.data.username;
                                             user.UserName = userData.data.name;
@@ -81,9 +82,9 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter.Service
                                             var metadataJson = GetTwitterSpaceMetadata(item.id);
                                             masterUrl = GetTwitterSpaceMasterUrl(metadataJson["media_key"].ToString());
                                         }
-                                        catch (Exception ex) { Log.Error($"GetTwitterSpaceMasterUrl: {item.id}\r\n{ex}"); }
+                                        catch (Exception ex) { Log.Error($"GetTwitterSpaceMasterUrl: {item.id}\r\n{ex}"); continue; }
 
-                                        var spaceData = new DataBase.Table.TwitterSpace() { UserId = item.creator_id, UserName = user.UserName, UserScreenName = user.UserScreenName, SpaecId = item.id, SpaecTitle = item.title, SpaecActualStartTime = (item?.started_at).GetValueOrDefault().AddHours(8), SpaecMasterPlaylistUrl = masterUrl.Replace("dynamic_playlist.m3u8?type=live", "master_playlist.m3u8") };
+                                        var spaceData = new DataBase.Table.TwitterSpace() { UserId = item.creator_id, UserName = user.UserName, UserScreenName = user.UserScreenName, SpaecId = item.id, SpaecTitle = item.title, SpaecActualStartTime = (item?.started_at).GetValueOrDefault(), SpaecMasterPlaylistUrl = masterUrl.Replace("dynamic_playlist.m3u8?type=live", "master_playlist.m3u8") };
                                         db.TwitterSpace.Add(spaceData);
 
                                         if (IsRecordSpace(spaceData) && !string.IsNullOrEmpty(masterUrl))
@@ -155,7 +156,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter.Service
                     .WithDescription(Format.Url($"{twitterSpace.UserName}", $"https://twitter.com/{twitterSpace.UserScreenName}"))
                     .WithUrl($"https://twitter.com/i/spaces/{twitterSpace.SpaecId}/peek")
                     .WithThumbnailUrl(userModel.data.profile_image_url)
-                    .WithFooter($"開始時間: {twitterSpace.SpaecActualStartTime}");
+                    .AddField("開始時間", twitterSpace.SpaecActualStartTime.ConvertDateTimeToDiscordMarkdown());
 
                 if (isRecord) embedBuilder.WithRecordColor();
                 else embedBuilder.WithOkColor();
@@ -182,25 +183,25 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter.Service
             }
         }
 
-        private JToken GetTwitterSpaceMetadata(string spaceId, bool isError = false)
+        private JToken GetTwitterSpaceMetadata(string spaceId)
         {
             string query = WebUtility.UrlEncode(JsonConvert.SerializeObject(new
             {
                 id = spaceId,
                 isMetatagsQuery = false,
                 withSuperFollowsUserFields = false,
-                withUserResults = false,
                 withBirdwatchPivots = false,
+                withDownvotePerspective = false,
                 withReactionsMetadata = false,
                 withReactionsPerspective = false,
                 withSuperFollowsTweetFields = false,
-                withReplays = !isError,
-                withScheduledSpaces = !isError
+                withReplays = false,
+                withScheduledSpaces = false
             }));
 
             try
             {
-                string url = "https://twitter.com/i/api/graphql/jyQ0_DEMZHeoluCgHJ-U5Q/AudioSpaceById?variables=" + query;
+                string url = "https://twitter.com/i/api/graphql/Uv5R_-Chxbn1FEkyUkSW2w/AudioSpaceById?variables=" + query;
                 HttpWebRequest request = HttpWebRequest.Create(url) as HttpWebRequest;
                 request.Method = "GET";
                 request.ContentType = "application/json";
@@ -219,13 +220,9 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter.Service
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                if (ex.Message.Contains("403"))
-                {
-                    return GetTwitterSpaceMetadata(spaceId, true);
-                }
-                else throw;
+                throw;
             }
         }
 
@@ -262,20 +259,18 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter.Service
         {
             try
             {
-                HttpWebRequest request = HttpWebRequest.Create("https://twitter.com") as HttpWebRequest;
-                request.Method = "GET";
-                request.ContentType = "application/x-www-form-urlencoded";
+                HttpWebRequest request = HttpWebRequest.Create("https://api.twitter.com/1.1/guest/activate.json") as HttpWebRequest;
+                request.Method = "POST";
+                request.ContentType = "application/json";
                 request.Timeout = 30000;
+                request.Headers.Add(HttpRequestHeader.Authorization, "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs=1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA");
                 request.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.45 Safari/537.36";
 
                 using (HttpWebResponse response = request.GetResponse() as HttpWebResponse)
                 {
                     using (var res = new StreamReader(response.GetResponseStream()))
                     {
-                        string webHtml = res.ReadToEnd();
-                        Regex regex = new Regex(@"(?<=gt\=)\d{19}");
-                        var r = regex.Match(webHtml);
-                        return r.Value;
+                        return JObject.Parse(res.ReadToEnd())["guest_token"].ToString();
                     }
                 }
             }

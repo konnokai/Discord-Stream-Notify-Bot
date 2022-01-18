@@ -195,7 +195,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
         }
 
         [RequireContext(ContextType.Guild)]
-        [RequireUserPermission(GuildPermission.Administrator)]
+        [RequireOwner]
         [Command("ListWarningRecordChannel")]
         [Summary("顯示警告的直播記錄頻道")]
         [Alias("LWRC")]

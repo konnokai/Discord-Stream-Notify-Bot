@@ -85,7 +85,7 @@ namespace Discord_Stream_Notify_Bot.Command.Help
             if (string.IsNullOrWhiteSpace(command))
             {
                 EmbedBuilder embed = new EmbedBuilder().WithOkColor().WithFooter("輸入 `s!Modules` 取得所有的模組");
-                embed.Title = "直播小幫手 " + Program.VERSION;
+                embed.Title = "直播小幫手 建置版本" + Program.VERSION;
 #if DEBUG
                 embed.Title += " (測試版)";
 #endif

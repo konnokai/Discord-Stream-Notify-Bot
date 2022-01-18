@@ -59,7 +59,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                     .WithDescription(Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}"))
                     .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
                     .AddField("直播狀態", "已刪除直播", true)
-                    .AddField("排定開台時間", streamVideo.ScheduledStartTime, true);
+                    .AddField("排定開台時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown(), true);
 
                     await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.Delete).ConfigureAwait(false);
                     return;
@@ -167,7 +167,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                 .WithDescription(Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}"))
                                 .WithImageUrl($"https://i.ytimg.com/vi/{streamVideo.VideoId}/maxresdefault.jpg")
                                 .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
-                                .AddField("排定開台時間", streamVideo.ScheduledStartTime, true)
+                                .AddField("排定開台時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown(), true)
                                 .AddField("直播狀態", "開台中", true);
                                 //.AddField("是否記錄直播", "否", true);
 
@@ -189,8 +189,8 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                         .WithImageUrl($"https://i.ytimg.com/vi/{streamVideo.VideoId}/maxresdefault.jpg")
                         .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
                         .AddField("直播狀態", "尚未開台(已更改時間)", true)
-                        .AddField("排定開台時間", streamVideo.ScheduledStartTime, true)
-                        .AddField("更改開台時間", startTime, true);
+                        .AddField("排定開台時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown(), true)
+                        .AddField("更改開台時間", startTime.ConvertDateTimeToDiscordMarkdown(), true);
 
                         streamVideo.ScheduledStartTime = startTime;
                         switch (streamVideo.ChannelType)

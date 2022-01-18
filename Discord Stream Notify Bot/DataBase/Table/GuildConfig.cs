@@ -6,7 +6,7 @@ namespace Discord_Stream_Notify_Bot.DataBase.Table
     {
         public ulong GuildId { get; set; }
         public string MemberCheckChannelId { get; set; } = null;
-        public string MemberCheckVideoId { get; set; } = null;
+        public string MemberCheckVideoId { get; set; } = "-";
         public ulong MemberCheckGrantRoleId { get; set; } = 0;
         public List<YoutubeMemberCheck> MemberCheck { get; set; } = new();
     }

@@ -21,7 +21,7 @@ namespace Discord_Stream_Notify_Bot
 {
     class Program
     {
-        public const string VERSION = "V1.1.2.4";
+        public static string VERSION => GetLinkerTime(Assembly.GetEntryAssembly());
         public static ConnectionMultiplexer Redis { get; set; }
         public static ISubscriber RedisSub { get; set; }
         public static IDatabase RedisDb { get; set; }
@@ -255,6 +255,24 @@ namespace Discord_Stream_Notify_Bot
         {
             isDisconnect = true;
             e.Cancel = true;
+        }
+
+        public static string GetLinkerTime(Assembly assembly)
+        {
+            const string BuildVersionMetadataPrefix = "+build";
+
+            var attribute = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>();
+            if (attribute?.InformationalVersion != null)
+            {
+                var value = attribute.InformationalVersion;
+                var index = value.IndexOf(BuildVersionMetadataPrefix);
+                if (index > 0)
+                {
+                    value = value[(index + BuildVersionMetadataPrefix.Length)..];
+                    return value;
+                }
+            }
+            return default;
         }
 
         public static void SendMessageToDiscord(string content)

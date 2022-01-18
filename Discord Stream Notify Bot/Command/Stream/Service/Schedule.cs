@@ -75,8 +75,8 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                     .WithDescription(Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}"))
                                     .WithImageUrl($"https://i.ytimg.com/vi/{streamVideo.VideoId}/maxresdefault.jpg")
                                     .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
-                                    .AddField("所屬", streamVideo.GetProductionType().GetProductionName())
-                                    .AddField("上傳時間", item.Snippet.PublishedAt.Value, true);
+                                    .AddField("所屬", streamVideo.GetProductionType().GetProductionName(), true)
+                                    .AddField("上傳時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
 
                                     if (addNewStreamVideo.TryAdd(streamVideo, streamVideo.ChannelType) && !isFirstHolo)
                                         await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.NewVideo).ConfigureAwait(false);
@@ -104,9 +104,9 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                         .WithDescription(Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}"))
                                         .WithImageUrl($"https://i.ytimg.com/vi/{streamVideo.VideoId}/maxresdefault.jpg")
                                         .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
-                                        .AddField("所屬", streamVideo.GetProductionType().GetProductionName())
+                                        .AddField("所屬", streamVideo.GetProductionType().GetProductionName(), true)
                                         .AddField("直播狀態", "尚未開台", true)
-                                        .AddField("排定開台時間", startTime, true);
+                                        .AddField("排定開台時間", startTime.ConvertDateTimeToDiscordMarkdown());
                                         //.AddField("是否記錄直播", (CanRecord(db, streamVideo) ? "是" : "否"), true);
 
                                         if (addNewStreamVideo.TryAdd(streamVideo, streamVideo.ChannelType))
@@ -148,7 +148,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
             catch (Exception ex)
             {
                 if (!ex.Message.Contains("EOF or 0 bytes"))
-                    Log.Error("HoloStream\r\n" + ex.Message + "\r\n" + ex.StackTrace);
+                    Log.Error($"HoloStream: {ex}");
             }
 
             Program.isHoloChannelSpider = false; isFirstHolo = false;
@@ -174,7 +174,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                     catch (Exception ex)
                     {
                         if (!ex.Message.Contains("EOF or 0 bytes") && !ex.Message.Contains("504") && !ex.Message.Contains("500"))
-                            Log.Error("NijisanjiStream\r\n" + ex.Message + "\r\n" + ex.StackTrace);
+                            Log.Error($"NijisanjiStream: {ex}");
                         Program.isNijisanjiChannelSpider = false;
                         return;
                     }
@@ -222,8 +222,8 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                         .WithDescription(Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}"))
                                         .WithImageUrl($"https://i.ytimg.com/vi/{streamVideo.VideoId}/maxresdefault.jpg")
                                         .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
-                                        .AddField("所屬", streamVideo.GetProductionType().GetProductionName())
-                                        .AddField("上傳時間", item.Snippet.PublishedAt.Value, true);
+                                        .AddField("所屬", streamVideo.GetProductionType().GetProductionName(), true)
+                                        .AddField("上傳時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
 
                                         if (addNewStreamVideo.TryAdd(streamVideo, streamVideo.ChannelType) && !isFirst2434)
                                             await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.NewVideo).ConfigureAwait(false);
@@ -251,9 +251,9 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                             .WithDescription(Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}"))
                                             .WithImageUrl($"https://i.ytimg.com/vi/{streamVideo.VideoId}/maxresdefault.jpg")
                                             .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
-                                            .AddField("所屬", streamVideo.GetProductionType().GetProductionName())
+                                            .AddField("所屬", streamVideo.GetProductionType().GetProductionName(), true)
                                             .AddField("直播狀態", "尚未開台", true)
-                                            .AddField("排定開台時間", startTime, true);
+                                            .AddField("排定開台時間", startTime.ConvertDateTimeToDiscordMarkdown());
                                             //.AddField("是否記錄直播", (CanRecord(db, streamVideo) ? "是" : "否"), true);
 
                                             if (addNewStreamVideo.TryAdd(streamVideo, streamVideo.ChannelType))
@@ -295,7 +295,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
             }
             catch (Exception ex)
             {
-                Log.Error("NijisanjiStream\r\n" + ex.Message + "\r\n" + ex.StackTrace);
+                Log.Error($"NijisanjiStream: {ex}");
             }
 
             Program.isNijisanjiChannelSpider = false; isFirst2434 = false;
@@ -327,7 +327,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                     catch (Exception ex)
                     {
                         Log.Error($"OtherUpdateChannelTitle {item}");
-                        Log.Error($"{ex.Message}\r\n{ex.StackTrace}");
+                        Log.Error($"{ex}");
                     }
 
                     string videoId = "";
@@ -372,8 +372,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                 }
                                 catch (Exception ex)
                                 {
-                                    Console.WriteLine(ex.Message);
-                                    Console.WriteLine(ex.StackTrace);
+                                    Log.Error(ex.ToString());
                                 }
                             }
 
@@ -404,8 +403,8 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                             .WithDescription(Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}"))
                                             .WithImageUrl($"https://i.ytimg.com/vi/{streamVideo.VideoId}/maxresdefault.jpg")
                                             .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
-                                            .AddField("所屬", streamVideo.GetProductionType().GetProductionName())
-                                            .AddField("上傳時間", streamVideo.ScheduledStartTime, true);
+                                            .AddField("所屬", streamVideo.GetProductionType().GetProductionName(), true)
+                                            .AddField("上傳時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
 
                                             if (addNewStreamVideo.TryAdd(streamVideo, streamVideo.ChannelType) && !isFirstOther)
                                                 await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.NewVideo).ConfigureAwait(false);
@@ -434,9 +433,9 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                                 .WithDescription(Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}"))
                                                 .WithImageUrl($"https://i.ytimg.com/vi/{streamVideo.VideoId}/maxresdefault.jpg")
                                                 .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
-                                                .AddField("所屬", streamVideo.GetProductionType().GetProductionName())
+                                                .AddField("所屬", streamVideo.GetProductionType().GetProductionName(), true)
                                                 .AddField("直播狀態", "尚未開台", true)
-                                                .AddField("排定開台時間", startTime, true);
+                                                .AddField("排定開台時間", startTime.ConvertDateTimeToDiscordMarkdown());
                                                 //.AddField("是否記錄直播", (CanRecord(db, streamVideo) ? "是" : "否"), true);
 
                                                 if (addNewStreamVideo.TryAdd(streamVideo, streamVideo.ChannelType))
@@ -475,7 +474,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                     catch (Exception ex)
                                     {
                                         Log.Error($"OtherAddSchedule {item}");
-                                        Log.Error($"{ex.Message}\r\n{ex.StackTrace}");
+                                        Log.Error($"{ex}");
                                     }
                                 }
                             }
@@ -486,7 +485,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                         try { otherVideoDic[item.ChannelId].Remove(videoId); }
                         catch (Exception) { }
                         Log.Error($"OtherSchedule {item}");
-                        Log.Error($"{ex.Message}\r\n{ex.StackTrace}");
+                        Log.Error($"{ex}");
                     }
                 }
             }
@@ -515,8 +514,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                 }
                                 catch (Exception ex)
                                 {
-                                    Log.Error($"SaveHoloDateBase {ex.Message}\r\n{ex.StackTrace}");
-                                    if (ex.InnerException != null) Log.Error($"{ex.InnerException.Message}\r\n{ex.InnerException.StackTrace}");
+                                    Log.Error($"SaveHoloDateBase {ex}");
                                 }
                             }
 
@@ -538,8 +536,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                 }
                                 catch (Exception ex)
                                 {
-                                    Log.Error($"SaveOtherDateBase {ex.Message}\r\n{ex.StackTrace}");
-                                    if (ex.InnerException != null) Log.Error($"{ex.InnerException.Message}\r\n{ex.InnerException.StackTrace}");
+                                    Log.Error($"SaveOtherDateBase {ex}");
                                 }
                             }
 
@@ -561,8 +558,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                 }
                                 catch (Exception ex)
                                 {
-                                    Log.Error($"SaveOtherDateBase {ex.Message}\r\n{ex.StackTrace}");
-                                    if (ex.InnerException != null) Log.Error($"{ex.InnerException.Message}\r\n{ex.InnerException.StackTrace}");
+                                    Log.Error($"SaveOtherDateBase {ex}");
                                 }
                             }
 
@@ -575,8 +571,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
             }
             catch (Exception ex)
             {
-                Log.Error($"SaveDateBase {ex.Message}\r\n{ex.StackTrace}");
-                if (ex.InnerException != null) Log.Error($"{ex.InnerException.Message}\r\n{ex.InnerException.StackTrace}");
+                Log.Error($"SaveDateBase {ex}");
             }
 
             if (saveNum != 0) Log.Info($"資料庫已儲存完畢: {saveNum}筆");
