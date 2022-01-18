@@ -15,6 +15,7 @@
   </ItemGroup>  
 
   <ItemGroup>
+    <PackageReference Include="Discord.Net" Version="3.2.0" />
     <PackageReference Include="Google.Apis.YouTube.v3" Version="1.51.0.2294" />
     <PackageReference Include="HtmlAgilityPack" Version="1.11.32" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="5.0.5" />

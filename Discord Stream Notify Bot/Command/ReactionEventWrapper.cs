@@ -22,7 +22,7 @@ namespace Discord_Stream_Notify_Bot.Command
             _client.ReactionsCleared += Discord_ReactionsCleared;
         }
 
-        private Task Discord_ReactionsCleared(Cacheable<IUserMessage, ulong> msg, ISocketMessageChannel channel)
+        private Task Discord_ReactionsCleared(Cacheable<IUserMessage, ulong> user, Cacheable<IMessageChannel, ulong> msg)
         {
             Task.Run(() =>
             {
@@ -37,7 +37,7 @@ namespace Discord_Stream_Notify_Bot.Command
             return Task.CompletedTask;
         }
 
-        private Task Discord_ReactionRemoved(Cacheable<IUserMessage, ulong> msg, ISocketMessageChannel channel, SocketReaction reaction)
+        private Task Discord_ReactionRemoved(Cacheable<IUserMessage, ulong> user, Cacheable<IMessageChannel, ulong> msg, SocketReaction reaction)
         {
             Task.Run(() =>
             {
@@ -52,7 +52,7 @@ namespace Discord_Stream_Notify_Bot.Command
             return Task.CompletedTask;
         }
 
-        private Task Discord_ReactionAdded(Cacheable<IUserMessage, ulong> msg, ISocketMessageChannel channel, SocketReaction reaction)
+        private Task Discord_ReactionAdded(Cacheable<IUserMessage, ulong> arg1, Cacheable<IMessageChannel, ulong> msg, SocketReaction reaction)
         {
             Task.Run(() =>
             {

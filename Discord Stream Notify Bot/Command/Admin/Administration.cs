@@ -241,7 +241,7 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
 
                 using (var db = DataBase.DBContext.GetDbContext())
                 {
-                    var channelList = db.NoticeYoutubeStreamChannel.Where((x) => x.GuildId == guild.Id).Select((x) => $"<#{x.DiscordChannelId}>: {x.NoticeStreamChannelId}").ToList();
+                    var channelList = db.NoticeYoutubeStreamChannel.ToList().Where((x) => x.GuildId == guild.Id).Select((x) => $"<#{x.DiscordChannelId}>: {x.NoticeStreamChannelId}");
 
                     await Context.Channel.SendConfirmAsync($"伺服器名稱: {guild.Name}\n" +
                             $"伺服器Id: {guild.Id}\n" +

@@ -97,8 +97,7 @@ namespace Discord_Stream_Notify_Bot
 #endif
                 ConnectionTimeout = int.MaxValue,
                 MessageCacheSize = 50,
-                ExclusiveBulkDelete = true,
-                AlwaysDownloadUsers = true
+                GatewayIntents = GatewayIntents.AllUnprivileged
             }); ;
 
             _client.Log += Log.LogMsg;
