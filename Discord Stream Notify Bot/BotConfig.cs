@@ -5,13 +5,14 @@ using System.IO;
 public class BotConfig
 {
     public string DiscordToken { get; set; } = "";
-    public string WebHookUrl { get; set; } = "";
     public string GoogleApiKey { get; set; } = "";
-    public string TwitterApiKey { get; set; } = "";
-    public string TwitterApiKeySecret { get; set; } = "";
     public string GoogleClientId { get; set; } = "";
     public string GoogleClientSecret { get; set; } = "";
     public string RedisOption { get; set; } = "127.0.0.1,syncTimeout=3000";
+    public ulong TestSlashCommandGuildId { get; set; } = 0;
+    public string TwitterApiKey { get; set; } = "";
+    public string TwitterApiKeySecret { get; set; } = "";
+    public string WebHookUrl { get; set; } = "";
 
     public void InitBotConfig()
     {
@@ -92,6 +93,7 @@ public class BotConfig
             GoogleClientId = config.GoogleClientId;
             GoogleClientSecret = config.GoogleClientSecret;
             RedisOption = config.RedisOption;
+            TestSlashCommandGuildId = config.TestSlashCommandGuildId;
         }
         catch (Exception ex)
         {

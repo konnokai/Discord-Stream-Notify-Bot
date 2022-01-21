@@ -13,6 +13,7 @@ using System.Reflection;
 using System.Data;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Discord_Stream_Notify_Bot.Interaction;
 
 namespace Discord_Stream_Notify_Bot.Command
 {
@@ -249,7 +250,7 @@ namespace Discord_Stream_Notify_Bot.Command
             return msg;
         }
 
-        public static IEnumerable<Type> LoadFrom(this IServiceCollection collection, Assembly assembly)
+        public static IEnumerable<Type> LoadCommandFrom(this IServiceCollection collection, Assembly assembly)
         {
             List<Type> addedTypes = new List<Type>();
 
@@ -265,14 +266,14 @@ namespace Discord_Stream_Notify_Bot.Command
             }
 
             var services = new Queue<Type>(allTypes
-                    .Where(x => x.GetInterfaces().Contains(typeof(IService))
+                    .Where(x => x.GetInterfaces().Contains(typeof(ICommandService))
                         && !x.GetTypeInfo().IsInterface && !x.GetTypeInfo().IsAbstract)
                     .ToArray());
 
             addedTypes.AddRange(services);
 
             var interfaces = new HashSet<Type>(allTypes
-                    .Where(x => x.GetInterfaces().Contains(typeof(IService))
+                    .Where(x => x.GetInterfaces().Contains(typeof(ICommandService))
                         && x.GetTypeInfo().IsInterface));
 
             while (services.Count > 0)
@@ -282,6 +283,54 @@ namespace Discord_Stream_Notify_Bot.Command
                 if (collection.FirstOrDefault(x => x.ServiceType == serviceType) != null)
                     continue;
                                 
+                var interfaceType = interfaces.FirstOrDefault(x => serviceType.GetInterfaces().Contains(x));
+                if (interfaceType != null)
+                {
+                    addedTypes.Add(interfaceType);
+                    collection.AddSingleton(interfaceType, serviceType);
+                }
+                else
+                {
+                    collection.AddSingleton(serviceType, serviceType);
+                }
+            }
+
+            return addedTypes;
+        }
+
+        public static IEnumerable<Type> LoadInteractionFrom(this IServiceCollection collection, Assembly assembly)
+        {
+            List<Type> addedTypes = new List<Type>();
+
+            Type[] allTypes;
+            try
+            {
+                allTypes = assembly.GetTypes();
+            }
+            catch (ReflectionTypeLoadException ex)
+            {
+                Console.WriteLine(ex.Message + "\n" + ex.Source);
+                return Enumerable.Empty<Type>();
+            }
+
+            var services = new Queue<Type>(allTypes
+                    .Where(x => x.GetInterfaces().Contains(typeof(IInteractionService))
+                        && !x.GetTypeInfo().IsInterface && !x.GetTypeInfo().IsAbstract)
+                    .ToArray());
+
+            addedTypes.AddRange(services);
+
+            var interfaces = new HashSet<Type>(allTypes
+                    .Where(x => x.GetInterfaces().Contains(typeof(IInteractionService))
+                        && x.GetTypeInfo().IsInterface));
+
+            while (services.Count > 0)
+            {
+                var serviceType = services.Dequeue();
+
+                if (collection.FirstOrDefault(x => x.ServiceType == serviceType) != null)
+                    continue;
+
                 var interfaceType = interfaces.FirstOrDefault(x => serviceType.GetInterfaces().Contains(x));
                 if (interfaceType != null)
                 {

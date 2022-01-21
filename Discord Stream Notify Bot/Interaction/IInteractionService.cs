@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Discord_Stream_Notify_Bot.Command.Twitter.Service
+namespace Discord_Stream_Notify_Bot.Interaction
 {
-    public partial class TwitterService : ICommandService
+    public interface IInteractionService
     {
     }
 }

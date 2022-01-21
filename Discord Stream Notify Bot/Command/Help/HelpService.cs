@@ -7,7 +7,7 @@ using System.Reflection;
 
 namespace Discord_Stream_Notify_Bot.Command.Help
 {
-    public class HelpService : IService
+    public class HelpService : ICommandService
     {
         public EmbedBuilder GetCommandHelp(CommandInfo com)
         {

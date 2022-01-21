@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace Discord_Stream_Notify_Bot.Command.Stream.Service
 {
-    public partial class StreamService : IService
+    public partial class StreamService : ICommandService
     {
         public enum ChannelType
         {

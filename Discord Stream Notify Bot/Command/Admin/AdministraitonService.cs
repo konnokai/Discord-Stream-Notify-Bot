@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Discord_Stream_Notify_Bot.Command.Admin
 {
-    public class AdministraitonService : IService
+    public class AdministraitonService : ICommandService
     {
         private DiscordSocketClient _Client;
         public AdministraitonService(DiscordSocketClient client)

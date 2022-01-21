@@ -1,8 +1,10 @@
 ﻿using Discord;
 using Discord.Commands;
+using Discord.Interactions;
 using Discord.WebSocket;
 using Discord_Stream_Notify_Bot.Command;
 using Discord_Stream_Notify_Bot.DataBase.Table;
+using Discord_Stream_Notify_Bot.Interaction;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using StackExchange.Redis;
@@ -100,9 +102,42 @@ namespace Discord_Stream_Notify_Bot
                 GatewayIntents = GatewayIntents.AllUnprivileged
             }); ;
 
+            #region 初始化指令系統
+            var commandServices = new ServiceCollection()
+                .AddSingleton(_client)
+                .AddSingleton(botConfig)
+                .AddSingleton(new CommandService(new CommandServiceConfig()
+                {
+                    CaseSensitiveCommands = false,
+                    DefaultRunMode = Discord.Commands.RunMode.Async
+                }));
+
+            commandServices.LoadCommandFrom(Assembly.GetAssembly(typeof(CommandHandler)));
+            IServiceProvider service = commandServices.BuildServiceProvider();
+            await service.GetService<CommandHandler>().InitializeAsync();
+            #endregion
+
+
+            #region 初始化Interaction指令系統
+            var interactionServices = new ServiceCollection()
+                .AddSingleton(_client)
+                .AddSingleton(botConfig)
+                .AddSingleton(new InteractionService(_client, new InteractionServiceConfig()
+                {
+                    AutoServiceScopes = true,
+                    UseCompiledLambda = true,
+                    DefaultRunMode = Discord.Interactions.RunMode.Async
+                }));
+
+            interactionServices.LoadInteractionFrom(Assembly.GetAssembly(typeof(InteractionHandler)));
+            IServiceProvider iService = interactionServices.BuildServiceProvider();
+            await iService.GetService<InteractionHandler>().InitializeAsync();
+            #endregion
+
+            #region 初始化Discord設定與事件
             _client.Log += Log.LogMsg;
 
-            _client.Ready += () =>
+            _client.Ready += async () =>
             {
                 using (var db = DataBase.DBContext.GetDbContext())
                 {
@@ -119,10 +154,15 @@ namespace Discord_Stream_Notify_Bot
                 stopWatch.Start();
                 timerUpdateStatus.Change(0, 15 * 60 * 1000);
 
-                ApplicatonOwner = _client.GetApplicationInfoAsync().GetAwaiter().GetResult().Owner;
+                ApplicatonOwner = (await _client.GetApplicationInfoAsync()).Owner;
                 isConnect = true;
 
-                return Task.CompletedTask;
+#if DEBUG
+                if (botConfig.TestSlashCommandGuildId != 0 && _client.GetGuild(botConfig.TestSlashCommandGuildId) != null)
+                    await iService.GetService<InteractionService>().RegisterCommandsToGuildAsync(botConfig.TestSlashCommandGuildId);
+#else
+                await iService.GetService<InteractionService>().RegisterCommandsGloballyAsync();
+#endif
             };
 
             _client.JoinedGuild += async (guild) =>
@@ -134,27 +174,13 @@ namespace Discord_Stream_Notify_Bot
                         db.GuildConfig.Add(new GuildConfig() { GuildId = guild.Id });
                         await db.SaveChangesAsync().ConfigureAwait(false);
                     }
-                }         
+                }
 
                 SendMessageToDiscord($"加入 {guild.Name}({guild.Id})\n擁有者: {guild.Owner.Username}({guild.Owner.Mention})");
             };
-
-            #region 初始化指令系統
-            var s = new ServiceCollection()
-                .AddSingleton(_client)
-                .AddSingleton(botConfig)
-                .AddSingleton(new CommandService(new CommandServiceConfig()
-                {
-                    CaseSensitiveCommands = false,
-                    DefaultRunMode = RunMode.Async
-                }));
-
-            s.LoadFrom(Assembly.GetAssembly(typeof(CommandHandler)));
-            IServiceProvider service = s.BuildServiceProvider();
-            await service.GetService<CommandHandler>().InitializeAsync();
             #endregion
 
-            await _client.LoginAsync(TokenType.Bot, botConfig.DiscordToken); 
+            await _client.LoginAsync(TokenType.Bot, botConfig.DiscordToken);
             await _client.StartAsync();
 
             Log.Info("已初始化完成!");

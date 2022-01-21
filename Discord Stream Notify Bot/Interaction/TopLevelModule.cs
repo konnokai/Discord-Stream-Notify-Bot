@@ -1,16 +1,20 @@
 ﻿using Discord;
-using Discord.Commands;
+using Discord.Interactions;
 using Discord.WebSocket;
+using Discord_Stream_Notify_Bot.Command;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
-namespace Discord_Stream_Notify_Bot.Command
+namespace Discord_Stream_Notify_Bot.Interaction
 {
-    public abstract class TopLevelModule : ModuleBase
+    public abstract class TopLevelModule : InteractionModuleBase
     {
-
     }
 
-    public abstract class TopLevelModule<TService> : TopLevelModule where TService : ICommandService
+    public abstract class TopLevelModule<TService> : TopLevelModule where TService : IInteractionService
     {
         protected TopLevelModule()
         {

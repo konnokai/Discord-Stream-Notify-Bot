@@ -18,7 +18,7 @@ using System.Threading.Tasks;
 
 namespace Discord_Stream_Notify_Bot.Command.Twitter.Service
 {
-    public partial class TwitterSpacesService : IService
+    public partial class TwitterSpacesService : ICommandService
     {
         public bool IsEnbale { get; private set; } = true;
         public UserService UserService { get; private set; }
