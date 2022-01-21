@@ -102,7 +102,7 @@ namespace Discord_Stream_Notify_Bot
                 GatewayIntents = GatewayIntents.AllUnprivileged
             }); ;
 
-            #region 初始化指令系統
+            #region 初始化一般指令系統
             var commandServices = new ServiceCollection()
                 .AddSingleton(_client)
                 .AddSingleton(botConfig)
@@ -117,8 +117,7 @@ namespace Discord_Stream_Notify_Bot
             await service.GetService<CommandHandler>().InitializeAsync();
             #endregion
 
-
-            #region 初始化Interaction指令系統
+            #region 初始化互動指令系統
             var interactionServices = new ServiceCollection()
                 .AddSingleton(_client)
                 .AddSingleton(botConfig)
@@ -126,8 +125,9 @@ namespace Discord_Stream_Notify_Bot
                 {
                     AutoServiceScopes = true,
                     UseCompiledLambda = true,
+                    EnableAutocompleteHandlers = true,
                     DefaultRunMode = Discord.Interactions.RunMode.Async
-                }));
+                })); ;
 
             interactionServices.LoadInteractionFrom(Assembly.GetAssembly(typeof(InteractionHandler)));
             IServiceProvider iService = interactionServices.BuildServiceProvider();
@@ -158,7 +158,9 @@ namespace Discord_Stream_Notify_Bot
                 isConnect = true;
 
 #if DEBUG
-                if (botConfig.TestSlashCommandGuildId != 0 && _client.GetGuild(botConfig.TestSlashCommandGuildId) != null)
+                if (botConfig.TestSlashCommandGuildId == 0 || _client.GetGuild(botConfig.TestSlashCommandGuildId) == null)
+                    Log.Warn("未設定測試Slash伺服器或伺服器不存在，略過設定");
+                else
                     await iService.GetService<InteractionService>().RegisterCommandsToGuildAsync(botConfig.TestSlashCommandGuildId);
 #else
                 await iService.GetService<InteractionService>().RegisterCommandsGloballyAsync();
