@@ -813,6 +813,8 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
             }
         }
 
+        string GetCurrectMessage(string message)
+            => message == "-" ? "(已關閉本類別的通知)" : message;
 
         [RequireContext(ContextType.Guild)]
         [Command("ListNoticeMessage")]
@@ -830,15 +832,22 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                     foreach (var item in noticeStreamChannels)
                     {
                         var channelTitle = item.NoticeStreamChannelId;
-                        if (channelTitle.StartsWith("UC")) channelTitle = (await GetChannelTitle(channelTitle).ConfigureAwait(false)) + $" ({item.NoticeStreamChannelId})";
+                        try
+                        {
+                            if (channelTitle.StartsWith("UC")) channelTitle = (await GetChannelTitle(channelTitle).ConfigureAwait(false)) + $" ({item.NoticeStreamChannelId})";
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Warn(ex.ToString());
+                        }
 
                         dic.Add(channelTitle,
-                            $"新待機所: {item.NewStreamMessage}\r\n" +
-                            $"新影片: {item.NewVideoMessage}\r\n" +
-                            $"開始直播: {item.StratMessage}\r\n" +
-                            $"結束直播: {item.EndMessage}\r\n" +
-                            $"變更直播時間: {item.ChangeTimeMessage}\r\n" +
-                            $"刪除直播: {item.DeleteMessage}");
+                            $"新待機所: {GetCurrectMessage(item.NewStreamMessage)}\r\n" +
+                            $"新影片: {GetCurrectMessage(item.NewVideoMessage)}\r\n" +
+                            $"開始直播: {GetCurrectMessage(item.StratMessage)}\r\n" +
+                            $"結束直播: {GetCurrectMessage(item.EndMessage)}\r\n" +
+                            $"變更直播時間: {GetCurrectMessage(item.ChangeTimeMessage)}\r\n" +
+                            $"刪除直播: {GetCurrectMessage(item.DeleteMessage)}");
                     }
 
                     await Context.SendPaginatedConfirmAsync(page, (page) =>
