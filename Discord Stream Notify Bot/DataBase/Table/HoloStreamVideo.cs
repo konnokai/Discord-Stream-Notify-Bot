@@ -1,4 +1,4 @@
-﻿using Discord_Stream_Notify_Bot.Command.Stream;
+﻿using Discord_Stream_Notify_Bot.Command.Youtube;
 using System;
 
 namespace Discord_Stream_Notify_Bot.DataBase.Table

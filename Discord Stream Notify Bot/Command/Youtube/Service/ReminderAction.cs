@@ -7,9 +7,9 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Discord_Stream_Notify_Bot.Command.Stream.Service
+namespace Discord_Stream_Notify_Bot.Command.Youtube.Service
 {
-    public partial class StreamService
+    public partial class YoutubeStreamService
     {
         private void StartReminder(StreamVideo streamVideo, ChannelType channelType)
         {
@@ -327,13 +327,6 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                 {
                     try
                     {
-                        var guild = _client.GetGuild(item.GuildId);
-                        if (guild == null) continue;
-                        var channel = guild.GetTextChannel(item.DiscordChannelId);
-                        if (channel == null) continue;
-
-                        if (guild.Id == 186006081753841664 && noticeType != NoticeType.NewStream && noticeType != NoticeType.NewVideo && noticeType != NoticeType.Start) continue;
-
                         string sendMessage = "";
                         switch (noticeType)
                         {
@@ -356,6 +349,12 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
                                 sendMessage = item.DeleteMessage;
                                 break;
                         }
+                        if (sendMessage == "-") continue;
+
+                        var guild = _client.GetGuild(item.GuildId);
+                        if (guild == null) continue;
+                        var channel = guild.GetTextChannel(item.DiscordChannelId);
+                        if (channel == null) continue;
 
                         await channel.SendMessageAsync(sendMessage, false, embed);
                     }

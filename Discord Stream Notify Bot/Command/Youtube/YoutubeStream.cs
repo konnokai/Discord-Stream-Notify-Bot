@@ -8,13 +8,13 @@ using System.Linq;
 using System.Threading.Tasks;
 using Discord_Stream_Notify_Bot.Command.Attribute;
 
-namespace Discord_Stream_Notify_Bot.Command.Stream
+namespace Discord_Stream_Notify_Bot.Command.Youtube
 {
-    public partial class Stream : TopLevelModule<Service.StreamService>
+    public partial class YoutubeStream : TopLevelModule<Service.YoutubeStreamService>
     {
         private readonly DiscordSocketClient _client;
 
-        public Stream(DiscordSocketClient client)
+        public YoutubeStream(DiscordSocketClient client)
         {
             _client = client;
         }
@@ -735,6 +735,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
         [Command("SetNoticeMessage")]
         [Summary("設定通知訊息\r\n" +
             "不輸入通知訊息的話則會關閉該類型的通知\r\n" +
+            "若輸入`-`則可以關閉該通知類型\r\n" +
             "需先新增直播通知後才可設定通知訊息(`s!h ansc`)\r\n\r\n" +
             "NoticeType(通知類型)說明:\r\n" +
             "NewStream: 新待機所\r\n" +
@@ -746,10 +747,11 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
             "(考慮到有伺服器需Ping特定用戶組的情況，故Bot需提及所有身分組權限)\r\n" +
             "(建議在私人頻道中設定以免Ping到用戶組造成不必要的誤會)")]
         [CommandExample("UCXRlIK3Cw_TJIQC5kSJJQMg start @通知用的用戶組 阿床開台了", 
-            "holo newstream @某人 新待機所建立", 
+            "holo newstream @某人 新待機所建立",
+            "UCUKD-uaobj9jiqB-VXt71mA newstream -",
             "UCXRlIK3Cw_TJIQC5kSJJQMg end")]
         [Alias("SNM")]
-        public async Task SetNoticeMessage([Summary("頻道Id")] string channelId, [Summary("通知類型")] Service.StreamService.NoticeType noticeType, [Summary("通知訊息")][Remainder] string message = "")
+        public async Task SetNoticeMessage([Summary("頻道Id")] string channelId, [Summary("通知類型")] Service.YoutubeStreamService.NoticeType noticeType, [Summary("通知訊息")][Remainder] string message = "")
         {
             try
             {
@@ -760,6 +762,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
                 await Context.Channel.SendConfirmAsync(ex.Message).ConfigureAwait(false);
                 return;
             }
+
             using (var db = DataBase.DBContext.GetDbContext())
             {
                 if (db.NoticeYoutubeStreamChannel.Any((x) => x.GuildId == Context.Guild.Id && x.NoticeStreamChannelId == channelId))
@@ -767,29 +770,30 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
                     var noticeStreamChannel = db.NoticeYoutubeStreamChannel.First((x) => x.GuildId == Context.Guild.Id && x.NoticeStreamChannelId == channelId);
                     string noticeTypeString = "";
 
+                    message = message.Trim();
                     switch (noticeType)
                     {
-                        case Service.StreamService.NoticeType.NewStream:
+                        case Service.YoutubeStreamService.NoticeType.NewStream:
                             noticeStreamChannel.NewStreamMessage = message;
                             noticeTypeString = "新待機所";
                             break;
-                        case Service.StreamService.NoticeType.NewVideo:
+                        case Service.YoutubeStreamService.NoticeType.NewVideo:
                             noticeStreamChannel.NewVideoMessage = message;
                             noticeTypeString = "新影片";
                             break;
-                        case Service.StreamService.NoticeType.Start:
+                        case Service.YoutubeStreamService.NoticeType.Start:
                             noticeStreamChannel.StratMessage = message;
                             noticeTypeString = "開始直播";
                             break;
-                        case Service.StreamService.NoticeType.End:
+                        case Service.YoutubeStreamService.NoticeType.End:
                             noticeStreamChannel.EndMessage = message;
                             noticeTypeString = "結束直播";
                             break;
-                        case Service.StreamService.NoticeType.ChangeTime:
+                        case Service.YoutubeStreamService.NoticeType.ChangeTime:
                             noticeStreamChannel.ChangeTimeMessage = message;
                             noticeTypeString = "變更直播時間";
                             break;
-                        case Service.StreamService.NoticeType.Delete:
+                        case Service.YoutubeStreamService.NoticeType.Delete:
                             noticeStreamChannel.DeleteMessage = message;
                             noticeTypeString = "刪除直播";
                             break;
@@ -798,8 +802,9 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
                     db.NoticeYoutubeStreamChannel.Update(noticeStreamChannel);
                     await db.SaveChangesAsync();
 
-                    if (message != "") await Context.Channel.SendConfirmAsync($"已設定 {channelId} 的 {noticeTypeString} 通知訊息為:\r\n{message}").ConfigureAwait(false);
-                    else await Context.Channel.SendConfirmAsync($"已取消 {channelId} 的 {noticeTypeString} 通知").ConfigureAwait(false);
+                    if (message == "-") await Context.Channel.SendConfirmAsync($"已關閉 {channelId} 的 {noticeTypeString} 通知").ConfigureAwait(false);
+                    else if (message != "") await Context.Channel.SendConfirmAsync($"已設定 {channelId} 的 {noticeTypeString} 通知訊息為:\r\n{message}").ConfigureAwait(false);
+                    else await Context.Channel.SendConfirmAsync($"已取消 {channelId} 的 {noticeTypeString} 通知訊息").ConfigureAwait(false);
                 }
                 else
                 {
@@ -898,7 +903,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream
             "2: 其他")]
         [CommandExample("UCXRlIK3Cw_TJIQC5kSJJQMg 1")]
         [Alias("SCT")]
-        public async Task SetChannelType(string channelId = "", Service.StreamService.ChannelType channelType = Service.StreamService.ChannelType.Other)
+        public async Task SetChannelType(string channelId = "", Service.YoutubeStreamService.ChannelType channelType = Service.YoutubeStreamService.ChannelType.Other)
         {
             channelId = channelId.GetChannelId();
 

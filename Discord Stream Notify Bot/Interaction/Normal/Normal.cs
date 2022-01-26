@@ -1,11 +1,13 @@
 ﻿using Discord;
 using Discord.Commands;
+using Discord.Interactions;
 using Discord.WebSocket;
+using Discord_Stream_Notify_Bot.Command;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Discord_Stream_Notify_Bot.Command.Normal
+namespace Discord_Stream_Notify_Bot.Interaction.Normal
 {
     public class Normal : TopLevelModule
     {
@@ -15,37 +17,32 @@ namespace Discord_Stream_Notify_Bot.Command.Normal
             _client = client;
         }
 
-        [Command("Ping")]
-        [Summary("延遲檢測")]
+        [SlashCommand("ping", "延遲檢測")]
         public async Task PingAsync()
         {
-            await Context.Channel.SendConfirmAsync(":ping_pong: " + _client.Latency.ToString() + "ms");
+            await ReplyAsync(":ping_pong: " + _client.Latency.ToString() + "ms");
         }
 
 
-        [Command("Invite")]
-        [Summary("取得邀請連結")]
+        [SlashCommand("invite", "取得邀請連結")]
         public async Task InviteAsync()
         {
 #if RELEASE
             if (Context.User.Id != Program.ApplicatonOwner.Id)
             {
                 Program.SendMessageToDiscord(string.Format("[{0}-{1}] {2}:({3}) 使用了邀請指令",
-                    Context.Guild.Name, Context.Channel.Name, Context.Message.Author.Username, Context.Message.Author.Id));
+                    Context.Guild.Name, Context.Channel.Name, Context.User.Username, Context.User.Id));
             }
 #endif
 
             try
             {
-                await (await Context.Message.Author.CreateDMChannelAsync())
-                    .SendConfirmAsync("<https://discordapp.com/api/oauth2/authorize?client_id=" + _client.CurrentUser.Id + "&permissions=268569697&scope=bot%20applications.commands>\n");
+                await RespondAsync("<https://discordapp.com/api/oauth2/authorize?client_id=" + _client.CurrentUser.Id + "&permissions=268569697&scope=bot%20applications.commands>\n");
             }
-            catch (Exception) { await Context.Channel.SendConfirmAsync("無法私訊，請確認已開啟伺服器內成員私訊許可"); }
+            catch (Exception) { await RespondAsync("無法私訊，請確認已開啟伺服器內成員私訊許可"); }
         }
 
-        [Command("Status")]
-        [Summary("顯示機器人目前的狀態")]
-        [Alias("Stats")]
+        [SlashCommand("status", "顯示機器人目前的狀態")]
         public async Task StatusAsync()
         {
             EmbedBuilder embedBuilder = new EmbedBuilder().WithOkColor();
@@ -61,7 +58,7 @@ namespace Discord_Stream_Notify_Bot.Command.Normal
             embedBuilder.AddField("看過的直播數量", Utility.GetDbStreamCount(), true);
             embedBuilder.AddField("上線時間", $"{Program.stopWatch.Elapsed:d\\天\\ hh\\:mm\\:ss}", false);
 
-            await ReplyAsync(null, false, embedBuilder.Build());
+            await RespondAsync(embed: embedBuilder.Build());
         }
     }
 }

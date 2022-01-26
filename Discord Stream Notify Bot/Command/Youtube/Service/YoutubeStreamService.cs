@@ -12,9 +12,9 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Discord_Stream_Notify_Bot.Command.Stream.Service
+namespace Discord_Stream_Notify_Bot.Command.Youtube.Service
 {
-    public partial class StreamService : ICommandService
+    public partial class YoutubeStreamService : ICommandService
     {
         public enum ChannelType
         {
@@ -33,7 +33,7 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
         private SocketTextChannel noticeRecordChannel;
         private DiscordSocketClient _client;
 
-        public StreamService(DiscordSocketClient client, BotConfig botConfig)
+        public YoutubeStreamService(DiscordSocketClient client, BotConfig botConfig)
         {
             _client = client;
             yt = new YouTubeService(new BaseClientService.Initializer
@@ -596,6 +596,6 @@ namespace Discord_Stream_Notify_Bot.Command.Stream.Service
     {
         public StreamVideo StreamVideo { get; set; }
         public Timer Timer { get; set; }
-        public StreamService.ChannelType ChannelType { get; set; }
+        public YoutubeStreamService.ChannelType ChannelType { get; set; }
     }
 }

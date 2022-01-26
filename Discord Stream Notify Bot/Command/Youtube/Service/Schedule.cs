@@ -11,9 +11,9 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Data;
 
-namespace Discord_Stream_Notify_Bot.Command.Stream.Service
+namespace Discord_Stream_Notify_Bot.Command.Youtube.Service
 {
-    public partial class StreamService
+    public partial class YoutubeStreamService
     {
         private static Dictionary<StreamVideo, ChannelType> addNewStreamVideo = new();
         private static HashSet<string> newStreamList = new();

@@ -157,14 +157,23 @@ namespace Discord_Stream_Notify_Bot
                 ApplicatonOwner = (await _client.GetApplicationInfoAsync()).Owner;
                 isConnect = true;
 
+                try
+                {
 #if DEBUG
-                if (botConfig.TestSlashCommandGuildId == 0 || _client.GetGuild(botConfig.TestSlashCommandGuildId) == null)
-                    Log.Warn("未設定測試Slash伺服器或伺服器不存在，略過設定");
-                else
-                    await iService.GetService<InteractionService>().RegisterCommandsToGuildAsync(botConfig.TestSlashCommandGuildId);
+                    //if (botConfig.TestSlashCommandGuildId == 0 || _client.GetGuild(botConfig.TestSlashCommandGuildId) == null)
+                    //    Log.Warn("未設定測試Slash指令的伺服器或伺服器不存在，略過");
+                    //else
+                    //    await iService.GetService<InteractionService>().RegisterCommandsToGuildAsync(botConfig.TestSlashCommandGuildId);
 #else
-                await iService.GetService<InteractionService>().RegisterCommandsGloballyAsync();
+                    //await iService.GetService<InteractionService>().RegisterCommandsGloballyAsync();
 #endif
+                }
+                catch (Exception ex)
+                {
+                    Log.Error("註冊Slash指令失敗，關閉中...");
+                    Log.Error(ex.ToString());
+                    isDisconnect = true;                    
+                }
             };
 
             _client.JoinedGuild += async (guild) =>
@@ -203,7 +212,7 @@ namespace Discord_Stream_Notify_Bot
             }
 
             await _client.StopAsync();
-            await Command.Stream.Service.StreamService.SaveDateBase();
+            await Command.Youtube.Service.YoutubeStreamService.SaveDateBase();
         }
 
         private static void TimerHandler(object state)

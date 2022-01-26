@@ -1,11 +1,8 @@
-﻿using Discord.WebSocket;
+﻿using Discord.Interactions;
+using Discord.WebSocket;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Discord.Interactions;
 using System.Reflection;
+using System.Threading.Tasks;
 
 namespace Discord_Stream_Notify_Bot.Interaction
 {
@@ -27,6 +24,15 @@ namespace Discord_Stream_Notify_Bot.Interaction
             await _interactions.AddModulesAsync(
                 assembly: Assembly.GetEntryAssembly(),
                 services: _services);
+            _client.SlashCommandExecuted += (slash) => { var _ = Task.Run(() => HandleCommandAsync(slash)); return Task.CompletedTask; };
+        }
+
+        private async Task HandleCommandAsync(SocketSlashCommand slashCommand)
+        {
+            //await _services.GetService<Normal.Normal>().PingAsync();
+            //try { if (slashCommand.User.Id == Program.ApplicatonOwner.Id) await slashCommand.DeleteOriginalResponseAsync(); }
+            //catch { }
+            Log.FormatColorWrite($"[{slashCommand.Channel.Name}] {slashCommand.User.Username} 執行 {slashCommand.Data.Name}", ConsoleColor.DarkYellow);
         }
     }
 }

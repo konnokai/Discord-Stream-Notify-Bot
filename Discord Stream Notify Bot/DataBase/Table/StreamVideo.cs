@@ -1,4 +1,4 @@
-﻿using Discord_Stream_Notify_Bot.Command.Stream.Service;
+﻿using Discord_Stream_Notify_Bot.Command.Youtube.Service;
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -13,7 +13,7 @@ namespace Discord_Stream_Notify_Bot.DataBase.Table
         public string VideoId { get; set; }
         public string VideoTitle { get; set; }
         public DateTime ScheduledStartTime { get; set; }
-        public StreamService.ChannelType ChannelType { get; set; }
+        public YoutubeStreamService.ChannelType ChannelType { get; set; }
 
         public HoloStreamVideo ConvertToHoloStreamVideo() =>
             new HoloStreamVideo() { ChannelId = ChannelId, ChannelTitle = ChannelTitle, VideoId = VideoId, VideoTitle = VideoTitle, ChannelType = ChannelType, ScheduledStartTime = ScheduledStartTime };

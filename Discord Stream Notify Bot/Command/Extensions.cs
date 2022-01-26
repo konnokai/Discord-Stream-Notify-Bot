@@ -1,7 +1,7 @@
 ﻿using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
-using Discord_Stream_Notify_Bot.Command.Stream.Service;
+using Discord_Stream_Notify_Bot.Command.Youtube.Service;
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -38,11 +38,11 @@ namespace Discord_Stream_Notify_Bot.Command
             return $"<t:{UTCTime}:F> (<t:{UTCTime}:R>)";
         }
 
-        public static StreamService.ChannelType GetProductionType(this StreamVideo streamVideo)
+        public static YoutubeStreamService.ChannelType GetProductionType(this StreamVideo streamVideo)
         {
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                StreamService.ChannelType type;
+                YoutubeStreamService.ChannelType type;
                 var channel = db.YoutubeChannelOwnedType.AsNoTracking().FirstOrDefault((x) => x.ChannelId == streamVideo.ChannelId);
 
                 if (channel != null)
@@ -54,8 +54,8 @@ namespace Discord_Stream_Notify_Bot.Command
             }
         }
 
-        public static string GetProductionName(this StreamService.ChannelType channelType) =>        
-                channelType == StreamService.ChannelType.Holo ? "Hololive" : channelType == StreamService.ChannelType.Nijisanji ? "彩虹社" : "其他";
+        public static string GetProductionName(this YoutubeStreamService.ChannelType channelType) =>        
+                channelType == YoutubeStreamService.ChannelType.Holo ? "Hololive" : channelType == YoutubeStreamService.ChannelType.Nijisanji ? "彩虹社" : "其他";
 
         public static string GetCommandLine(this Process process)
         {

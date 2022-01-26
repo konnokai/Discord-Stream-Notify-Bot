@@ -5,9 +5,9 @@ using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 
-namespace Discord_Stream_Notify_Bot.Command.Stream.Service
+namespace Discord_Stream_Notify_Bot.Command.Youtube.Service
 {
-    public partial class StreamService
+    public partial class YoutubeStreamService
     {
         private async Task ChangeGuildBannerAsync(string channelId, string videoId)
         {

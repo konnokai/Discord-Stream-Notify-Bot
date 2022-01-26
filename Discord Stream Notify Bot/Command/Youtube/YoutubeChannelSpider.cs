@@ -5,9 +5,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using Discord_Stream_Notify_Bot.Command.Attribute;
 
-namespace Discord_Stream_Notify_Bot.Command.Stream
+namespace Discord_Stream_Notify_Bot.Command.Youtube
 {
-    public partial class Stream : TopLevelModule<Service.StreamService>
+    public partial class YoutubeStream : TopLevelModule<Service.YoutubeStreamService>
     {
         [RequireContext(ContextType.Guild)]
         [RequireUserPermission(GuildPermission.Administrator)]
