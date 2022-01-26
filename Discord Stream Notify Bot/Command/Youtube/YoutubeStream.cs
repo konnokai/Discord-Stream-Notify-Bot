@@ -832,14 +832,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                     foreach (var item in noticeStreamChannels)
                     {
                         var channelTitle = item.NoticeStreamChannelId;
-                        try
-                        {
-                            if (channelTitle.StartsWith("UC")) channelTitle = (await GetChannelTitle(channelTitle).ConfigureAwait(false)) + $" ({item.NoticeStreamChannelId})";
-                        }
-                        catch (Exception ex)
-                        {
-                            Log.Warn(ex.ToString());
-                        }
+                        if (channelTitle.StartsWith("UC")) channelTitle = (await GetChannelTitle(channelTitle).ConfigureAwait(false)) + $" ({item.NoticeStreamChannelId})";
 
                         dic.Add(channelTitle,
                             $"新待機所: {GetCurrectMessage(item.NewStreamMessage)}\r\n" +
