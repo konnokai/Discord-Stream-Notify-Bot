@@ -22,13 +22,13 @@ namespace Discord_Stream_Notify_Bot.Command
             _client.ReactionsCleared += Discord_ReactionsCleared;
         }
 
-        private Task Discord_ReactionsCleared(Cacheable<IUserMessage, ulong> user, Cacheable<IMessageChannel, ulong> msg)
+        private Task Discord_ReactionsCleared(Cacheable<IUserMessage, ulong> user, Cacheable<IMessageChannel, ulong> channel)
         {
-            Task.Run(() =>
+            Task.Run(async () =>
             {
                 try
                 {
-                    if (msg.Id == Message.Id)
+                    if ((await user.GetOrDownloadAsync()).Id == Message.Id)
                         OnReactionsCleared?.Invoke();
                 }
                 catch { }
@@ -37,13 +37,13 @@ namespace Discord_Stream_Notify_Bot.Command
             return Task.CompletedTask;
         }
 
-        private Task Discord_ReactionRemoved(Cacheable<IUserMessage, ulong> user, Cacheable<IMessageChannel, ulong> msg, SocketReaction reaction)
+        private Task Discord_ReactionRemoved(Cacheable<IUserMessage, ulong> user, Cacheable<IMessageChannel, ulong> channel, SocketReaction reaction)
         {
-            Task.Run(() =>
+            Task.Run(async () =>
             {
                 try
                 {
-                    if (msg.Id == Message.Id)
+                    if ((await user.GetOrDownloadAsync()).Id == Message.Id)
                         OnReactionRemoved?.Invoke(reaction);
                 }
                 catch { }
@@ -52,13 +52,13 @@ namespace Discord_Stream_Notify_Bot.Command
             return Task.CompletedTask;
         }
 
-        private Task Discord_ReactionAdded(Cacheable<IUserMessage, ulong> arg1, Cacheable<IMessageChannel, ulong> msg, SocketReaction reaction)
+        private Task Discord_ReactionAdded(Cacheable<IUserMessage, ulong> user, Cacheable<IMessageChannel, ulong> channel, SocketReaction reaction)
         {
-            Task.Run(() =>
+            Task.Run(async () =>
             {
                 try
                 {
-                    if (msg.Id == Message.Id)
+                    if ((await user.GetOrDownloadAsync()).Id == Message.Id)
                         OnReactionAdded?.Invoke(reaction);
                 }
                 catch { }
