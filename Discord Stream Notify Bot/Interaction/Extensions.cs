@@ -1,21 +1,20 @@
 ﻿using Discord;
-using Discord.Commands;
 using Discord.WebSocket;
 using Discord_Stream_Notify_Bot.Command.Youtube.Service;
 using Discord_Stream_Notify_Bot.DataBase.Table;
+using Discord_Stream_Notify_Bot.Interaction;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Diagnostics;
 using System.Linq;
 using System.Management;
 using System.Reflection;
-using System.Data;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
-using Discord_Stream_Notify_Bot.Interaction;
 
-namespace Discord_Stream_Notify_Bot.Command
+namespace Discord_Stream_Notify_Bot.Interaction
 {
     static class Extensions
     {
@@ -54,7 +53,7 @@ namespace Discord_Stream_Notify_Bot.Command
             }
         }
 
-        public static string GetProductionName(this YoutubeStreamService.ChannelType channelType) =>        
+        public static string GetProductionName(this YoutubeStreamService.ChannelType channelType) =>
                 channelType == YoutubeStreamService.ChannelType.Holo ? "Hololive" : channelType == YoutubeStreamService.ChannelType.Nijisanji ? "彩虹社" : "其他";
 
         public static string GetCommandLine(this Process process)
@@ -119,7 +118,7 @@ namespace Discord_Stream_Notify_Bot.Command
         {
             videoId = videoId.Trim();
             return dBContext.HoloStreamVideo.AsNoTracking().Any((x) => x.VideoId == videoId) ||
-                dBContext.NijisanjiStreamVideo.AsNoTracking().Any((x) => x.VideoId == videoId) || 
+                dBContext.NijisanjiStreamVideo.AsNoTracking().Any((x) => x.VideoId == videoId) ||
                 dBContext.OtherStreamVideo.AsNoTracking().Any((x) => x.VideoId == videoId);
         }
 
@@ -165,80 +164,14 @@ namespace Discord_Stream_Notify_Bot.Command
             }
         }
 
-        public static Task<IUserMessage> SendConfirmAsync(this IMessageChannel ch, string des)
-             => ch.SendMessageAsync("", embed: new EmbedBuilder().WithOkColor().WithDescription(des).Build());
-        public static Task<IUserMessage> SendConfirmAsync(this IMessageChannel ch, string title, string des)
-             => ch.SendMessageAsync("", embed: new EmbedBuilder().WithOkColor().WithTitle(title).WithDescription(des).Build());
-        public static Task<IUserMessage> SendErrorAsync(this IMessageChannel ch, string des)
-             => ch.SendMessageAsync("", embed: new EmbedBuilder().WithErrorColor().WithDescription(des).Build());
-        public static Task<IUserMessage> SendErrorAsync(this IMessageChannel ch, string title, string des)
-             => ch.SendMessageAsync("", embed: new EmbedBuilder().WithErrorColor().WithTitle(title).WithDescription(des).Build());
-
-        static public async Task<bool> PromptUserConfirmAsync(this SocketCommandContext ctx, EmbedBuilder embed)
-        {
-            embed.WithOkColor()
-                .WithFooter("yes/no");
-
-            var msg = await ctx.Channel.EmbedAsync(embed).ConfigureAwait(false);
-            try
-            {
-                var input = await GetUserInputAsync(ctx.User.Id, ctx.Channel.Id).ConfigureAwait(false);
-                input = input?.ToUpperInvariant();
-
-                if (input != "YES" && input != "Y")
-                {
-                    return false;
-                }
-
-                return true;
-            }
-            finally
-            {
-                var _ = Task.Run(() => msg.DeleteAsync());
-            }
-        }
-
-        static public async Task<string> GetUserInputAsync(ulong userId, ulong channelId)
-        {
-            var userInputTask = new TaskCompletionSource<string>();
-            var dsc = Program._client;
-            try
-            {
-                dsc.MessageReceived += MessageReceived;
-
-                if ((await Task.WhenAny(userInputTask.Task, Task.Delay(10000)).ConfigureAwait(false)) != userInputTask.Task)
-                {
-                    return null;
-                }
-
-                return await userInputTask.Task.ConfigureAwait(false);
-            }
-            finally
-            {
-                dsc.MessageReceived -= MessageReceived;
-            }
-
-            Task MessageReceived(SocketMessage arg)
-            {
-                var _ = Task.Run(() =>
-                {
-                    if (!(arg is SocketUserMessage userMsg) ||
-                        !(userMsg.Channel is ITextChannel chan) ||
-                        userMsg.Author.Id != userId ||
-                        userMsg.Channel.Id != channelId)
-                    {
-                        return Task.CompletedTask;
-                    }
-
-                    if (userInputTask.TrySetResult(arg.Content))
-                    {
-                        userMsg.DeleteAfter(1);
-                    }
-                    return Task.CompletedTask;
-                });
-                return Task.CompletedTask;
-            }
-        }
+        public static Task SendConfirmAsync(this IDiscordInteraction di, string des, bool ephemeral = false)
+             => di.RespondAsync(embed: new EmbedBuilder().WithOkColor().WithDescription(des).Build(), ephemeral: ephemeral);
+        public static Task SendConfirmAsync(this IDiscordInteraction di, string title, string des, bool ephemeral = false)
+             => di.RespondAsync(embed: new EmbedBuilder().WithOkColor().WithTitle(title).WithDescription(des).Build(), ephemeral: ephemeral);
+        public static Task SendErrorAsync(this IDiscordInteraction di, string des, bool ephemeral = false)
+             => di.RespondAsync(embed: new EmbedBuilder().WithErrorColor().WithDescription(des).Build(), ephemeral: ephemeral);
+        public static Task SendErrorAsync(this IDiscordInteraction di, string title, string des, bool ephemeral = false)
+             => di.RespondAsync(embed: new EmbedBuilder().WithErrorColor().WithTitle(title).WithDescription(des).Build(), ephemeral: ephemeral);
 
         public static IMessage DeleteAfter(this IUserMessage msg, int seconds)
         {
@@ -251,7 +184,7 @@ namespace Discord_Stream_Notify_Bot.Command
             return msg;
         }
 
-        public static IEnumerable<Type> LoadCommandFrom(this IServiceCollection collection, Assembly assembly)
+        public static IEnumerable<Type> LoadInteractionFrom(this IServiceCollection collection, Assembly assembly)
         {
             List<Type> addedTypes = new List<Type>();
 
@@ -267,14 +200,14 @@ namespace Discord_Stream_Notify_Bot.Command
             }
 
             var services = new Queue<Type>(allTypes
-                    .Where(x => x.GetInterfaces().Contains(typeof(ICommandService))
+                    .Where(x => x.GetInterfaces().Contains(typeof(IInteractionService))
                         && !x.GetTypeInfo().IsInterface && !x.GetTypeInfo().IsAbstract)
                     .ToArray());
 
             addedTypes.AddRange(services);
 
             var interfaces = new HashSet<Type>(allTypes
-                    .Where(x => x.GetInterfaces().Contains(typeof(ICommandService))
+                    .Where(x => x.GetInterfaces().Contains(typeof(IInteractionService))
                         && x.GetTypeInfo().IsInterface));
 
             while (services.Count > 0)
@@ -283,7 +216,7 @@ namespace Discord_Stream_Notify_Bot.Command
 
                 if (collection.FirstOrDefault(x => x.ServiceType == serviceType) != null)
                     continue;
-                                
+
                 var interfaceType = interfaces.FirstOrDefault(x => serviceType.GetInterfaces().Contains(x));
                 if (interfaceType != null)
                 {
@@ -299,20 +232,20 @@ namespace Discord_Stream_Notify_Bot.Command
             return addedTypes;
         }
 
-        public static Task<IUserMessage> EmbedAsync(this IMessageChannel ch, EmbedBuilder embed, string msg = "")
-            => ch.SendMessageAsync(msg, embed: embed.Build(),
-                options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
+        public static Task<IUserMessage> EmbedAsync(this IDiscordInteraction di, EmbedBuilder embed, string msg = "", bool ephemeral = false)
+            => di.FollowupAsync(msg, embed: embed.Build(),
+                options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry }, ephemeral: ephemeral);
 
-        public static Task<IUserMessage> EmbedAsync(this IMessageChannel ch, string msg = "")
-        {
-            return ch.SendMessageAsync(null, false, new EmbedBuilder().WithOkColor().WithDescription(msg).Build(), new RequestOptions { RetryMode = RetryMode.AlwaysRetry });
-        }
+        public static Task<IUserMessage> EmbedAsync(this IDiscordInteraction di, string msg = "", bool ephemeral = false)
+           => di.FollowupAsync(embed: new EmbedBuilder().WithOkColor().WithDescription(msg).Build(),
+               options: new RequestOptions { RetryMode = RetryMode.AlwaysRetry }, ephemeral: ephemeral);
 
-        public static Task SendPaginatedConfirmAsync(this ICommandContext ctx, int currentPage, Func<int, EmbedBuilder> pageFunc, int totalElements, int itemsPerPage, bool addPaginatedFooter = true)
-            => ctx.SendPaginatedConfirmAsync(currentPage, (x) => Task.FromResult(pageFunc(x)), totalElements, itemsPerPage, addPaginatedFooter);
 
-        public static async Task SendPaginatedConfirmAsync(this ICommandContext ctx, int currentPage,
-    Func<int, Task<EmbedBuilder>> pageFunc, int totalElements, int itemsPerPage, bool addPaginatedFooter = true)
+        public static Task SendPaginatedConfirmAsync(this IInteractionContext ctx, int currentPage, Func<int, EmbedBuilder> pageFunc, int totalElements, int itemsPerPage, bool addPaginatedFooter = true, bool ephemeral = false)
+            => ctx.SendPaginatedConfirmAsync(currentPage, (x) => Task.FromResult(pageFunc(x)), totalElements, itemsPerPage, addPaginatedFooter, ephemeral);
+
+        public static async Task SendPaginatedConfirmAsync(this IInteractionContext ctx, int currentPage,
+    Func<int, Task<EmbedBuilder>> pageFunc, int totalElements, int itemsPerPage, bool addPaginatedFooter = true, bool ephemeral = false)
         {
             var embed = await pageFunc(currentPage).ConfigureAwait(false);
 
@@ -321,7 +254,8 @@ namespace Discord_Stream_Notify_Bot.Command
             if (addPaginatedFooter)
                 embed.AddPaginatedFooter(currentPage, lastPage);
 
-            var msg = await ctx.Channel.EmbedAsync(embed).ConfigureAwait(false) as IUserMessage;
+            await ctx.Interaction.RespondAsync(embed: embed.Build(), ephemeral: ephemeral).ConfigureAwait(false);
+            var msg = await ctx.Interaction.GetOriginalResponseAsync().ConfigureAwait(false);
 
             if (lastPage == 0)
                 return;

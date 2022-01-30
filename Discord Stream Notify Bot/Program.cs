@@ -21,7 +21,7 @@ using System.Threading.Tasks;
 
 namespace Discord_Stream_Notify_Bot
 {
-    class Program
+    public class Program
     {
         public static string VERSION => GetLinkerTime(Assembly.GetEntryAssembly());
         public static ConnectionMultiplexer Redis { get; set; }
@@ -32,7 +32,7 @@ namespace Discord_Stream_Notify_Bot
         public static DiscordSocketClient _client;
         public static BotPlayingStatus Status = BotPlayingStatus.Guild;
         public static Stopwatch stopWatch = new Stopwatch();
-        public static bool isConnect = false, isDisconnect = false;
+        public static bool isConnect = false, isDisconnect = false, isNeedRegisterAppCommand = false;
         public static bool isHoloChannelSpider = false, isNijisanjiChannelSpider = false, isOtherChannelSpider = false;
         static Timer timerUpdateStatus;
         static BotConfig botConfig = new();
@@ -82,7 +82,7 @@ namespace Discord_Stream_Notify_Bot
                 Log.Error(ex.Message);
                 return;
             }
-           
+
             new Program().MainAsync().GetAwaiter().GetResult();
 
             Redis.GetSubscriber().UnsubscribeAll();
@@ -125,7 +125,7 @@ namespace Discord_Stream_Notify_Bot
                 {
                     AutoServiceScopes = true,
                     UseCompiledLambda = true,
-                    EnableAutocompleteHandlers = true,
+                    EnableAutocompleteHandlers = false,
                     DefaultRunMode = Discord.Interactions.RunMode.Async
                 })); ;
 
@@ -159,20 +159,31 @@ namespace Discord_Stream_Notify_Bot
 
                 try
                 {
+                    try
+                    {
+                        var commandCount = (await RedisDb.StringGetSetAsync("discord_stream_bot:command_count", iService.GetService<InteractionHandler>().CommandCount)).ToString();
+                        if (commandCount == iService.GetService<InteractionHandler>().CommandCount.ToString()) return;
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error("設定指令數量失敗，請確認Redis伺服器是否可以存取");
+                        Log.Error(ex.Message);
+                        isDisconnect = true;
+                    }
 #if DEBUG
-                    //if (botConfig.TestSlashCommandGuildId == 0 || _client.GetGuild(botConfig.TestSlashCommandGuildId) == null)
-                    //    Log.Warn("未設定測試Slash指令的伺服器或伺服器不存在，略過");
-                    //else
-                    //    await iService.GetService<InteractionService>().RegisterCommandsToGuildAsync(botConfig.TestSlashCommandGuildId);
+                    if (botConfig.TestSlashCommandGuildId == 0 || _client.GetGuild(botConfig.TestSlashCommandGuildId) == null)
+                        Log.Warn("未設定測試Slash指令的伺服器或伺服器不存在，略過");
+                    else
+                        await iService.GetService<InteractionService>().RegisterCommandsToGuildAsync(botConfig.TestSlashCommandGuildId);
 #else
-                    //await iService.GetService<InteractionService>().RegisterCommandsGloballyAsync();
+                    await iService.GetService<InteractionService>().RegisterCommandsGloballyAsync();
 #endif
                 }
                 catch (Exception ex)
                 {
                     Log.Error("註冊Slash指令失敗，關閉中...");
                     Log.Error(ex.ToString());
-                    isDisconnect = true;                    
+                    isDisconnect = true;
                 }
             };
 

@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Discord_Stream_Notify_Bot.Command.Admin
 {
-    public class Administration : TopLevelModule<AdministraitonService>
+    public class Administration : TopLevelModule<AdministrationService>
     {
         private readonly DiscordSocketClient _client;
         public Administration(DiscordSocketClient discordSocketClient)
