@@ -163,6 +163,14 @@ namespace Discord_Stream_Notify_Bot.Interaction
             }
         }
 
+        public static bool IsChannelInDb(this DataBase.DBContext dBContext, string channelId)
+            => dBContext.HoloStreamVideo.AsNoTracking().Any((x) => x.ChannelId == channelId) ||
+                dBContext.NijisanjiStreamVideo.AsNoTracking().Any((x) => x.ChannelId == channelId) ||
+                dBContext.OtherStreamVideo.AsNoTracking().Any((x) => x.ChannelId == channelId);
+
+        public static bool IsTwitterUserInDb(this DataBase.DBContext dBContext, string userId)
+            => dBContext.TwitterSpaecSpider.AsNoTracking().Any((x) => x.UserId == userId);
+
         public static Task SendConfirmAsync(this IDiscordInteraction di, string des, bool isFollowerup = false, bool ephemeral = false)
         {
             if (isFollowerup)
@@ -179,7 +187,7 @@ namespace Discord_Stream_Notify_Bot.Interaction
                 return di.RespondAsync(embed: new EmbedBuilder().WithOkColor().WithTitle(title).WithDescription(des).Build(), ephemeral: ephemeral);
         }
 
-        public static Task SendErrorAsync(this IDiscordInteraction di, string des, bool isFollowerup = false, bool ephemeral = false)
+        public static Task SendErrorAsync(this IDiscordInteraction di, string des, bool isFollowerup = false, bool ephemeral = true)
         {
             if (isFollowerup)
                 return di.FollowupAsync(embed: new EmbedBuilder().WithErrorColor().WithDescription(des).Build(), ephemeral: ephemeral);
@@ -187,7 +195,7 @@ namespace Discord_Stream_Notify_Bot.Interaction
                 return di.RespondAsync(embed: new EmbedBuilder().WithErrorColor().WithDescription(des).Build(), ephemeral: ephemeral);
         }
 
-        public static Task SendErrorAsync(this IDiscordInteraction di, string title, string des, bool isFollowerup = false, bool ephemeral = false)
+        public static Task SendErrorAsync(this IDiscordInteraction di, string title, string des, bool isFollowerup = false, bool ephemeral = true)
         {
             if (isFollowerup)
                 return di.FollowupAsync(embed: new EmbedBuilder().WithErrorColor().WithTitle(title).WithDescription(des).Build(), ephemeral: ephemeral);

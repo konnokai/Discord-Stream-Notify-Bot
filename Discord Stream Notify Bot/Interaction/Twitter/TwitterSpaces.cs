@@ -27,9 +27,9 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
         [RequireUserPermission(GuildPermission.ManageMessages)]
         [CommandSummary("新增推特語音空間開台通知的頻道\r\n" +
             "請使用@後面的使用者名稱來新增\r\n" +
-            "可以使用`/twitter-space list-notice-channel`查詢有哪些頻道\r\n")]
+            "可以使用`/twitter-space list-space-notice`查詢有哪些頻道\r\n")]
         [CommandExample("LaplusDarknesss", "@inui_toko")]
-        [SlashCommand("add-notice-channel", "新增推特語音空間開台通知的頻道")]
+        [SlashCommand("add-space-notice", "新增推特語音空間開台通知的頻道")]
         public async Task AddChannel([Summary("推特使用者名稱")]string userScreenName, [Summary("發送通知的頻道")] ITextChannel textChannel)
         {
             if (string.IsNullOrWhiteSpace(userScreenName))
@@ -55,8 +55,10 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                     return;
                 }
 
+                string addString = "";
+                if (!db.IsTwitterUserInDb(user.data.id)) addString += $"\r\n\r\n(注意: 該使用者未加入爬蟲清單\r\n如長時間無通知請使用 `/help get-command-help add-twitter-spider` 查看說明並加入爬蟲)";
                 db.NoticeTwitterSpaceChannel.Add(new NoticeTwitterSpaceChannel() { GuildId = Context.Guild.Id, DiscordChannelId = textChannel.Id, NoticeTwitterSpaceUserId = user.data.id, NoticeTwitterSpaceUserScreenName = user.data.username.ToLower() });
-                await Context.Interaction.SendConfirmAsync($"已將 {user.data.name} 加入到語音空間通知頻道清單內").ConfigureAwait(false);
+                await Context.Interaction.SendConfirmAsync($"已將 {user.data.name} 加入到語音空間通知頻道清單內{addString}").ConfigureAwait(false);
 
                 await db.SaveChangesAsync().ConfigureAwait(false);
             }
@@ -67,7 +69,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
         [CommandSummary("移除推特語音空間通知的頻道\r\n" +
              "請使用@後面的使用者名稱來移除")]
         [CommandExample("LaplusDarknesss", "@inui_toko")]
-        [SlashCommand("remove-notice-channel", "移除推特語音空間開台通知的頻道")]
+        [SlashCommand("remove-space-notice", "移除推特語音空間開台通知的頻道")]
         public async Task RemoveChannel([Summary("推特使用者名稱")] string userScreenName)
         {
             if (string.IsNullOrWhiteSpace(userScreenName))
@@ -82,13 +84,13 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
             {
                 if (!db.NoticeTwitterSpaceChannel.Any((x) => x.GuildId == Context.Guild.Id))
                 {
-                    await Context.Interaction.SendConfirmAsync("並未設定推特語音空間通知...").ConfigureAwait(false);
+                    await Context.Interaction.SendErrorAsync("並未設定推特語音空間通知...").ConfigureAwait(false);
                     return;
                 }
 
                 if (!db.NoticeTwitterSpaceChannel.Any((x) => x.GuildId == Context.Guild.Id && x.NoticeTwitterSpaceUserScreenName == userScreenName))
                 {
-                    await Context.Interaction.SendConfirmAsync($"並未設定`{userScreenName}`的推特語音空間通知...").ConfigureAwait(false);
+                    await Context.Interaction.SendErrorAsync($"並未設定 `{userScreenName}` 的推特語音空間通知...").ConfigureAwait(false);
                     return;
                 }
                 else
@@ -102,7 +104,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
         }
 
         [RequireContext(ContextType.Guild)]
-        [SlashCommand("list-notice-channel", "顯示現在已加入推特語音空間通知的頻道")]
+        [SlashCommand("list-space-notice", "顯示現在已加入推特語音空間通知的頻道")]
         public async Task ListChannel()
         {
             using (var db = DataBase.DBContext.GetDbContext())
@@ -110,7 +112,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                 var list = db.NoticeTwitterSpaceChannel.ToList().Where((x) => x.GuildId == Context.Guild.Id)
                 .Select((x) => new KeyValuePair<string, ulong>(x.NoticeTwitterSpaceUserScreenName, x.DiscordChannelId)).ToList();
 
-                if (list.Count() == 0) { await Context.Interaction.SendConfirmAsync("推特語音空間通知清單為空").ConfigureAwait(false); return; }
+                if (list.Count() == 0) { await Context.Interaction.SendErrorAsync("推特語音空間通知清單為空").ConfigureAwait(false); return; }
                 var twitterSpaceList = list.Select((x) => $"{x.Key} => <#{x.Value}>").ToList();
 
                 await Context.SendPaginatedConfirmAsync(0, page =>
@@ -129,11 +131,11 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
         [RequireBotPermission(GuildPermission.MentionEveryone)]
         [CommandSummary("設定通知訊息\r\n" +
             "不輸入通知訊息的話則會關閉通知訊息\r\n" +
-            "需先新增直播通知後才可設定通知訊息(`/help get-command-help add-notice-channel`)\r\n\r\n" +
+            "需先新增直播通知後才可設定通知訊息(`/help get-command-help add-space-notice`)\r\n\r\n" +
             "(考慮到有伺服器需Ping特定用戶組的情況，故Bot需提及所有身分組權限)\r\n" +
             "(建議在私人頻道中設定以免Ping到用戶組造成不必要的誤會)")]
         [CommandExample("LaplusDarknesss", "LaplusDarknesss @直播通知 總帥突襲開語音啦")]
-        [SlashCommand("set-notice-message", "設定通知訊息")]
+        [SlashCommand("set-space-notice-message", "設定通知訊息")]
         public async Task SetMessage([Summary("推特使用者名稱")] string userScreenName, [Summary("通知訊息")] string message)
         {
             if (string.IsNullOrWhiteSpace(userScreenName))
@@ -167,8 +169,8 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                 }
                 else
                 {
-                    await Context.Interaction.SendConfirmAsync($"並未設定 {user.data.name} 的推特語音空間通知訊息\r\n" +
-                        $"請先使用 `/twitterspace addnoticechannel {user.data.username}` 新增後再設定語音空間通知").ConfigureAwait(false);
+                    await Context.Interaction.SendConfirmAsync($"並未設定推特語音空間通知\r\n" +
+                        $"請先使用 `/help get-command-help add-space-notice` 查看說明並新增語音空間通知").ConfigureAwait(false);
                 }
             }
         }
@@ -212,7 +214,8 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                 }
                 else
                 {
-                    await Context.Interaction.SendConfirmAsync($"並未設定推特語音空間通知\r\n請先使用 `s!h antsc` 查看說明並新增語音空間通知").ConfigureAwait(false);
+                    await Context.Interaction.SendConfirmAsync($"並未設定推特語音空間通知\r\n" +
+                        $"請先使用 `/help get-command-help add-space-notice` 查看說明並新增語音空間通知").ConfigureAwait(false);
                 }
             }
         }
@@ -227,7 +230,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
             "未來會根據情況增減可新增的頻道數量\r\n" +
             "如有任何需要請向擁有者詢問\r\n")]
         [CommandExample("LaplusDarknesss", "@inui_toko")]
-        [SlashCommand("add-spider", "新增推特語音空間爬蟲")]
+        [SlashCommand("add-twitter-spider", "新增推特語音空間爬蟲")]
         public async Task AddSpider([Summary("推特使用者名稱")] string userScreenName)
         {
             if (string.IsNullOrWhiteSpace(userScreenName))
@@ -262,7 +265,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                     }
 
                     await Context.Interaction.SendConfirmAsync($"{userScreenName} 已在爬蟲清單內\r\n" +
-                        $"可直接到通知頻道內使用 `/twitterspace addnoticechannel {userScreenName}` 開啟通知\r\n" +
+                        $"可直接到通知頻道內使用 `/twitter-space add-space-notice {userScreenName}` 開啟通知\r\n" +
                         $"(由 `{guild}` 設定)").ConfigureAwait(false);
                     return;
                 }
@@ -275,7 +278,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
 
                 if (db.TwitterSpaecSpider.Count((x) => x.GuildId == Context.Guild.Id) >= 5)
                 {
-                    await Context.Interaction.SendConfirmAsync($"此伺服器已設定五個檢測頻道，請移除後再試\r\n" +
+                    await Context.Interaction.SendErrorAsync($"此伺服器已設定五個檢測頻道，請移除後再試\r\n" +
                         $"如有特殊需求請向Bot擁有者詢問").ConfigureAwait(false);
                     return;
                 }
@@ -284,7 +287,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                 await db.SaveChangesAsync();
 
                 await Context.Interaction.SendConfirmAsync($"已將 {userScreenName} 加入到推特語音爬蟲清單內\r\n" +
-                    $"請到通知頻道內使用 `/twitterspace addnoticechannel {userScreenName}` 來開啟通知").ConfigureAwait(false);
+                    $"請到通知頻道內使用 `/twitter-space add-space-notice {userScreenName}` 來開啟通知").ConfigureAwait(false);
 
                 _discordWebhookClient.SendMessageToDiscord($"{Context.Guild.Name} 已新增推特語音爬蟲 {Format.Url(userScreenName, $"https://twitter.com/{userScreenName}")}");
             }
@@ -295,7 +298,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
            "爬蟲必須由本伺服器新增才可移除")]
         [RequireUserPermission(GuildPermission.Administrator)]
         [CommandExample("LaplusDarknesss", "@inui_toko")]
-        [SlashCommand("remove-spider", "移除推特語音空間爬蟲")]
+        [SlashCommand("remove-twitter-spider", "移除推特語音空間爬蟲")]
         public async Task RemoveSpider([Summary("推特使用者名稱")]string userScreenName)
         {
             if (string.IsNullOrWhiteSpace(userScreenName))
@@ -310,13 +313,13 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
             {
                 if (!db.TwitterSpaecSpider.Any((x) => x.UserScreenName == userScreenName))
                 {
-                    await Context.Interaction.SendConfirmAsync($"並未設定 {userScreenName} 語音空間檢測爬蟲...").ConfigureAwait(false);
+                    await Context.Interaction.SendErrorAsync($"並未設定 {userScreenName} 語音空間檢測爬蟲...").ConfigureAwait(false);
                     return;
                 }
 
                 if (Context.User.Id != Program.ApplicatonOwner.Id && !db.TwitterSpaecSpider.Any((x) => x.UserScreenName == userScreenName && x.GuildId == Context.Guild.Id))
                 {
-                    await Context.Interaction.SendConfirmAsync($"該語音空間爬蟲並非本伺服器新增，無法移除").ConfigureAwait(false);
+                    await Context.Interaction.SendErrorAsync($"該語音空間爬蟲並非本伺服器新增，無法移除").ConfigureAwait(false);
                     return;
                 }
 
@@ -329,7 +332,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
         }
 
         [RequireContext(ContextType.Guild)]
-        [SlashCommand("list-spider", "顯示推特語音空間爬蟲")]
+        [SlashCommand("list-twitter-spider", "顯示推特語音空間爬蟲")]
         public async Task ListSpider([Summary("頁數")]int page = 0)
         {
             if (page < 0) page = 0;
@@ -352,7 +355,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
         }
 
         [RequireContext(ContextType.Guild)]
-        [SlashCommand("list-record", "顯示推特語音空間錄影清單")]
+        [SlashCommand("list-record-user", "顯示推特語音空間錄影清單")]
         public async Task ListRecord([Summary("頁數")]int page = 0)
         {
             if (page < 0) page = 0;
@@ -374,7 +377,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                             .WithFooter($"{Math.Min(nowRecordList.Count, (page + 1) * 20)} / {nowRecordList.Count}個使用者 ({warningUserNum}個隱藏的警告頻道)");
                     }, nowRecordList.Count, 20, false);
                 }
-                else await Context.Interaction.SendConfirmAsync($"語音空間記錄清單中沒有任何使用者").ConfigureAwait(false);
+                else await Context.Interaction.SendErrorAsync($"語音空間記錄清單中沒有任何使用者").ConfigureAwait(false);
             }
         }
     }

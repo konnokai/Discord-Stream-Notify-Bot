@@ -21,18 +21,18 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             "未來會根據情況增減可新增的頻道數量\r\n" +
             "如有任何需要請向擁有者詢問")]
         [CommandExample("UC0qt9BfrpQo-drjuPKl_vdA")]
-        [SlashCommand("add-spider", "新增非兩大箱的頻道檢測爬蟲")]
+        [SlashCommand("add-youtube-spider", "新增非兩大箱的頻道檢測爬蟲")]
         public async Task AddChannelSpider([Summary("頻道Id")]string channelId)
         {
             channelId = channelId.Trim();
             if (string.IsNullOrEmpty(channelId))
             {
-                await Context.Interaction.SendConfirmAsync("未輸入頻道Id").ConfigureAwait(false);
+                await Context.Interaction.SendErrorAsync("未輸入頻道Id").ConfigureAwait(false);
                 return;
             }
             if (!channelId.Contains("UC"))
             {
-                await Context.Interaction.SendConfirmAsync("頻道Id錯誤").ConfigureAwait(false);
+                await Context.Interaction.SendErrorAsync("頻道Id錯誤").ConfigureAwait(false);
                 return;
             }
             try
@@ -41,7 +41,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             }
             catch
             {
-                await Context.Interaction.SendConfirmAsync("頻道Id格式錯誤").ConfigureAwait(false);
+                await Context.Interaction.SendErrorAsync("頻道Id格式錯誤").ConfigureAwait(false);
                 return;
             }
 
@@ -49,7 +49,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             {
                 if ((db.HoloStreamVideo.Any((x) => x.ChannelId == channelId) || db.NijisanjiStreamVideo.Any((x) => x.ChannelId == channelId)) && !db.YoutubeChannelOwnedType.Any((x) => x.ChannelId == channelId))
                 {
-                    await Context.Interaction.SendConfirmAsync($"不可新增兩大箱的頻道").ConfigureAwait(false);
+                    await Context.Interaction.SendErrorAsync($"不可新增兩大箱的頻道").ConfigureAwait(false);
                     return;
                 }
 
@@ -67,7 +67,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                     }
 
                     await Context.Interaction.SendConfirmAsync($"{channelId} 已在爬蟲清單內\r\n" +
-                        $"可直接到通知頻道內使用 `s!ansc {channelId}` 開啟通知\r\n" +
+                        $"可直接到通知頻道內使用 `/youtube add-youtube-notice {channelId}` 開啟通知\r\n" +
                         $"(由 `{guild}` 設定)").ConfigureAwait(false);
                     return;
                 }
@@ -82,7 +82,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                 string channelTitle = await GetChannelTitle(channelId).ConfigureAwait(false);
                 if (channelTitle == "")
                 {
-                    await Context.Interaction.SendConfirmAsync($"頻道 {channelId} 不存在").ConfigureAwait(false);
+                    await Context.Interaction.SendErrorAsync($"頻道 {channelId} 不存在").ConfigureAwait(false);
                     return;
                 }
 
@@ -90,7 +90,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                 await db.SaveChangesAsync();
 
                 await Context.Interaction.SendConfirmAsync($"已將 {channelTitle} 加入到爬蟲清單內\r\n" +
-                    $"請到通知頻道內使用 `s!ansc {channelId}` 來開啟通知").ConfigureAwait(false);
+                    $"請到通知頻道內使用 `/youtube add-youtube-notice {channelId}` 來開啟通知").ConfigureAwait(false);
                 _discordWebhookClient.SendMessageToDiscord($"{Context.Guild.Name} 已新增檢測頻道 {Format.Url(channelTitle, $"https://www.youtube.com/channel/{channelId}")}");
             }
         }
@@ -102,18 +102,18 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             "頻道Id必須為24字數+UC開頭\r\n" +
             "或是完整的Youtube頻道網址")]
         [CommandExample("UC0qt9BfrpQo-drjuPKl_vdA")]
-        [SlashCommand("remove-spider", "移除非兩大箱的頻道檢測爬蟲")]
+        [SlashCommand("remove-youtube-spider", "移除非兩大箱的頻道檢測爬蟲")]
         public async Task RemoveChannelSpider([Summary("頻道Id")] string channelId)
         {
             channelId = channelId.Trim();
             if (string.IsNullOrEmpty(channelId))
             {
-                await Context.Interaction.SendConfirmAsync("未輸入頻道Id").ConfigureAwait(false);
+                await Context.Interaction.SendErrorAsync("未輸入頻道Id").ConfigureAwait(false);
                 return;
             }
             if (!channelId.Contains("UC"))
             {
-                await Context.Interaction.SendConfirmAsync("頻道Id錯誤").ConfigureAwait(false);
+                await Context.Interaction.SendErrorAsync("頻道Id錯誤").ConfigureAwait(false);
                 return;
             }
             try
@@ -122,7 +122,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             }
             catch
             {
-                await Context.Interaction.SendConfirmAsync("頻道Id格式錯誤").ConfigureAwait(false);
+                await Context.Interaction.SendErrorAsync("頻道Id格式錯誤").ConfigureAwait(false);
                 return;
             }
 
@@ -130,13 +130,13 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             {
                 if (!db.YoutubeChannelSpider.Any((x) => x.ChannelId == channelId))
                 {
-                    await Context.Interaction.SendConfirmAsync($"並未設定 {channelId} 頻道檢測爬蟲...").ConfigureAwait(false);
+                    await Context.Interaction.SendErrorAsync($"並未設定 {channelId} 頻道檢測爬蟲...").ConfigureAwait(false);
                     return;
                 }
 
                 if (Context.Interaction.User.Id != Program.ApplicatonOwner.Id && !db.YoutubeChannelSpider.Any((x) => x.ChannelId == channelId && x.GuildId == Context.Guild.Id))
                 {
-                    await Context.Interaction.SendConfirmAsync($"該頻道爬蟲並非本伺服器新增，無法移除").ConfigureAwait(false);
+                    await Context.Interaction.SendErrorAsync($"該頻道爬蟲並非本伺服器新增，無法移除").ConfigureAwait(false);
                     return;
                 }
 
@@ -148,7 +148,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
         }
 
         [RequireContext(ContextType.Guild)]
-        [SlashCommand("list-spider", "顯示已加入爬蟲檢測的頻道")]
+        [SlashCommand("list-youtube-spider", "顯示已加入爬蟲檢測的頻道")]
         public async Task ListChannelSpider([Summary("頁數")] int page = 0)
         {
             if (page < 0) page = 0;

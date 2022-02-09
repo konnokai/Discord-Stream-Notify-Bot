@@ -67,7 +67,7 @@ namespace Discord_Stream_Notify_Bot.Interaction
                         userMsg.User.Id != userId ||
                         userMsg.Channel.Id != channelId)
                     {
-                        await component.SendErrorAsync("你無法使用本功能", ephemeral: true).ConfigureAwait(false);
+                        await component.SendErrorAsync("你無法使用本功能").ConfigureAwait(false);
                         return Task.CompletedTask;
                     }
 

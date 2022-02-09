@@ -94,16 +94,16 @@ namespace Discord_Stream_Notify_Bot.Interaction
                 switch (arg3.Error)
                 {
                     case InteractionCommandError.UnmetPrecondition:
-                        arg2.Interaction.RespondAsync(arg3.ErrorReason, ephemeral: true);
+                        arg2.Interaction.SendErrorAsync(arg3.ErrorReason);
                         break;
                     case InteractionCommandError.UnknownCommand:
-                        arg2.Interaction.RespondAsync("未知的指令，也許被移除或變更了", ephemeral: true);
+                        arg2.Interaction.SendErrorAsync("未知的指令，也許被移除或變更了");
                         break;
                     case InteractionCommandError.BadArgs:
-                        arg2.Interaction.RespondAsync("輸入的參數錯誤");
+                        arg2.Interaction.SendErrorAsync("輸入的參數錯誤");
                         break;
                     default:
-                        arg2.Interaction.RespondAsync("未知的錯誤，請向Bot擁有者回報");
+                        arg2.Interaction.SendErrorAsync("未知的錯誤，請向Bot擁有者回報");
                         break;
                 }
             }

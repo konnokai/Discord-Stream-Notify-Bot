@@ -36,7 +36,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Help
             module = module?.Trim();
             if (string.IsNullOrWhiteSpace(module))
             {
-                await Context.Interaction.SendErrorAsync("未輸入模組名稱", ephemeral: true);
+                await Context.Interaction.SendErrorAsync("未輸入模組名稱");
                 return;
             }
 
@@ -54,11 +54,11 @@ namespace Discord_Stream_Notify_Bot.Interaction.Help
 
             if (cmds.Count() == 0)
             {
-                await Context.Interaction.SendErrorAsync(module + " 未包含你可使用的指令", ephemeral: true);
+                await Context.Interaction.SendErrorAsync(module + " 未包含你可使用的指令");
                 return;
             }
 
-            var embed = new EmbedBuilder().WithOkColor().WithTitle($"{cmds.First().Module.Name} 內包含的指令").WithFooter("輸入 `/help get-command-help 指令` 以顯示指令的詳細說明，例 `/help get-command-help help`");
+            var embed = new EmbedBuilder().WithOkColor().WithTitle($"{cmds.First().Module.Name} 內包含的指令").WithFooter("輸入 `/help get-command-help 指令` 以顯示指令的詳細說明，例 `/help get-command-help add-youtube-notice`");
             var commandList = new List<string>();
 
             foreach (var item in cmds)
@@ -89,7 +89,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Help
             }
 
             SlashCommandInfo commandInfo = _interaction.SlashCommands.FirstOrDefault((x) => x.Name == command.ToLowerInvariant());
-            if (commandInfo == null) { await Context.Interaction.SendErrorAsync($"找不到 {command} 指令", ephemeral: true); return; }
+            if (commandInfo == null) { await Context.Interaction.SendErrorAsync($"找不到 {command} 指令"); return; }
 
             await RespondAsync(embed: _service.GetCommandHelp(commandInfo).Build());
         }
