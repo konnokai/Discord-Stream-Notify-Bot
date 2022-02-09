@@ -4,7 +4,7 @@
 
 自行運行所需環境與參數
 -
-1. .NET Core 5.0 Runtime 或 SDK ([微軟網址](https://dotnet.microsoft.com/en-us/download/dotnet/5.0))
+1. .NET Core 6.0 Runtime 或 SDK ([微軟網址](https://dotnet.microsoft.com/en-us/download/dotnet/5.0))
 2. Redis Server ([Windows下載網址](https://github.com/MicrosoftArchive/redis)，Linux可直接透過apt或yum安裝)
 3. Discord Bot Token ([Discord Dev網址](https://discord.com/developers/applications))
 4. Discord Channel WebHook (做紀錄用)
@@ -15,6 +15,6 @@
 建置環境
 - 
 - Visual Studio 2022
-- .NET Core 5.0
+- .NET Core 6.0
 
 **此版本目前未包含會限驗證的程式碼，待確認功能正常後會再更新上來**
