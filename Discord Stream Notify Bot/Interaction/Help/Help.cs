@@ -63,7 +63,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Help
 
             foreach (var item in cmds)
             {
-                var str = string.Format($"**`/{item.Name}`**");
+                var str = string.Format($"**`/{cmds.First().Module.SlashGroupName} {item.Name}`**");
                 if (!commandList.Contains(str)) commandList.Add(str);
             }
             embed.WithDescription(string.Join('\n', commandList));
