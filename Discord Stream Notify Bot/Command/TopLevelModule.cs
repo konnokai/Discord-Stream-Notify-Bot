@@ -7,17 +7,6 @@ namespace Discord_Stream_Notify_Bot.Command
 {
     public abstract class TopLevelModule : ModuleBase
     {
-
-    }
-
-    public abstract class TopLevelModule<TService> : TopLevelModule where TService : ICommandService
-    {
-        protected TopLevelModule()
-        {
-        }
-
-        public TService _service { get; set; }
-
         public async Task<bool> PromptUserConfirmAsync(EmbedBuilder embed)
         {
             embed.WithOkColor()
@@ -83,5 +72,15 @@ namespace Discord_Stream_Notify_Bot.Command
                 return Task.CompletedTask;
             }
         }
+    }
+
+    public abstract class TopLevelModule<TService> : TopLevelModule where TService : ICommandService
+    {
+        protected TopLevelModule()
+        {
+        }
+
+        public TService _service { get; set; }
+
     }
 }

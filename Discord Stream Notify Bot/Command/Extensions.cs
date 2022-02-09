@@ -1,19 +1,17 @@
 ﻿using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
-using Discord_Stream_Notify_Bot.Command.Youtube.Service;
 using Discord_Stream_Notify_Bot.DataBase.Table;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Diagnostics;
 using System.Linq;
 using System.Management;
 using System.Reflection;
-using System.Data;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
-using Discord_Stream_Notify_Bot.Interaction;
 
 namespace Discord_Stream_Notify_Bot.Command
 {
@@ -38,11 +36,11 @@ namespace Discord_Stream_Notify_Bot.Command
             return $"<t:{UTCTime}:F> (<t:{UTCTime}:R>)";
         }
 
-        public static YoutubeStreamService.ChannelType GetProductionType(this StreamVideo streamVideo)
+        public static StreamVideo.YTChannelType GetProductionType(this StreamVideo streamVideo)
         {
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                YoutubeStreamService.ChannelType type;
+                StreamVideo.YTChannelType type;
                 var channel = db.YoutubeChannelOwnedType.AsNoTracking().FirstOrDefault((x) => x.ChannelId == streamVideo.ChannelId);
 
                 if (channel != null)
@@ -54,8 +52,8 @@ namespace Discord_Stream_Notify_Bot.Command
             }
         }
 
-        public static string GetProductionName(this YoutubeStreamService.ChannelType channelType) =>        
-                channelType == YoutubeStreamService.ChannelType.Holo ? "Hololive" : channelType == YoutubeStreamService.ChannelType.Nijisanji ? "彩虹社" : "其他";
+        public static string GetProductionName(this StreamVideo.YTChannelType channelType) =>        
+                channelType == StreamVideo.YTChannelType.Holo ? "Hololive" : channelType == StreamVideo.YTChannelType.Nijisanji ? "彩虹社" : "其他";
 
         public static string GetCommandLine(this Process process)
         {

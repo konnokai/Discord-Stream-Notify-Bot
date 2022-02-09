@@ -21,17 +21,17 @@ namespace Discord_Stream_Notify_Bot.Interaction.Help
             _services = service;
         }
 
-        [SlashCommand("getallmodules", "顯示全部模組")]
+        [SlashCommand("get-all-modules", "顯示全部模組")]
         public async Task Modules()
         {
             await RespondAsync(embed: new EmbedBuilder().WithOkColor().WithTitle("模組清單")
                 .WithDescription(string.Join("\n", _interaction.Modules.Select((x) => "。" + x.Name)))
-                .WithFooter("輸入 `/help getallcommands 模組名稱` 以顯示模組內全部的指令，例 `/help getallcommands help`")
+                .WithFooter("輸入 `/help getallcommands 模組名稱` 以顯示模組內全部的指令，例 `/help get-all-commands help`")
                 .Build());
         }
 
-        [SlashCommand("getallcommands", "顯示模組內包含的指令")]
-        public async Task Commands([Summary("模組名稱")]string module = "help")
+        [SlashCommand("get-all-commands", "顯示模組內包含的指令")]
+        public async Task Commands([Summary("模組名稱")]string module)
         {
             module = module?.Trim();
             if (string.IsNullOrWhiteSpace(module))
@@ -58,7 +58,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Help
                 return;
             }
 
-            var embed = new EmbedBuilder().WithOkColor().WithTitle($"{cmds.First().Module.Name} 內包含的指令").WithFooter("輸入 `/help getcommandhelp 指令` 以顯示指令的詳細說明，例 `/help getcommandhelp help`");
+            var embed = new EmbedBuilder().WithOkColor().WithTitle($"{cmds.First().Module.Name} 內包含的指令").WithFooter("輸入 `/help get-command-help 指令` 以顯示指令的詳細說明，例 `/help get-command-help help`");
             var commandList = new List<string>();
 
             foreach (var item in cmds)
@@ -71,14 +71,14 @@ namespace Discord_Stream_Notify_Bot.Interaction.Help
             await RespondAsync(embed: embed.Build());
         }
 
-        [SlashCommand("getcommandhelp", "顯示指令的詳細說明")]
+        [SlashCommand("get-command-help", "顯示指令的詳細說明")]
         public async Task H([Summary("指令名稱")] string command = "")
         {
             command = command?.Trim();
 
             if (string.IsNullOrWhiteSpace(command))
             {
-                EmbedBuilder embed = new EmbedBuilder().WithOkColor().WithFooter("輸入 `/help getallmodules` 取得所有的模組");
+                EmbedBuilder embed = new EmbedBuilder().WithOkColor().WithFooter("輸入 `/help get-all-modules` 取得所有的模組");
                 embed.Title = "直播小幫手 建置版本" + Program.VERSION;
 #if DEBUG
                 embed.Title += " (測試版)";

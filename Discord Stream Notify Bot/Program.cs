@@ -6,14 +6,12 @@ using Discord_Stream_Notify_Bot.Command;
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.Interaction;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json;
 using StackExchange.Redis;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -27,6 +25,7 @@ namespace Discord_Stream_Notify_Bot
         public static ConnectionMultiplexer Redis { get; set; }
         public static ISubscriber RedisSub { get; set; }
         public static IDatabase RedisDb { get; set; }
+        
 
         public static IUser ApplicatonOwner { get; private set; } = null;
         public static DiscordSocketClient _client;
@@ -102,23 +101,11 @@ namespace Discord_Stream_Notify_Bot
                 GatewayIntents = GatewayIntents.AllUnprivileged
             }); ;
 
-            #region 初始化一般指令系統
-            var commandServices = new ServiceCollection()
-                .AddSingleton(_client)
-                .AddSingleton(botConfig)
-                .AddSingleton(new CommandService(new CommandServiceConfig()
-                {
-                    CaseSensitiveCommands = false,
-                    DefaultRunMode = Discord.Commands.RunMode.Async
-                }));
-
-            commandServices.LoadCommandFrom(Assembly.GetAssembly(typeof(CommandHandler)));
-            IServiceProvider service = commandServices.BuildServiceProvider();
-            await service.GetService<CommandHandler>().InitializeAsync();
-            #endregion
-
             #region 初始化互動指令系統
             var interactionServices = new ServiceCollection()
+                .AddHttpClient()
+                .AddSingleton<SharedService.Twitter.TwitterSpacesService>()
+                .AddSingleton<SharedService.Youtube.YoutubeStreamService>()
                 .AddSingleton(_client)
                 .AddSingleton(botConfig)
                 .AddSingleton(new InteractionService(_client, new InteractionServiceConfig()
@@ -127,11 +114,35 @@ namespace Discord_Stream_Notify_Bot
                     UseCompiledLambda = true,
                     EnableAutocompleteHandlers = false,
                     DefaultRunMode = Discord.Interactions.RunMode.Async
-                })); ;
+                }));
+
+            interactionServices.AddHttpClient<HttpClients.DiscordWebhookClient>();
+            interactionServices.AddHttpClient<HttpClients.TwitterClient>();
 
             interactionServices.LoadInteractionFrom(Assembly.GetAssembly(typeof(InteractionHandler)));
             IServiceProvider iService = interactionServices.BuildServiceProvider();
             await iService.GetService<InteractionHandler>().InitializeAsync();
+            #endregion
+
+            #region 初始化一般指令系統
+            var commandServices = new ServiceCollection()
+                .AddHttpClient()
+                .AddSingleton(iService.GetService<SharedService.Twitter.TwitterSpacesService>())
+                .AddSingleton(iService.GetService<SharedService.Youtube.YoutubeStreamService>())
+                .AddSingleton(_client)
+                .AddSingleton(botConfig)
+                .AddSingleton(new CommandService(new CommandServiceConfig()
+                {
+                    CaseSensitiveCommands = false,
+                    DefaultRunMode = Discord.Commands.RunMode.Async
+                }));
+
+            commandServices.AddHttpClient<HttpClients.DiscordWebhookClient>();
+            commandServices.AddHttpClient<HttpClients.TwitterClient>();
+
+            commandServices.LoadCommandFrom(Assembly.GetAssembly(typeof(CommandHandler)));
+            IServiceProvider service = commandServices.BuildServiceProvider();
+            await service.GetService<CommandHandler>().InitializeAsync();
             #endregion
 
             #region 初始化Discord設定與事件
@@ -169,7 +180,9 @@ namespace Discord_Stream_Notify_Bot
                         Log.Error("設定指令數量失敗，請確認Redis伺服器是否可以存取");
                         Log.Error(ex.Message);
                         isDisconnect = true;
+                        return;
                     }
+
 #if DEBUG
                     if (botConfig.TestSlashCommandGuildId == 0 || _client.GetGuild(botConfig.TestSlashCommandGuildId) == null)
                         Log.Warn("未設定測試Slash指令的伺服器或伺服器不存在，略過");
@@ -177,6 +190,7 @@ namespace Discord_Stream_Notify_Bot
                         await iService.GetService<InteractionService>().RegisterCommandsToGuildAsync(botConfig.TestSlashCommandGuildId);
 #else
                     await iService.GetService<InteractionService>().RegisterCommandsGloballyAsync();
+                    Log.Info("已註冊全球指令");
 #endif
                 }
                 catch (Exception ex)
@@ -198,7 +212,7 @@ namespace Discord_Stream_Notify_Bot
                     }
                 }
 
-                SendMessageToDiscord($"加入 {guild.Name}({guild.Id})\n擁有者: {guild.Owner.Username}({guild.Owner.Mention})");
+               iService.GetService<HttpClients.DiscordWebhookClient>().SendMessageToDiscord($"加入 {guild.Name}({guild.Id})\n擁有者: {guild.Owner.Username}({guild.Owner.Mention})");
             };
             #endregion
 
@@ -223,7 +237,7 @@ namespace Discord_Stream_Notify_Bot
             }
 
             await _client.StopAsync();
-            await Command.Youtube.Service.YoutubeStreamService.SaveDateBase();
+            await SharedService.Youtube.YoutubeStreamService.SaveDateBase();
         }
 
         private static void TimerHandler(object state)
@@ -235,7 +249,7 @@ namespace Discord_Stream_Notify_Bot
 
         public static void ChangeStatus()
         {
-            Action<string> setGame = new Action<string>((string text) => { _client.SetGameAsync($"s!h | {text}"); });
+            Action<string> setGame = new Action<string>(async (text) => { await _client.SetGameAsync($"s!h | {text}", type: ActivityType.Playing); });
 
             switch (Status)
             {
@@ -271,7 +285,7 @@ namespace Discord_Stream_Notify_Bot
                                     break;
                             }
                             var item = list[new Random().Next(0, list.Count)];
-                            setGame($"{item.VideoId} - {item.VideoTitle}\n{item.ChannelTitle}");
+                            setGame($"{item.VideoTitle}\n{item.ChannelTitle}");
                         }
                     }
                     catch (Exception ex)
@@ -320,33 +334,6 @@ namespace Discord_Stream_Notify_Bot
                 }
             }
             return default;
-        }
-
-        public static void SendMessageToDiscord(string content)
-        {
-            Message message = new Message();
-
-            if (isConnect) message.username = _client.CurrentUser.Username;
-            else message.username = "Bot";
-
-            if (isConnect) message.avatar_url = _client.CurrentUser.GetAvatarUrl();
-            else message.avatar_url = "";
-
-            message.content = content;
-
-            using (WebClient webClient = new WebClient())
-            {
-                webClient.Encoding = System.Text.Encoding.UTF8;
-                webClient.Headers["Content-Type"] = "application/json";
-                webClient.UploadString(botConfig.WebHookUrl, JsonConvert.SerializeObject(message));
-            }
-        }
-
-        public class Message
-        {
-            public string username { get; set; }
-            public string content { get; set; }
-            public string avatar_url { get; set; }
         }
     }
 }

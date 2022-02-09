@@ -9,10 +9,13 @@ namespace Discord_Stream_Notify_Bot.Command.Normal
 {
     public class Normal : TopLevelModule
     {
-        DiscordSocketClient _client;
-        public Normal(DiscordSocketClient client)
+        private readonly DiscordSocketClient _client;
+        private readonly HttpClients.DiscordWebhookClient _discordWebhookClient;
+
+        public Normal(DiscordSocketClient client, HttpClients.DiscordWebhookClient discordWebhookClient)
         {
             _client = client;
+            _discordWebhookClient = discordWebhookClient;
         }
 
         [Command("Ping")]
@@ -30,8 +33,7 @@ namespace Discord_Stream_Notify_Bot.Command.Normal
 #if RELEASE
             if (Context.User.Id != Program.ApplicatonOwner.Id)
             {
-                Program.SendMessageToDiscord(string.Format("[{0}-{1}] {2}:({3}) 使用了邀請指令",
-                    Context.Guild.Name, Context.Channel.Name, Context.Message.Author.Username, Context.Message.Author.Id));
+                _discordWebhookClient.SendMessageToDiscord($"[{Context.Guild.Name}-{Context.Channel.Name}] {Context.User.Username}:({Context.User.Id}) 使用了邀請指令");
             }
 #endif
 

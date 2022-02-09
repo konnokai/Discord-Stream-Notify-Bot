@@ -11,7 +11,13 @@ namespace Discord_Stream_Notify_Bot.Interaction.Help.Service
         public EmbedBuilder GetCommandHelp(SlashCommandInfo com)
         {
             var str = string.Format($"**`/{com.Name}`**");
-            var em = new EmbedBuilder().WithTitle(com.Name).WithDescription(com.Description);
+            var des = com.Description;
+            if (com.Attributes.Any((x) => x is CommandSummaryAttribute))
+            {
+                var att = com.Attributes.FirstOrDefault((x) => x is CommandSummaryAttribute) as CommandSummaryAttribute;
+                des = att.Summary;
+            }
+            var em = new EmbedBuilder().WithTitle(com.Name).WithDescription(des);
 
             if (com.Parameters.Count > 0)
             {

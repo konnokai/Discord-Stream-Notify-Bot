@@ -2,10 +2,9 @@
 using System;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Threading.Tasks;
 
-namespace Discord_Stream_Notify_Bot.Command.Youtube.Service
+namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 {
     public partial class YoutubeStreamService
     {
@@ -23,11 +22,9 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube.Service
                         if (videoId != item.LastChangeStreamId)
                         {
                             MemoryStream memStream;
-                            using (WebClient webClient = new WebClient())
-                            {
                                 try
                                 {
-                                    memStream = new MemoryStream(webClient.DownloadData($"https://i.ytimg.com/vi/{videoId}/maxresdefault.jpg"));
+                                    memStream = new MemoryStream(await _httpClientFactory.CreateClient("").GetByteArrayAsync($"https://i.ytimg.com/vi/{videoId}/maxresdefault.jpg"));
                                     if (memStream.Length < 2048) memStream = null;
                                 }
                                 catch (Exception ex)
@@ -37,8 +34,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube.Service
                                         $"{ex.Message}\r\n" +
                                         $"{ex.StackTrace}");
                                     continue;
-                                }
-                            }
+                                }                            
 
                             try
                             {

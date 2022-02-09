@@ -11,13 +11,17 @@ using System.Collections.Generic;
 
 namespace Discord_Stream_Notify_Bot.Command.Twitter
 {
-    public class TwitterSpaces : TopLevelModule<Service.TwitterSpacesService>
+    public class TwitterSpaces : ModuleBase, ICommandService
     {
         private readonly DiscordSocketClient _client;
+        private readonly HttpClients.DiscordWebhookClient _discordWebhookClient;
+        private readonly SharedService.Twitter.TwitterSpacesService _service;
 
-        public TwitterSpaces(DiscordSocketClient client)
+        public TwitterSpaces(DiscordSocketClient client, HttpClients.DiscordWebhookClient discordWebhookClient, SharedService.Twitter.TwitterSpacesService service)
         {
             _client = client;
+            _discordWebhookClient = discordWebhookClient;
+            _service = service;
         }
 
         [RequireContext(ContextType.Guild)]
@@ -291,7 +295,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
                 await Context.Channel.SendConfirmAsync($"已將 {userScreenName} 加入到推特語音爬蟲清單內\r\n" +
                     $"請到通知頻道內使用 `s!antsc {userScreenName}` 來開啟通知").ConfigureAwait(false);
 
-                Program.SendMessageToDiscord($"{Context.Guild.Name} 已新增推特語音爬蟲 {Format.Url(userScreenName, $"https://twitter.com/{userScreenName}")}");
+                _discordWebhookClient.SendMessageToDiscord($"{Context.Guild.Name} 已新增推特語音爬蟲 {Format.Url(userScreenName, $"https://twitter.com/{userScreenName}")}");
             }
         }
 
@@ -329,7 +333,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
                 await db.SaveChangesAsync().ConfigureAwait(false);
 
                 await Context.Channel.SendConfirmAsync($"已移除 {userScreenName}").ConfigureAwait(false);
-                Program.SendMessageToDiscord($"{Context.Guild.Name} 已移除推特語音爬蟲 <https://twitter.com/{userScreenName}>");
+                _discordWebhookClient.SendMessageToDiscord($"{Context.Guild.Name} 已移除推特語音爬蟲 <https://twitter.com/{userScreenName}>");
             }
         }
 
@@ -484,11 +488,8 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
                         return;
                     }
 
-                    if (await PromptUserConfirmAsync(new EmbedBuilder().WithOkColor().WithDescription($"{userScreenName} 未在推特語音空間爬蟲清單，新增?")))
-                    {
-                        twitterSpaecSpider = new TwitterSpaecSpider() { GuildId = 0, UserId = user.data.id, UserScreenName = user.data.username.ToLower(), UserName = user.data.name, IsRecord = true };
-                        db.TwitterSpaecSpider.Add(twitterSpaecSpider);
-                    }
+                    twitterSpaecSpider = new TwitterSpaecSpider() { GuildId = 0, UserId = user.data.id, UserScreenName = user.data.username.ToLower(), UserName = user.data.name, IsRecord = true };
+                    db.TwitterSpaecSpider.Add(twitterSpaecSpider);
                 }
 
                 if (await db.SaveChangesAsync() >= 1)

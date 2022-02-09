@@ -7,16 +7,21 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord_Stream_Notify_Bot.Command.Attribute;
+using Discord_Stream_Notify_Bot.DataBase.Table;
 
 namespace Discord_Stream_Notify_Bot.Command.Youtube
 {
-    public partial class YoutubeStream : TopLevelModule<Service.YoutubeStreamService>
+    public partial class YoutubeStream : TopLevelModule, ICommandService
     {
         private readonly DiscordSocketClient _client;
+        private readonly HttpClients.DiscordWebhookClient _discordWebhookClient;
+        private readonly SharedService.Youtube.YoutubeStreamService _service;
 
-        public YoutubeStream(DiscordSocketClient client)
+        public YoutubeStream(DiscordSocketClient client, HttpClients.DiscordWebhookClient discordWebhookClient, SharedService.Youtube.YoutubeStreamService service)
         {
             _client = client;
+            _discordWebhookClient = discordWebhookClient;
+            _service = service;
         }
 
         [Command("RightNowRecordStream")]
@@ -751,7 +756,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
             "UCUKD-uaobj9jiqB-VXt71mA newstream -",
             "UCXRlIK3Cw_TJIQC5kSJJQMg end")]
         [Alias("SNM")]
-        public async Task SetNoticeMessage([Summary("頻道Id")] string channelId, [Summary("通知類型")] Service.YoutubeStreamService.NoticeType noticeType, [Summary("通知訊息")][Remainder] string message = "")
+        public async Task SetNoticeMessage([Summary("頻道Id")] string channelId, [Summary("通知類型")] SharedService.Youtube.YoutubeStreamService.NoticeType noticeType, [Summary("通知訊息")][Remainder] string message = "")
         {
             try
             {
@@ -773,27 +778,27 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                     message = message.Trim();
                     switch (noticeType)
                     {
-                        case Service.YoutubeStreamService.NoticeType.NewStream:
+                        case SharedService.Youtube.YoutubeStreamService.NoticeType.NewStream:
                             noticeStreamChannel.NewStreamMessage = message;
                             noticeTypeString = "新待機所";
                             break;
-                        case Service.YoutubeStreamService.NoticeType.NewVideo:
+                        case SharedService.Youtube.YoutubeStreamService.NoticeType.NewVideo:
                             noticeStreamChannel.NewVideoMessage = message;
                             noticeTypeString = "新影片";
                             break;
-                        case Service.YoutubeStreamService.NoticeType.Start:
+                        case SharedService.Youtube.YoutubeStreamService.NoticeType.Start:
                             noticeStreamChannel.StratMessage = message;
                             noticeTypeString = "開始直播";
                             break;
-                        case Service.YoutubeStreamService.NoticeType.End:
+                        case SharedService.Youtube.YoutubeStreamService.NoticeType.End:
                             noticeStreamChannel.EndMessage = message;
                             noticeTypeString = "結束直播";
                             break;
-                        case Service.YoutubeStreamService.NoticeType.ChangeTime:
+                        case SharedService.Youtube.YoutubeStreamService.NoticeType.ChangeTime:
                             noticeStreamChannel.ChangeTimeMessage = message;
                             noticeTypeString = "變更直播時間";
                             break;
-                        case Service.YoutubeStreamService.NoticeType.Delete:
+                        case SharedService.Youtube.YoutubeStreamService.NoticeType.Delete:
                             noticeStreamChannel.DeleteMessage = message;
                             noticeTypeString = "刪除直播";
                             break;
@@ -905,7 +910,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
             "2: 其他")]
         [CommandExample("UCXRlIK3Cw_TJIQC5kSJJQMg 1")]
         [Alias("SCT")]
-        public async Task SetChannelType(string channelId = "", Service.YoutubeStreamService.ChannelType channelType = Service.YoutubeStreamService.ChannelType.Other)
+        public async Task SetChannelType(string channelId = "", StreamVideo.YTChannelType channelType = StreamVideo.YTChannelType.Other)
         {
             channelId = channelId.GetChannelId();
 

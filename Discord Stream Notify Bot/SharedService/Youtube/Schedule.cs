@@ -1,21 +1,22 @@
 ﻿using Discord;
 using Discord_Stream_Notify_Bot.DataBase.Table;
+using Discord_Stream_Notify_Bot.Interaction;
 using HtmlAgilityPack;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using System.Data;
 
-namespace Discord_Stream_Notify_Bot.Command.Youtube.Service
+namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 {
     public partial class YoutubeStreamService
     {
-        private static Dictionary<StreamVideo, ChannelType> addNewStreamVideo = new();
+        private static Dictionary<StreamVideo, StreamVideo.YTChannelType> addNewStreamVideo = new();
         private static HashSet<string> newStreamList = new();
         private bool isFirstHolo = true, isFirst2434 = true, isFirstOther = true;
 
@@ -64,7 +65,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube.Service
                                         VideoId = item.Id,
                                         VideoTitle = item.Snippet.Title,
                                         ScheduledStartTime = item.Snippet.PublishedAt.Value,
-                                        ChannelType = ChannelType.Holo
+                                        ChannelType = StreamVideo.YTChannelType.Holo
                                     };
 
                                     Log.NewStream($"(新影片) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
@@ -91,7 +92,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube.Service
                                         VideoId = item.Id,
                                         VideoTitle = item.Snippet.Title,
                                         ScheduledStartTime = startTime,
-                                        ChannelType = ChannelType.Holo
+                                        ChannelType = StreamVideo.YTChannelType.Holo
                                     };
 
                                     Log.NewStream($"(排程) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
@@ -132,7 +133,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube.Service
                                         VideoId = item.Id,
                                         VideoTitle = item.Snippet.Title,
                                         ScheduledStartTime = startTime,
-                                        ChannelType = ChannelType.Holo
+                                        ChannelType = StreamVideo.YTChannelType.Holo
                                     };
 
                                     Log.NewStream($"(未排程) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
@@ -211,7 +212,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube.Service
                                             VideoId = item.Id,
                                             VideoTitle = item.Snippet.Title,
                                             ScheduledStartTime = item.Snippet.PublishedAt.Value,
-                                            ChannelType = ChannelType.Nijisanji
+                                            ChannelType = StreamVideo.YTChannelType.Nijisanji
                                         };
 
                                         Log.NewStream($"(新影片) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
@@ -238,7 +239,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube.Service
                                             VideoId = item.Id,
                                             VideoTitle = item.Snippet.Title,
                                             ScheduledStartTime = startTime,
-                                            ChannelType = ChannelType.Nijisanji
+                                            ChannelType = StreamVideo.YTChannelType.Nijisanji
                                         };
 
                                         Log.NewStream($"(排程) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
@@ -279,7 +280,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube.Service
                                             VideoId = item.Id,
                                             VideoTitle = item.Snippet.Title,
                                             ScheduledStartTime = startTime,
-                                            ChannelType = ChannelType.Nijisanji
+                                            ChannelType = StreamVideo.YTChannelType.Nijisanji
                                         };
 
                                         Log.NewStream($"(未排程) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
@@ -391,7 +392,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube.Service
                                                 VideoId = item2.Id,
                                                 VideoTitle = item2.Snippet.Title,
                                                 ScheduledStartTime = item2.Snippet.PublishedAt.Value,
-                                                ChannelType = ChannelType.Other
+                                                ChannelType = StreamVideo.YTChannelType.Other
                                             };
 
                                             streamVideo.ChannelType = streamVideo.GetProductionType();
@@ -419,7 +420,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube.Service
                                                 VideoId = item2.Id,
                                                 VideoTitle = item2.Snippet.Title,
                                                 ScheduledStartTime = startTime,
-                                                ChannelType = ChannelType.Other
+                                                ChannelType = StreamVideo.YTChannelType.Other
                                             };
 
                                             streamVideo.ChannelType = streamVideo.GetProductionType();
@@ -461,7 +462,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube.Service
                                                 VideoId = item2.Id,
                                                 VideoTitle = item2.Snippet.Title,
                                                 ScheduledStartTime = startTime,
-                                                ChannelType = ChannelType.Other
+                                                ChannelType = StreamVideo.YTChannelType.Other
                                             };
 
                                             streamVideo.ChannelType = streamVideo.GetProductionType();
@@ -502,9 +503,9 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube.Service
             {
                 using (var db = DataBase.DBContext.GetDbContext())
                 {
-                    if (!Program.isHoloChannelSpider && addNewStreamVideo.Any((x) => x.Value == ChannelType.Holo))
+                    if (!Program.isHoloChannelSpider && addNewStreamVideo.Any((x) => x.Value == StreamVideo.YTChannelType.Holo))
                     {
-                        foreach (var item in addNewStreamVideo.Where((x) => x.Value == ChannelType.Holo))
+                        foreach (var item in addNewStreamVideo.Where((x) => x.Value == StreamVideo.YTChannelType.Holo))
                         {
                             if (!db.HoloStreamVideo.Any((x) => x.VideoId == item.Key.VideoId))
                             {
@@ -524,9 +525,9 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube.Service
                         Log.Info($"Holo資料庫已儲存: {await db.SaveChangesAsync()}筆");
                     }
 
-                    if (!Program.isNijisanjiChannelSpider && addNewStreamVideo.Any((x) => x.Value == ChannelType.Nijisanji))
+                    if (!Program.isNijisanjiChannelSpider && addNewStreamVideo.Any((x) => x.Value == StreamVideo.YTChannelType.Nijisanji))
                     {
-                        foreach (var item in addNewStreamVideo.Where((x) => x.Value == ChannelType.Nijisanji))
+                        foreach (var item in addNewStreamVideo.Where((x) => x.Value == StreamVideo.YTChannelType.Nijisanji))
                         {
                             if (!db.NijisanjiStreamVideo.Any((x) => x.VideoId == item.Key.VideoId))
                             {
@@ -546,9 +547,9 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube.Service
                         Log.Info($"2434資料庫已儲存: {await db.SaveChangesAsync()}筆");
                     }
 
-                    if (!Program.isOtherChannelSpider && addNewStreamVideo.Any((x) => x.Value == ChannelType.Other))
+                    if (!Program.isOtherChannelSpider && addNewStreamVideo.Any((x) => x.Value == StreamVideo.YTChannelType.Other))
                     {
-                        foreach (var item in addNewStreamVideo.Where((x) => x.Value == ChannelType.Other))
+                        foreach (var item in addNewStreamVideo.Where((x) => x.Value == StreamVideo.YTChannelType.Other))
                         {
                             if (!db.OtherStreamVideo.Any((x) => x.VideoId == item.Key.VideoId))
                             {

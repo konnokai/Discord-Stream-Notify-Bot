@@ -5,6 +5,8 @@ using System;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Linq;
+using System.Text.RegularExpressions;
+using System.Collections.Generic;
 
 namespace Discord_Stream_Notify_Bot.Interaction
 {
@@ -29,9 +31,33 @@ namespace Discord_Stream_Notify_Bot.Interaction
                 assembly: Assembly.GetEntryAssembly(),
                 services: _services);
 
+            #region 檢查指令是否符合Discord的Regex規範
+#if DEBUG
+            bool isError = false;
+            Regex regex = new Regex(@"^[\w-]{1,32}$");
+            var list = _interactions.Modules.Select(module => module.SlashCommands.Select((x) => new KeyValuePair<string, List<string>>(x.Name, x.Parameters.Select((x2) => x2.Name).ToList())));
+            foreach (var item in list)
+            {
+                foreach (var item2 in item)
+                {
+                    if (!regex.IsMatch(item2.Key))
+                        Log.Error(item2.Key);
+                    foreach (var item3 in item2.Value)
+                    {
+                        if (!regex.IsMatch(item3))
+                        {
+                            isError = true;
+                            Log.Error($"{item2.Key}: {item3}");
+                        }
+                    }
+                }
+            }
+            if (isError) return;
+#endif
+            #endregion
+
             _client.InteractionCreated += (slash) => { var _ = Task.Run(() => HandleInteraction(slash)); return Task.CompletedTask; };
             _interactions.SlashCommandExecuted += SlashCommandExecuted;
-
         }
 
         private async Task HandleInteraction(SocketInteraction arg)

@@ -1,10 +1,10 @@
-﻿using Discord_Stream_Notify_Bot.Command;
+﻿using Discord_Stream_Notify_Bot.Interaction;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace Discord_Stream_Notify_Bot
 {
@@ -44,4 +44,4 @@ namespace Discord_Stream_Notify_Bot
             }
         }
     }
- }
+}

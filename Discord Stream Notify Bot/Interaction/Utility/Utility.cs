@@ -9,11 +9,13 @@ namespace Discord_Stream_Notify_Bot.Interaction.Utility
     [Group("utility", "工具")]
     public class Utility : TopLevelModule
     {
-        DiscordSocketClient _client;
+        private readonly DiscordSocketClient _client;
+        private readonly HttpClients.DiscordWebhookClient _discordWebhookClient;
 
-        public Utility(DiscordSocketClient client)
+        public Utility(DiscordSocketClient client, HttpClients.DiscordWebhookClient discordWebhookClient)
         {
             _client = client;
+            _discordWebhookClient = discordWebhookClient;
         }
 
         [SlashCommand("ping", "延遲檢測")]
@@ -29,10 +31,9 @@ namespace Discord_Stream_Notify_Bot.Interaction.Utility
 #if RELEASE
             if (Context.User.Id != Program.ApplicatonOwner.Id)
             {
-                Program.SendMessageToDiscord(string.Format("[{0}-{1}] {2}:({3}) 使用了邀請指令",
-                    Context.Guild.Name, Context.Channel.Name, Context.User.Username, Context.User.Id));
+                _discordWebhookClient.SendMessageToDiscord($"[{Context.Guild.Name}-{Context.Channel.Name}] {Context.User.Username}:({Context.User.Id}) 使用了邀請指令");
             }
-#endif
+#endif     
             await Context.Interaction.SendConfirmAsync("<https://discordapp.com/api/oauth2/authorize?client_id=" + _client.CurrentUser.Id + "&permissions=268569697&scope=bot%20applications.commands>", ephemeral: true);
         }
 

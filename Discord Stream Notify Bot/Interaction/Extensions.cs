@@ -1,6 +1,5 @@
 ﻿using Discord;
 using Discord.WebSocket;
-using Discord_Stream_Notify_Bot.Command.Youtube.Service;
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.Interaction;
 using Microsoft.EntityFrameworkCore;
@@ -37,11 +36,11 @@ namespace Discord_Stream_Notify_Bot.Interaction
             return $"<t:{UTCTime}:F> (<t:{UTCTime}:R>)";
         }
 
-        public static YoutubeStreamService.ChannelType GetProductionType(this StreamVideo streamVideo)
+        public static StreamVideo.YTChannelType GetProductionType(this StreamVideo streamVideo)
         {
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                YoutubeStreamService.ChannelType type;
+                StreamVideo.YTChannelType type;
                 var channel = db.YoutubeChannelOwnedType.AsNoTracking().FirstOrDefault((x) => x.ChannelId == streamVideo.ChannelId);
 
                 if (channel != null)
@@ -53,8 +52,8 @@ namespace Discord_Stream_Notify_Bot.Interaction
             }
         }
 
-        public static string GetProductionName(this YoutubeStreamService.ChannelType channelType) =>
-                channelType == YoutubeStreamService.ChannelType.Holo ? "Hololive" : channelType == YoutubeStreamService.ChannelType.Nijisanji ? "彩虹社" : "其他";
+        public static string GetProductionName(this StreamVideo.YTChannelType channelType) =>
+                channelType == StreamVideo.YTChannelType.Holo ? "Hololive" : channelType == StreamVideo.YTChannelType.Nijisanji ? "彩虹社" : "其他";
 
         public static string GetCommandLine(this Process process)
         {
@@ -164,14 +163,37 @@ namespace Discord_Stream_Notify_Bot.Interaction
             }
         }
 
-        public static Task SendConfirmAsync(this IDiscordInteraction di, string des, bool ephemeral = false)
-             => di.RespondAsync(embed: new EmbedBuilder().WithOkColor().WithDescription(des).Build(), ephemeral: ephemeral);
-        public static Task SendConfirmAsync(this IDiscordInteraction di, string title, string des, bool ephemeral = false)
-             => di.RespondAsync(embed: new EmbedBuilder().WithOkColor().WithTitle(title).WithDescription(des).Build(), ephemeral: ephemeral);
-        public static Task SendErrorAsync(this IDiscordInteraction di, string des, bool ephemeral = false)
-             => di.RespondAsync(embed: new EmbedBuilder().WithErrorColor().WithDescription(des).Build(), ephemeral: ephemeral);
-        public static Task SendErrorAsync(this IDiscordInteraction di, string title, string des, bool ephemeral = false)
-             => di.RespondAsync(embed: new EmbedBuilder().WithErrorColor().WithTitle(title).WithDescription(des).Build(), ephemeral: ephemeral);
+        public static Task SendConfirmAsync(this IDiscordInteraction di, string des, bool isFollowerup = false, bool ephemeral = false)
+        {
+            if (isFollowerup)
+                return di.FollowupAsync(embed: new EmbedBuilder().WithOkColor().WithDescription(des).Build(), ephemeral: ephemeral);
+            else
+                return di.RespondAsync(embed: new EmbedBuilder().WithOkColor().WithDescription(des).Build(), ephemeral: ephemeral);
+        }
+
+        public static Task SendConfirmAsync(this IDiscordInteraction di, string title, string des, bool isFollowerup = false, bool ephemeral = false)
+        {
+            if (isFollowerup)
+                return di.FollowupAsync(embed: new EmbedBuilder().WithOkColor().WithTitle(title).WithDescription(des).Build(), ephemeral: ephemeral);
+            else
+                return di.RespondAsync(embed: new EmbedBuilder().WithOkColor().WithTitle(title).WithDescription(des).Build(), ephemeral: ephemeral);
+        }
+
+        public static Task SendErrorAsync(this IDiscordInteraction di, string des, bool isFollowerup = false, bool ephemeral = false)
+        {
+            if (isFollowerup)
+                return di.FollowupAsync(embed: new EmbedBuilder().WithErrorColor().WithDescription(des).Build(), ephemeral: ephemeral);
+            else
+                return di.RespondAsync(embed: new EmbedBuilder().WithErrorColor().WithDescription(des).Build(), ephemeral: ephemeral);
+        }
+
+        public static Task SendErrorAsync(this IDiscordInteraction di, string title, string des, bool isFollowerup = false, bool ephemeral = false)
+        {
+            if (isFollowerup)
+                return di.FollowupAsync(embed: new EmbedBuilder().WithErrorColor().WithTitle(title).WithDescription(des).Build(), ephemeral: ephemeral);
+            else
+                return di.RespondAsync(embed: new EmbedBuilder().WithErrorColor().WithTitle(title).WithDescription(des).Build(), ephemeral: ephemeral);
+        }
 
         public static IMessage DeleteAfter(this IUserMessage msg, int seconds)
         {

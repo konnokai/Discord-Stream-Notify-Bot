@@ -1,6 +1,7 @@
 ﻿using Discord;
 using Discord.WebSocket;
 using Discord_Stream_Notify_Bot.DataBase.Table;
+using Discord_Stream_Notify_Bot.Interaction;
 using Google.Apis.Services;
 using Google.Apis.YouTube.v3;
 using HtmlAgilityPack;
@@ -9,17 +10,14 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Discord_Stream_Notify_Bot.Command.Youtube.Service
+namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 {
-    public partial class YoutubeStreamService : ICommandService
+    public partial class YoutubeStreamService : IInteractionService
     {
-        public enum ChannelType
-        {
-            Holo, Nijisanji, Other
-        }
         public enum NoticeType
         {
             NewStream, NewVideo, Start, End, ChangeTime, Delete
@@ -32,33 +30,17 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube.Service
         private Timer holoSchedule, nijisanjiSchedule, otherSchedule, checkScheduleTime, saveDateBase/*, checkHoloNowStream, holoScheduleEmoji*/;
         private SocketTextChannel noticeRecordChannel;
         private DiscordSocketClient _client;
+        private readonly IHttpClientFactory _httpClientFactory;
 
-        public YoutubeStreamService(DiscordSocketClient client, BotConfig botConfig)
+        public YoutubeStreamService(DiscordSocketClient client, IHttpClientFactory httpClientFactory, BotConfig botConfig)
         {
             _client = client;
+            _httpClientFactory = httpClientFactory;
             yt = new YouTubeService(new BaseClientService.Initializer
             {
                 ApplicationName = "DiscordStreamBot",
                 ApiKey = botConfig.GoogleApiKey,
             });
-#if DEBUG
-            return;
-#endif
-            using (var db = DataBase.DBContext.GetDbContext())
-            {
-                foreach (var streamVideo in db.HoloStreamVideo.ToList().Where((x) => x.ScheduledStartTime > DateTime.Now))
-                {
-                    StartReminder(streamVideo, ChannelType.Holo);
-                }
-                foreach (var streamVideo in db.NijisanjiStreamVideo.ToList().Where((x) => x.ScheduledStartTime > DateTime.Now))
-                {
-                    StartReminder(streamVideo, ChannelType.Nijisanji);
-                }
-                foreach (var streamVideo in db.OtherStreamVideo.ToList().Where((x) => x.ScheduledStartTime > DateTime.Now))
-                {
-                    StartReminder(streamVideo, ChannelType.Other);
-                }
-            }
 
             if (Program.Redis != null)
             {
@@ -274,7 +256,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube.Service
                 //                VideoId = item.Id,
                 //                VideoTitle = item.Snippet.Title,
                 //                ScheduledStartTime = startTime,
-                //                ChannelType = ChannelType.Other
+                //                ChannelType = StreamVideo.YTChannelType.Other
                 //            };
 
                 //            Log.NewStream($"{channel} - {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
@@ -282,7 +264,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube.Service
                 //            uow.OtherStreamVideo.Add(streamVideo.ConvertToOtherStreamVideo());
                 //            await uow.SaveChangesAsync().ConfigureAwait(false);
 
-                //            StartReminder(streamVideo, ChannelType.Other);
+                //            StartReminder(streamVideo, StreamVideo.YTChannelType.Other);
 
                 //            EmbedBuilder embedBuilder = new EmbedBuilder();
                 //            embedBuilder.WithErrorColor()
@@ -302,6 +284,26 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube.Service
                 #endregion
 
                 Log.Info("已建立Redis訂閱");
+            }
+
+#if DEBUG
+            return;
+#endif
+
+            using (var db = DataBase.DBContext.GetDbContext())
+            {
+                foreach (var streamVideo in db.HoloStreamVideo.ToList().Where((x) => x.ScheduledStartTime > DateTime.Now))
+                {
+                    StartReminder(streamVideo, StreamVideo.YTChannelType.Holo);
+                }
+                foreach (var streamVideo in db.NijisanjiStreamVideo.ToList().Where((x) => x.ScheduledStartTime > DateTime.Now))
+                {
+                    StartReminder(streamVideo, StreamVideo.YTChannelType.Nijisanji);
+                }
+                foreach (var streamVideo in db.OtherStreamVideo.ToList().Where((x) => x.ScheduledStartTime > DateTime.Now))
+                {
+                    StartReminder(streamVideo, StreamVideo.YTChannelType.Other);
+                }
             }
 
             holoSchedule = new Timer(async (objState) => await HoloScheduleAsync(), null, TimeSpan.FromSeconds(15), TimeSpan.FromMinutes(5));
@@ -364,13 +366,13 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube.Service
 
                                     switch (stream.ChannelType)
                                     {
-                                        case ChannelType.Holo:
+                                        case StreamVideo.YTChannelType.Holo:
                                             db.HoloStreamVideo.Update(streamVideo.ConvertToHoloStreamVideo());
                                             break;
-                                        case ChannelType.Nijisanji:
+                                        case StreamVideo.YTChannelType.Nijisanji:
                                             db.NijisanjiStreamVideo.Update(streamVideo.ConvertToNijisanjiStreamVideo());
                                             break;
-                                        case ChannelType.Other:
+                                        case StreamVideo.YTChannelType.Other:
                                             db.OtherStreamVideo.Update(streamVideo.ConvertToOtherStreamVideo());
                                             break;
                                     }
@@ -532,7 +534,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube.Service
         //                                VideoId = item.Id,
         //                                VideoTitle = item.Snippet.Title,
         //                                ScheduledStartTime = item.LiveStreamingDetails.ScheduledStartTime.Value,
-        //                                ChannelType = ChannelType.Holo
+        //                                ChannelType = StreamVideo.YTChannelType.Holo
         //                            };
         //                            uow.HoloStreamVideo.Add(streamVideo.ConvertToHoloStreamVideo());
         //                            await uow.SaveChangesAsync().ConfigureAwait(false);
@@ -596,6 +598,6 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube.Service
     {
         public StreamVideo StreamVideo { get; set; }
         public Timer Timer { get; set; }
-        public YoutubeStreamService.ChannelType ChannelType { get; set; }
+        public StreamVideo.YTChannelType ChannelType { get; set; }
     }
 }

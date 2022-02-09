@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Discord_Stream_Notify_Bot.Command.Youtube.Service
+namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 {
     public class NijisanjiJson
     {

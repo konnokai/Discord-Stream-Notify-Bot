@@ -1,35 +1,32 @@
 ﻿using Discord;
 using Discord.WebSocket;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using SocialOpinionAPI.Core;
 using SocialOpinionAPI.Models.Users;
 using SocialOpinionAPI.Services.Spaces;
 using SocialOpinionAPI.Services.Users;
 using System;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
-using System.Net;
 using System.Runtime.InteropServices;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using Discord_Stream_Notify_Bot.Interaction;
 
-namespace Discord_Stream_Notify_Bot.Command.Twitter.Service
+namespace Discord_Stream_Notify_Bot.SharedService.Twitter
 {
-    public partial class TwitterSpacesService : ICommandService
+    public partial class TwitterSpacesService : IInteractionService
     {
         public bool IsEnbale { get; private set; } = true;
         public UserService UserService { get; private set; }
         public SpacesService SpacesService { get; private set; }
-
+        
         OAuthInfo oAuthInfo;
         bool isRuning = false;
         DiscordSocketClient _client;
+        HttpClients.TwitterClient _twitterClient;
         Timer timer;
 
-        public TwitterSpacesService(DiscordSocketClient client, BotConfig botConfig)
+        public TwitterSpacesService(DiscordSocketClient client, HttpClients.TwitterClient twitterClient, BotConfig botConfig)
         {
             if (string.IsNullOrWhiteSpace(botConfig.TwitterApiKey) || string.IsNullOrWhiteSpace(botConfig.TwitterApiKeySecret))
             {
@@ -39,6 +36,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter.Service
             }
 
             _client = client;
+            _twitterClient = twitterClient;
             oAuthInfo = new() { ConsumerKey = botConfig.TwitterApiKey, ConsumerSecret = botConfig.TwitterApiKeySecret };
             UserService = new(oAuthInfo);
             SpacesService = new(oAuthInfo);
@@ -79,8 +77,8 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter.Service
                                         string masterUrl = "";
                                         try
                                         {
-                                            var metadataJson = GetTwitterSpaceMetadata(item.id);
-                                            masterUrl = GetTwitterSpaceMasterUrl(metadataJson["media_key"].ToString());
+                                            var metadataJson = await _twitterClient.GetTwitterSpaceMetadataAsync(item.id);
+                                            masterUrl = await _twitterClient.GetTwitterSpaceMasterUrlAsync(metadataJson["media_key"].ToString());
                                         }
                                         catch (Exception ex) { Log.Error($"GetTwitterSpaceMasterUrl: {item.id}\r\n{ex}"); continue; }
 
@@ -180,103 +178,6 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter.Service
                     }
                 }
 #endif
-            }
-        }
-
-        private JToken GetTwitterSpaceMetadata(string spaceId)
-        {
-            string query = WebUtility.UrlEncode(JsonConvert.SerializeObject(new
-            {
-                id = spaceId,
-                isMetatagsQuery = false,
-                withSuperFollowsUserFields = false,
-                withBirdwatchPivots = false,
-                withDownvotePerspective = false,
-                withReactionsMetadata = false,
-                withReactionsPerspective = false,
-                withSuperFollowsTweetFields = false,
-                withReplays = false,
-                withScheduledSpaces = false
-            }));
-
-            try
-            {
-                string url = "https://twitter.com/i/api/graphql/Uv5R_-Chxbn1FEkyUkSW2w/AudioSpaceById?variables=" + query;
-                HttpWebRequest request = HttpWebRequest.Create(url) as HttpWebRequest;
-                request.Method = "GET";
-                request.ContentType = "application/json";
-                request.Timeout = 30000;
-                request.Headers.Add(HttpRequestHeader.Authorization, "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs=1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA");
-                request.Headers.Add("x-guest-token", GetTwitterGuestToken());
-                request.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.45 Safari/537.36";
-                request.Referer = " https://twitter.com/";
-
-                // 取得回應資料
-                using (HttpWebResponse response = request.GetResponse() as HttpWebResponse)
-                {
-                    using (var res = new StreamReader(response.GetResponseStream()))
-                    {
-                        return JObject.Parse(res.ReadToEnd())["data"]["audioSpace"]["metadata"];
-                    }
-                }
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-        }
-
-        private string GetTwitterSpaceMasterUrl(string mediaKey)
-        {
-            try
-            {
-                string url = $"https://twitter.com/i/api/1.1/live_video_stream/status/{mediaKey}";
-                HttpWebRequest request = HttpWebRequest.Create(url) as HttpWebRequest;
-                request.Method = "GET";
-                request.ContentType = "application/json";
-                request.Timeout = 30000;
-                request.Headers.Add(HttpRequestHeader.Authorization, "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs=1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA");
-                request.Headers.Add(HttpRequestHeader.Cookie, "auth_token=");
-                request.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.45 Safari/537.36";
-                request.Referer = " https://twitter.com/";
-
-                // 取得回應資料
-                using (HttpWebResponse response = request.GetResponse() as HttpWebResponse)
-                {
-                    using (var res = new StreamReader(response.GetResponseStream()))
-                    {
-                        return JObject.Parse(res.ReadToEnd())["source"]["location"].ToString();
-                    }
-                }
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-        }
-
-        private string GetTwitterGuestToken()
-        {
-            try
-            {
-                HttpWebRequest request = HttpWebRequest.Create("https://api.twitter.com/1.1/guest/activate.json") as HttpWebRequest;
-                request.Method = "POST";
-                request.ContentType = "application/json";
-                request.Timeout = 30000;
-                request.Headers.Add(HttpRequestHeader.Authorization, "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs=1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA");
-                request.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.45 Safari/537.36";
-
-                using (HttpWebResponse response = request.GetResponse() as HttpWebResponse)
-                {
-                    using (var res = new StreamReader(response.GetResponseStream()))
-                    {
-                        return JObject.Parse(res.ReadToEnd())["guest_token"].ToString();
-                    }
-                }
-            }
-            catch (Exception)
-            {
-                throw;
             }
         }
 
