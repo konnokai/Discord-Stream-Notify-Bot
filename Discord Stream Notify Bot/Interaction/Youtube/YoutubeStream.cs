@@ -222,7 +222,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             "輸入2434通知全部`彩虹社成員`的直播\r\n" +
             "(海外勢僅部分成員歸類在此選項內，建議改用 `/youtube add-spider` 設定)\r\n" +
             "輸入other通知部分`非兩大箱`的直播\r\n" +
-            "(可以使用 `/youtube list-youtube-notice` 查詢有哪些頻道)\r\n" +
+            "(可以使用 `/youtube list-youtube-spider` 查詢有哪些頻道)\r\n" +
             "輸入all通知全部`Holo + 2434 + 非兩大箱`的直播\r\n" +
             "(此選項會覆蓋所有的通知設定)")]
         [CommandExample("UCdn5BQ06XqgXoAxIhbqw5Rg", "all", "2434")]
