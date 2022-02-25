@@ -57,8 +57,10 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
                     return;
                 }
 
+                string addString = "";
+                if (!db.IsTwitterUserInDb(user.data.id)) addString += $"\r\n\r\n(注意: 該使用者未加入爬蟲清單\r\n如長時間無通知請使用 `s!h atss` 查看說明並加入爬蟲)";
                 db.NoticeTwitterSpaceChannel.Add(new NoticeTwitterSpaceChannel() { GuildId = Context.Guild.Id, DiscordChannelId = Context.Channel.Id, NoticeTwitterSpaceUserId = user.data.id, NoticeTwitterSpaceUserScreenName = user.data.username.ToLower() });
-                await Context.Channel.SendConfirmAsync($"已將 {user.data.name} 加入到語音空間通知頻道清單內").ConfigureAwait(false);
+                await Context.Channel.SendConfirmAsync($"已將 {user.data.name} 加入到語音空間通知頻道清單內{addString}").ConfigureAwait(false);
 
                 await db.SaveChangesAsync().ConfigureAwait(false);
             }
@@ -295,7 +297,16 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
                 await Context.Channel.SendConfirmAsync($"已將 {userScreenName} 加入到推特語音爬蟲清單內\r\n" +
                     $"請到通知頻道內使用 `s!antsc {userScreenName}` 來開啟通知").ConfigureAwait(false);
 
-                _discordWebhookClient.SendMessageToDiscord($"{Context.Guild.Name} 已新增推特語音爬蟲 {Format.Url(userScreenName, $"https://twitter.com/{userScreenName}")}");
+                try
+                {
+                    await (await Program.ApplicatonOwner.CreateDMChannelAsync()).SendMessageAsync(embed: new EmbedBuilder()
+                        .WithOkColor()
+                        .WithTitle("已新增推特語音爬蟲")
+                        .AddField("推主", Format.Url(userScreenName, $"https://twitter.com/{userScreenName}"), false)
+                        .AddField("伺服器", $"{Context.Guild.Name} ({Context.Guild.Id})", false)
+                        .AddField("執行者", $"{Context.User.Username} ({Context.User.Id})", false).Build());
+                }
+                catch (Exception ex) { Log.Error(ex.ToString()); }
             }
         }
 
@@ -333,7 +344,17 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
                 await db.SaveChangesAsync().ConfigureAwait(false);
 
                 await Context.Channel.SendConfirmAsync($"已移除 {userScreenName}").ConfigureAwait(false);
-                _discordWebhookClient.SendMessageToDiscord($"{Context.Guild.Name} 已移除推特語音爬蟲 <https://twitter.com/{userScreenName}>");
+
+                try
+                {
+                    await (await Program.ApplicatonOwner.CreateDMChannelAsync()).SendMessageAsync(embed: new EmbedBuilder()
+                        .WithErrorColor()
+                        .WithTitle("已移除推特語音爬蟲")
+                        .AddField("推主", Format.Url(userScreenName, $"https://twitter.com/{userScreenName}"), false)
+                        .AddField("伺服器", $"{Context.Guild.Name} ({Context.Guild.Id})", false)
+                        .AddField("執行者", $"{Context.User.Username} ({Context.User.Id})", false).Build());
+                }
+                catch (Exception ex) { Log.Error(ex.ToString()); }
             }
         }
 

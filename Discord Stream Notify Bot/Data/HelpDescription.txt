@@ -33,4 +33,4 @@ __**4.其他特殊功能**__
 
 [點此邀請BOT到新伺服器](https://discordapp.com/api/oauth2/authorize?client_id=758222559392432160&permissions=268569697&scope=bot%20applications.commands)
 
-有新功能想加入可以找 <@284989733229297664>(孤之界#1121) 討論
+有新功能想加入或任何建議可以到推特私訊 [孤之界(@Jun112561)](https://twitter.com/Jun112561) 討論

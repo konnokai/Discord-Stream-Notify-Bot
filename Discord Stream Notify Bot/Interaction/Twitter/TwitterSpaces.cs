@@ -233,9 +233,11 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
         [SlashCommand("add-twitter-spider", "新增推特語音空間爬蟲")]
         public async Task AddSpider([Summary("推特使用者名稱")] string userScreenName)
         {
+            await DeferAsync(false).ConfigureAwait(false);
+
             if (string.IsNullOrWhiteSpace(userScreenName))
             {
-                await Context.Interaction.SendErrorAsync("使用者名稱不可空白").ConfigureAwait(false);
+                await Context.Interaction.SendErrorAsync("使用者名稱不可空白", true).ConfigureAwait(false);
                 return;
             }
 
@@ -247,7 +249,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
 
                 if (user == null)
                 {
-                    await Context.Interaction.SendErrorAsync($"@{userScreenName} 不存在此使用者").ConfigureAwait(false);
+                    await Context.Interaction.SendErrorAsync($"@{userScreenName} 不存在此使用者", true).ConfigureAwait(false);
                     return;
                 }
 
@@ -266,20 +268,20 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
 
                     await Context.Interaction.SendConfirmAsync($"{userScreenName} 已在爬蟲清單內\r\n" +
                         $"可直接到通知頻道內使用 `/twitter-space add-space-notice {userScreenName}` 開啟通知\r\n" +
-                        $"(由 `{guild}` 設定)").ConfigureAwait(false);
+                        $"(由 `{guild}` 設定)", true).ConfigureAwait(false);
                     return;
                 }
 
                 if (user.data.is_protected)
                 {
-                    await Context.Interaction.SendErrorAsync($"使用者推文被保護，無法查看").ConfigureAwait(false);
+                    await Context.Interaction.SendErrorAsync($"使用者推文被保護，無法查看", true).ConfigureAwait(false);
                     return;
                 }
 
                 if (db.TwitterSpaecSpider.Count((x) => x.GuildId == Context.Guild.Id) >= 5)
                 {
                     await Context.Interaction.SendErrorAsync($"此伺服器已設定五個檢測頻道，請移除後再試\r\n" +
-                        $"如有特殊需求請向Bot擁有者詢問").ConfigureAwait(false);
+                        $"如有特殊需求請向Bot擁有者詢問", true).ConfigureAwait(false);
                     return;
                 }
 
@@ -287,9 +289,19 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                 await db.SaveChangesAsync();
 
                 await Context.Interaction.SendConfirmAsync($"已將 {userScreenName} 加入到推特語音爬蟲清單內\r\n" +
-                    $"請到通知頻道內使用 `/twitter-space add-space-notice {userScreenName}` 來開啟通知").ConfigureAwait(false);
+                    $"請到通知頻道內使用 `/twitter-space add-space-notice {userScreenName}` 來開啟通知", true).ConfigureAwait(false);
 
-                _discordWebhookClient.SendMessageToDiscord($"{Context.Guild.Name} 已新增推特語音爬蟲 {Format.Url(userScreenName, $"https://twitter.com/{userScreenName}")}");
+                try
+                {
+
+                    await (await Program.ApplicatonOwner.CreateDMChannelAsync()).SendMessageAsync(embed: new EmbedBuilder()
+                        .WithOkColor()
+                        .WithTitle("已新增推特語音爬蟲")
+                        .AddField("推主", Format.Url(userScreenName, $"https://twitter.com/{userScreenName}"), false)
+                        .AddField("伺服器", $"{Context.Guild.Name} ({Context.Guild.Id})", false)
+                        .AddField("執行者", $"{Context.User.Username} ({Context.User.Id})", false).Build());
+                }
+                catch (Exception ex) { Log.Error(ex.ToString()); }
             }
         }
 
@@ -327,7 +339,17 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                 await db.SaveChangesAsync().ConfigureAwait(false);
 
                 await Context.Interaction.SendConfirmAsync($"已移除 {userScreenName}").ConfigureAwait(false);
-                _discordWebhookClient.SendMessageToDiscord($"{Context.Guild.Name} 已移除推特語音爬蟲 <https://twitter.com/{userScreenName}>");
+
+                try
+                {
+                    await (await Program.ApplicatonOwner.CreateDMChannelAsync()).SendMessageAsync(embed: new EmbedBuilder()
+                        .WithErrorColor()
+                        .WithTitle("已移除推特語音爬蟲")
+                        .AddField("推主", Format.Url(userScreenName, $"https://twitter.com/{userScreenName}"), false)
+                        .AddField("伺服器", $"{Context.Guild.Name} ({Context.Guild.Id})", false)
+                        .AddField("執行者", $"{Context.User.Username} ({Context.User.Id})", false).Build());
+                }
+                catch (Exception ex) { Log.Error(ex.ToString()); }
             }
         }
 

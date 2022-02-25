@@ -91,7 +91,17 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
 
                 await Context.Interaction.SendConfirmAsync($"已將 {channelTitle} 加入到爬蟲清單內\r\n" +
                     $"請到通知頻道內使用 `/youtube add-youtube-notice {channelId}` 來開啟通知").ConfigureAwait(false);
-                _discordWebhookClient.SendMessageToDiscord($"{Context.Guild.Name} 已新增檢測頻道 {Format.Url(channelTitle, $"https://www.youtube.com/channel/{channelId}")}");
+
+                try
+                {
+                    await (await Program.ApplicatonOwner.CreateDMChannelAsync()).SendMessageAsync(embed: new EmbedBuilder()
+                        .WithOkColor()
+                        .WithTitle("已新增檢測頻道")
+                        .AddField("頻道", Format.Url(channelTitle, $"https://www.youtube.com/channel/{channelId}"), false)
+                        .AddField("伺服器", $"{Context.Guild.Name} ({Context.Guild.Id})", false)
+                        .AddField("執行者", $"{Context.User.Username} ({Context.User.Id})", false).Build());
+                }
+                catch (Exception ex) { Log.Error(ex.ToString()); }
             }
         }
 
@@ -144,7 +154,17 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                 await db.SaveChangesAsync().ConfigureAwait(false);
             }
             await Context.Interaction.SendConfirmAsync($"已移除 {channelId}").ConfigureAwait(false);
-            _discordWebhookClient.SendMessageToDiscord($"{Context.Guild.Name} 已移除檢測頻道 <https://www.youtube.com/channel/{channelId}>");
+
+            try
+            {
+                await (await Program.ApplicatonOwner.CreateDMChannelAsync()).SendMessageAsync(embed: new EmbedBuilder()
+                    .WithErrorColor()
+                    .WithTitle("已移除檢測頻道")
+                    .AddField("頻道", $"https://www.youtube.com/channel/{channelId}", false)
+                    .AddField("伺服器", $"{Context.Guild.Name} ({Context.Guild.Id})", false)
+                    .AddField("執行者", $"{Context.User.Username} ({Context.User.Id})", false).Build());
+            }
+            catch (Exception ex) { Log.Error(ex.ToString()); }
         }
 
         [RequireContext(ContextType.Guild)]

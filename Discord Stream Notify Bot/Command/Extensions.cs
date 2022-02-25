@@ -162,6 +162,13 @@ namespace Discord_Stream_Notify_Bot.Command
                 return null;
             }
         }
+        public static bool IsChannelInDb(this DataBase.DBContext dBContext, string channelId)
+            => dBContext.HoloStreamVideo.AsNoTracking().Any((x) => x.ChannelId == channelId) ||
+                dBContext.NijisanjiStreamVideo.AsNoTracking().Any((x) => x.ChannelId == channelId) ||
+                dBContext.OtherStreamVideo.AsNoTracking().Any((x) => x.ChannelId == channelId);
+
+        public static bool IsTwitterUserInDb(this DataBase.DBContext dBContext, string userId)
+            => dBContext.TwitterSpaecSpider.AsNoTracking().Any((x) => x.UserId == userId);
 
         public static Task<IUserMessage> SendConfirmAsync(this IMessageChannel ch, string des)
              => ch.SendMessageAsync("", embed: new EmbedBuilder().WithOkColor().WithDescription(des).Build());

@@ -577,13 +577,13 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                             $"是否更改為僅通知 `{channelId}` 的直播?")))
                         {
                             db.NoticeYoutubeStreamChannel.Remove(db.NoticeYoutubeStreamChannel.First((x) => x.GuildId == Context.Guild.Id && x.NoticeStreamChannelId == "all"));
-                            db.NoticeYoutubeStreamChannel.Add(new DataBase.Table.NoticeYoutubeStreamChannel() { GuildId = Context.Guild.Id, DiscordChannelId = Context.Channel.Id, NoticeStreamChannelId = channelId });
+                            db.NoticeYoutubeStreamChannel.Add(new NoticeYoutubeStreamChannel() { GuildId = Context.Guild.Id, DiscordChannelId = Context.Channel.Id, NoticeStreamChannelId = channelId });
                             await Context.Channel.SendConfirmAsync($"已將 {channelId} 加入到通知頻道清單內").ConfigureAwait(false);
                         }
                     }
                     else
                     {
-                        db.NoticeYoutubeStreamChannel.Add(new DataBase.Table.NoticeYoutubeStreamChannel() { GuildId = Context.Guild.Id, DiscordChannelId = Context.Channel.Id, NoticeStreamChannelId = channelId });
+                        db.NoticeYoutubeStreamChannel.Add(new NoticeYoutubeStreamChannel() { GuildId = Context.Guild.Id, DiscordChannelId = Context.Channel.Id, NoticeStreamChannelId = channelId });
                         await Context.Channel.SendConfirmAsync($"已將 {channelId} 加入到通知頻道清單內").ConfigureAwait(false);
                     }
                 }
@@ -602,14 +602,16 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                             $"是否更改為僅通知 `{channelTitle}` 的直播?")))
                         {
                             db.NoticeYoutubeStreamChannel.Remove(db.NoticeYoutubeStreamChannel.First((x) => x.GuildId == Context.Guild.Id && x.NoticeStreamChannelId == "all"));
-                            db.NoticeYoutubeStreamChannel.Add(new DataBase.Table.NoticeYoutubeStreamChannel() { GuildId = Context.Guild.Id, DiscordChannelId = Context.Channel.Id, NoticeStreamChannelId = channelId });
+                            db.NoticeYoutubeStreamChannel.Add(new NoticeYoutubeStreamChannel() { GuildId = Context.Guild.Id, DiscordChannelId = Context.Channel.Id, NoticeStreamChannelId = channelId });
                             await Context.Channel.SendConfirmAsync($"已將 {channelTitle} 加入到通知頻道清單內").ConfigureAwait(false);
                         }
                     }
                     else
                     {
-                        db.NoticeYoutubeStreamChannel.Add(new DataBase.Table.NoticeYoutubeStreamChannel() { GuildId = Context.Guild.Id, DiscordChannelId = Context.Channel.Id, NoticeStreamChannelId = channelId });
-                        await Context.Channel.SendConfirmAsync($"已將 {channelTitle} 加入到通知頻道清單內").ConfigureAwait(false);
+                        string addString = "";
+                        if (!db.IsChannelInDb(channelId)) addString += $"\r\n\r\n(注意: 該頻道未加入爬蟲清單\r\n如長時間無通知請使用 `s!h acs` 查看說明並加入爬蟲)";
+                        db.NoticeYoutubeStreamChannel.Add(new NoticeYoutubeStreamChannel() { GuildId = Context.Guild.Id, DiscordChannelId = Context.Channel.Id, NoticeStreamChannelId = channelId });
+                        await Context.Channel.SendConfirmAsync($"已將 {channelTitle} 加入到通知頻道清單內{addString}").ConfigureAwait(false);
                     }
                 }
 
