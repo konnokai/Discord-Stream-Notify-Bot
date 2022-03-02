@@ -82,7 +82,12 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                                         }
                                         catch (Exception ex) { Log.Error($"GetTwitterSpaceMasterUrl: {item.id}\r\n{ex}"); continue; }
 
+
                                         var spaceData = new DataBase.Table.TwitterSpace() { UserId = item.creator_id, UserName = user.UserName, UserScreenName = user.UserScreenName, SpaecId = item.id, SpaecTitle = item.title, SpaecActualStartTime = (item?.started_at).GetValueOrDefault(), SpaecMasterPlaylistUrl = masterUrl.Replace("dynamic_playlist.m3u8?type=live", "master_playlist.m3u8") };
+
+                                        if (string.IsNullOrEmpty(spaceData.SpaecTitle))
+                                            spaceData.SpaecTitle = $"語音空間 ({spaceData.SpaecActualStartTime.ToString("yyyy/MM/dd")})";
+
                                         db.TwitterSpace.Add(spaceData);
 
                                         if (IsRecordSpace(spaceData) && !string.IsNullOrEmpty(masterUrl))

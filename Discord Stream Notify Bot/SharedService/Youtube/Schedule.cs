@@ -23,7 +23,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
         private async Task HoloScheduleAsync()
         {
             if (Program.isHoloChannelSpider) return;
-            Log.Info("Holo影片清單整理開始");
+            //Log.Info("Holo影片清單整理開始");
             Program.isHoloChannelSpider = true;
 
             try
@@ -153,13 +153,13 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             }
 
             Program.isHoloChannelSpider = false; isFirstHolo = false;
-            Log.Info("Holo影片清單整理完成");
+            //Log.Info("Holo影片清單整理完成");
         }
 
         private async Task NijisanjiScheduleAsync()
         {
             if (Program.isNijisanjiChannelSpider) return;
-            Log.Info("彩虹社影片清單整理開始");
+            //Log.Info("彩虹社影片清單整理開始");
             Program.isNijisanjiChannelSpider = true;
 
             try
@@ -300,13 +300,13 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             }
 
             Program.isNijisanjiChannelSpider = false; isFirst2434 = false;
-            Log.Info("彩虹社影片清單整理完成");
+            //Log.Info("彩虹社影片清單整理完成");
         }
 
         private async Task OtherScheduleAsync()
         {
             if (Program.isOtherChannelSpider) return;
-            Log.Info("其他勢影片清單整理開始");
+            //Log.Info("其他勢影片清單整理開始");
             Program.isOtherChannelSpider = true;
             Dictionary<string, List<string>> otherVideoDic = new Dictionary<string, List<string>>();
 
@@ -492,7 +492,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             }
 
             Program.isOtherChannelSpider = false; isFirstOther = false;
-            Log.Info("其他勢影片清單整理完成");
+            //Log.Info("其他勢影片清單整理完成");
         }
 
         public static async Task SaveDateBase()

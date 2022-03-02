@@ -97,6 +97,7 @@ namespace Discord_Stream_Notify_Bot.HttpClients
             }
         }
 
+        [Obsolete]
         private async Task<string> GetTwitterGuestTokenAsync()
         {
             try

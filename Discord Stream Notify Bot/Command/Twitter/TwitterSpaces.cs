@@ -231,6 +231,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
         [Command("AddTwitterSpaceSpider")]
         [Summary("新增推特語音空間爬蟲\r\n" +
             "(請使用@後面的使用者名稱來新增)\r\n\r\n" +
+           "**禁止新增非VTuber的推主**\r\n" +
             "每個伺服器可新增最多五個頻道爬蟲\r\n" +
             "伺服器需大於500人才可使用\r\n" +
             "未來會根據情況增減可新增的頻道數量\r\n" +

@@ -16,6 +16,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
         [Summary("新增非兩大箱的頻道檢測爬蟲\r\n" +
            "頻道Id必須為24字數+UC開頭\r\n" +
            "或是完整的Youtube頻道網址\r\n" +
+           "**禁止新增非VTuber的頻道**\r\n" +
             //"每個伺服器可新增最多五個頻道爬蟲\r\n" +
             "伺服器需大於300人才可使用\r\n" +
             "未來會根據情況增減可新增的頻道數量\r\n" +
