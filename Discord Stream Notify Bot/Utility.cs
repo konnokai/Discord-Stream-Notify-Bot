@@ -39,7 +39,7 @@ namespace Discord_Stream_Notify_Bot
             }
             catch (Exception ex)
             {
-                Log.Error($"{ex.Message}\r\n{ex.StackTrace}");
+                Log.Error($"{ex.Message}\n{ex.StackTrace}");
                 return 0;
             }
         }

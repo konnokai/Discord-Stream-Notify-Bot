@@ -13,36 +13,31 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
         [RequireContext(ContextType.Guild)]
         [RequireUserPermission(GuildPermission.Administrator)]
         [RequireGuildMemberCount(300)]
-        [CommandSummary("新增非兩大箱的頻道檢測爬蟲\r\n" +
-           "頻道Id必須為24字數+UC開頭\r\n" +
-           "或是完整的Youtube頻道網址\r\n" +
-           "**禁止新增非VTuber的頻道**\r\n" +
-           //"每個伺服器可新增最多五個頻道爬蟲\r\n" +
-           "伺服器需大於300人才可使用\r\n" +
-           "未來會根據情況增減可新增的頻道數量\r\n" +
+        [CommandSummary("新增非兩大箱的頻道檢測爬蟲\n" +
+           "**禁止新增非VTuber的頻道**\n" +
+           "伺服器需大於300人才可使用\n" +
+           "未來會根據情況增減可新增的頻道數量\n" +
            "如有任何需要請向擁有者詢問")]
-        [CommandExample("UC0qt9BfrpQo-drjuPKl_vdA")]
+        [CommandExample("https://www.youtube.com/channel/UC0qt9BfrpQo-drjuPKl_vdA",
+            "https://www.youtube.com/c/かぐらななななかぐ辛党Ch")]
         [SlashCommand("add-youtube-spider", "新增非兩大箱的頻道檢測爬蟲")]
-        public async Task AddChannelSpider([Summary("頻道Id")] string channelId)
+        public async Task AddChannelSpider([Summary("頻道網址")] string channelUrl)
         {
-            channelId = channelId.Trim();
-            if (string.IsNullOrEmpty(channelId))
-            {
-                await Context.Interaction.SendErrorAsync("未輸入頻道Id").ConfigureAwait(false);
-                return;
-            }
-            if (!channelId.Contains("UC"))
-            {
-                await Context.Interaction.SendErrorAsync("頻道Id錯誤").ConfigureAwait(false);
-                return;
-            }
+            await DeferAsync().ConfigureAwait(false);
+
+            string channelId = "";
             try
             {
-                channelId = channelId.Substring(channelId.IndexOf("UC"), 24);
+                channelId = await _service.GetChannelId(channelUrl).ConfigureAwait(false);
             }
-            catch
+            catch (FormatException fex)
             {
-                await Context.Interaction.SendErrorAsync("頻道Id格式錯誤").ConfigureAwait(false);
+                await Context.Interaction.SendErrorAsync(fex.Message, true);
+                return;
+            }
+            catch (ArgumentNullException)
+            {
+                await Context.Interaction.SendErrorAsync("網址不可空白", true);
                 return;
             }
 
@@ -50,7 +45,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             {
                 if ((db.HoloStreamVideo.Any((x) => x.ChannelId == channelId) || db.NijisanjiStreamVideo.Any((x) => x.ChannelId == channelId)) && !db.YoutubeChannelOwnedType.Any((x) => x.ChannelId == channelId))
                 {
-                    await Context.Interaction.SendErrorAsync($"不可新增兩大箱的頻道").ConfigureAwait(false);
+                    await Context.Interaction.SendErrorAsync($"不可新增兩大箱的頻道", true).ConfigureAwait(false);
                     return;
                 }
 
@@ -67,31 +62,24 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                         guild = "已退出的伺服器";
                     }
 
-                    await Context.Interaction.SendConfirmAsync($"{channelId} 已在爬蟲清單內\r\n" +
-                        $"可直接到通知頻道內使用 `/youtube add-youtube-notice {channelId}` 開啟通知\r\n" +
-                        $"(由 `{guild}` 設定)").ConfigureAwait(false);
+                    await Context.Interaction.SendConfirmAsync($"{channelId} 已在爬蟲清單內\n" +
+                        $"可直接到通知頻道內使用 `/youtube add-youtube-notice {channelId}` 開啟通知\n" +
+                        $"(由 `{guild}` 設定)", true).ConfigureAwait(false);
                     return;
                 }
-
-                //if (db.ChannelSpider.Count((x) => x.GuildId == Context.Guild.Id) >= 5)
-                //{
-                //    await Context.Interaction.SendConfirmAsync($"此伺服器已設定五個檢測頻道，請移除後再試\r\n" +
-                //        $"如有特殊需求請向Bot擁有者詢問").ConfigureAwait(false);
-                //    return;
-                //}
 
                 string channelTitle = await GetChannelTitle(channelId).ConfigureAwait(false);
                 if (channelTitle == "")
                 {
-                    await Context.Interaction.SendErrorAsync($"頻道 {channelId} 不存在").ConfigureAwait(false);
+                    await Context.Interaction.SendErrorAsync($"頻道 {channelId} 不存在", true).ConfigureAwait(false);
                     return;
                 }
 
                 db.YoutubeChannelSpider.Add(new DataBase.Table.YoutubeChannelSpider() { GuildId = Context.Interaction.User.Id == Program.ApplicatonOwner.Id ? 0 : Context.Guild.Id, ChannelId = channelId, ChannelTitle = channelTitle });
                 await db.SaveChangesAsync();
 
-                await Context.Interaction.SendConfirmAsync($"已將 {channelTitle} 加入到爬蟲清單內\r\n" +
-                    $"請到通知頻道內使用 `/youtube add-youtube-notice {channelId}` 來開啟通知").ConfigureAwait(false);
+                await Context.Interaction.SendConfirmAsync($"已將 {channelTitle} 加入到爬蟲清單內\n" +
+                    $"請到通知頻道內使用 `/youtube add-youtube-notice {channelId}` 來開啟通知", true).ConfigureAwait(false);
 
                 try
                 {
@@ -108,32 +96,28 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
 
         [RequireContext(ContextType.Guild)]
         [RequireUserPermission(GuildPermission.Administrator)]
-        [CommandSummary("移除非兩大箱的頻道檢測爬蟲\r\n" +
-            "爬蟲必須由本伺服器新增才可移除\r\n" +
-            "頻道Id必須為24字數+UC開頭\r\n" +
-            "或是完整的Youtube頻道網址")]
-        [CommandExample("UC0qt9BfrpQo-drjuPKl_vdA")]
+        [CommandSummary("移除非兩大箱的頻道檢測爬蟲\n" +
+            "爬蟲必須由本伺服器新增才可移除")]
+        [CommandExample("https://www.youtube.com/channel/UC0qt9BfrpQo-drjuPKl_vdA",
+            "https://www.youtube.com/c/かぐらななななかぐ辛党Ch")]
         [SlashCommand("remove-youtube-spider", "移除非兩大箱的頻道檢測爬蟲")]
-        public async Task RemoveChannelSpider([Summary("頻道Id")] string channelId)
+        public async Task RemoveChannelSpider([Summary("頻道網址")] string channelUrl)
         {
-            channelId = channelId.Trim();
-            if (string.IsNullOrEmpty(channelId))
-            {
-                await Context.Interaction.SendErrorAsync("未輸入頻道Id").ConfigureAwait(false);
-                return;
-            }
-            if (!channelId.Contains("UC"))
-            {
-                await Context.Interaction.SendErrorAsync("頻道Id錯誤").ConfigureAwait(false);
-                return;
-            }
+            await DeferAsync().ConfigureAwait(false);
+
+            string channelId = "";
             try
             {
-                channelId = channelId.Substring(channelId.IndexOf("UC"), 24);
+                channelId = await _service.GetChannelId(channelUrl).ConfigureAwait(false);
             }
-            catch
+            catch (FormatException fex)
             {
-                await Context.Interaction.SendErrorAsync("頻道Id格式錯誤").ConfigureAwait(false);
+                await Context.Interaction.SendErrorAsync(fex.Message, true);
+                return;
+            }
+            catch (ArgumentNullException)
+            {
+                await Context.Interaction.SendErrorAsync("網址不可空白", true);
                 return;
             }
 
@@ -141,20 +125,20 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             {
                 if (!db.YoutubeChannelSpider.Any((x) => x.ChannelId == channelId))
                 {
-                    await Context.Interaction.SendErrorAsync($"並未設定 {channelId} 頻道檢測爬蟲...").ConfigureAwait(false);
+                    await Context.Interaction.SendErrorAsync($"並未設定 {channelId} 頻道檢測爬蟲...", true).ConfigureAwait(false);
                     return;
                 }
 
                 if (Context.Interaction.User.Id != Program.ApplicatonOwner.Id && !db.YoutubeChannelSpider.Any((x) => x.ChannelId == channelId && x.GuildId == Context.Guild.Id))
                 {
-                    await Context.Interaction.SendErrorAsync($"該頻道爬蟲並非本伺服器新增，無法移除").ConfigureAwait(false);
+                    await Context.Interaction.SendErrorAsync($"該頻道爬蟲並非本伺服器新增，無法移除", true).ConfigureAwait(false);
                     return;
                 }
 
                 db.YoutubeChannelSpider.Remove(db.YoutubeChannelSpider.First((x) => x.ChannelId == channelId));
                 await db.SaveChangesAsync().ConfigureAwait(false);
             }
-            await Context.Interaction.SendConfirmAsync($"已移除 {channelId}").ConfigureAwait(false);
+            await Context.Interaction.SendConfirmAsync($"已移除 {channelId}", true).ConfigureAwait(false);
 
             try
             {

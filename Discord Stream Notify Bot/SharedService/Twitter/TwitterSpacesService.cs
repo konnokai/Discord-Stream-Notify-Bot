@@ -80,7 +80,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                                             var metadataJson = await _twitterClient.GetTwitterSpaceMetadataAsync(item.id);
                                             masterUrl = await _twitterClient.GetTwitterSpaceMasterUrlAsync(metadataJson["media_key"].ToString());
                                         }
-                                        catch (Exception ex) { Log.Error($"GetTwitterSpaceMasterUrl: {item.id}\r\n{ex}"); continue; }
+                                        catch (Exception ex) { Log.Error($"GetTwitterSpaceMasterUrl: {item.id}\n{ex}"); continue; }
 
 
                                         var spaceData = new DataBase.Table.TwitterSpace() { UserId = item.creator_id, UserName = user.UserName, UserScreenName = user.UserScreenName, SpaecId = item.id, SpaecTitle = item.title, SpaecActualStartTime = (item?.started_at).GetValueOrDefault(), SpaecMasterPlaylistUrl = masterUrl.Replace("dynamic_playlist.m3u8?type=live", "master_playlist.m3u8") };
@@ -99,21 +99,21 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                                             }
                                             catch (Exception ex)
                                             {
-                                                Log.Error($"Spaces-Record {item.id} {ex.Message}\r\n{ex.StackTrace}");
+                                                Log.Error($"Spaces-Record {item.id} {ex.Message}\n{ex.StackTrace}");
                                                 await SendSpaceMessageAsync(userData, spaceData);
                                             }
                                         }
                                         else await SendSpaceMessageAsync(userData, spaceData);
                                     }
-                                    catch (Exception ex) { Log.Error($"Spaces-Data {item.id} {ex.Message}\r\n{ex.StackTrace}"); }
+                                    catch (Exception ex) { Log.Error($"Spaces-Data {item.id} {ex.Message}\n{ex.StackTrace}"); }
                                 }
                                 await db.SaveChangesAsync();
                             }
-                            catch (Exception ex) { Log.Error($"Prepare-Spaces {ex.Message}\r\n{ex.StackTrace}"); }
+                            catch (Exception ex) { Log.Error($"Prepare-Spaces {ex.Message}\n{ex.StackTrace}"); }
                         }
                     }
                 }
-                catch (Exception ex) { Log.Error($"Spaces-Timer {ex.Message}\r\n{ex.StackTrace}"); }
+                catch (Exception ex) { Log.Error($"Spaces-Timer {ex.Message}\n{ex.StackTrace}"); }
                 finally { isRuning = false; }
             }, null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(15));
         }
@@ -140,7 +140,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                 }
                 catch (Exception ex)
                 {
-                    Log.Error($"IsRecordSpace: {twitterSpace.SpaecId} {ex.Message}\r\n{ex.StackTrace}");
+                    Log.Error($"IsRecordSpace: {twitterSpace.SpaecId} {ex.Message}\n{ex.StackTrace}");
                     return false;
                 }
             }
@@ -177,7 +177,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                     }
                     catch (Exception ex)
                     {
-                        Log.Error($"Notice Space {item.GuildId} / {item.DiscordChannelId}\r\n{ex.Message}");
+                        Log.Error($"Notice Space {item.GuildId} / {item.DiscordChannelId}\n{ex.Message}");
                         if (ex.Message.Contains("50013") || ex.Message.Contains("50001")) db.NoticeTwitterSpaceChannel.Remove(db.NoticeTwitterSpaceChannel.First((x) => x.DiscordChannelId == item.DiscordChannelId));
                         await db.SaveChangesAsync();
                     }

@@ -13,36 +13,28 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
         [RequireUserPermission(GuildPermission.Administrator)]
         [RequireGuildMemberCount(300)]
         [Command("AddChannelSpider")]
-        [Summary("新增非兩大箱的頻道檢測爬蟲\r\n" +
-           "頻道Id必須為24字數+UC開頭\r\n" +
-           "或是完整的Youtube頻道網址\r\n" +
-           "**禁止新增非VTuber的頻道**\r\n" +
-            //"每個伺服器可新增最多五個頻道爬蟲\r\n" +
-            "伺服器需大於300人才可使用\r\n" +
-            "未來會根據情況增減可新增的頻道數量\r\n" +
+        [Summary("新增非兩大箱的頻道檢測爬蟲\n" +
+           "**禁止新增非VTuber的頻道**\n" +
+            "伺服器需大於300人才可使用\n" +
             "如有任何需要請向擁有者詢問")]
-        [CommandExample("UC0qt9BfrpQo-drjuPKl_vdA")]
+        [CommandExample("https://www.youtube.com/channel/UC0qt9BfrpQo-drjuPKl_vdA",
+            "https://www.youtube.com/c/かぐらななななかぐ辛党Ch")]
         [Alias("ACS")]
-        public async Task AddChannelSpider(string channelId = "")
+        public async Task AddChannelSpider([Summary("頻道網址")] string channelUrl = "")
         {
-            channelId = channelId.Trim();
-            if (string.IsNullOrEmpty(channelId))
-            {
-                await Context.Channel.SendConfirmAsync("未輸入頻道Id").ConfigureAwait(false);
-                return;
-            }
-            if (!channelId.Contains("UC"))
-            {
-                await Context.Channel.SendConfirmAsync("頻道Id錯誤").ConfigureAwait(false);
-                return;
-            }
+            string channelId = "";
             try
             {
-                channelId = channelId.Substring(channelId.IndexOf("UC"), 24);
+                channelId = await _service.GetChannelId(channelUrl).ConfigureAwait(false);
             }
-            catch
+            catch (FormatException fex)
             {
-                await Context.Channel.SendConfirmAsync("頻道Id格式錯誤").ConfigureAwait(false);
+                await Context.Channel.SendErrorAsync(fex.Message);
+                return;
+            }
+            catch (ArgumentNullException)
+            {
+                await Context.Channel.SendErrorAsync("網址不可空白");
                 return;
             }
 
@@ -67,18 +59,11 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                         guild = "已退出的伺服器";
                     }
 
-                    await Context.Channel.SendConfirmAsync($"{channelId} 已在爬蟲清單內\r\n" +
-                        $"可直接到通知頻道內使用 `s!ansc {channelId}` 開啟通知\r\n" +
+                    await Context.Channel.SendConfirmAsync($"{channelId} 已在爬蟲清單內\n" +
+                        $"可直接到通知頻道內使用 `s!ansc {channelId}` 開啟通知\n" +
                         $"(由 `{guild}` 設定)").ConfigureAwait(false);
                     return;
                 }
-
-                //if (db.ChannelSpider.Count((x) => x.GuildId == Context.Guild.Id) >= 5)
-                //{
-                //    await Context.Channel.SendConfirmAsync($"此伺服器已設定五個檢測頻道，請移除後再試\r\n" +
-                //        $"如有特殊需求請向Bot擁有者詢問").ConfigureAwait(false);
-                //    return;
-                //}
 
                 string channelTitle = await GetChannelTitle(channelId).ConfigureAwait(false);
                 if (channelTitle == "")
@@ -90,7 +75,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                 db.YoutubeChannelSpider.Add(new DataBase.Table.YoutubeChannelSpider() { GuildId = Context.Message.Author.Id == Program.ApplicatonOwner.Id ? 0 : Context.Guild.Id, ChannelId = channelId, ChannelTitle = channelTitle });
                 await db.SaveChangesAsync();
 
-                await Context.Channel.SendConfirmAsync($"已將 {channelTitle} 加入到爬蟲清單內\r\n" +
+                await Context.Channel.SendConfirmAsync($"已將 {channelTitle} 加入到爬蟲清單內\n" +
                     $"請到通知頻道內使用 `s!ansc {channelId}` 來開啟通知").ConfigureAwait(false);
 
                 try
@@ -109,32 +94,26 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
         [RequireContext(ContextType.Guild)]
         [RequireUserPermission(GuildPermission.Administrator)]
         [Command("RemoveChannelSpider")]
-        [Summary("移除非兩大箱的頻道檢測爬蟲\r\n" +
-            "爬蟲必須由本伺服器新增才可移除\r\n" +
-            "頻道Id必須為24字數+UC開頭\r\n" +
-            "或是完整的Youtube頻道網址")]
-        [CommandExample("UC0qt9BfrpQo-drjuPKl_vdA")]
+        [Summary("移除非兩大箱的頻道檢測爬蟲\n" +
+            "爬蟲必須由本伺服器新增才可移除\n")]
+        [CommandExample("https://www.youtube.com/channel/UC0qt9BfrpQo-drjuPKl_vdA",
+            "https://www.youtube.com/c/かぐらななななかぐ辛党Ch")]
         [Alias("RCS")]
-        public async Task RemoveChannelSpider(string channelId = "")
+        public async Task RemoveChannelSpider([Summary("頻道網址")] string channelUrl = "")
         {
-            channelId = channelId.Trim();
-            if (string.IsNullOrEmpty(channelId))
-            {
-                await Context.Channel.SendConfirmAsync("未輸入頻道Id").ConfigureAwait(false);
-                return;
-            }
-            if (!channelId.Contains("UC"))
-            {
-                await Context.Channel.SendConfirmAsync("頻道Id錯誤").ConfigureAwait(false);
-                return;
-            }
+            string channelId = "";
             try
             {
-                channelId = channelId.Substring(channelId.IndexOf("UC"), 24);
+                channelId = await _service.GetChannelId(channelUrl).ConfigureAwait(false);
             }
-            catch
+            catch (FormatException fex)
             {
-                await Context.Channel.SendConfirmAsync("頻道Id格式錯誤").ConfigureAwait(false);
+                await Context.Channel.SendErrorAsync(fex.Message);
+                return;
+            }
+            catch (ArgumentNullException)
+            {
+                await Context.Channel.SendErrorAsync("網址不可空白");
                 return;
             }
 
@@ -221,28 +200,23 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
         [RequireOwner]
         [Command("ToggleWarningChannel")]
         [Summary("切換警告頻道狀態")]
-        [CommandExample("UCbfv8uuUXt3RSJGEwxny5Rw")]
+        [CommandExample("https://www.youtube.com/channel/UC0qt9BfrpQo-drjuPKl_vdA")]
         [Alias("twc")]
-        public async Task ToggleWarningChannel(string channelId = "")
+        public async Task ToggleWarningChannel([Summary("頻道網址")] string channelUrl = "")
         {
-            channelId = channelId.Trim();
-            if (string.IsNullOrEmpty(channelId))
-            {
-                await Context.Channel.SendConfirmAsync("未輸入頻道Id").ConfigureAwait(false);
-                return;
-            }
-            if (!channelId.Contains("UC"))
-            {
-                await Context.Channel.SendConfirmAsync("頻道Id錯誤").ConfigureAwait(false);
-                return;
-            }
+            string channelId = "";
             try
             {
-                channelId = channelId.Substring(channelId.IndexOf("UC"), 24);
+                channelId = await _service.GetChannelId(channelUrl).ConfigureAwait(false);
             }
-            catch
+            catch (FormatException fex)
             {
-                await Context.Channel.SendConfirmAsync("頻道Id格式錯誤").ConfigureAwait(false);
+                await Context.Channel.SendErrorAsync(fex.Message);
+                return;
+            }
+            catch (ArgumentNullException)
+            {
+                await Context.Channel.SendErrorAsync("網址不可空白");
                 return;
             }
 

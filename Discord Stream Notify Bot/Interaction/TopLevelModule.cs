@@ -10,8 +10,6 @@ namespace Discord_Stream_Notify_Bot.Interaction
     {
         public async Task<bool> PromptUserConfirmAsync(string context)
         {
-            await DeferAsync().ConfigureAwait(false);
-
             string guid = Guid.NewGuid().ToString().Replace("-", "");
 
             EmbedBuilder embed = new EmbedBuilder()

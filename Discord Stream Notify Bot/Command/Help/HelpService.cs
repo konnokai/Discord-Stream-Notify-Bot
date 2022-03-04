@@ -91,7 +91,7 @@ namespace Discord_Stream_Notify_Bot.Command.Help
 
             var commandExampleAttribute = att as CommandExampleAttribute;
 
-            return string.Join("\r\n", commandExampleAttribute.ExpArray
+            return string.Join("\n", commandExampleAttribute.ExpArray
                 .Select((x) => "`s!" + (cmd.Aliases.Count >= 2 ? cmd.Aliases.Last() : cmd.Name) + $" {x}`")
                 .ToArray());
         }

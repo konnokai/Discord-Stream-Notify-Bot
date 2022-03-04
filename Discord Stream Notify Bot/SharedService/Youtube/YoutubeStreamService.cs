@@ -11,6 +11,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -398,7 +399,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                 }
                                 catch (Exception ex)
                                 {
-                                    Log.Error($"CheckScheduleTime\r\n{ex}");
+                                    Log.Error($"CheckScheduleTime\n{ex}");
                                 }
                             }
                         }
@@ -429,7 +430,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     .WithTitle("正在直播的清單")
                     .WithThumbnailUrl("https://schedule.hololive.tv/dist/images/logo.png")
                     .WithCurrentTimestamp()
-                    .WithDescription(string.Join("\r\n", videoResult.Items.Select((x) => $"{x.Snippet.ChannelTitle} - {Format.Url(x.Snippet.Title, $"https://www.youtube.com/watch?v={x.Id}")}")));
+                    .WithDescription(string.Join("\n", videoResult.Items.Select((x) => $"{x.Snippet.ChannelTitle} - {Format.Url(x.Snippet.Title, $"https://www.youtube.com/watch?v={x.Id}")}")));
 
                 return embedBuilder.Build();
             }
@@ -442,6 +443,74 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
         private bool CanRecord(DataBase.DBContext db ,StreamVideo streamVideo) =>
              IsRecord && db.RecordYoutubeChannel.Any((x) => x.YoutubeChannelId.Trim() == streamVideo.ChannelId.Trim());
+
+        public async Task<string> GetChannelId(string channelUrl)
+        {
+            if (string.IsNullOrEmpty(channelUrl))
+                throw new ArgumentNullException(channelUrl);
+
+            channelUrl = channelUrl.Trim();
+
+            switch (channelUrl.ToLower())
+            {
+                case "all":
+                case "holo":
+                case "2434":
+                case "other":
+                    return channelUrl.ToLower();
+            }
+
+            string channelId = "";
+
+            Regex regex = new Regex(@"http[s]{0,1}:\/\/(www\.){0,1}(?'Host'.*)\/(?'Type'.*)\/(?'ChannelName'[^\?\#]*)");
+            Match match = regex.Match(channelUrl);
+            if (!match.Success)
+                throw new UriFormatException("錯誤，請確認是否輸入YouTube頻道網址");
+
+            if (match.Groups["Type"].Value == "channel")
+            {
+                channelId = match.Groups["ChannelName"].Value;
+                if (!channelId.StartsWith("UC")) throw new UriFormatException("錯誤，頻道Id格式不正確");
+                if (channelId.Length != 24) throw new UriFormatException("錯誤，頻道Id字元數不正確");
+            }
+            else if (match.Groups["Type"].Value == "c")
+            {
+                string channelName = System.Net.WebUtility.UrlDecode(match.Groups["ChannelName"].Value);
+
+                if (await Program.RedisDb.KeyExistsAsync($"discord_stream_bot:ChannelNameToName:{channelName}"))
+                {
+                    channelId = await Program.RedisDb.StringGetAsync($"discord_stream_bot:ChannelNameToName:{channelName}");
+                }
+                else
+                {
+                    try
+                    {
+                        //https://stackoverflow.com/a/36559834
+                        HtmlWeb htmlWeb = new HtmlWeb();
+                        var htmlDocument = await htmlWeb.LoadFromWebAsync($"https://www.youtube.com/c/{channelName}");
+                        var node = htmlDocument.DocumentNode.Descendants().FirstOrDefault((x) => x.Name == "meta" && x.Attributes.Any((x2) => x2.Name == "itemprop" && x2.Value == "channelId"));
+                        if (node == null)
+                            throw new UriFormatException("錯誤，請確認是否輸入正確的YouTube頻道網址\n" +
+                                "或確認該頻道是否存在");
+
+                        channelId = node.Attributes.FirstOrDefault((x) => x.Name == "content").Value;
+                        if (string.IsNullOrEmpty(channelId))
+                            throw new UriFormatException("錯誤，請確認是否輸入正確的YouTube頻道網址\n" +
+                                "或確認該頻道是否存在");
+
+                        await Program.RedisDb.StringSetAsync($"discord_stream_bot:ChannelNameToName:{channelName}", channelId);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error(channelUrl);
+                        Log.Error(ex.ToString());
+                        throw;
+                    }
+                }
+            }
+
+            return channelId;
+        }
 
         #region scnse
         //holoScheduleEmoji = new Timer(async (objState) =>
@@ -466,7 +535,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
         //        {
         //            try
         //            {
-        //                emojiList.Add(char.ConvertFromUtf32(Convert.ToInt32(item.Replace(" ", "").Split(new string[] { "\r\n" }, StringSplitOptions.RemoveEmptyEntries)[2].Split(new char[] { ';' })[0].Substring(2))));
+        //                emojiList.Add(char.ConvertFromUtf32(Convert.ToInt32(item.Replace(" ", "").Split(new string[] { "\n" }, StringSplitOptions.RemoveEmptyEntries)[2].Split(new char[] { ';' })[0].Substring(2))));
         //            }
         //            catch { }
         //        }
@@ -477,7 +546,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
         //    catch (Exception ex)
         //    {
         //        if (!ex.Message.Contains("EOF or 0 bytes") && !ex.Message.Contains("The SSL connection"))
-        //            Log.Error("Emoji\r\n" + ex.Message + "\r\n" + ex.StackTrace);
+        //            Log.Error("Emoji\n" + ex.Message + "\n" + ex.StackTrace);
         //    }
         //}, null, TimeSpan.FromSeconds(10), TimeSpan.FromMinutes(3));
 
@@ -548,7 +617,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
         //    }
         //    catch (Exception ex)
         //    {
-        //        Log.Error($"CheckHoloNowStream\r\n{ex}");
+        //        Log.Error($"CheckHoloNowStream\n{ex}");
         //    }
         //}, null, TimeSpan.FromSeconds(10), TimeSpan.FromMinutes(3));
 
@@ -570,13 +639,13 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
         //                if (_client.GetGuild(item.GuildId).GetUser(_client.CurrentUser.Id).GetPermissions(channel).ManageChannel)
         //                    await channel.ModifyAsync((x) => x.Name = text).ConfigureAwait(false);
         //                else
-        //                    await channel.SendConfirmAsync("警告\r\n" +
-        //                        "Bot無 `管理頻道` 權限，無法變更頻道名稱\r\n" +
+        //                    await channel.SendConfirmAsync("警告\n" +
+        //                        "Bot無 `管理頻道` 權限，無法變更頻道名稱\n" +
         //                        "請修正權限或是關閉現在直播表情顯示功能").ConfigureAwait(false);
         //            }
         //            catch (Exception ex)
         //            {
-        //                Log.Error($"Modify {item.GuildId} / {item.NoticeGuildChannelId}\r\n{ex.Message}");
+        //                Log.Error($"Modify {item.GuildId} / {item.NoticeGuildChannelId}\n{ex.Message}");
         //                item.ChangeNowStreamerEmojiToNoticeChannel = false;
         //                db.GuildConfig.Update(item);
         //                await db.SaveChangesAsync();

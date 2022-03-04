@@ -30,19 +30,12 @@ namespace Discord_Stream_Notify_Bot.Command.Normal
         [Summary("取得邀請連結")]
         public async Task InviteAsync()
         {
-#if RELEASE
-            if (Context.User.Id != Program.ApplicatonOwner.Id)
-            {
-                _discordWebhookClient.SendMessageToDiscord($"[{Context.Guild.Name}-{Context.Channel.Name}] {Context.User.Username}:({Context.User.Id}) 使用了邀請指令");
-            }
-#endif
-
             try
             {
                 await (await Context.Message.Author.CreateDMChannelAsync())
-                    .SendConfirmAsync("<https://discordapp.com/api/oauth2/authorize?client_id=" + _client.CurrentUser.Id + "&permissions=268569697&scope=bot%20applications.commands>\n");
+                    .SendConfirmAsync("<https://discordapp.com/api/oauth2/authorize?client_id=" + _client.CurrentUser.Id + "&permissions=268569697&scope=bot%20applications.commands>");
             }
-            catch (Exception) { await Context.Channel.SendConfirmAsync("無法私訊，請確認已開啟伺服器內成員私訊許可"); }
+            catch (Exception) { await Context.Channel.SendErrorAsync("無法私訊，請確認已開啟伺服器內成員私訊許可"); }
         }
 
         [Command("Status")]

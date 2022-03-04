@@ -90,7 +90,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                     }
                                     catch (Exception ex)
                                     {
-                                        Log.Error(ex.Message + "\r\n" + ex.StackTrace);
+                                        Log.Error(ex.Message + "\n" + ex.StackTrace);
                                         db.HoloStreamVideo.Update(streamVideo.ConvertToHoloStreamVideo());
                                     }
                                     break;
@@ -104,7 +104,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                     catch (Exception ex)
                                     {
 
-                                        Log.Error(ex.Message + "\r\n" + ex.StackTrace);
+                                        Log.Error(ex.Message + "\n" + ex.StackTrace);
                                         db.NijisanjiStreamVideo.Update(streamVideo.ConvertToNijisanjiStreamVideo());
                                     }
                                     break;
@@ -118,7 +118,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                     catch (Exception ex)
                                     {
 
-                                        Log.Error(ex.Message + "\r\n" + ex.StackTrace);
+                                        Log.Error(ex.Message + "\n" + ex.StackTrace);
                                         db.OtherStreamVideo.Update(streamVideo.ConvertToOtherStreamVideo());
                                     }
                                     break;
@@ -155,7 +155,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                             }
                             catch (Exception ex)
                             {
-                                Log.Error($"ReminderTimerAction-Record {ex.Message}\r\n{ex.StackTrace}");
+                                Log.Error($"ReminderTimerAction-Record {ex.Message}\n{ex.StackTrace}");
                             }
 #endif
 
@@ -206,7 +206,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                 }
                                 catch (Exception ex)
                                 {
-                                    Log.Error(ex.Message + "\r\n" + ex.StackTrace);
+                                    Log.Error(ex.Message + "\n" + ex.StackTrace);
                                     db.HoloStreamVideo.Update(streamVideo.ConvertToHoloStreamVideo());
                                 }
                                 break;
@@ -220,7 +220,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                 catch (Exception ex)
                                 {
 
-                                    Log.Error(ex.Message + "\r\n" + ex.StackTrace);
+                                    Log.Error(ex.Message + "\n" + ex.StackTrace);
                                     db.NijisanjiStreamVideo.Update(streamVideo.ConvertToNijisanjiStreamVideo());
                                 }
                                 break;
@@ -234,7 +234,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                 catch (Exception ex)
                                 {
 
-                                    Log.Error(ex.Message + "\r\n" + ex.StackTrace);
+                                    Log.Error(ex.Message + "\n" + ex.StackTrace);
                                     db.OtherStreamVideo.Update(streamVideo.ConvertToOtherStreamVideo());
                                 }
                                 break;
@@ -251,7 +251,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     await db.SaveChangesAsync();
                 }
             }
-            catch (Exception ex) { Log.Error($"ReminderAction {ex.Message} ({streamVideo.VideoId})\r\n{ex.StackTrace}"); }
+            catch (Exception ex) { Log.Error($"ReminderAction {ex.Message} ({streamVideo.VideoId})\n{ex.StackTrace}"); }
         }
 
         private async Task SendStreamMessageAsync(string videolId, Embed embed, NoticeType noticeType)
@@ -282,7 +282,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     }
                     catch (Exception ex)
                     {
-                        Log.Error(ex.Message + "\r\n" + ex.StackTrace);
+                        Log.Error(ex.Message + "\n" + ex.StackTrace);
                         return;
                     }
                 }
@@ -305,7 +305,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 }
                 catch (Exception ex)
                 {
-                    Log.Error($"SendStreamMessageAsyncChannel {streamVideo.VideoId} - {ex.Message}\r\n{ex.StackTrace}");
+                    Log.Error($"SendStreamMessageAsyncChannel {streamVideo.VideoId} - {ex.Message}\n{ex.StackTrace}");
                 }
 
                 //類型檢查
@@ -320,7 +320,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 }
                 catch (Exception ex)
                 {
-                    Log.Error($"SendStreamMessageAsyncOtherChannel {streamVideo.VideoId} - {ex.Message}\r\n{ex.StackTrace}");
+                    Log.Error($"SendStreamMessageAsyncOtherChannel {streamVideo.VideoId} - {ex.Message}\n{ex.StackTrace}");
                 }
 
                 Log.NewStream($"發送直播通知 ({noticeGuildList.Count} / {noticeType}): {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
@@ -362,7 +362,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     }
                     catch (Exception ex)
                     {
-                        Log.Error($"Notice Youtube {item.GuildId} / {item.DiscordChannelId}\r\n{ex.Message}");
+                        Log.Error($"Notice Youtube {item.GuildId} / {item.DiscordChannelId}\n{ex.Message}");
                         if (ex.Message.Contains("50013") || ex.Message.Contains("50001")) db.NoticeYoutubeStreamChannel.Remove(db.NoticeYoutubeStreamChannel.First((x) => x.DiscordChannelId == item.DiscordChannelId));
                         await db.SaveChangesAsync();
                     }
@@ -382,7 +382,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             }
             catch (Exception ex)
             {
-                Log.Error($"GetVideoAsync {ex.Message}\r\n{ex.StackTrace}");
+                Log.Error($"GetVideoAsync {ex.Message}\n{ex.StackTrace}");
                 return null;
             }
         }

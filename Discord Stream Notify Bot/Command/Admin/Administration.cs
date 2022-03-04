@@ -146,7 +146,7 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
                     await Context.Channel.SendConfirmAsync(invite.Url);
                 }
             }
-            catch (Exception ex) { Log.FormatColorWrite(ex.Message + "\r\n" + ex.StackTrace, ConsoleColor.Red); }
+            catch (Exception ex) { Log.FormatColorWrite(ex.Message + "\n" + ex.StackTrace, ConsoleColor.Red); }
         }
 
         [Command("SendMsgToAllGuild")]
@@ -214,7 +214,7 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
                     }
                     catch (Exception ex)
                     {
-                        Log.Error($"{ex.Message}\r\n{ex.StackTrace}");
+                        Log.Error($"{ex.Message}\n{ex.StackTrace}");
                     }
 
                     await Context.Channel.SendConfirmAsync("已發送完成");
@@ -251,7 +251,7 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Message + "\r\n" + ex.StackTrace);
+                Log.Error(ex.Message + "\n" + ex.StackTrace);
             }
         }
     }

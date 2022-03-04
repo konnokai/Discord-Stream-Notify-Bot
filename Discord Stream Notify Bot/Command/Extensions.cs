@@ -73,41 +73,6 @@ namespace Discord_Stream_Notify_Bot.Command
             }
         }
 
-        public static string GetChannelId(this string text)
-        {
-            if (string.IsNullOrEmpty(text))
-                throw new ArgumentNullException(text);
-
-            text = text.Trim();
-
-            switch (text.ToLower())
-            {
-                case "all":
-                case "holo":
-                case "2434":
-                case "other":
-                    text = text.ToLower();
-                    break;
-                default:
-                    {
-                        if (!text.Contains("UC"))
-                            throw new FormatException("頻道Id錯誤");
-
-                        try
-                        {
-                            text = text.Substring(text.IndexOf("UC"), 24);
-                        }
-                        catch
-                        {
-                            throw new FormatException("頻道Id格式錯誤");
-                        }
-                        break;
-                    }
-            }
-
-            return text;
-        }
-
         public static IEnumerable<T> Distinct<T, V>(this IEnumerable<T> source, Func<T, V> keySelector)
         {
             return source.Distinct(new CommonEqualityComparer<T, V>(keySelector));

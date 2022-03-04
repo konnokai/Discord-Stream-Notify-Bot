@@ -88,7 +88,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Help.Service
 
             var commandExampleAttribute = att as CommandExampleAttribute;
 
-            return string.Join("\r\n", commandExampleAttribute.ExpArray
+            return string.Join("\n", commandExampleAttribute.ExpArray
                 .Select((x) => $"`/{cmd.Module.SlashGroupName} {cmd.Name} {x}`")
                 .ToArray());
         }

@@ -29,9 +29,9 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                 }
                                 catch (Exception ex)
                                 {
-                                    Log.Error($"DownloadGuildBanner - {item.GuildId}\r\n" +
-                                        $"{channelId} / {videoId}\r\n" +
-                                        $"{ex.Message}\r\n" +
+                                    Log.Error($"DownloadGuildBanner - {item.GuildId}\n" +
+                                        $"{channelId} / {videoId}\n" +
+                                        $"{ex.Message}\n" +
                                         $"{ex.StackTrace}");
                                     continue;
                                 }                            
@@ -52,9 +52,9 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                             catch (Exception ex)
                             {
 
-                                Log.Error($"ChangeGuildBanner - {item.GuildId}\r\n" +
+                                Log.Error($"ChangeGuildBanner - {item.GuildId}\n" +
                                     $"{channelId} / {videoId}" +
-                                    $"{ex.Message}\r\n" +
+                                    $"{ex.Message}\n" +
                                     $"{ex.StackTrace}");
                                 continue;
                             }
@@ -62,8 +62,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     }
                     catch (Exception ex)
                     {
-                        Log.Error($"ChangeGuildBanner - {item.GuildId}\r\n" +
-                            $"{ex.Message}\r\n" +
+                        Log.Error($"ChangeGuildBanner - {item.GuildId}\n" +
+                            $"{ex.Message}\n" +
                             $"{ex.StackTrace}");
                         continue;
                     }
