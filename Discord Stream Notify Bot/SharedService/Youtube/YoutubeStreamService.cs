@@ -462,7 +462,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
             string channelId = "";
 
-            Regex regex = new Regex(@"http[s]{0,1}:\/\/(www\.){0,1}(?'Host'.*)\/(?'Type'.*)\/(?'ChannelName'[^\?\#]*)");
+            Regex regex = new Regex(@"http[s]{0,1}://(www\.){0,1}(?'Host'[^/]*)/(?'Type'[^/]*)/(?'ChannelName'[\w%\-]*)");
             Match match = regex.Match(channelUrl);
             if (!match.Success)
                 throw new UriFormatException("錯誤，請確認是否輸入YouTube頻道網址");
