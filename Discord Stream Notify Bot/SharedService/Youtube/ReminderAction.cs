@@ -145,7 +145,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                             Log.Info($"已發送錄影請求: {streamVideo.VideoId}");
                                             isRecord = true;
 
-                                            await noticeRecordChannel.SendMessageAsync(embeds: new Embed[] { new EmbedBuilder().WithOkColor().WithDescription( $"{Format.Url(streamVideo.VideoTitle, $"https://www.youtube.com/watch?v={streamVideo.VideoId}")}\n" +
+                                            await noticeRecordChannel.SendMessageAsync(embeds: new Embed[] { new EmbedBuilder().WithOkColor()
+                                                .WithDescription($"{Format.Url(streamVideo.VideoTitle, $"https://www.youtube.com/watch?v={streamVideo.VideoId}")}\n" +
                                                 $"{Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}")}\n\n" +
                                                 $"{$"youtube_{streamVideo.ChannelId}_{streamVideo.ScheduledStartTime:yyyyMMdd_HHmmss}_{streamVideo.VideoId}.ts"}").Build() });
                                         }

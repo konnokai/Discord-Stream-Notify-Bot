@@ -60,11 +60,15 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                             await Program.RedisSub.PublishAsync("youtube.deletestream", streamRecordJson.VideoId);
                             return;
                         }
-                        var startTime = item.LiveStreamingDetails.ActualStartTime.Value;
+                        DateTime startTime;
+                        if (item.LiveStreamingDetails.ActualStartTime.HasValue)
+                            startTime = item.LiveStreamingDetails.ActualStartTime.Value;
+                        else 
+                            startTime = item.LiveStreamingDetails.ScheduledStartTime.Value;
 
                         EmbedBuilder embedBuilder = new EmbedBuilder();
                         embedBuilder.WithRecordColor()
-                        .WithTitle((streamRecordJson.IsReRecord ? "(重新錄影) " : "") + item.Snippet.Title)
+                        .WithTitle(item.Snippet.Title)
                         .WithDescription(Format.Url(item.Snippet.ChannelTitle, $"https://www.youtube.com/channel/{item.Snippet.ChannelId}"))
                         .WithImageUrl($"https://i.ytimg.com/vi/{item.Id}/maxresdefault.jpg")
                         .WithUrl($"https://www.youtube.com/watch?v={item.Id}")
@@ -73,20 +77,20 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         //.AddField("是否記錄直播", "是", true)
                         //.AddField("存檔名稱", streamRecordJson.RecordFileName, false);
 
-                        if (streamRecordJson.IsReRecord)
-                        {
-                            if (noticeRecordChannel == null) noticeRecordChannel = _client.GetGuild(744593681587241041).GetTextChannel(752815296452231238); //Todo: 要自訂義
-                            await noticeRecordChannel.SendMessageAsync(Program.ApplicatonOwner.Mention, false, embedBuilder.Build()).ConfigureAwait(false);
-                        }
-                        else
-                        {
+                        //if (streamRecordJson.IsReRecord)
+                        //{
+                        //    if (noticeRecordChannel == null) noticeRecordChannel = _client.GetGuild(744593681587241041).GetTextChannel(752815296452231238); //Todo: 要自訂義
+                        //    await Program.ApplicatonOwner.SendMessageAsync(text: "重新錄影", embed: embedBuilder.Build()).ConfigureAwait(false);
+                        //}
+                        //else
+                        //{
                             await SendStreamMessageAsync(item.Id, embedBuilder.Build(), NoticeType.Start).ConfigureAwait(false);
                             await ChangeGuildBannerAsync(item.Snippet.ChannelId, item.Id);
-                        }
+                        //}
                     }
                     catch (Exception ex)
                     {
-                        Log.Error($"Record-StartStream {streamRecordJson.IsReRecord} {ex}");
+                        Log.Error($"Record-StartStream {ex}");
                     }
                 });
 
@@ -105,7 +109,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                             await Program.RedisSub.PublishAsync("youtube.deletestream", streamRecordJson.VideoId);
                             return;
                         }
-                        if (item.LiveStreamingDetails.ActualEndTime == null)
+                        if (!item.LiveStreamingDetails.ActualEndTime.HasValue)
                         {
                             Log.Warn("還沒關台");
                             return;
@@ -477,9 +481,9 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             {
                 string channelName = System.Net.WebUtility.UrlDecode(match.Groups["ChannelName"].Value);
 
-                if (await Program.RedisDb.KeyExistsAsync($"discord_stream_bot:ChannelNameToName:{channelName}"))
+                if (await Program.RedisDb.KeyExistsAsync($"discord_stream_bot:ChannelNameToId:{channelName}"))
                 {
-                    channelId = await Program.RedisDb.StringGetAsync($"discord_stream_bot:ChannelNameToName:{channelName}");
+                    channelId = await Program.RedisDb.StringGetAsync($"discord_stream_bot:ChannelNameToId:{channelName}");
                 }
                 else
                 {
@@ -498,7 +502,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                             throw new UriFormatException("錯誤，請確認是否輸入正確的YouTube頻道網址\n" +
                                 "或確認該頻道是否存在");
 
-                        await Program.RedisDb.StringSetAsync($"discord_stream_bot:ChannelNameToName:{channelName}", channelId);
+                        await Program.RedisDb.StringSetAsync($"discord_stream_bot:ChannelNameToId:{channelName}", channelId);
                     }
                     catch (Exception ex)
                     {
@@ -660,7 +664,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
     {
         public string VideoId { get; set; }
         public string RecordFileName { get; set; }
-        public bool IsReRecord { get; set; }
     }
 
     public class ReminderItem

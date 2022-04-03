@@ -5,24 +5,28 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 
 namespace Discord_Stream_Notify_Bot
 {
     public static class Utility
     {
+        static Regex videoIdRegex = new Regex(@"youtube_(?'ChannelId'[\w\-]{24})_(?'Date'[\d]{8})_(?'Time'[\d]{6})_(?'VideoId'[\w\-]{11}).mp4.part");
+
         public static Dictionary<string,int> GetNowRecordStreamList()
         {
             Dictionary<string, int> streamList = new Dictionary<string, int>();
 
-            foreach (var item in Process.GetProcessesByName("streamlink"))
+            foreach (var item in Process.GetProcessesByName("ffmpeg"))
             {
                 try
                 {
                     string cmdLine = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? item.GetCommandLine() : File.ReadAllText($"/proc/{item.Id}/cmdline");
-                    string temp = cmdLine.Split(".ts", StringSplitOptions.RemoveEmptyEntries)[0];
-                    streamList.Add(temp.Substring(temp.Length - 11, 11), item.Id);
+                    var match = videoIdRegex.Match(cmdLine);
+                    if (match.Success)
+                        streamList.Add(match.Groups["VideoId"].Value, item.Id);                    
                 }
-                catch { }
+                catch (Exception ex) { Log.Error(ex.ToString()); }
             }
 
             return streamList;

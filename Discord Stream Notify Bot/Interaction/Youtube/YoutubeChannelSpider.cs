@@ -79,7 +79,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                 await db.SaveChangesAsync();
 
                 await Context.Interaction.SendConfirmAsync($"已將 {channelTitle} 加入到爬蟲清單內\n" +
-                    $"請到通知頻道內使用 `/youtube add-youtube-notice {channelId}` 來開啟通知", true).ConfigureAwait(false);
+                    $"請到通知頻道內使用 `/youtube add-youtube-notice https://www.youtube.com/channel/{channelId}` 來開啟通知", true).ConfigureAwait(false);
 
                 try
                 {

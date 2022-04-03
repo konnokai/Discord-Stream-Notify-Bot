@@ -8,11 +8,44 @@ using System.Linq;
 using System.Threading.Tasks;
 using Discord_Stream_Notify_Bot.Command.Attribute;
 using Discord_Stream_Notify_Bot.DataBase.Table;
+using System.Runtime.InteropServices;
 
 namespace Discord_Stream_Notify_Bot.Command.Youtube
 {
     public partial class YoutubeStream : TopLevelModule, ICommandService
     {
+        #region Send Ctrl + C to process
+        // https://blog.csdn.net/u014070086/article/details/121562185
+        // 导入Win32 Console函数
+        [DllImport("kernel32.dll", SetLastError = true)]
+        static extern bool AttachConsole(uint dwProcessId);
+
+        [DllImport("kernel32.dll", SetLastError = true, ExactSpelling = true)]
+        static extern bool FreeConsole();
+
+        [DllImport("kernel32.dll")]
+        static extern bool SetConsoleCtrlHandler(ConsoleCtrlDelegate handler, bool add);
+
+        [DllImport("kernel32.dll")]
+        static extern bool AllocConsole();
+
+        delegate Boolean ConsoleCtrlDelegate(CtrlTypes type);
+
+        // 控制消息
+        enum CtrlTypes : uint
+        {
+            CTRL_C_EVENT = 0,
+            CTRL_BREAK_EVENT,
+            CTRL_CLOSE_EVENT,
+            CTRL_LOGOFF_EVENT = 5,
+            CTRL_SHUTDOWN_EVENT
+        }
+
+        [DllImport("kernel32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool GenerateConsoleCtrlEvent(CtrlTypes dwCtrlEvent, uint dwProcessGroupId);
+        #endregion
+
         private readonly DiscordSocketClient _client;
         private readonly HttpClients.DiscordWebhookClient _discordWebhookClient;
         private readonly SharedService.Youtube.YoutubeStreamService _service;
@@ -277,11 +310,11 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
             }
         }
 
-        [Command("KillRecordProcess")]
-        [Summary("停止指定ProcessId的直播記錄")]
-        [Alias("KRC")]
+        [Command("KillFFMPEGProcess")]
+        [Summary("停止指定FFMPEG ProcessId的直播記錄")]
+        [Alias("KFP")]
         [RequireOwner]
-        public async Task KillRecordProcess(int pId)
+        public async Task KillFFMPEGProcess(int pId)
         {
             var process = Process.GetProcessById(pId);
 
@@ -291,13 +324,41 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                 return;
             }
 
-            if (process.ProcessName != "streamlink")
+            if (process.ProcessName != "ffmpeg")
             {
-                await Context.Channel.SendConfirmAsync("指定ProcessId非StreamLink").ConfigureAwait(false);
+                await Context.Channel.SendConfirmAsync("指定ProcessId非ffmpeg").ConfigureAwait(false);
                 return;
             }
 
-            process.Kill();
+            FreeConsole();
+
+            // 一个进程最多只能attach到一个Console，否则失败，返回0
+            if (AttachConsole((uint)process.Id))
+            {
+                // 设置父进程属性，忽略Ctrl-C信号
+                SetConsoleCtrlHandler(null, true);
+
+                // 发出一个Ctrl-C到共享该控制台的所有进程中
+                GenerateConsoleCtrlEvent(CtrlTypes.CTRL_C_EVENT, 0);
+
+                // 父进程与控制台分离，此时子进程控制台收到Ctrl-C关闭
+                FreeConsole();
+
+                // 现在父进程没有Console，为它新建一个
+                AllocConsole();
+
+                // 等待子进程退出
+                process.WaitForExit(2000);
+
+                // 恢复父进程处理Ctrl-C信号
+                SetConsoleCtrlHandler(null, false);
+
+                // C#版的GetLastError()
+                var lastError = Marshal.GetLastWin32Error();
+            }
+
+
+            process.CloseMainWindow();
             await Context.Channel.SendConfirmAsync($"已停止ProcessId {pId}").ConfigureAwait(false);
         }
 

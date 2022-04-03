@@ -131,7 +131,7 @@ namespace Discord_Stream_Notify_Bot.Interaction
         public static bool IsChannelInDb(this DataBase.DBContext dBContext, string channelId)
             => dBContext.HoloStreamVideo.AsNoTracking().Any((x) => x.ChannelId == channelId) ||
                 dBContext.NijisanjiStreamVideo.AsNoTracking().Any((x) => x.ChannelId == channelId) ||
-                dBContext.OtherStreamVideo.AsNoTracking().Any((x) => x.ChannelId == channelId);
+                dBContext.YoutubeChannelSpider.AsNoTracking().Any((x) => x.ChannelId == channelId);
 
         public static bool IsTwitterUserInDb(this DataBase.DBContext dBContext, string userId)
             => dBContext.TwitterSpaecSpider.AsNoTracking().Any((x) => x.UserId == userId);

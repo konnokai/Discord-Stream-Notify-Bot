@@ -76,7 +76,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                 await db.SaveChangesAsync();
 
                 await Context.Channel.SendConfirmAsync($"已將 {channelTitle} 加入到爬蟲清單內\n" +
-                    $"請到通知頻道內使用 `s!ansc {channelId}` 來開啟通知").ConfigureAwait(false);
+                    $"請到通知頻道內使用 `s!ansc https://www.youtube.com/channel/{channelId}` 來開啟通知").ConfigureAwait(false);
 
                 try
                 {
