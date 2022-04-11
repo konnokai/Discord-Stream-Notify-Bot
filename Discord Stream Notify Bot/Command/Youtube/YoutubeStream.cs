@@ -599,12 +599,12 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
         [Command("AddNoticeStreamChannel")]
         [Summary("新增直播開台通知的頻道\n" +
             "\n" +
-            "輸入holo通知全部`Holo成員`的直播\n" +
-            "輸入2434通知全部`彩虹社成員`的直播\n" +
-            "(海外勢僅部分成員歸類在此選項內，建議改用`s!acs`設定)\n" +
-            "輸入other通知部分`非兩大箱`的直播\n" +
+            "輸入 `holo` 通知全部 `Holo成員` 的直播\n" +
+            "輸入 `2434` 通知全部 `彩虹社成員` 的直播\n" +
+            "(海外勢僅部分成員歸類在此選項內，建議改用 `s!acs` 設定)\n" +
+            "輸入 `other` 通知部分 `非兩大箱` 的直播\n" +
             "(可以使用`s!lcs`查詢有哪些頻道)\n" +
-            "輸入all通知全部`Holo + 2434 + 非兩大箱`的直播\n" +
+            "輸入 `all` 通知全部 `Holo + 2434 + 非兩大箱` 的直播\n" +
             "(此選項會覆蓋所有的通知設定)")]
         [CommandExample("https://www.youtube.com/channel/UCXRlIK3Cw_TJIQC5kSJJQMg", "all", "2434")]
         [Alias("ANSC")]
