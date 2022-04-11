@@ -118,7 +118,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
             string channelId = "";
             try
             {
-                channelId = await _service.GetChannelId(channelUrl).ConfigureAwait(false);
+                channelId = await _service.GetChannelIdAsync(channelUrl).ConfigureAwait(false);
             }
             catch (FormatException fex)
             {
@@ -165,7 +165,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
             string channelId = "";
             try
             {
-                channelId = await _service.GetChannelId(channelUrl).ConfigureAwait(false);
+                channelId = await _service.GetChannelIdAsync(channelUrl).ConfigureAwait(false);
             }
             catch (FormatException fex)
             {
@@ -338,7 +338,8 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                 // 设置父进程属性，忽略Ctrl-C信号
                 SetConsoleCtrlHandler(null, true);
 
-                // 发出一个Ctrl-C到共享该控制台的所有进程中
+                // 发出兩个Ctrl-C到共享该控制台的所有进程中
+                GenerateConsoleCtrlEvent(CtrlTypes.CTRL_C_EVENT, 0);
                 GenerateConsoleCtrlEvent(CtrlTypes.CTRL_C_EVENT, 0);
 
                 // 父进程与控制台分离，此时子进程控制台收到Ctrl-C关闭
@@ -545,7 +546,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                         string channelId = "";
                         try
                         {
-                            channelId = await _service.GetChannelId(channelUrl).ConfigureAwait(false);
+                            channelId = await _service.GetChannelIdAsync(channelUrl).ConfigureAwait(false);
                         }
                         catch (FormatException fex)
                         {
@@ -612,7 +613,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
             string channelId = "";
             try
             {
-                channelId = await _service.GetChannelId(channelUrl).ConfigureAwait(false);
+                channelId = await _service.GetChannelIdAsync(channelUrl).ConfigureAwait(false);
             }
             catch (FormatException fex)
             {
@@ -714,7 +715,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
             string channelId = "";
             try
             {
-                channelId = await _service.GetChannelId(channelUrl).ConfigureAwait(false);
+                channelId = await _service.GetChannelIdAsync(channelUrl).ConfigureAwait(false);
             }
             catch (FormatException fex)
             {
@@ -847,7 +848,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
             string channelId = "";
             try
             {
-                channelId = await _service.GetChannelId(channelUrl).ConfigureAwait(false);
+                channelId = await _service.GetChannelIdAsync(channelUrl).ConfigureAwait(false);
             }
             catch (FormatException fex)
             {
@@ -1007,7 +1008,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
             string channelId = "";
             try
             {
-                channelId = await _service.GetChannelId(channelUrl).ConfigureAwait(false);
+                channelId = await _service.GetChannelIdAsync(channelUrl).ConfigureAwait(false);
             }
             catch (FormatException fex)
             {

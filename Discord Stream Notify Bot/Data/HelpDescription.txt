@@ -31,6 +31,6 @@ __**4.其他特殊功能**__
 如果伺服器Boost達Lv2的話可以使用 `/youtube set-banner-change 頻道網址`，設定伺服器橫幅使用指定頻道的最新影片(直播)縮圖
 (可用 `/help get-command-help set-banner-change` 查看詳情)
 
-[點此邀請BOT到新伺服器](https://discordapp.com/api/oauth2/authorize?client_id=758222559392432160&permissions=268569697&scope=bot%20applications.commands)
+[點此邀請BOT到新伺服器](https://discordapp.com/api/oauth2/authorize?client_id=758222559392432160&permissions=2416143425&scope=bot%20applications.commands)
 
 有新功能想加入或任何建議可以到推特私訊 [孤之界(@Jun112561)](https://twitter.com/Jun112561) 討論

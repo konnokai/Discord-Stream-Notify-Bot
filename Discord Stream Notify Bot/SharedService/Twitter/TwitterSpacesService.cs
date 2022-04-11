@@ -11,6 +11,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Discord_Stream_Notify_Bot.Interaction;
+using Microsoft.EntityFrameworkCore;
 
 namespace Discord_Stream_Notify_Bot.SharedService.Twitter
 {
@@ -48,7 +49,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                 {
                     using (var db = DataBase.DBContext.GetDbContext())
                     {
-                        var userList = db.TwitterSpaecSpider.ToList().Select((x) => x.UserId).ToArray();
+                        var userList = db.TwitterSpaecSpider.AsNoTracking().ToList().Select((x) => x.UserId).ToArray();
 
                         for (int i = 0; i < userList.Length; i += 100)
                         {
@@ -64,7 +65,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
 
                                     try
                                     {
-                                        var user = db.TwitterSpaecSpider.FirstOrDefault((x) => x.UserId == item.creator_id);
+                                        var user = db.TwitterSpaecSpider.AsNoTracking().FirstOrDefault((x) => x.UserId == item.creator_id);
                                         var userData = UserService.GetUser(user.UserScreenName);
 
                                         if (user.UserScreenName != userData.data.username || user.UserName != userData.data.name)

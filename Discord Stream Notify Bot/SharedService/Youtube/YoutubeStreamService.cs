@@ -14,6 +14,7 @@ using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 
 namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 {
@@ -297,19 +298,20 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                foreach (var streamVideo in db.HoloStreamVideo.ToList().Where((x) => x.ScheduledStartTime > DateTime.Now))
+                foreach (var streamVideo in db.HoloStreamVideo.AsNoTracking().ToList().Where((x) => x.ScheduledStartTime > DateTime.Now))
                 {
                     StartReminder(streamVideo, StreamVideo.YTChannelType.Holo);
                 }
-                foreach (var streamVideo in db.NijisanjiStreamVideo.ToList().Where((x) => x.ScheduledStartTime > DateTime.Now))
+                foreach (var streamVideo in db.NijisanjiStreamVideo.AsNoTracking().ToList().Where((x) => x.ScheduledStartTime > DateTime.Now))
                 {
                     StartReminder(streamVideo, StreamVideo.YTChannelType.Nijisanji);
                 }
-                foreach (var streamVideo in db.OtherStreamVideo.ToList().Where((x) => x.ScheduledStartTime > DateTime.Now))
+                foreach (var streamVideo in db.OtherStreamVideo.AsNoTracking().ToList().Where((x) => x.ScheduledStartTime > DateTime.Now))
                 {
                     StartReminder(streamVideo, StreamVideo.YTChannelType.Other);
                 }
             }
+
 
             holoSchedule = new Timer(async (objState) => await HoloScheduleAsync(), null, TimeSpan.FromSeconds(15), TimeSpan.FromMinutes(5));
 
@@ -448,7 +450,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
         private bool CanRecord(DataBase.DBContext db ,StreamVideo streamVideo) =>
              IsRecord && db.RecordYoutubeChannel.Any((x) => x.YoutubeChannelId.Trim() == streamVideo.ChannelId.Trim());
 
-        public async Task<string> GetChannelId(string channelUrl)
+        public async Task<string> GetChannelIdAsync(string channelUrl)
         {
             if (string.IsNullOrEmpty(channelUrl))
                 throw new ArgumentNullException(channelUrl);

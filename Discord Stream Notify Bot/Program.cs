@@ -106,6 +106,7 @@ namespace Discord_Stream_Notify_Bot
                 .AddHttpClient()
                 .AddSingleton<SharedService.Twitter.TwitterSpacesService>()
                 .AddSingleton<SharedService.Youtube.YoutubeStreamService>()
+                .AddSingleton<SharedService.YoutubeMember.YoutubeMemberService>()
                 .AddSingleton(_client)
                 .AddSingleton(botConfig)
                 .AddSingleton(new InteractionService(_client, new InteractionServiceConfig()
@@ -114,7 +115,8 @@ namespace Discord_Stream_Notify_Bot
                     UseCompiledLambda = true,
                     EnableAutocompleteHandlers = false,
                     DefaultRunMode = Discord.Interactions.RunMode.Async
-                }));
+                }))
+                .AddDbContext<DataBase.DBContext>();
 
             interactionServices.AddHttpClient<HttpClients.DiscordWebhookClient>();
             interactionServices.AddHttpClient<HttpClients.TwitterClient>();
@@ -129,13 +131,15 @@ namespace Discord_Stream_Notify_Bot
                 .AddHttpClient()
                 .AddSingleton(iService.GetService<SharedService.Twitter.TwitterSpacesService>())
                 .AddSingleton(iService.GetService<SharedService.Youtube.YoutubeStreamService>())
+                .AddSingleton(iService.GetService<SharedService.YoutubeMember.YoutubeMemberService>())
                 .AddSingleton(_client)
                 .AddSingleton(botConfig)
                 .AddSingleton(new CommandService(new CommandServiceConfig()
                 {
                     CaseSensitiveCommands = false,
                     DefaultRunMode = Discord.Commands.RunMode.Async
-                }));
+                }))
+                .AddDbContext<DataBase.DBContext>();
 
             commandServices.AddHttpClient<HttpClients.DiscordWebhookClient>();
             commandServices.AddHttpClient<HttpClients.TwitterClient>();
@@ -150,6 +154,12 @@ namespace Discord_Stream_Notify_Bot
 
             _client.Ready += async () =>
             {
+                stopWatch.Start();
+                timerUpdateStatus.Change(0, 15 * 60 * 1000);
+
+                ApplicatonOwner = (await _client.GetApplicationInfoAsync()).Owner;
+                isConnect = true;
+
                 using (var db = DataBase.DBContext.GetDbContext())
                 {
                     foreach (var guild in _client.Guilds)
@@ -161,12 +171,6 @@ namespace Discord_Stream_Notify_Bot
                         }
                     }
                 }
-
-                stopWatch.Start();
-                timerUpdateStatus.Change(0, 15 * 60 * 1000);
-
-                ApplicatonOwner = (await _client.GetApplicationInfoAsync()).Owner;
-                isConnect = true;
 
                 try
                 {
@@ -208,7 +212,7 @@ namespace Discord_Stream_Notify_Bot
                     if (!db.GuildConfig.Any(x => x.GuildId == guild.Id))
                     {
                         db.GuildConfig.Add(new GuildConfig() { GuildId = guild.Id });
-                        await db.SaveChangesAsync().ConfigureAwait(false);
+                        await db.SaveChangesAsync();
                     }
                 }
 

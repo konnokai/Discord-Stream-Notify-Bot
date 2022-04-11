@@ -5,8 +5,8 @@ namespace Discord_Stream_Notify_Bot.DataBase
 {
     public class DBContext : DbContext
     {
-        public DbSet<BannerChange> BannerChange { get; set; }
         public DbSet<GuildConfig> GuildConfig { get; set; }
+        public DbSet<BannerChange> BannerChange { get; set; }
         public DbSet<HoloStreamVideo> HoloStreamVideo { get; set; }
         public DbSet<MemberAccessToken> MemberAccessToken { get; set; }
         public DbSet<NijisanjiStreamVideo> NijisanjiStreamVideo { get; set; }
@@ -22,6 +22,9 @@ namespace Discord_Stream_Notify_Bot.DataBase
 
         protected override void OnConfiguring(DbContextOptionsBuilder options)
             => options.UseSqlite($"Data Source={Program.GetDataFilePath("DataBase.db")}")
+#if DEBUG
+            .LogTo(System.Console.WriteLine)
+#endif
             .EnableSensitiveDataLogging();
 
         public static DBContext GetDbContext()

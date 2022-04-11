@@ -1,0 +1,41 @@
+﻿using Discord;
+using Discord.Interactions;
+using Microsoft.EntityFrameworkCore;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
+{
+    [Group("youtube-member", "yt-member")]
+    public class YoutubeMember : TopLevelModule<SharedService.YoutubeMember.YoutubeMemberService>
+    {
+        [SlashCommand("check", "確認是否已到網站登入並記錄至資料庫")]
+        [RequireContext(ContextType.Guild)]
+        public async Task CheckAsync()
+        {
+            using (var db = DataBase.DBContext.GetDbContext())
+            {
+                var guildConfig = db.GuildConfig.Include((x) => x.MemberCheck).First((x) => x.GuildId == Context.Guild.Id);
+                if (string.IsNullOrEmpty(guildConfig.MemberCheckChannelId) || guildConfig.MemberCheckGrantRoleId == 0 || string.IsNullOrEmpty(guildConfig.MemberCheckVideoId))
+                {
+                    await Context.Interaction.SendErrorAsync($"請向管理員確認本伺服器是否已跟 `{Program.ApplicatonOwner.Username}#{Program.ApplicatonOwner.Discriminator}` 要求開啟會限驗證功能", ephemeral: true);
+                    return;
+                }
+
+                if (db.MemberAccessToken.Any((x) => x.DiscordUserId == Context.User.Id.ToString()))
+                {
+                    if (!guildConfig.MemberCheck.Any((x) => x.UserId == Context.User.Id))
+                    {
+                        guildConfig.MemberCheck.Add(new DataBase.Table.YoutubeMemberCheck() { UserId = Context.User.Id });
+                        db.SaveChanges();
+                    }
+                    await Context.Interaction.SendConfirmAsync("已記錄至資料庫，請稍等至多5分鐘讓Bot驗證", ephemeral: true);
+                }
+                else
+                {
+                    await Context.Interaction.SendErrorAsync($"請先到{Format.Url("此網站", "https://member.konnokai.me")}登入Discord以及Google\n登入完後再輸入一次本指令", ephemeral: true);
+                }
+            }
+        }
+    }
+}

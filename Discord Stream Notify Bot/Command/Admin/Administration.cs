@@ -89,6 +89,38 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
             }, _client.Guilds.Count, 5);
         }
 
+        [Command("SearchServer")]
+        [Summary("查詢伺服器")]
+        [Alias("SS")]
+        [RequireOwner]
+        public async Task SearchServerAsync([Summary("關鍵字")] string keyword = "", [Summary("頁數")] int page = 0)
+        {
+            var list = _client.Guilds.Where((x) => x.Name.Contains(keyword));
+            if (list.Count() == 0)
+            {
+                await Context.Channel.SendErrorAsync("該關鍵字無伺服器");
+                return;
+            }
+
+            await Context.SendPaginatedConfirmAsync(page, (cur) =>
+            {
+                EmbedBuilder embedBuilder = new EmbedBuilder().WithOkColor().WithTitle("目前所在的伺服器有");
+
+                foreach (var item in list.Skip(cur * 5).Take(5))
+                {
+                    int totalMember = item.MemberCount;
+                    bool isBotOwnerInGuild = item.GetUser(Program.ApplicatonOwner.Id) != null;
+
+                    embedBuilder.AddField(item.Name, "Id: " + item.Id +
+                        "\nOwner Id: " + item.OwnerId +
+                        "\n人數: " + totalMember.ToString() +
+                        "\nBot擁有者是否在該伺服器: " + (isBotOwnerInGuild ? "是" : "否"));
+                }
+
+                return embedBuilder;
+            }, list.Count(), 5);
+        }
+
         [Command("Die")]
         [Summary("關閉機器人")]
         [Alias("Bye")]
