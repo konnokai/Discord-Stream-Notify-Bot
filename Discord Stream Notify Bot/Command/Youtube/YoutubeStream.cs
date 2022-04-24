@@ -628,9 +628,17 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
 
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                if (db.NoticeYoutubeStreamChannel.Any((x) => x.GuildId == Context.Guild.Id && x.NoticeStreamChannelId == channelId))
+                var noticeYoutubeStreamChannel = db.NoticeYoutubeStreamChannel.FirstOrDefault((x) => x.GuildId == Context.Guild.Id && x.NoticeStreamChannelId == channelId);
+
+                if (noticeYoutubeStreamChannel != null)
                 {
-                    await Context.Channel.SendConfirmAsync($"{channelId} 已在直播通知清單內").ConfigureAwait(false);
+                    if (await PromptUserConfirmAsync(new EmbedBuilder().WithOkColor().WithDescription($"{channelId} 已在直播通知清單內，是否覆蓋設定?")).ConfigureAwait(false))
+                    {
+                        noticeYoutubeStreamChannel.DiscordChannelId = Context.Channel.Id;
+                        db.NoticeYoutubeStreamChannel.Update(noticeYoutubeStreamChannel);
+                        await db.SaveChangesAsync();
+                        await Context.Channel.SendConfirmAsync($"已將 {channelId} 的通知頻道變更至: {Context.Channel}").ConfigureAwait(false);
+                    }
                     return;
                 }
 

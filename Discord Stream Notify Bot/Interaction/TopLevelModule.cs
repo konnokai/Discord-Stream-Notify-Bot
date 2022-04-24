@@ -20,7 +20,7 @@ namespace Discord_Stream_Notify_Bot.Interaction
                 .WithButton("是", $"{guid}-yes", ButtonStyle.Success)
                 .WithButton("否", $"{guid}-no", ButtonStyle.Danger);
 
-            var msg = await FollowupAsync(embed: embed.Build(), components: component.Build()).ConfigureAwait(false);
+            var msg = await FollowupAsync(embed: embed.Build(), components: component.Build(), ephemeral: true).ConfigureAwait(false);
 
             try
             {
@@ -71,7 +71,9 @@ namespace Discord_Stream_Notify_Bot.Interaction
 
                     if (userInputTask.TrySetResult(component.Data.CustomId.EndsWith("yes")))
                     {
-                        await component.UpdateAsync((x) => x.Components = new ComponentBuilder().Build())
+                        await component.UpdateAsync((x) => x.Components = new ComponentBuilder()
+                            .WithButton("是", $"{guid}-yes", ButtonStyle.Success, disabled: true)
+                            .WithButton("否", $"{guid}-no", ButtonStyle.Danger, disabled: true).Build())
                         .ConfigureAwait(false);
                     }
                     return Task.CompletedTask;

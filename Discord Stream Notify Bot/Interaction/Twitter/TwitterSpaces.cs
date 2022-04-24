@@ -38,27 +38,37 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                 return;
             }
 
+            await DeferAsync(true).ConfigureAwait(false);
+
             userScreenName = userScreenName.Replace("@", "");
 
             UserModel user = _service.GetTwitterUser(userScreenName);
             if (user == null)
             {
-                await Context.Interaction.SendErrorAsync($"{userScreenName} 不存在此使用者").ConfigureAwait(false);
+                await Context.Interaction.SendErrorAsync($"{userScreenName} 不存在此使用者", true).ConfigureAwait(false);
                 return;
             }
 
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                if (db.NoticeTwitterSpaceChannel.Any((x) => x.GuildId == Context.Guild.Id && x.NoticeTwitterSpaceUserId == user.data.id))
+                var noticeTwitterSpaceChannel = db.NoticeTwitterSpaceChannel.FirstOrDefault((x) => x.GuildId == Context.Guild.Id && x.NoticeTwitterSpaceUserId == user.data.id);
+
+                if (noticeTwitterSpaceChannel != null)
                 {
-                    await Context.Interaction.SendConfirmAsync($"{user.data.name} 已在語音空間通知清單內").ConfigureAwait(false);
+                    if (await PromptUserConfirmAsync($"{user.data.name} 已在語音空間通知清單內，是否覆蓋設定?").ConfigureAwait(false))
+                    {
+                        noticeTwitterSpaceChannel.DiscordChannelId = textChannel.Id;
+                        db.NoticeTwitterSpaceChannel.Update(noticeTwitterSpaceChannel);
+                        await db.SaveChangesAsync();
+                        await Context.Interaction.SendConfirmAsync($"已將 {user.data.name} 的語音空間通知頻道變更至: {textChannel}", true).ConfigureAwait(false);
+                    }
                     return;
                 }
 
                 string addString = "";
                 if (!db.IsTwitterUserInDb(user.data.id)) addString += $"\n\n(注意: 該使用者未加入爬蟲清單\n如長時間無通知請使用 `/help get-command-help add-twitter-spider` 查看說明並加入爬蟲)";
                 db.NoticeTwitterSpaceChannel.Add(new NoticeTwitterSpaceChannel() { GuildId = Context.Guild.Id, DiscordChannelId = textChannel.Id, NoticeTwitterSpaceUserId = user.data.id, NoticeTwitterSpaceUserScreenName = user.data.username.ToLower() });
-                await Context.Interaction.SendConfirmAsync($"已將 {user.data.name} 加入到語音空間通知頻道清單內{addString}").ConfigureAwait(false);
+                await Context.Interaction.SendConfirmAsync($"已將 {user.data.name} 加入到語音空間通知頻道清單內{addString}", true).ConfigureAwait(false);
 
                 await db.SaveChangesAsync().ConfigureAwait(false);
             }

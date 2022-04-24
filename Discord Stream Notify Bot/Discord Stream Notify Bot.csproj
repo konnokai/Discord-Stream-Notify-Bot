@@ -59,6 +59,6 @@
   </ItemGroup>
 	
 	<PropertyGroup>
-		<SourceRevisionId>build$([System.DateTime]::UtcNow.ToString("d"))</SourceRevisionId>
+		<SourceRevisionId>build$([System.DateTime]::UtcNow.AddHours(8).ToString("yyyy/MM/dd HH:mm:ss"))</SourceRevisionId>
 	</PropertyGroup>
 </Project>

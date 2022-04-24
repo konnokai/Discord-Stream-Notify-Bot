@@ -11,7 +11,7 @@ using System.Collections.Generic;
 
 namespace Discord_Stream_Notify_Bot.Command.Twitter
 {
-    public class TwitterSpaces : ModuleBase, ICommandService
+    public class TwitterSpaces : TopLevelModule, ICommandService
     {
         private readonly DiscordSocketClient _client;
         private readonly HttpClients.DiscordWebhookClient _discordWebhookClient;
@@ -51,9 +51,17 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
 
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                if (db.NoticeTwitterSpaceChannel.Any((x) => x.GuildId == Context.Guild.Id && x.NoticeTwitterSpaceUserId == user.data.id))
+                var noticeTwitterSpaceChannel = db.NoticeTwitterSpaceChannel.FirstOrDefault((x) => x.GuildId == Context.Guild.Id && x.NoticeTwitterSpaceUserId == user.data.id);
+
+                if (noticeTwitterSpaceChannel != null)
                 {
-                    await Context.Channel.SendConfirmAsync($"{user.data.name} 已在語音空間通知清單內").ConfigureAwait(false);
+                    if (await PromptUserConfirmAsync(new EmbedBuilder().WithOkColor().WithDescription($"{user.data.name} 已在語音空間通知清單內，是否覆蓋設定?")).ConfigureAwait(false))
+                    {
+                        noticeTwitterSpaceChannel.DiscordChannelId = Context.Channel.Id;
+                        db.NoticeTwitterSpaceChannel.Update(noticeTwitterSpaceChannel);
+                        await db.SaveChangesAsync();
+                        await Context.Channel.SendConfirmAsync($"已將 {user.data.name} 的語音空間通知頻道變更至: {Context.Channel}").ConfigureAwait(false);
+                    }
                     return;
                 }
 

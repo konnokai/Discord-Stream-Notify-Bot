@@ -226,7 +226,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
         [SlashCommand("add-youtube-notice", "新增直播開台通知的頻道")]
         public async Task AddChannel([Summary("頻道網址")] string channelUrl, [Summary("發送通知的頻道")] ITextChannel textChannel)
         {
-            await DeferAsync().ConfigureAwait(false);
+            await DeferAsync(true).ConfigureAwait(false);
 
             string channelId = "";
             try
@@ -246,9 +246,17 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
 
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                if (db.NoticeYoutubeStreamChannel.Any((x) => x.GuildId == Context.Guild.Id && x.NoticeStreamChannelId == channelId))
+                var noticeYoutubeStreamChannel = db.NoticeYoutubeStreamChannel.FirstOrDefault((x) => x.GuildId == Context.Guild.Id && x.NoticeStreamChannelId == channelId);
+
+                if (noticeYoutubeStreamChannel != null)
                 {
-                    await Context.Interaction.SendErrorAsync($"{channelId} 已在直播通知清單內", true).ConfigureAwait(false);
+                    if (await PromptUserConfirmAsync($"{channelId} 已在直播通知清單內，是否覆蓋設定?").ConfigureAwait(false))
+                    {
+                        noticeYoutubeStreamChannel.DiscordChannelId = textChannel.Id;
+                        db.NoticeYoutubeStreamChannel.Update(noticeYoutubeStreamChannel);
+                        await db.SaveChangesAsync();
+                        await Context.Interaction.SendConfirmAsync($"已將 {channelId} 的通知頻道變更至: {textChannel}", true).ConfigureAwait(false);
+                    }
                     return;
                 }
 
