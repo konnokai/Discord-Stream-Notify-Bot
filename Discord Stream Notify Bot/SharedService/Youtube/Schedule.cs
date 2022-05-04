@@ -503,6 +503,10 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             {
                 using (var db = DataBase.DBContext.GetDbContext())
                 {
+#if DEBUG
+                    Log.Info(db.ChangeTracker.DebugView.LongView);
+#endif
+
                     if (!Program.isHoloChannelSpider && addNewStreamVideo.Any((x) => x.Value == StreamVideo.YTChannelType.Holo))
                     {
                         foreach (var item in addNewStreamVideo.Where((x) => x.Value == StreamVideo.YTChannelType.Holo))
@@ -511,7 +515,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                             {
                                 try
                                 {
-                                    await db.HoloStreamVideo.AddAsync(item.Key.ConvertToHoloStreamVideo()); saveNum++;
+                                    db.HoloStreamVideo.Add(item.Key.ConvertToHoloStreamVideo()); saveNum++;
                                 }
                                 catch (Exception ex)
                                 {
@@ -533,7 +537,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                             {
                                 try
                                 {
-                                    await db.NijisanjiStreamVideo.AddAsync(item.Key.ConvertToNijisanjiStreamVideo()); saveNum++;
+                                    db.NijisanjiStreamVideo.Add(item.Key.ConvertToNijisanjiStreamVideo()); saveNum++;
                                 }
                                 catch (Exception ex)
                                 {
@@ -555,11 +559,12 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                             {
                                 try
                                 {
-                                    await db.OtherStreamVideo.AddAsync(item.Key.ConvertToOtherStreamVideo()); saveNum++;
+                                    db.OtherStreamVideo.Add(item.Key.ConvertToOtherStreamVideo()); saveNum++;
                                 }
                                 catch (Exception ex)
                                 {
                                     Log.Error($"SaveOtherDateBase {ex}");
+                                    Log.Warn(db.ChangeTracker.DebugView.LongView);
                                 }
                             }
 
@@ -577,5 +582,5 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
             if (saveNum != 0) Log.Info($"資料庫已儲存完畢: {saveNum}筆");
         }
-    }    
+    }
 }
