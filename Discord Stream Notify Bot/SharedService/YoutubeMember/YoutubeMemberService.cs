@@ -51,11 +51,12 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                     return;
                 }
                 Log.Info($"接收到OAuth資料 {memberAccessToken.DiscordUserId} - {memberAccessToken.YoutubeChannelId}");
+                var token = await flow.LoadTokenAsync(memberAccessToken.DiscordUserId, CancellationToken.None);
 
                 await flow.DataStore.StoreAsync(memberAccessToken.DiscordUserId, new TokenResponse()
                 {
                     AccessToken = memberAccessToken.GoogleAccessToken,
-                    RefreshToken = memberAccessToken.GoogleRefrechToken,
+                    RefreshToken = token != null ? token.RefreshToken : memberAccessToken.GoogleRefrechToken,
                     ExpiresInSeconds = (int)memberAccessToken.GoogleExpiresIn.Subtract(DateTime.Now).TotalSeconds,
                     TokenType = "Bearer",
                     Scope = "https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/youtube.force-ssl",
