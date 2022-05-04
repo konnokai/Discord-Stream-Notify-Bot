@@ -12,6 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Discord_Stream_Notify_Bot.Interaction;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
 
 namespace Discord_Stream_Notify_Bot.SharedService.Twitter
 {
@@ -26,6 +27,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
         DiscordSocketClient _client;
         HttpClients.TwitterClient _twitterClient;
         Timer timer;
+        HashSet<string> hashSet = new HashSet<string>();
 
         public TwitterSpacesService(DiscordSocketClient client, HttpClients.TwitterClient twitterClient, BotConfig botConfig)
         {
@@ -49,7 +51,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                 {
                     using (var db = DataBase.DBContext.GetDbContext())
                     {
-                        var userList = db.TwitterSpaecSpider.AsNoTracking().ToList().Select((x) => x.UserId).ToArray();
+                        var userList = db.TwitterSpaecSpider.Select((x) => x.UserId).ToArray();
 
                         for (int i = 0; i < userList.Length; i += 100)
                         {
@@ -60,12 +62,13 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
 
                                 foreach (var item in spaces.data)
                                 {
-                                    if (db.TwitterSpace.Any((x) => x.SpaecId == item.id)) continue;
+                                    if (hashSet.Contains(item.id)) continue;
+                                    if (db.TwitterSpace.Any((x) => x.SpaecId == item.id)) { hashSet.Add(item.id); continue; }
                                     if (item.state != "live") continue;
 
                                     try
                                     {
-                                        var user = db.TwitterSpaecSpider.AsNoTracking().FirstOrDefault((x) => x.UserId == item.creator_id);
+                                        var user = db.TwitterSpaecSpider.FirstOrDefault((x) => x.UserId == item.creator_id);
                                         var userData = UserService.GetUser(user.UserScreenName);
 
                                         if (user.UserScreenName != userData.data.username || user.UserName != userData.data.name)
@@ -90,6 +93,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                                             spaceData.SpaecTitle = $"語音空間 ({spaceData.SpaecActualStartTime.ToString("yyyy/MM/dd")})";
 
                                         db.TwitterSpace.Add(spaceData);
+                                        hashSet.Add(item.id);
 
                                         if (IsRecordSpace(spaceData) && !string.IsNullOrEmpty(masterUrl))
                                         {

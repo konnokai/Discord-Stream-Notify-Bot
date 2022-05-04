@@ -14,7 +14,6 @@ using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
 
 namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 {
@@ -292,21 +291,18 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 Log.Info("已建立Redis訂閱");
             }
 
-#if DEBUG
-            return;
-#endif
 
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                foreach (var streamVideo in db.HoloStreamVideo.AsNoTracking().ToList().Where((x) => x.ScheduledStartTime > DateTime.Now))
+                foreach (var streamVideo in db.HoloStreamVideo.Where((x) => x.ScheduledStartTime > DateTime.Now))
                 {
                     StartReminder(streamVideo, StreamVideo.YTChannelType.Holo);
                 }
-                foreach (var streamVideo in db.NijisanjiStreamVideo.AsNoTracking().ToList().Where((x) => x.ScheduledStartTime > DateTime.Now))
+                foreach (var streamVideo in db.NijisanjiStreamVideo.Where((x) => x.ScheduledStartTime > DateTime.Now))
                 {
                     StartReminder(streamVideo, StreamVideo.YTChannelType.Nijisanji);
                 }
-                foreach (var streamVideo in db.OtherStreamVideo.AsNoTracking().ToList().Where((x) => x.ScheduledStartTime > DateTime.Now))
+                foreach (var streamVideo in db.OtherStreamVideo.Where((x) => x.ScheduledStartTime > DateTime.Now))
                 {
                     StartReminder(streamVideo, StreamVideo.YTChannelType.Other);
                 }
@@ -464,6 +460,9 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 case "other":
                     return channelUrl.ToLower();
             }
+
+            if (channelUrl.StartsWith("UC") && channelUrl.Length == 24)
+                return channelUrl;
 
             string channelId = "";
 

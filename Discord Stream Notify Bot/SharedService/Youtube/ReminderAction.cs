@@ -324,6 +324,10 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                 Log.NewStream($"發送直播通知 ({noticeGuildList.Count} / {noticeType}): {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
 
+#if DEBUG
+                return;
+#endif
+
                 foreach (var item in noticeGuildList)
                 {
                     try

@@ -10,6 +10,10 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
     {
         private async Task ChangeGuildBannerAsync(string channelId, string videoId)
         {
+#if DEBUG
+            return;
+#endif
+
             using (var db = DataBase.DBContext.GetDbContext())
             {
                 foreach (var item in db.BannerChange.ToList().Where(x => x.ChannelId == channelId))

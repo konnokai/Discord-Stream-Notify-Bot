@@ -174,6 +174,12 @@ namespace Discord_Stream_Notify_Bot
 
                 try
                 {
+#if DEBUG
+                    if (botConfig.TestSlashCommandGuildId == 0 || _client.GetGuild(botConfig.TestSlashCommandGuildId) == null)
+                        Log.Warn("未設定測試Slash指令的伺服器或伺服器不存在，略過");
+                    else
+                        await iService.GetService<InteractionService>().RegisterCommandsToGuildAsync(botConfig.TestSlashCommandGuildId);
+#else
                     try
                     {
                         var commandCount = (await RedisDb.StringGetSetAsync("discord_stream_bot:command_count", iService.GetService<InteractionHandler>().CommandCount)).ToString();
@@ -187,12 +193,6 @@ namespace Discord_Stream_Notify_Bot
                         return;
                     }
 
-#if DEBUG
-                    if (botConfig.TestSlashCommandGuildId == 0 || _client.GetGuild(botConfig.TestSlashCommandGuildId) == null)
-                        Log.Warn("未設定測試Slash指令的伺服器或伺服器不存在，略過");
-                    else
-                        await iService.GetService<InteractionService>().RegisterCommandsToGuildAsync(botConfig.TestSlashCommandGuildId);
-#else
                     await iService.GetService<InteractionService>().RegisterCommandsGloballyAsync();
                     Log.Info("已註冊全球指令");
 #endif
@@ -216,7 +216,7 @@ namespace Discord_Stream_Notify_Bot
                     }
                 }
 
-               iService.GetService<HttpClients.DiscordWebhookClient>().SendMessageToDiscord($"加入 {guild.Name}({guild.Id})\n擁有者: {guild.Owner.Username}({guild.Owner.Mention})");
+                iService.GetService<HttpClients.DiscordWebhookClient>().SendMessageToDiscord($"加入 {guild.Name}({guild.Id})\n擁有者: {guild.Owner.Username}({guild.Owner.Mention})");
             };
             #endregion
 

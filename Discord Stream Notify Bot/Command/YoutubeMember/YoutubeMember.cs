@@ -48,7 +48,7 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
                 }
                 else
                 {
-                    await Context.Channel.SendErrorAsync($"請先到 {Format.Url("此網站", "https://member.konnokai.me")} 登入Discord以及Google\n登入完後再輸入一次本指令");
+                    await Context.Channel.SendErrorAsync($"請先到 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 登入Discord以及Google\n登入完後再輸入一次本指令");
                 }
             }
         }

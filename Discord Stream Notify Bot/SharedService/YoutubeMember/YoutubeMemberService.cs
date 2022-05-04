@@ -213,7 +213,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                         if (memberAccessToken == null)
                         {
                             await logChannel.SendErrorMessage(user, new EmbedBuilder().AddField("檢查頻道", guildConfig.MemberCheckChannelId).AddField("狀態", "未登入"));
-                            await userChannel.SendErrorMessage($"未登入，請至 {Format.Url("此網站", "https://member.konnokai.me")} 登入並再次於伺服器執行 `/youtube-member check`");
+                            await userChannel.SendErrorMessage($"未登入，請至 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 登入並再次於伺服器執行 `/youtube-member check`");
 
                             try
                             {
@@ -232,7 +232,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                             await logChannel.SendErrorMessage(user, new EmbedBuilder().AddField("檢查頻道", guildConfig.MemberCheckChannelId).AddField("狀態", "認證過期"));
                             await userChannel.SendErrorMessage($"您的Google認證已失效\n" +
                                 $"請到 {Format.Url("Google安全性", "https://myaccount.google.com/permissions")} 移除 `直播小幫手會限確認` 的應用程式存取權後\n" +
-                                $"至 {Format.Url("此網站", "https://member.konnokai.me")} 重新登入並再次於伺服器執行 `/youtube-member check`");
+                                $"至 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 重新登入並再次於伺服器執行 `/youtube-member check`");
 
                             try
                             {
@@ -339,7 +339,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                     await logChannel.SendErrorMessage(user, new EmbedBuilder().AddField("檢查頻道", guildConfig.MemberCheckChannelId).AddField("狀態", "認證過期"));
                                     await userChannel.SendErrorMessage($"您的Google認證已失效\n" +
                                         $"請到 {Format.Url("Google安全性", "https://myaccount.google.com/permissions?continue=https%3A%2F%2Fmyaccount.google.com%2Fsecurity")} 移除 `直播小幫手會限確認` 的應用程式存取權後\n" +
-                                        $"至 {Format.Url("此網站", "https://member.konnokai.me")} 重新登入並再次於伺服器執行 `/youtube-member check`");
+                                        $"至 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 重新登入並再次於伺服器執行 `/youtube-member check`");
                                     continue;
                                 }
                                 else
