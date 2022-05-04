@@ -37,7 +37,7 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
                     return;
                 }
 
-                if (db.MemberAccessToken.Any((x) => x.DiscordUserId == Context.User.Id.ToString()))
+                if (await _service.IsExistUserTokenAsync(Context.User.Id.ToString()))
                 {
                     if (!guildConfig.MemberCheck.Any((x) => x.UserId == Context.User.Id))
                     {
@@ -92,7 +92,8 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
                     else
                     {
                         guildConfig.MemberCheckChannelId = channelId;
-                        guildConfig.MemberCheckGrantRoleId= role.Id;
+                        guildConfig.MemberCheckGrantRoleId = role.Id;
+                        guildConfig.MemberCheckVideoId = "-";
                         db.GuildConfig.Update(guildConfig);
                         await db.SaveChangesAsync();
                     }
@@ -100,7 +101,7 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
                     string result = $"已設定此伺服器使用 `{channelId}` 作為會限驗證頻道\n" +
                         $"驗證成功的成員將會獲得 `{role.Name}` 用戶組";
                     if (!db.GuildConfig.Any((x) => x.MemberCheckChannelId == channelId))
-                        result += "\n(此YT頻道是第一次設定，最久需等待一天後才可開始檢測會限)";
+                        result += "\n(此YT頻道是第一次設定，請等待五分鐘後才可開始檢測會限)";
 
                     await Context.Channel.SendConfirmAsync(result);
                 }

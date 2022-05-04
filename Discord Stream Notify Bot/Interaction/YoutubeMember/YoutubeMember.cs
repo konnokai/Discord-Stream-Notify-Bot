@@ -22,7 +22,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
                     return;
                 }
 
-                if (db.MemberAccessToken.Any((x) => x.DiscordUserId == Context.User.Id.ToString()))
+                if (await _service.IsExistUserTokenAsync(Context.User.Id.ToString()))
                 {
                     if (!guildConfig.MemberCheck.Any((x) => x.UserId == Context.User.Id))
                     {
