@@ -52,6 +52,28 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                 }
                 Log.Info($"接收到OAuth資料 {memberAccessToken.DiscordUserId} - {memberAccessToken.YoutubeChannelId}");
                 var token = await flow.LoadTokenAsync(memberAccessToken.DiscordUserId, CancellationToken.None);
+                string refreshToken = "";
+                if (token != null && token.RefreshToken != null)
+                    refreshToken = token.RefreshToken;
+                else if (memberAccessToken.GoogleRefrechToken != null)
+                    refreshToken = memberAccessToken.GoogleRefrechToken;
+                else
+                {
+                    Log.Warn($"接收到OAuth資料但無RefreshToken");
+
+                    var user = await _client.Rest.GetUserAsync(ulong.Parse( memberAccessToken.DiscordUserId));
+                    var userChannel = await user.CreateDMChannelAsync();
+                    if (userChannel == null)
+                    {
+                        Log.Warn($"{memberAccessToken.DiscordUserId} 無法建立使用者私訊");
+                        return;
+                    }
+
+                    await userChannel.SendErrorMessage("已收到資料但無法刷新金鑰\n" +
+                         $"請到 {Format.Url("Google安全性", "https://myaccount.google.com/permissions")} 移除 `直播小幫手會限確認` 的應用程式存取權後\n" +
+                                    $"至 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 重新登入");
+                    return;
+                }
 
                 await flow.DataStore.StoreAsync(memberAccessToken.DiscordUserId, new TokenResponse()
                 {
@@ -231,6 +253,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                     $"請到 {Format.Url("Google安全性", "https://myaccount.google.com/permissions")} 移除 `直播小幫手會限確認` 的應用程式存取權後\n" +
                                     $"至 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 重新登入並再次於伺服器執行 `/youtube-member check`");
 
+                                await flow.DataStore.DeleteAsync<TokenResponse>(item2.UserId.ToString());
                                 continue;
                             }
 
