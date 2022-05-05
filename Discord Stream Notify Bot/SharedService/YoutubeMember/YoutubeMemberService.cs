@@ -70,8 +70,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                     }
 
                     await userChannel.SendErrorMessage("已收到資料但無法刷新金鑰\n" +
-                         $"請到 {Format.Url("Google安全性", "https://myaccount.google.com/permissions")} 移除 `直播小幫手會限確認` 的應用程式存取權後\n" +
-                                    $"至 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 重新登入");
+                        $"請到 {Format.Url("Google安全性", "https://myaccount.google.com/permissions")} 移除 `直播小幫手會限確認` 的應用程式存取權後\n" +
+                        $"至 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 重新登入");
                     return;
                 }
 
