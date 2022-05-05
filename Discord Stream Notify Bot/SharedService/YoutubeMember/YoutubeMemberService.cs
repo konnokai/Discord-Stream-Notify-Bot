@@ -69,7 +69,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                         return;
                     }
 
-                    await userChannel.SendErrorMessage("已收到資料但無法刷新金鑰\n" +
+                    await userChannel.SendErrorMessage("已收到資料但無刷新金鑰\n" +
                         $"請到 {Format.Url("Google安全性", "https://myaccount.google.com/permissions")} 移除 `直播小幫手會限確認` 的應用程式存取權後\n" +
                         $"至 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 重新登入");
                     return;
@@ -78,7 +78,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                 await flow.DataStore.StoreAsync(memberAccessToken.DiscordUserId, new TokenResponse()
                 {
                     AccessToken = memberAccessToken.GoogleAccessToken,
-                    RefreshToken = token != null ? token.RefreshToken : memberAccessToken.GoogleRefrechToken,
+                    RefreshToken = refreshToken,
                     ExpiresInSeconds = (int)memberAccessToken.GoogleExpiresIn.Subtract(DateTime.Now).TotalSeconds,
                     TokenType = "Bearer",
                     Scope = "https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/youtube.force-ssl",
