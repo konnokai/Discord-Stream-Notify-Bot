@@ -19,7 +19,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
 {
     public class YoutubeMemberService : IInteractionService
     {
-        Timer checkMemberShipOnlyVideoId, checkOldMemberStatus, checkNewMemberStatus;
+        Timer checkMemberShipOnlyVideoId, checkOldMemberStatus, checkNewMemberStatus, checkRoleStatus;
         YoutubeStreamService _streamService;
         GoogleAuthorizationCodeFlow flow;
         DiscordSocketClient _client;
@@ -89,6 +89,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
             checkMemberShipOnlyVideoId = new Timer(CheckMemberShipOnlyVideoId, null, TimeSpan.FromSeconds(30), TimeSpan.FromMinutes(5));
             checkOldMemberStatus = new Timer(new TimerCallback(async (obj) => await CheckMemberShip(obj)), true, TimeSpan.FromHours(12), TimeSpan.FromHours(12));
             checkNewMemberStatus = new Timer(new TimerCallback(async (obj) => await CheckMemberShip(obj)), false, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(5));
+            checkRoleStatus = new Timer(new TimerCallback(async (obj) => await CheckRoleStatus()), null, TimeSpan.FromSeconds(30), TimeSpan.FromHours(12));
         }
 
         //https://github.com/member-gentei/member-gentei/blob/90f62385f554eb4c02ed8732e15061b9dd1dd6d0/gentei/apis/youtube.go#L100
@@ -330,6 +331,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                     ex.Message.ToLower().Contains("authenticateduseraccountclosed") || ex.Message.ToLower().Contains("authenticateduseraccountsuspended"))
                                 {
                                     Log.Warn($"CheckMemberStatus: {guildConfig.GuildId} - {item2.UserId} 會限資格取得失敗: AccessToken已過期或無法刷新");
+                                    Log.Warn(JsonConvert.SerializeObject(userCredential.Token));
+                                    Log.Warn(ex.ToString());
 
                                     db.YoutubeMemberCheck.Remove(item2);
                                     await db.SaveChangesAsync();
@@ -402,6 +405,10 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                         {
                             Log.Error($"無法新增用戶組至用戶: {guild.Id} / {user.Id}");
                             Log.Error($"{ex}");
+
+                            await logChannel.SendErrorMessage(user, new EmbedBuilder().AddField("檢查頻道", guildConfig.MemberCheckChannelId).AddField("狀態", "已驗證但無法給予用戶組"));
+                            await userChannel.SendConfirmMessage($"你在 `{guild}` 的會限已通過驗證，但無法新增用戶組，請告知管理員協助新增");
+
                             continue;
                         }
 
@@ -417,7 +424,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                             {
                                 if (!isOldCheck)
                                 {
-                                    await logChannel.SendConfirmMessage(new EmbedBuilder().AddField("檢查頻道", guildConfig.MemberCheckChannelId).AddField("狀態", "已驗證"), user);
+                                    await logChannel.SendConfirmMessage(user, new EmbedBuilder().AddField("檢查頻道", guildConfig.MemberCheckChannelId).AddField("狀態", "已驗證"));
                                     await userChannel.SendConfirmMessage($"你在 `{guild}` 的會限已通過驗證，現在你可至該伺服器上觀看會限頻道了");
                                 }
                             }
@@ -439,6 +446,12 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
             }
 
             Log.Info("會限檢查完畢");
+        }
+
+        //Todo: 實作用戶組檢查
+        private async Task CheckRoleStatus()
+        {
+            return;
         }
 
         private async Task<UserCredential> GetUserCredential(string discordUserId, TokenResponse token)
@@ -491,7 +504,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
 
     static class Ext
     {
-        public static async Task SendConfirmMessage(this SocketTextChannel tc, EmbedBuilder embedBuilder, IUser user)
+        public static async Task SendConfirmMessage(this SocketTextChannel tc, IUser user, EmbedBuilder embedBuilder)
             => await tc.SendMessageAsync(embed: embedBuilder.WithOkColor().WithAuthor(user).WithThumbnailUrl(user.GetAvatarUrl()).Build());
 
         public static async Task SendConfirmMessage(this SocketTextChannel tc, string title, string dec)
