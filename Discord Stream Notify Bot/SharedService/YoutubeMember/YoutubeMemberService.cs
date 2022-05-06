@@ -396,10 +396,11 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                         }
 
                         if (!isMember) return;
+
+                        checkedMemberCount++; 
                         try
                         {
                             await _client.Rest.AddRoleAsync(guild.Id, item2.UserId, role.Id).ConfigureAwait(false);
-                            checkedMemberCount++;
                         }
                         catch (Exception ex)
                         {
