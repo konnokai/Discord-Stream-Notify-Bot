@@ -235,7 +235,7 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
                                 try
                                 {
                                     db.NoticeYoutubeStreamChannel.RemoveRange(Queryable.Where(db.NoticeYoutubeStreamChannel, (x) => x.GuildId == item.Id));
-                                    await db.SaveChangesAsync();
+                                    db.SaveChanges();
                                 }
                                 catch { }
                             }

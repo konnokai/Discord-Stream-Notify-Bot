@@ -322,7 +322,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                             ytChannel.Id = item.ChannelId;
                             item.ChannelTitle = (await ytChannel.ExecuteAsync().ConfigureAwait(false)).Items[0].Snippet.Title;
                             db.YoutubeChannelSpider.Update(item);
-                            await db.SaveChangesAsync();
+                            db.SaveChanges();
                         }
                     }
                     catch (Exception ex)
@@ -495,7 +495,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             //Log.Info("其他勢影片清單整理完成");
         }
 
-        public static async Task SaveDateBase()
+        public static void SaveDateBase()
         {
             int saveNum = 0;
 
@@ -526,7 +526,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                             addNewStreamVideo.Remove(item.Key);
                         }
 
-                        Log.Info($"Holo資料庫已儲存: {await db.SaveChangesAsync()}筆");
+                        Log.Info($"Holo資料庫已儲存: {db.SaveChanges()}筆");
                     }
 
                     if (!Program.isNijisanjiChannelSpider && addNewStreamVideo.Any((x) => x.Value == StreamVideo.YTChannelType.Nijisanji))
@@ -548,7 +548,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                             addNewStreamVideo.Remove(item.Key);
                         }
 
-                        Log.Info($"2434資料庫已儲存: {await db.SaveChangesAsync()}筆");
+                        Log.Info($"2434資料庫已儲存: {db.SaveChanges()}筆");
                     }
 
                     if (!Program.isOtherChannelSpider && addNewStreamVideo.Any((x) => x.Value == StreamVideo.YTChannelType.Other))
@@ -571,7 +571,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                             addNewStreamVideo.Remove(item.Key);
                         }
 
-                        Log.Info($"Other資料庫已儲存: {await db.SaveChangesAsync()}筆");
+                        Log.Info($"Other資料庫已儲存: {db.SaveChanges()}筆");
                     }
                 }
             }

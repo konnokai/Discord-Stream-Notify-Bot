@@ -378,7 +378,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                             db.OtherStreamVideo.Update(streamVideo.ConvertToOtherStreamVideo());
                                             break;
                                     }
-                                    await db.SaveChangesAsync();
+                                    db.SaveChanges();
 
                                     Log.Info($"時間已更改 {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
 
@@ -408,7 +408,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 }
             }, null, TimeSpan.FromMinutes(15), TimeSpan.FromMinutes(15));
 
-            saveDateBase = new Timer(async (onjState) => await SaveDateBase(), null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(3));
+            saveDateBase = new Timer((onjState) => SaveDateBase(), null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(3));
         }
 
         public async Task<Embed> GetNowStreamingChannel()
@@ -652,7 +652,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
         //                Log.Error($"Modify {item.GuildId} / {item.NoticeGuildChannelId}\n{ex.Message}");
         //                item.ChangeNowStreamerEmojiToNoticeChannel = false;
         //                db.GuildConfig.Update(item);
-        //                await db.SaveChangesAsync();
+        //                db.SaveChanges();
         //            }
         //        }
         //    }

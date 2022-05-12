@@ -75,7 +75,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                                         {
                                             user.UserScreenName = userData.data.username;
                                             user.UserName = userData.data.name;
-                                            await db.SaveChangesAsync();
+                                            db.SaveChanges();
                                         }
 
                                         string masterUrl = "";
@@ -112,9 +112,9 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                                     }
                                     catch (Exception ex) { Log.Error($"Spaces-Data {item.id} {ex.Message}\n{ex.StackTrace}"); }
                                 }
-                                await db.SaveChangesAsync();
+                                db.SaveChanges();
                             }
-                            catch (Exception ex) { Log.Error($"Prepare-Spaces {ex.Message}\n{ex.StackTrace}"); }
+                            catch (Exception ex) { if (!ex.Message.Contains("503")) Log.Error($"Prepare-Spaces {ex.Message}\n{ex.StackTrace}"); }
                         }
                     }
                 }
@@ -184,7 +184,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                     {
                         Log.Error($"Notice Space {item.GuildId} / {item.DiscordChannelId}\n{ex.Message}");
                         if (ex.Message.Contains("50013") || ex.Message.Contains("50001")) db.NoticeTwitterSpaceChannel.Remove(db.NoticeTwitterSpaceChannel.First((x) => x.DiscordChannelId == item.DiscordChannelId));
-                        await db.SaveChangesAsync();
+                        db.SaveChanges();
                     }
                 }
 #endif

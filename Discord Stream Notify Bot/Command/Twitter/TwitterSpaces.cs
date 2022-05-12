@@ -59,7 +59,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
                     {
                         noticeTwitterSpaceChannel.DiscordChannelId = Context.Channel.Id;
                         db.NoticeTwitterSpaceChannel.Update(noticeTwitterSpaceChannel);
-                        await db.SaveChangesAsync();
+                        db.SaveChanges();
                         await Context.Channel.SendConfirmAsync($"已將 {user.data.name} 的語音空間通知頻道變更至: {Context.Channel}").ConfigureAwait(false);
                     }
                     return;
@@ -70,7 +70,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
                 db.NoticeTwitterSpaceChannel.Add(new NoticeTwitterSpaceChannel() { GuildId = Context.Guild.Id, DiscordChannelId = Context.Channel.Id, NoticeTwitterSpaceUserId = user.data.id, NoticeTwitterSpaceUserScreenName = user.data.username.ToLower() });
                 await Context.Channel.SendConfirmAsync($"已將 {user.data.name} 加入到語音空間通知頻道清單內{addString}").ConfigureAwait(false);
 
-                await db.SaveChangesAsync().ConfigureAwait(false);
+                db.SaveChanges();
             }
         }
 
@@ -109,7 +109,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
                     db.NoticeTwitterSpaceChannel.Remove(db.NoticeTwitterSpaceChannel.First((x) => x.GuildId == Context.Guild.Id && x.NoticeTwitterSpaceUserScreenName == userScreenName));
                     await Context.Channel.SendConfirmAsync($"已移除 {userScreenName}").ConfigureAwait(false);
 
-                    await db.SaveChangesAsync().ConfigureAwait(false);
+                    db.SaveChanges();
                 }
             }
         }
@@ -177,7 +177,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
                     noticeTwitterSpace.StratTwitterSpaceMessage = message;
 
                     db.NoticeTwitterSpaceChannel.Update(noticeTwitterSpace);
-                    await db.SaveChangesAsync();
+                    db.SaveChanges();
 
                     if (message != "") await Context.Channel.SendConfirmAsync($"已設定 {user.data.name} 的推特語音空間通知訊息為:\n{message}").ConfigureAwait(false);
                     else await Context.Channel.SendConfirmAsync($"已取消 {user.data.name} 的推特語音空間通知訊息").ConfigureAwait(false);
@@ -301,7 +301,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
                 }
 
                 db.TwitterSpaecSpider.Add(new TwitterSpaecSpider() { GuildId = Context.Message.Author.Id == Program.ApplicatonOwner.Id ? 0 : Context.Guild.Id, UserId = user.data.id, UserName = user.data.name, UserScreenName = user.data.username.ToLower() });
-                await db.SaveChangesAsync();
+                db.SaveChanges();
 
                 await Context.Channel.SendConfirmAsync($"已將 {userScreenName} 加入到推特語音爬蟲清單內\n" +
                     $"請到通知頻道內使用 `s!antsc {userScreenName}` 來開啟通知").ConfigureAwait(false);
@@ -350,7 +350,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
                 }
 
                 db.TwitterSpaecSpider.Remove(db.TwitterSpaecSpider.First((x) => x.UserScreenName == userScreenName));
-                await db.SaveChangesAsync().ConfigureAwait(false);
+                db.SaveChanges();
 
                 await Context.Channel.SendConfirmAsync($"已移除 {userScreenName}").ConfigureAwait(false);
 
@@ -522,7 +522,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
                     db.TwitterSpaecSpider.Add(twitterSpaecSpider);
                 }
 
-                if (await db.SaveChangesAsync() >= 1)
+                if (db.SaveChanges() >= 1)
                     await Context.Channel.SendConfirmAsync($"已設定 {user.data.name} 的推特語音紀錄為: " + (twitterSpaecSpider.IsRecord ? "開啟" : "關閉")).ConfigureAwait(false);
                 else
                     await Context.Channel.SendErrorAsync("未保存").ConfigureAwait(false);
@@ -552,7 +552,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
                     var twitterSpaec  = db.TwitterSpaecSpider.First((x) => x.UserScreenName == userScreenName);
                     twitterSpaec.IsWarningUser = !twitterSpaec.IsWarningUser;
                     db.TwitterSpaecSpider.Update(twitterSpaec);
-                    await db.SaveChangesAsync();
+                    db.SaveChanges();
 
                     await Context.Channel.SendConfirmAsync($"已設定 {twitterSpaec.UserName} 為 " + (twitterSpaec.IsWarningUser ? "警告" : "普通") + " 狀態").ConfigureAwait(false);
                 }

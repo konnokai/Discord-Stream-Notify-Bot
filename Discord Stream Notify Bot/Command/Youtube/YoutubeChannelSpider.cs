@@ -73,7 +73,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                 }
 
                 db.YoutubeChannelSpider.Add(new DataBase.Table.YoutubeChannelSpider() { GuildId = Context.Message.Author.Id == Program.ApplicatonOwner.Id ? 0 : Context.Guild.Id, ChannelId = channelId, ChannelTitle = channelTitle });
-                await db.SaveChangesAsync();
+                db.SaveChanges();
 
                 await Context.Channel.SendConfirmAsync($"已將 {channelTitle} 加入到爬蟲清單內\n" +
                     $"請到通知頻道內使用 `s!ansc https://www.youtube.com/channel/{channelId}` 來開啟通知").ConfigureAwait(false);
@@ -132,7 +132,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                 }
 
                 db.YoutubeChannelSpider.Remove(db.YoutubeChannelSpider.First((x) => x.ChannelId == channelId));
-                await db.SaveChangesAsync().ConfigureAwait(false);
+                db.SaveChanges();
             }
             await Context.Channel.SendConfirmAsync($"已移除 {channelId}").ConfigureAwait(false);
 
@@ -227,7 +227,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                     var channel = db.YoutubeChannelSpider.First((x) => x.ChannelId == channelId);
                     channel.IsWarningChannel = !channel.IsWarningChannel;
                     db.YoutubeChannelSpider.Update(channel);
-                    await db.SaveChangesAsync().ConfigureAwait(false);
+                    db.SaveChanges();
 
                     await Context.Channel.SendConfirmAsync($"已設定 {channel.ChannelTitle} 為 " + (channel.IsWarningChannel ? "警告" : "普通") + " 狀態").ConfigureAwait(false);
                 }

@@ -42,7 +42,7 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
                     if (!guildConfig.MemberCheck.Any((x) => x.UserId == Context.User.Id))
                     {
                         guildConfig.MemberCheck.Add(new DataBase.Table.YoutubeMemberCheck() { UserId = Context.User.Id });
-                        await db.SaveChangesAsync();
+                        db.SaveChanges();
                     }
                     await Context.Channel.SendConfirmAsync("已記錄至資料庫，請稍等至多5分鐘讓Bot驗證\n請確認已開啟本伺服器的 `允許來自伺服器成員的私人訊息` ，以避免收不到通知");
                 }
@@ -95,7 +95,7 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
                         guildConfig.MemberCheckGrantRoleId = role.Id;
                         guildConfig.MemberCheckVideoId = "-";
                         db.GuildConfig.Update(guildConfig);
-                        await db.SaveChangesAsync();
+                        db.SaveChanges();
                     }
 
                     await Context.Channel.SendConfirmAsync($"已設定此伺服器使用 `{channelId}` 作為會限驗證頻道\n" +
@@ -115,7 +115,7 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
 
                         guildConfig.LogMemberStatusChannelId = 0;
                         db.GuildConfig.Update(guildConfig);
-                        await db.SaveChangesAsync();
+                        db.SaveChanges();
                     }
                 }
                 catch (System.Exception ex)
@@ -159,7 +159,7 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
 
                 guildConfig.LogMemberStatusChannelId = cId;
                     db.GuildConfig.Update(guildConfig);
-                    await db.SaveChangesAsync();
+                    db.SaveChanges();
 
                     await Context.Channel.SendConfirmAsync($"已設定 `{channel}` 為會限驗證狀態通知頻道");                
             }

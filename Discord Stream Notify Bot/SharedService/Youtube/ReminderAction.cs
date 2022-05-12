@@ -247,7 +247,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         StartReminder(streamVideo, streamVideo.ChannelType);
                     }
 
-                    await db.SaveChangesAsync();
+                    db.SaveChanges();
                 }
             }
             catch (Exception ex) { Log.Error($"ReminderAction: {streamVideo.VideoId}\n{ex}"); }
@@ -367,7 +367,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     {
                         Log.Error($"Notice Youtube {item.GuildId} / {item.DiscordChannelId}\n{ex.Message}");
                         if (ex.Message.Contains("50013") || ex.Message.Contains("50001")) db.NoticeYoutubeStreamChannel.Remove(db.NoticeYoutubeStreamChannel.First((x) => x.DiscordChannelId == item.DiscordChannelId));
-                        await db.SaveChangesAsync();
+                        db.SaveChanges();
                     }
                 }
             }
