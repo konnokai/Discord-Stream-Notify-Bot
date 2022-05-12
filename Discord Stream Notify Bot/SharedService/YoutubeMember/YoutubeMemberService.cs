@@ -482,6 +482,28 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                 throw;
             }
         }
+        
+        public async Task RevokeUserGoogleCert(string userId = "")
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(userId))
+                    throw new NullReferenceException("userId");
+
+                var token = await flow.LoadTokenAsync(userId, CancellationToken.None);
+                if (token == null)
+                    throw new NullReferenceException("token");
+
+                string revokeToken = token.RefreshToken ?? token.AccessToken; 
+                await flow.RevokeTokenAsync(userId, revokeToken, CancellationToken.None);
+            }
+            catch (Exception ex)   
+            {
+                await flow.DeleteTokenAsync(userId, CancellationToken.None);
+                Log.Error($"RevokeToken: {ex}");
+                throw;
+            }
+        }
     }
 
     static class Ext
