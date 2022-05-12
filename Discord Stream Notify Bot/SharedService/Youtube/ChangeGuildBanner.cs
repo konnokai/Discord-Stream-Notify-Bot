@@ -49,7 +49,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                 }
                                 item.LastChangeStreamId = videoId;
                                 db.BannerChange.Update(item);
-                                await db.SaveChangesAsync();
+                                db.SaveChanges();
 
                                 Log.Info("ChangeGuildBanner" + (memStream == null ? "(Without Change)" : "") + $": {item.GuildId} / {videoId}");
                             }

@@ -59,7 +59,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                     {
                         noticeTwitterSpaceChannel.DiscordChannelId = textChannel.Id;
                         db.NoticeTwitterSpaceChannel.Update(noticeTwitterSpaceChannel);
-                        await db.SaveChangesAsync();
+                        db.SaveChanges();
                         await Context.Interaction.SendConfirmAsync($"已將 {user.data.name} 的語音空間通知頻道變更至: {textChannel}", true).ConfigureAwait(false);
                     }
                     return;
@@ -70,7 +70,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                 db.NoticeTwitterSpaceChannel.Add(new NoticeTwitterSpaceChannel() { GuildId = Context.Guild.Id, DiscordChannelId = textChannel.Id, NoticeTwitterSpaceUserId = user.data.id, NoticeTwitterSpaceUserScreenName = user.data.username.ToLower() });
                 await Context.Interaction.SendConfirmAsync($"已將 {user.data.name} 加入到語音空間通知頻道清單內{addString}", true).ConfigureAwait(false);
 
-                await db.SaveChangesAsync().ConfigureAwait(false);
+                db.SaveChanges();
             }
         }
 
@@ -108,7 +108,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                     db.NoticeTwitterSpaceChannel.Remove(db.NoticeTwitterSpaceChannel.First((x) => x.GuildId == Context.Guild.Id && x.NoticeTwitterSpaceUserScreenName == userScreenName));
                     await Context.Interaction.SendConfirmAsync($"已移除 {userScreenName}").ConfigureAwait(false);
 
-                    await db.SaveChangesAsync().ConfigureAwait(false);
+                    db.SaveChanges();
                 }
             }
         }
@@ -172,7 +172,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                     noticeTwitterSpace.StratTwitterSpaceMessage = message;
 
                     db.NoticeTwitterSpaceChannel.Update(noticeTwitterSpace);
-                    await db.SaveChangesAsync();
+                    db.SaveChanges();
 
                     if (message != "") await Context.Interaction.SendConfirmAsync($"已設定 {user.data.name} 的推特語音空間通知訊息為:\n{message}").ConfigureAwait(false);
                     else await Context.Interaction.SendConfirmAsync($"已取消 {user.data.name} 的推特語音空間通知訊息").ConfigureAwait(false);
@@ -297,7 +297,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                 }
 
                 db.TwitterSpaecSpider.Add(new TwitterSpaecSpider() { GuildId = Context.User.Id == Program.ApplicatonOwner.Id ? 0 : Context.Guild.Id, UserId = user.data.id, UserName = user.data.name, UserScreenName = user.data.username.ToLower() });
-                await db.SaveChangesAsync();
+                db.SaveChanges();
 
                 await Context.Interaction.SendConfirmAsync($"已將 {userScreenName} 加入到推特語音爬蟲清單內\n" +
                     $"請到通知頻道內使用 `/twitter-space add-space-notice {userScreenName}` 來開啟通知", true).ConfigureAwait(false);
@@ -347,7 +347,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                 }
 
                 db.TwitterSpaecSpider.Remove(db.TwitterSpaecSpider.First((x) => x.UserScreenName == userScreenName));
-                await db.SaveChangesAsync().ConfigureAwait(false);
+                db.SaveChanges();
 
                 await Context.Interaction.SendConfirmAsync($"已移除 {userScreenName}").ConfigureAwait(false);
 

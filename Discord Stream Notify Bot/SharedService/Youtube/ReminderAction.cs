@@ -247,7 +247,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         StartReminder(streamVideo, streamVideo.ChannelType);
                     }
 
-                    await db.SaveChangesAsync();
+                    db.SaveChanges();
                 }
             }
             catch (Exception ex) { Log.Error($"ReminderAction: {streamVideo.VideoId}\n{ex}"); }
@@ -261,28 +261,35 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                 if (streamVideo == null)
                 {
-                    try
+                    if (addNewStreamVideo.ContainsKey(videolId))
                     {
-                        var item = await GetVideoAsync(videolId).ConfigureAwait(false);
-
-                        var startTime = item.LiveStreamingDetails.ActualStartTime.Value;
-                        streamVideo = new StreamVideo()
-                        {
-                            ChannelId = item.Snippet.ChannelId,
-                            ChannelTitle = item.Snippet.ChannelTitle,
-                            VideoId = item.Id,
-                            VideoTitle = item.Snippet.Title,
-                            ScheduledStartTime = startTime,
-                            ChannelType = StreamVideo.YTChannelType.Other
-                        };
-
-                        if (!addNewStreamVideo.TryAdd(streamVideo, streamVideo.ChannelType))
-                            return;
+                        streamVideo = addNewStreamVideo[videolId];
                     }
-                    catch (Exception ex)
+                    else
                     {
-                        Log.Error(ex.Message + "\n" + ex.StackTrace);
-                        return;
+                        try
+                        {
+                            var item = await GetVideoAsync(videolId).ConfigureAwait(false);
+
+                            var startTime = item.LiveStreamingDetails.ActualStartTime.Value;
+                            streamVideo = new StreamVideo()
+                            {
+                                ChannelId = item.Snippet.ChannelId,
+                                ChannelTitle = item.Snippet.ChannelTitle,
+                                VideoId = item.Id,
+                                VideoTitle = item.Snippet.Title,
+                                ScheduledStartTime = startTime,
+                                ChannelType = StreamVideo.YTChannelType.Other
+                            };
+
+                            if (!addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo))
+                                return;
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Error(ex.Message + "\n" + ex.StackTrace);
+                            return;
+                        }
                     }
                 }
 
@@ -367,7 +374,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     {
                         Log.Error($"Notice Youtube {item.GuildId} / {item.DiscordChannelId}\n{ex.Message}");
                         if (ex.Message.Contains("50013") || ex.Message.Contains("50001")) db.NoticeYoutubeStreamChannel.Remove(db.NoticeYoutubeStreamChannel.First((x) => x.DiscordChannelId == item.DiscordChannelId));
-                        await db.SaveChangesAsync();
+                        db.SaveChanges();
                     }
                 }
             }

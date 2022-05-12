@@ -76,7 +76,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                 }
 
                 db.YoutubeChannelSpider.Add(new DataBase.Table.YoutubeChannelSpider() { GuildId = Context.Interaction.User.Id == Program.ApplicatonOwner.Id ? 0 : Context.Guild.Id, ChannelId = channelId, ChannelTitle = channelTitle });
-                await db.SaveChangesAsync();
+                db.SaveChanges();
 
                 await Context.Interaction.SendConfirmAsync($"已將 {channelTitle} 加入到爬蟲清單內\n" +
                     $"請到通知頻道內使用 `/youtube add-youtube-notice https://www.youtube.com/channel/{channelId}` 來開啟通知", true).ConfigureAwait(false);
@@ -136,7 +136,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                 }
 
                 db.YoutubeChannelSpider.Remove(db.YoutubeChannelSpider.First((x) => x.ChannelId == channelId));
-                await db.SaveChangesAsync().ConfigureAwait(false);
+                db.SaveChanges();
             }
             await Context.Interaction.SendConfirmAsync($"已移除 {channelId}", true).ConfigureAwait(false);
 

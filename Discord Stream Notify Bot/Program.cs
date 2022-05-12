@@ -205,18 +205,19 @@ namespace Discord_Stream_Notify_Bot
                 }
             };
 
-            _client.JoinedGuild += async (guild) =>
+            _client.JoinedGuild += (guild) =>
             {
                 using (var db = DataBase.DBContext.GetDbContext())
                 {
                     if (!db.GuildConfig.Any(x => x.GuildId == guild.Id))
                     {
                         db.GuildConfig.Add(new GuildConfig() { GuildId = guild.Id });
-                        await db.SaveChangesAsync();
+                        db.SaveChanges();
                     }
                 }
 
                 iService.GetService<HttpClients.DiscordWebhookClient>().SendMessageToDiscord($"加入 {guild.Name}({guild.Id})\n擁有者: {guild.Owner.Username}({guild.Owner.Mention})");
+                return Task.CompletedTask;
             };
             #endregion
 
@@ -241,7 +242,7 @@ namespace Discord_Stream_Notify_Bot
             }
 
             await _client.StopAsync();
-            await SharedService.Youtube.YoutubeStreamService.SaveDateBase();
+            SharedService.Youtube.YoutubeStreamService.SaveDateBase();
         }
 
         private static void TimerHandler(object state)

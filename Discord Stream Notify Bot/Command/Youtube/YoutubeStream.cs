@@ -150,7 +150,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                 if (await PromptUserConfirmAsync(new EmbedBuilder().WithTitle("新增頻道至直播記錄清單?").WithDescription(channelTitle)))
                 {
                     db.RecordYoutubeChannel.Add(new DataBase.Table.RecordYoutubeChannel() { YoutubeChannelId = channelId });
-                    await db.SaveChangesAsync();
+                    db.SaveChanges();
                     await Context.Channel.SendConfirmAsync($"已新增 {channelTitle} 至直播記錄清單").ConfigureAwait(false);
                 }
             }
@@ -192,7 +192,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                 if (await PromptUserConfirmAsync(new EmbedBuilder().WithTitle("從直播記錄清單移除頻道?").WithDescription(channelTitle)))
                 {
                     db.RecordYoutubeChannel.Remove(db.RecordYoutubeChannel.First((x) => x.YoutubeChannelId == channelId));
-                    await db.SaveChangesAsync();
+                    db.SaveChanges();
                     await Context.Channel.SendConfirmAsync($"已從直播記錄清單中移除 {channelTitle}").ConfigureAwait(false);
                 }
             }
@@ -455,7 +455,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
         //            else return;
         //        }
 
-        //        await db.SaveChangesAsync();
+        //        db.SaveChanges();
         //    }
         //}
 
@@ -493,7 +493,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
         //        {
         //            guildConfig.ChangeNowStreamerEmojiToNoticeChannel = !guildConfig.ChangeNowStreamerEmojiToNoticeChannel;
         //            db.GuildConfig.Update(guildConfig);
-        //            await db.SaveChangesAsync();
+        //            db.SaveChanges();
         //            await Context.Channel.SendConfirmAsync("設定現在直播頻道的代表表情功能已" + (guildConfig.ChangeNowStreamerEmojiToNoticeChannel ? "開啟" : "關閉")).ConfigureAwait(false);
         //        }
         //        else
@@ -524,7 +524,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                     {
                         var guild = db.BannerChange.First((x) => x.GuildId == Context.Guild.Id);
                         db.BannerChange.Remove(guild);
-                        await db.SaveChangesAsync();
+                        db.SaveChanges();
                         await Context.Channel.SendConfirmAsync("已移除橫幅設定");
                     }
                     else
@@ -578,7 +578,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                         }
 
                         await Context.Channel.SendConfirmAsync($"已設定伺服器橫幅使用 `{channelTitle}` 的直播縮圖").ConfigureAwait(false);
-                        await db.SaveChangesAsync();
+                        db.SaveChanges();
                     }
                     catch (FormatException fex)
                     {
@@ -636,7 +636,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                     {
                         noticeYoutubeStreamChannel.DiscordChannelId = Context.Channel.Id;
                         db.NoticeYoutubeStreamChannel.Update(noticeYoutubeStreamChannel);
-                        await db.SaveChangesAsync();
+                        db.SaveChanges();
                         await Context.Channel.SendConfirmAsync($"已將 {channelId} 的通知頻道變更至: {Context.Channel}").ConfigureAwait(false);
                     }
                     return;
@@ -703,7 +703,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                     }
                 }
 
-                await db.SaveChangesAsync().ConfigureAwait(false);
+                db.SaveChanges();
             }
         }
 
@@ -750,7 +750,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                     {
                         db.NoticeYoutubeStreamChannel.RemoveRange(Queryable.Where(db.NoticeYoutubeStreamChannel, (x) => x.GuildId == Context.Guild.Id));
                         await Context.Channel.SendConfirmAsync("已全部清除").ConfigureAwait(false);
-                        await db.SaveChangesAsync();
+                        db.SaveChanges();
                         return;
                     }
                 }
@@ -780,7 +780,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                         await Context.Channel.SendConfirmAsync($"已移除 {channelTitle}").ConfigureAwait(false);
                     }
 
-                    await db.SaveChangesAsync().ConfigureAwait(false);
+                    db.SaveChanges();
                 }
             }
         }
@@ -906,7 +906,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                     }
 
                     db.NoticeYoutubeStreamChannel.Update(noticeStreamChannel);
-                    await db.SaveChangesAsync();
+                    db.SaveChanges();
 
                     if (message == "-") await Context.Channel.SendConfirmAsync($"已關閉 {channelId} 的 {noticeTypeString} 通知").ConfigureAwait(false);
                     else if (message != "") await Context.Channel.SendConfirmAsync($"已設定 {channelId} 的 {noticeTypeString} 通知訊息為:\n{message}").ConfigureAwait(false);
@@ -1055,7 +1055,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                     db.YoutubeChannelOwnedType.Update(channel);
                 }
 
-                await db.SaveChangesAsync();
+                db.SaveChanges();
                 await Context.Channel.SendConfirmAsync($"`{title}` 的所屬已改為 `{channelType.GetProductionName()}`");
             }
         }
