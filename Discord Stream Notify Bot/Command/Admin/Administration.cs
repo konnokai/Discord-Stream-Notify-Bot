@@ -196,7 +196,7 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
             if (await PromptUserConfirmAsync(new EmbedBuilder().WithOkColor().WithDescription(message).WithImageUrl(imageUrl)))
             {
                 EmbedBuilder embedBuilder = new EmbedBuilder().WithOkColor()
-                    .WithUrl("https://junrasp.com/")
+                    .WithUrl("https://konnokai.me/")
                     .WithTitle("來自開發者消息")
                     .WithAuthor(Context.Message.Author)
                     .WithDescription(message)
@@ -216,15 +216,16 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
                                 SocketTextChannel channel;
                                 if (list.Any((x) => x.Key == item.Id))
                                 {
-                                    var cid = list.First((x) => x.Key == item.Id).Value;
-                                    channel = item.GetTextChannel(cid);
+                                    var noticeItem = list.FirstOrDefault((x) => x.Key == item.Id);
+                                    channel = item.GetTextChannel(noticeItem.Value);
                                 }
                                 else
                                 {
-                                    channel = item.TextChannels.First((x) => item.GetUser(_client.CurrentUser.Id).GetPermissions(x).SendMessages);
+                                    channel = item.TextChannels.FirstOrDefault((x) => item.GetUser(_client.CurrentUser.Id).GetPermissions(x).SendMessages);
                                 }
 
-                                await channel.SendMessageAsync(embed: embedBuilder.Build());
+                                if (channel != null)
+                                    await channel.SendMessageAsync(embed: embedBuilder.Build());
                             }
                             catch (Exception ex)
                             {
