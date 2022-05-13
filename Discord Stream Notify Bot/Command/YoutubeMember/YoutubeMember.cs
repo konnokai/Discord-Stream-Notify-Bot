@@ -59,7 +59,7 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
         [RequireContext(ContextType.Guild)]
         [RequireUserPermission(GuildPermission.Administrator)]
         [CommandExample("https://www.youtube.com/channel/UCR6qhsLpn62WVxCBK1dkLow 837652679303757824")]
-        public async Task SetNoticeMemberStatusChannel([Summary("頻道連結")]string url,[Summary("用戶組Id")] ulong roleId)
+        public async Task SetYoutubeMemberChannel([Summary("頻道連結")]string url,[Summary("用戶組Id")] ulong roleId)
         {
             var currentBotUser = await Context.Guild.GetCurrentUserAsync() as SocketGuildUser;
             if (!currentBotUser.GuildPermissions.ManageRoles)

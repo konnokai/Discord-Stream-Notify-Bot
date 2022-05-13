@@ -497,14 +497,44 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
 
         public static async Task SendConfirmMessage(this IDMChannel dc, string text)
         {
-            if (dc != null)
+            if (dc == null) return;
+
+            try
+            {
                 await dc.SendMessageAsync(embed: new EmbedBuilder().WithOkColor().WithDescription(text).Build());
+            }
+            catch (Discord.Net.HttpException ex)
+            {
+                if (ex.DiscordCode == DiscordErrorCode.CannotSendMessageToUser)
+                    Log.Warn($"無法傳送訊息至: {dc.Name}");
+                else
+                    Log.Error(ex.ToString());
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.ToString());
+            }
         }
 
         public static async Task SendErrorMessage(this IDMChannel dc, string text)
         {
-            if (dc != null)
+            if (dc == null) return;
+
+            try
+            {
                 await dc.SendMessageAsync(embed: new EmbedBuilder().WithErrorColor().WithDescription(text).Build());
+            }
+            catch (Discord.Net.HttpException ex)
+            {
+                if (ex.DiscordCode == DiscordErrorCode.CannotSendMessageToUser)
+                    Log.Warn($"無法傳送訊息至: {dc.Name}");
+                else
+                    Log.Error(ex.ToString());
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.ToString());
+            }
         }
     }
 }
