@@ -471,13 +471,14 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             if (!match.Success)
                 throw new UriFormatException("錯誤，請確認是否輸入YouTube頻道網址");
 
-            if (match.Groups["Type"].Value == "channel")
+            string type = match.Groups["Type"].Value.ToLower();
+            if (type == "channel")
             {
                 channelId = match.Groups["ChannelName"].Value;
                 if (!channelId.StartsWith("UC")) throw new UriFormatException("錯誤，頻道Id格式不正確");
                 if (channelId.Length != 24) throw new UriFormatException("錯誤，頻道Id字元數不正確");
             }
-            else if (match.Groups["Type"].Value == "c")
+            else if (type == "c" || type == "user")
             {
                 string channelName = System.Net.WebUtility.UrlDecode(match.Groups["ChannelName"].Value);
 
@@ -491,7 +492,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     {
                         //https://stackoverflow.com/a/36559834
                         HtmlWeb htmlWeb = new HtmlWeb();
-                        var htmlDocument = await htmlWeb.LoadFromWebAsync($"https://www.youtube.com/c/{channelName}");
+                        var htmlDocument = await htmlWeb.LoadFromWebAsync($"https://www.youtube.com/{type}/{channelName}");
                         var node = htmlDocument.DocumentNode.Descendants().FirstOrDefault((x) => x.Name == "meta" && x.Attributes.Any((x2) => x2.Name == "itemprop" && x2.Value == "channelId"));
                         if (node == null)
                             throw new UriFormatException("錯誤，請確認是否輸入正確的YouTube頻道網址\n" +
