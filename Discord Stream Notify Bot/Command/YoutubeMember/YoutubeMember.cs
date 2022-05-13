@@ -126,6 +126,44 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
             }
         }
 
+        [Command("RemoveYoutubeMemberChannel")]
+        [Summary("移除會限驗證頻道")]
+        [Alias("rymc")]
+        [RequireContext(ContextType.Guild)]
+        [RequireUserPermission(GuildPermission.Administrator)]
+        [CommandExample("https://www.youtube.com/channel/UCR6qhsLpn62WVxCBK1dkLow")]
+        public async Task RemoveYoutubeMemberChannel([Summary("頻道連結")] string url)
+        {
+            using (var db = DataBase.DBContext.GetDbContext())
+            {
+                try
+                {
+                    var channelId = await _ytservice.GetChannelIdAsync(url);
+
+                    var guildConfig = db.GuildConfig.FirstOrDefault((x) => x.GuildId == Context.Guild.Id);
+                    if (guildConfig == null)
+                    {
+                        db.GuildConfig.Add(new DataBase.Table.GuildConfig() { GuildId = Context.Guild.Id });
+                        await Context.Channel.SendErrorAsync("未設定過會限驗證頻道");
+                    }                    
+                    else if (string.IsNullOrEmpty(guildConfig.MemberCheckChannelId))
+                    {
+                        await Context.Channel.SendErrorAsync("未設定過會限驗證頻道");
+                    }
+                    else
+                    {
+                        guildConfig.MemberCheckChannelId = "";
+                        db.GuildConfig.Update(guildConfig);
+                    }
+                    db.SaveChanges();
+                }
+                catch (System.Exception ex)
+                {
+                    await Context.Channel.SendErrorAsync(ex.Message);
+                    Log.Error(ex.ToString());
+                }
+            }
+        }
 
         [Command("SetNoticeMemberStatusChannel")]
         [Summary("設定會限驗證狀態紀錄頻道")]
