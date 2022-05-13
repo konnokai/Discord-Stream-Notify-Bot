@@ -311,7 +311,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             {
                 try
                 {
-                    noticeGuildList.AddRange(db.NoticeYoutubeStreamChannel.ToList().Where((x) => x.NoticeStreamChannelId == streamVideo.ChannelId));
+                    noticeGuildList.AddRange(db.NoticeYoutubeStreamChannel.Where((x) => x.NoticeStreamChannelId == streamVideo.ChannelId));
                 }
                 catch (Exception ex)
                 {
@@ -325,7 +325,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         !db.YoutubeChannelSpider.Any((x) => x.ChannelId == streamVideo.ChannelId) || //或該頻道非在爬蟲清單內
                         !db.YoutubeChannelSpider.FirstOrDefault((x) => x.ChannelId == streamVideo.ChannelId).IsWarningChannel) //或該爬蟲非警告類的頻道
                     {
-                        noticeGuildList.AddRange(db.NoticeYoutubeStreamChannel.ToList().Where((x) => x.NoticeStreamChannelId == "all" || x.NoticeStreamChannelId == type));
+                        noticeGuildList.AddRange(db.NoticeYoutubeStreamChannel.Where((x) => x.NoticeStreamChannelId == "all" || x.NoticeStreamChannelId == type));
                     }
                 }
                 catch (Exception ex)
@@ -377,7 +377,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     catch (Exception ex)
                     {
                         Log.Error($"Notice Youtube {item.GuildId} / {item.DiscordChannelId}\n{ex.Message}");
-                        if (ex.Message.Contains("50013") || ex.Message.Contains("50001")) db.NoticeYoutubeStreamChannel.Remove(db.NoticeYoutubeStreamChannel.First((x) => x.DiscordChannelId == item.DiscordChannelId));
+                        if (ex.Message.Contains("50013") || ex.Message.Contains("50001")) db.NoticeYoutubeStreamChannel.Remove(item);
                         db.SaveChanges();
                     }
                 }

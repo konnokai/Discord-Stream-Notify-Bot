@@ -23,7 +23,7 @@ namespace Discord_Stream_Notify_Bot.DataBase
         protected override void OnConfiguring(DbContextOptionsBuilder options)
             => options.UseSqlite($"Data Source={Program.GetDataFilePath("DataBase.db")}")
 #if DEBUG
-            .LogTo(System.Console.WriteLine)
+            .LogTo((act) => System.IO.File.AppendAllText("DbTrackerLog.txt", act), Microsoft.Extensions.Logging.LogLevel.Information)
 #endif
             .EnableSensitiveDataLogging();
 

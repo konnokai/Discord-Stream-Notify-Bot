@@ -14,11 +14,13 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
     {
         private readonly YoutubeMemberService _service;
         private readonly YoutubeStreamService _ytservice;
+        private readonly DownloadTracker _tracker;
 
-        public YoutubeMember(YoutubeMemberService youtubeMemberService, YoutubeStreamService youtubeStreamService)
+        public YoutubeMember(YoutubeMemberService youtubeMemberService, YoutubeStreamService youtubeStreamService, DownloadTracker tracker)
         {
             _service = youtubeMemberService;
             _ytservice = youtubeStreamService;
+            _tracker = tracker;
         }
 
         [Command("YoutubeMemberLoginCheck")]
@@ -59,7 +61,7 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
         [RequireContext(ContextType.Guild)]
         [RequireUserPermission(GuildPermission.Administrator)]
         [CommandExample("https://www.youtube.com/channel/UCR6qhsLpn62WVxCBK1dkLow 837652679303757824")]
-        public async Task SetYoutubeMemberChannel([Summary("頻道連結")]string url,[Summary("用戶組Id")] ulong roleId)
+        public async Task SetYoutubeMemberChannel([Summary("頻道連結")] string url, [Summary("用戶組Id")] ulong roleId)
         {
             var currentBotUser = await Context.Guild.GetCurrentUserAsync() as SocketGuildUser;
             if (!currentBotUser.GuildPermissions.ManageRoles)
@@ -145,7 +147,7 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
                     {
                         db.GuildConfig.Add(new DataBase.Table.GuildConfig() { GuildId = Context.Guild.Id });
                         await Context.Channel.SendErrorAsync("未設定過會限驗證頻道");
-                    }                    
+                    }
                     else if (string.IsNullOrEmpty(guildConfig.MemberCheckChannelId))
                     {
                         await Context.Channel.SendErrorAsync("未設定過會限驗證頻道");
@@ -170,7 +172,7 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
         [Alias("snmsc")]
         [RequireContext(ContextType.Guild)]
         [RequireUserPermission(GuildPermission.ManageMessages)]
-        public async Task SetNoticeMemberStatusChannel([Summary("Discord頻道Id")]ulong cId)
+        public async Task SetNoticeMemberStatusChannel([Summary("Discord頻道Id")] ulong cId)
         {
             using (var db = DataBase.DBContext.GetDbContext())
             {
@@ -196,20 +198,44 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
                 }
 
                 guildConfig.LogMemberStatusChannelId = cId;
-                    db.GuildConfig.Update(guildConfig);
-                    db.SaveChanges();
+                db.GuildConfig.Update(guildConfig);
+                db.SaveChanges();
 
-                    await Context.Channel.SendConfirmAsync($"已設定 `{channel}` 為會限驗證狀態通知頻道");                
+                await Context.Channel.SendConfirmAsync($"已設定 `{channel}` 為會限驗證狀態通知頻道");
             }
         }
 
-        [Command("YoutubeMemberTest")]
-        [Summary("TEST")]
-        [Alias("YMT")]
+        //https://gitlab.com/Kwoth/nadekobot/-/blob/v4/src/NadekoBot/Modules/Utility/Utility.cs#L113
+        [Command("Inrole")]
         [RequireOwner]
-        public async Task YoutubeMemberTest()
+        public async Task InRoleTest(IRole role = null)
         {
-            await _service.CheckMemberShip(false);
+            await Context.Channel.TriggerTypingAsync();
+            await _tracker.EnsureUsersDownloadedAsync(Context.Guild);
+
+            var users = await Context.Guild.GetUsersAsync(
+                CacheMode.CacheOnly
+            );
+
+            var roleUsers = users.Where(u => role is null ? u.RoleIds.Count == 1 : u.RoleIds.Contains(role.Id))
+                            .Select(u => $"`{u.Id,18}` {u}")
+                            .ToArray();
+
+            await Context.SendPaginatedConfirmAsync(0,
+                cur =>
+                {
+                    var pageUsers = roleUsers.Skip(cur * 20).Take(20).ToList();
+
+                    if (pageUsers.Count == 0)
+                        return new EmbedBuilder().WithErrorColor().WithDescription("No user in role");
+
+                    return new EmbedBuilder()
+                              .WithOkColor()
+                              .WithTitle($"{role.Name}: {roleUsers.Length}")
+                              .WithDescription(string.Join("\n", pageUsers));
+                },
+                roleUsers.Length,
+                20);
         }
     }
 }
