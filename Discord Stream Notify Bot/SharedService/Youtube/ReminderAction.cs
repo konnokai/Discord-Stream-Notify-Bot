@@ -128,23 +128,27 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         {
                             if (CanRecord(db, streamVideo))
                             {
-                                //Todo: 自定義化
-                                if (noticeRecordChannel == null) noticeRecordChannel = _client.GetGuild(738734668882640938).GetTextChannel(805134765191462942);
+                                try
+                                {
+                                    //Todo: 自定義化
+                                    if (noticeRecordChannel == null) noticeRecordChannel = _client.GetGuild(738734668882640938).GetTextChannel(805134765191462942);
+                                }
+                                catch { }
 
                                 if (Program.Redis != null)
                                 {
-                                    if (Utility.GetNowRecordStreamList().ContainsKey(streamVideo.VideoId))
-                                    {
-                                        Log.Warn($"{streamVideo.VideoId} 已經在錄影了");
-                                        return;
-                                    }
+                                    //if (Utility.GetNowRecordStreamList().ContainsKey(streamVideo.VideoId))
+                                    //{
+                                    //    Log.Warn($"{streamVideo.VideoId} 已經在錄影了");
+                                    //    return;
+                                    //}
 
                                     if (await Program.RedisSub.PublishAsync("youtube.record", streamVideo.VideoId) != 0)
                                     {
                                         Log.Info($"已發送錄影請求: {streamVideo.VideoId}");
                                         isRecord = true;
 
-                                        await noticeRecordChannel.SendMessageAsync(embeds: new Embed[] { new EmbedBuilder().WithOkColor()
+                                        if (noticeRecordChannel != null) await noticeRecordChannel.SendMessageAsync(embeds: new Embed[] { new EmbedBuilder().WithOkColor()
                                                 .WithDescription($"{Format.Url(streamVideo.VideoTitle, $"https://www.youtube.com/watch?v={streamVideo.VideoId}")}\n" +
                                                 $"{Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}")}\n\n" +
                                                 $"{$"youtube_{streamVideo.ChannelId}_{streamVideo.ScheduledStartTime:yyyyMMdd_HHmmss}_{streamVideo.VideoId}.ts"}").Build() });
