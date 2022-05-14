@@ -20,12 +20,11 @@ namespace Discord_Stream_Notify_Bot.Interaction
                 .WithButton("是", $"{guid}-yes", ButtonStyle.Success)
                 .WithButton("否", $"{guid}-no", ButtonStyle.Danger);
 
-            var msg = await FollowupAsync(embed: embed.Build(), components: component.Build(), ephemeral: true).ConfigureAwait(false);
+            await FollowupAsync(embed: embed.Build(), components: component.Build(), ephemeral: true).ConfigureAwait(false);
 
             try
             {
                 var input = await GetUserClickAsync(Context.User.Id, Context.Channel.Id, guid).ConfigureAwait(false);
-                if (!input) await msg.DeleteAsync().ConfigureAwait(false);
                 return input;
             }
             finally
@@ -65,7 +64,7 @@ namespace Discord_Stream_Notify_Bot.Interaction
                         userMsg.User.Id != userId ||
                         userMsg.Channel.Id != channelId)
                     {
-                        await component.SendErrorAsync("你無法使用本功能").ConfigureAwait(false);
+                        await component.SendErrorAsync("你無法使用本功能", true).ConfigureAwait(false);
                         return Task.CompletedTask;
                     }
 

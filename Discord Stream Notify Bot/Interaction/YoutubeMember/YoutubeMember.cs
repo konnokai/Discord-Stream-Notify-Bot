@@ -56,6 +56,8 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
         [SlashCommand("unlink", "解除Discord與Google綁定並移除授權")]
         public async Task UnlinkAsync()
         {
+            await DeferAsync(true);
+
             using (var db = DataBase.DBContext.GetDbContext())
             {
                 var guildConfigs = db.GuildConfig.Include((x) => x.MemberCheck).Where((x) => x.MemberCheck.Any((x2) => x2.UserId == Context.User.Id));
@@ -66,8 +68,6 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
                     if (!await PromptUserConfirmAsync("確定解除綁定?\n" +
                         "(注意: 解除綁定後也會一併解除會限用戶組，如要重新獲得需重新至網站綁定)"))
                         return;
-
-                    await Context.Interaction.DeferAsync(true);
 
                     if (guildConfigs.Any())
                     {
@@ -84,22 +84,22 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
                     try
                     {
                         await _service.RevokeUserGoogleCert(Context.User.Id.ToString());
-                        await Context.Interaction.SendConfirmAsync("已解除完成", true);
+                        await Context.Interaction.SendConfirmAsync("已解除完成", true, true);
                     }
                     catch (NullReferenceException nullEx)
                     {
                         await Context.Interaction.SendErrorAsync($"已解除綁定但無法取消Google端授權\n" +
-                           $"請到 {Format.Url("Google安全性", "https://myaccount.google.com/permissions")} 移除 `直播小幫手會限確認` 的應用程式存取權", true);
+                           $"請到 {Format.Url("Google安全性", "https://myaccount.google.com/permissions")} 移除 `直播小幫手會限確認` 的應用程式存取權", true, true);
                         Log.Warn($"RevokeTokenNull: {nullEx.Message} ({Context.User.Id})");
                     }
                     catch (Exception)
                     {
-                        await Context.Interaction.SendErrorAsync($"解除綁定失敗，請向 {Program.ApplicatonOwner} 確認問題", true);
+                        await Context.Interaction.SendErrorAsync($"解除綁定失敗，請向 {Program.ApplicatonOwner} 確認問題", true, true);
                     }
                 }
                 else
                 {
-                    await Context.Interaction.SendErrorAsync($"無資料可供解除綁定...", ephemeral: true);
+                    await Context.Interaction.SendErrorAsync($"無資料可供解除綁定...", true, true);
                 }
             }
         }

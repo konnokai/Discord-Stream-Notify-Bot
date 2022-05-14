@@ -40,6 +40,42 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                 DataStore = new RedisDataStore(RedisConnection.Instance.ConnectionMultiplexer)
             });
 
+            Program.RedisSub.Subscribe("member.revokeToken",async (channel, value) =>
+            {
+                try
+                {
+                    ulong userId = 0;
+                    if (!ulong.TryParse(value.ToString(), out userId))
+                        return;
+
+                    var user = _client.GetUser(userId);
+                    if (user == null) return;
+
+                    Log.Info($"接收到Revoke請求: {user.Username} ({userId})");
+
+                    using var db = DataBase.DBContext.GetDbContext();
+
+                    var guildConfigs = db.GuildConfig.Include((x) => x.MemberCheck).Where((x) => x.MemberCheck.Any((x2) => x2.UserId == user.Id));
+                    var youtubeMembers = db.YoutubeMemberCheck.Where((x) => x.UserId == user.Id);
+
+                    if (guildConfigs.Any())
+                    {
+                        foreach (var item in guildConfigs)
+                        {
+                            try { await _client.Rest.RemoveRoleAsync(item.GuildId, user.Id, item.MemberCheckGrantRoleId); }
+                            catch (Exception) { }
+                        }
+                    }
+
+                    db.YoutubeMemberCheck.RemoveRange(youtubeMembers);
+                    db.SaveChanges();
+                }
+                catch (Exception ex)
+                {
+                    Log.Error($"RevokeToken: {ex}");
+                }
+            });
+
             checkMemberShipOnlyVideoId = new Timer(CheckMemberShipOnlyVideoId, null, TimeSpan.FromSeconds(30), TimeSpan.FromMinutes(5));
             checkOldMemberStatus = new Timer(new TimerCallback(async (obj) => await CheckMemberShip(obj)), true, TimeSpan.FromHours(12), TimeSpan.FromHours(12));
             checkNewMemberStatus = new Timer(new TimerCallback(async (obj) => await CheckMemberShip(obj)), false, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(5));
@@ -474,6 +510,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
 
                 string revokeToken = token.RefreshToken ?? token.AccessToken; 
                 await flow.RevokeTokenAsync(userId, revokeToken, CancellationToken.None);
+
+                Log.Info($"{userId} 已解除Google憑證");
             }
             catch (Exception ex)   
             {
