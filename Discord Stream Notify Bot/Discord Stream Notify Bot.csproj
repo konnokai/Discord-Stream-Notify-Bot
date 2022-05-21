@@ -38,21 +38,6 @@
   </ItemGroup>  
 
   <ItemGroup>
-    <Reference Include="Discord.Net.Commands">
-      <HintPath>Lib\Discord.Net.Commands.dll</HintPath>
-    </Reference>
-    <Reference Include="Discord.Net.Core">
-      <HintPath>Lib\Discord.Net.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="Discord.Net.Rest">
-      <HintPath>Lib\Discord.Net.Rest.dll</HintPath>
-    </Reference>
-    <Reference Include="Discord.Net.WebSocket">
-      <HintPath>Lib\Discord.Net.WebSocket.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-
-  <ItemGroup>
     <None Update="Data\HelpDescription.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
