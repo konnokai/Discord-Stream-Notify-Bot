@@ -31,6 +31,10 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
 
         public TwitterSpacesService(DiscordSocketClient client, HttpClients.TwitterClient twitterClient, BotConfig botConfig)
         {
+#if DEBUG
+            return;
+#endif
+
             if (string.IsNullOrWhiteSpace(botConfig.TwitterApiKey) || string.IsNullOrWhiteSpace(botConfig.TwitterApiKeySecret))
             {
                 Log.Warn("TwitterApiKey或TwitterApiKeySecret遺失，無法運行推特類功能");
@@ -124,7 +128,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                 }
                 catch (Exception ex) { Log.Error($"Spaces-Timer {ex.Message}\n{ex.StackTrace}"); }
                 finally { isRuning = false; }
-            }, null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(15));
+            }, null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(20));
         }
 
         public UserModel GetTwitterUser(string userScreenName)

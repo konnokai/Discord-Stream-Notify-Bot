@@ -76,7 +76,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         bool isRecord = false;
                         streamVideo.VideoTitle = videoResult.Snippet.Title;
 
-                        if (db.HasStreamVideoByVideoId(streamVideo.VideoId)) //Todo: 修正直接開始直播時，無法直接執行ReminderTimerAction的問題
+                        if (db.HasStreamVideoByVideoId(streamVideo.VideoId))
                         {
                             switch (streamVideo.ChannelType)
                             {

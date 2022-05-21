@@ -2,11 +2,14 @@
 using Discord.Interactions;
 using Discord.WebSocket;
 using System;
+using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
-using System.Linq;
+
+#if DEBUG
 using System.Text.RegularExpressions;
 using System.Collections.Generic;
+#endif
 
 namespace Discord_Stream_Notify_Bot.Interaction
 {
@@ -52,7 +55,7 @@ namespace Discord_Stream_Notify_Bot.Interaction
                     }
                 }
             }
-            if (isError) return;
+            if (isError) Environment.Exit(3);
 #endif
             #endregion
 

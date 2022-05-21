@@ -1,0 +1,5 @@
+warn: 2022/5/19 00:43:04.615 CoreEventId.SensitiveDataLoggingEnabledWarning[10400] (Microsoft.EntityFrameworkCore.Infrastructure) 
+      Sensitive data logging is enabled. Log entries and exception messages may include sensitive application data; this mode should only be enabled during development.info: 2022/5/19 00:43:04.706 CoreEventId.ContextInitialized[10403] (Microsoft.EntityFrameworkCore.Infrastructure) 
+      Entity Framework Core 6.0.1 initialized 'DBContext' using provider 'Microsoft.EntityFrameworkCore.Sqlite:6.0.1' with options: SensitiveDataLoggingEnabled warn: 2022/5/19 00:43:33.539 CoreEventId.SensitiveDataLoggingEnabledWarning[10400] (Microsoft.EntityFrameworkCore.Infrastructure) 
+      Sensitive data logging is enabled. Log entries and exception messages may include sensitive application data; this mode should only be enabled during development.info: 2022/5/19 00:43:33.629 CoreEventId.ContextInitialized[10403] (Microsoft.EntityFrameworkCore.Infrastructure) 
+      Entity Framework Core 6.0.1 initialized 'DBContext' using provider 'Microsoft.EntityFrameworkCore.Sqlite:6.0.1' with options: SensitiveDataLoggingEnabled 

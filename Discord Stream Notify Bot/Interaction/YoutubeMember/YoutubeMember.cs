@@ -1,7 +1,6 @@
 ﻿using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
-using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -21,34 +20,61 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
         [RequireContext(ContextType.Guild)]
         public async Task CheckAsync()
         {
+            await DeferAsync(true);
+
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                var guildConfig = db.GuildConfig.Include((x) => x.MemberCheck).FirstOrDefault((x) => x.GuildId == Context.Guild.Id);
-                if (guildConfig == null)
+                var guildYoutubeMemberConfigs = db.GuildYoutubeMemberConfig.Where((x) => x.GuildId == Context.Guild.Id);
+                if (!guildYoutubeMemberConfigs.Any())
                 {
-                    guildConfig = new DataBase.Table.GuildConfig() { GuildId = Context.Guild.Id };
-                    db.GuildConfig.Add(guildConfig);
-                    db.SaveChanges();
-                }
-
-                if (string.IsNullOrEmpty(guildConfig.MemberCheckChannelId) || guildConfig.MemberCheckGrantRoleId == 0 || string.IsNullOrEmpty(guildConfig.MemberCheckVideoId))
-                {
-                    await Context.Interaction.SendErrorAsync($"請向管理員確認本伺服器是否已開啟會限驗證功能", ephemeral: true);
+                    await Context.Interaction.SendErrorAsync($"請向管理員確認本伺服器是否已使用會限驗證功能", true);
                     return;
                 }
 
-                if (await _service.IsExistUserTokenAsync(Context.User.Id.ToString()))
+                if (guildYoutubeMemberConfigs.Any((x) => string.IsNullOrEmpty(x.MemberCheckChannelTitle) || x.MemberCheckVideoId == "-"))
                 {
-                    if (!guildConfig.MemberCheck.Any((x) => x.UserId == Context.User.Id))
+                    await Context.Interaction.SendErrorAsync($"尚有無法檢測的頻道，請等待五分鐘Bot初始化完後重新執行此指令", true);
+                    return;
+                }
+
+                if (!await _service.IsExistUserTokenAsync(Context.User.Id.ToString()))
+                {
+                    await Context.Interaction.SendErrorAsync($"請先到 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 登入Discord以及Google\n登入完後再輸入一次本指令", true);
+                    return;
+                }
+
+                if (guildYoutubeMemberConfigs.Count() == 1)
+                {
+                    if (!db.YoutubeMemberCheck.Any((x) =>
+                        x.UserId == Context.User.Id &&
+                        x.GuildId == Context.Guild.Id &&
+                        x.CheckYTChannelId == guildYoutubeMemberConfigs.First().MemberCheckChannelId))
                     {
-                        guildConfig.MemberCheck.Add(new DataBase.Table.YoutubeMemberCheck() { UserId = Context.User.Id });
+                        db.YoutubeMemberCheck.Add(new DataBase.Table.YoutubeMemberCheck()
+                        {
+                            UserId = Context.User.Id,
+                            GuildId = Context.Guild.Id,
+                            CheckYTChannelId = guildYoutubeMemberConfigs.First().MemberCheckChannelId
+                        });
                         db.SaveChanges();
                     }
-                    await Context.Interaction.SendConfirmAsync("已記錄至資料庫，請稍等至多5分鐘讓Bot驗證\n請確認已開啟本伺服器的 `允許來自伺服器成員的私人訊息` ，以避免收不到通知", ephemeral: true);
+                    await Context.Interaction.SendConfirmAsync("已記錄至資料庫，請稍等至多5分鐘讓Bot驗證\n請確認已開啟本伺服器的 `允許來自伺服器成員的私人訊息` ，以避免收不到通知", true, true);
                 }
                 else
                 {
-                    await Context.Interaction.SendErrorAsync($"請先到 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 登入Discord以及Google\n登入完後再輸入一次本指令", ephemeral: true);
+                    SelectMenuBuilder selectMenuBuilder = new SelectMenuBuilder()
+                       .WithPlaceholder("頻道")
+                       .WithMinValues(1)
+                       .WithMaxValues(guildYoutubeMemberConfigs.Count())
+                       .WithCustomId($"member:check:{Context.Guild.Id}:{Context.User.Id}");
+
+                    foreach (var item in guildYoutubeMemberConfigs)
+                        selectMenuBuilder.AddOption(item.MemberCheckChannelTitle, item.MemberCheckChannelId);
+
+                    await Context.Interaction.FollowupAsync("選擇你要驗證的頻道\n" +
+                        "(注意: 將移除你現有的會限驗證用戶組並重新驗證)", components: new ComponentBuilder()
+                   .WithSelectMenu(selectMenuBuilder)
+                   .Build());
                 }
             }
         }
@@ -60,26 +86,13 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
 
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                var guildConfigs = db.GuildConfig.Include((x) => x.MemberCheck).Where((x) => x.MemberCheck.Any((x2) => x2.UserId == Context.User.Id));
-                var youtubeMembers = db.YoutubeMemberCheck.Where((x) => x.UserId == Context.User.Id);
-
                 if (await _service.IsExistUserTokenAsync(Context.User.Id.ToString()))
                 {
                     if (!await PromptUserConfirmAsync("確定解除綁定?\n" +
                         "(注意: 解除綁定後也會一併解除會限用戶組，如要重新獲得需重新至網站綁定)"))
                         return;
 
-                    if (guildConfigs.Any())
-                    {
-                        foreach (var item in guildConfigs)
-                        {
-                            try { await _client.Rest.RemoveRoleAsync(item.GuildId, Context.User.Id, item.MemberCheckGrantRoleId); }
-                            catch (Exception) { }
-                        }
-                    }
-
-                    db.YoutubeMemberCheck.RemoveRange(youtubeMembers);
-                    db.SaveChanges();
+                    await Program.RedisSub.PublishAsync("member.revokeToken", Context.User.Id);
 
                     try
                     {
@@ -101,6 +114,32 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
                 {
                     await Context.Interaction.SendErrorAsync($"無資料可供解除綁定...", true, true);
                 }
+            }
+        }
+
+        [SlashCommand("list-check-channel", "顯示現在可供驗證的會限頻道清單")]
+        [RequireContext(ContextType.Guild)]
+        public async Task ListCheckChannel()
+        {
+            using (var db = DataBase.DBContext.GetDbContext())
+            {
+                var guildYoutubeMemberConfigs = db.GuildYoutubeMemberConfig.Where((x) => x.GuildId == Context.Guild.Id);
+                if (!guildYoutubeMemberConfigs.Any())
+                {
+                    await Context.Interaction.SendErrorAsync($"清單為空");
+                    return;
+                }
+
+                if (guildYoutubeMemberConfigs.Any((x) => string.IsNullOrEmpty(x.MemberCheckChannelTitle) || x.MemberCheckVideoId == "-"))
+                {
+                    await Context.Interaction.SendErrorAsync($"尚有無法檢測的頻道，請等待五分鐘Bot初始化完後重新執行此指令");
+                    return;
+                }
+
+                await Context.Interaction.SendConfirmAsync("現在可供驗證的會限頻道清單\n" +
+                    string.Join('\n', guildYoutubeMemberConfigs.Select((x) =>
+                        $"{Format.Url(x.MemberCheckChannelTitle, $"https://www.youtube.com/channel/{x.MemberCheckChannelId}")}")),
+                    false, true);
             }
         }
     }

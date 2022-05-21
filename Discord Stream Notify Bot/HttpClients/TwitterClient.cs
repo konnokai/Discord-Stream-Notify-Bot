@@ -75,7 +75,7 @@ namespace Discord_Stream_Notify_Bot.HttpClients
             }
             catch (Exception ex)
             {
-                if (ex.Message.Contains("403"))
+                if (ex.Message.Contains("40"))
                 {
                     await GetQueryIdAsync();
                     return await GetTwitterSpaceMetadataAsync(spaceId);

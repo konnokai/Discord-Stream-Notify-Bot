@@ -152,7 +152,7 @@ namespace Discord_Stream_Notify_Bot.Command
             var msg = await ctx.Channel.EmbedAsync(embed).ConfigureAwait(false);
             try
             {
-                var input = await GetUserInputAsync(ctx.User.Id, ctx.Channel.Id).ConfigureAwait(false);
+                var input = await GetUserInputAsync(ctx.Client, ctx.User.Id, ctx.Channel.Id).ConfigureAwait(false);
                 input = input?.ToUpperInvariant();
 
                 if (input != "YES" && input != "Y")
@@ -168,13 +168,12 @@ namespace Discord_Stream_Notify_Bot.Command
             }
         }
 
-        static public async Task<string> GetUserInputAsync(ulong userId, ulong channelId)
+        static public async Task<string> GetUserInputAsync(DiscordSocketClient client, ulong userId, ulong channelId)
         {
             var userInputTask = new TaskCompletionSource<string>();
-            var dsc = Program._client;
             try
             {
-                dsc.MessageReceived += MessageReceived;
+                client.MessageReceived += MessageReceived;
 
                 if ((await Task.WhenAny(userInputTask.Task, Task.Delay(10000)).ConfigureAwait(false)) != userInputTask.Task)
                 {
@@ -185,7 +184,7 @@ namespace Discord_Stream_Notify_Bot.Command
             }
             finally
             {
-                dsc.MessageReceived -= MessageReceived;
+                client.MessageReceived -= MessageReceived;
             }
 
             Task MessageReceived(SocketMessage arg)

@@ -1,4 +1,5 @@
 ﻿using Discord;
+using Discord.Interactions;
 using Discord.WebSocket;
 using Discord_Stream_Notify_Bot.Interaction;
 using Discord_Stream_Notify_Bot.SharedService.Youtube;
@@ -7,7 +8,6 @@ using Google.Apis.Auth.OAuth2.Flows;
 using Google.Apis.Auth.OAuth2.Responses;
 using Google.Apis.Services;
 using Google.Apis.YouTube.v3;
-using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using System;
 using System.Linq;
@@ -55,12 +55,12 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
 
                     using var db = DataBase.DBContext.GetDbContext();
 
-                    var guildConfigs = db.GuildConfig.Include((x) => x.MemberCheck).Where((x) => x.MemberCheck.Any((x2) => x2.UserId == user.Id));
                     var youtubeMembers = db.YoutubeMemberCheck.Where((x) => x.UserId == user.Id);
+                    var guildYoutubeMemberConfigs = db.GuildYoutubeMemberConfig.Where((x) => youtubeMembers.Any((x2) => x2.GuildId == x.GuildId));
 
-                    if (guildConfigs.Any())
+                    if (guildYoutubeMemberConfigs.Any())
                     {
-                        foreach (var item in guildConfigs)
+                        foreach (var item in guildYoutubeMemberConfigs)
                         {
                             try { await _client.Rest.RemoveRoleAsync(item.GuildId, user.Id, item.MemberCheckGrantRoleId); }
                             catch (Exception) { }
@@ -76,10 +76,114 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                 }
             });
 
+            _client.SelectMenuExecuted += async (component) =>
+            {
+                if (component.HasResponded)
+                    return;
+
+                try
+                {
+                    string[] customId = component.Data.CustomId.Split(new char[] { ':' });
+                    if (customId.Length <= 2 || customId[0] != "member")
+                        await component.RespondAsync("選單錯誤");
+
+                    using DataBase.DBContext db = DataBase.DBContext.GetDbContext();
+                    if (customId[1] == "check" && customId.Length == 4)
+                    {
+                        await component.DeferAsync(true);
+
+                        if (!ulong.TryParse(customId[2], out ulong guildId))
+                        {
+                            await component.SendErrorAsync("GuildId無效，請向孤之界回報此問題", true);
+                            Log.Error(JsonConvert.SerializeObject(component));
+                            return;
+                        }
+
+                        if (!ulong.TryParse(customId[3], out ulong userId))
+                        {
+                            await component.SendErrorAsync("UserId無效，請向孤之界回報此問題", true);
+                            Log.Error(JsonConvert.SerializeObject(component));
+                            return;
+                        }
+
+                        if (component.User.Id != userId)
+                        {
+                            await component.SendErrorAsync("你無法使用此選單", true);
+                            return;
+                        }
+
+                        var youtubeMembers = db.YoutubeMemberCheck.Where((x) => x.UserId == userId && x.GuildId == guildId);
+                        var guildYoutubeMemberConfigs = db.GuildYoutubeMemberConfig.Where((x) => youtubeMembers.Any((x2) => x2.GuildId == x.GuildId));
+
+                        db.YoutubeMemberCheck.RemoveRange(youtubeMembers);
+                        db.SaveChanges();
+
+                        if (guildYoutubeMemberConfigs.Any())
+                        {
+                            foreach (var item in guildYoutubeMemberConfigs)
+                            {
+                                try { await _client.Rest.RemoveRoleAsync(item.GuildId, userId, item.MemberCheckGrantRoleId); }
+                                catch (Exception) { }
+                            }
+                        }
+
+                        foreach (var item in component.Data.Values)
+                        {
+                            db.YoutubeMemberCheck.Add(new DataBase.Table.YoutubeMemberCheck() { UserId = userId, GuildId = guildId, CheckYTChannelId = item });                            
+                        }
+                        db.SaveChanges();
+
+                        try { await component.Message.DeleteAsync(); }
+                        catch
+                        {
+                            await DisableSelectMenuAsync(component, $"已選擇 {component.Data.Values.Count} 個頻道");
+                        }                       
+
+                        await component.SendConfirmAsync("已記錄至資料庫，請稍等至多5分鐘讓Bot驗證\n請確認已開啟本伺服器的 `允許來自伺服器成員的私人訊息` ，以避免收不到通知", true, true);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    await component.SendErrorAsync("錯誤，請向孤之界回報此問題", true);
+                    Log.Error(ex.ToString());
+                    return;
+                }                
+            };
+
             checkMemberShipOnlyVideoId = new Timer(CheckMemberShipOnlyVideoId, null, TimeSpan.FromSeconds(30), TimeSpan.FromMinutes(5));
             checkOldMemberStatus = new Timer(new TimerCallback(async (obj) => await CheckMemberShip(obj)), true, TimeSpan.FromHours(12), TimeSpan.FromHours(12));
             checkNewMemberStatus = new Timer(new TimerCallback(async (obj) => await CheckMemberShip(obj)), false, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(5));
             checkRoleStatus = new Timer(new TimerCallback(async (obj) => await CheckRoleStatus()), null, TimeSpan.FromSeconds(30), TimeSpan.FromHours(12));
+        }
+
+        private async Task DisableSelectMenuAsync(SocketMessageComponent component, string placeholder = "")
+        {
+            SelectMenuBuilder selectMenuBuilder = new SelectMenuBuilder()
+                .WithPlaceholder(string.IsNullOrEmpty(placeholder) ? "已選擇" : placeholder)
+                .WithMinValues(1)
+                .WithMaxValues(1)
+                .AddOption("1", "2")
+                .WithCustomId("1234")
+                .WithDisabled(true);
+
+            try
+            {
+                await component.UpdateAsync((act) =>
+                {
+                    act.Components = new Optional<MessageComponent>(new ComponentBuilder()
+                        .WithSelectMenu(selectMenuBuilder)
+                        .Build());
+                });
+            }
+            catch
+            {
+                await component.ModifyOriginalResponseAsync((act) =>
+                {
+                    act.Components = new Optional<MessageComponent>(new ComponentBuilder()
+                        .WithSelectMenu(selectMenuBuilder)
+                        .Build());
+                });
+            }            
         }
 
         //https://github.com/member-gentei/member-gentei/blob/90f62385f554eb4c02ed8732e15061b9dd1dd6d0/gentei/apis/youtube.go#L100
@@ -87,8 +191,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
         {
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                foreach (var item in db.GuildConfig.Where((x) => !string.IsNullOrEmpty(x.MemberCheckChannelId) && x.MemberCheckChannelId.Length == 24 && x.MemberCheckVideoId == "-").Distinct((x) => x.MemberCheckChannelId))
-                {
+                foreach (var item in db.GuildYoutubeMemberConfig.Where((x) => !string.IsNullOrEmpty(x.MemberCheckChannelId) && x.MemberCheckChannelId.Length == 24 && (x.MemberCheckVideoId == "-" || string.IsNullOrEmpty(x.MemberCheckChannelTitle))).Distinct((x) => x.MemberCheckChannelId))
+                { 
                     try
                     {
                         var s = _streamService.yt.PlaylistItems.List("snippet");
@@ -102,9 +206,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                             if (videoList.Count == 0)
                             {
                                 await Program.ApplicatonOwner.SendMessageAsync($"{item.MemberCheckChannelId} 無任何可檢測的會限直播!");
-                                item.MemberCheckChannelId = "";
-                                db.GuildConfig.Update(item);
-                                db.SaveChanges();
+                                db.GuildYoutubeMemberConfig.RemoveRange(db.GuildYoutubeMemberConfig.Where((x) => x.MemberCheckChannelId == item.MemberCheckChannelId));
                                 break;
                             }
 
@@ -127,22 +229,25 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                 {
                                     Log.Info($"新會限影片 - ({item.MemberCheckChannelId}): {videoId}");
 
-                                    foreach (var item2 in db.GuildConfig.Where((x) => x.MemberCheckChannelId == item.MemberCheckChannelId))
+                                    foreach (var item2 in db.GuildYoutubeMemberConfig.Where((x) => x.MemberCheckChannelId == item.MemberCheckChannelId))
                                     {
                                         item2.MemberCheckVideoId = videoId;
-                                        db.GuildConfig.Update(item2);
+                                        db.GuildYoutubeMemberConfig.Update(item2);
                                     }
 
-                                    db.SaveChanges();
                                     isCheck = true;
                                 }
                                 else
                                 {
                                     Log.Error($"{item.MemberCheckChannelId} 新會限影片檢查錯誤");
                                     Log.Error(ex.Message);
-                                    item.MemberCheckChannelId = "";
-                                    db.GuildConfig.Update(item);
-                                    db.SaveChanges();
+
+                                    foreach (var item2 in db.GuildYoutubeMemberConfig.Where((x) => x.MemberCheckChannelId == item.MemberCheckChannelId))
+                                    {
+                                        item2.MemberCheckVideoId = "";
+                                        db.GuildYoutubeMemberConfig.Update(item2);
+                                    }
+
                                     isCheck = true;
                                 }
                             }
@@ -152,12 +257,41 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                     {
                         Log.Warn($"CheckMemberShipOnlyVideoId: {item.GuildId} / {item.MemberCheckChannelId}\n{ex.Message}");
                     }
+                    finally
+                    {
+                        db.SaveChanges();
+                    }
+
+                    try
+                    {
+                        var c = _streamService.yt.Channels.List("snippet");
+                        c.Id = item.MemberCheckChannelId;
+                        var channelResult = await c.ExecuteAsync();
+                        var channel = channelResult.Items.First();
+
+                        Log.Info($"會限頻道名稱已變更 - ({item.MemberCheckChannelId}): `" + (string.IsNullOrEmpty(item.MemberCheckChannelTitle) ? "無" : item.MemberCheckChannelTitle) + $"` -> `{channel.Snippet.Title}`");
+
+                        foreach (var item2 in db.GuildYoutubeMemberConfig.Where((x) => x.MemberCheckChannelId == item.MemberCheckChannelId))
+                        {
+                            item2.MemberCheckChannelTitle = channel.Snippet.Title;
+                            db.GuildYoutubeMemberConfig.Update(item2);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Warn($"CheckMemberShipOnlyChannelName: {item.GuildId} / {item.MemberCheckChannelId}\n{ex.Message}");
+                    }
+                    finally
+                    {
+                        db.SaveChanges();
+                    }
                 }
             }
 
             Log.Info("檢查新會限影片完成");
         }
 
+        //Todo: 驗證一次後可同時向同頻道多個伺服器設定驗證結果
         //https://github.com/member-gentei/member-gentei/blob/90f62385f554eb4c02ed8732e15061b9dd1dd6d0/gentei/membership/membership.go#L331
         //https://discord.com/channels/@me/userChannel.Id
         public async Task CheckMemberShip(object stats)
@@ -166,43 +300,54 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
 
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                var needCheckList = db.GuildConfig.Include((x) => x.MemberCheck).Where((x) => !string.IsNullOrEmpty(x.MemberCheckChannelId) && x.MemberCheckVideoId != "-").ToList();
-                Log.Info((isOldCheck ? "舊" : "新") + $"會限檢查開始: {needCheckList.Count}個伺服器");
+                var needCheckList = db.GuildYoutubeMemberConfig.Where((x) => !string.IsNullOrEmpty(x.MemberCheckChannelId) && !string.IsNullOrEmpty(x.MemberCheckChannelTitle) && x.MemberCheckVideoId != "-");
+                Log.Info((isOldCheck ? "舊" : "新") + $"會限檢查開始: {needCheckList.Count()}個頻道");
 
-                foreach (var guildConfig in needCheckList)
+                foreach (var guildYoutubeMemberConfig in needCheckList)
                 {
-                    var list = guildConfig.MemberCheck
+                    var list = db.YoutubeMemberCheck
+                        .Where((x) => x.GuildId == guildYoutubeMemberConfig.GuildId && x.CheckYTChannelId == guildYoutubeMemberConfig.MemberCheckChannelId)
                         .Where((x) => (isOldCheck && x.LastCheckStatus != DataBase.Table.YoutubeMemberCheck.CheckStatus.NotYetStarted) ||
-                            (!isOldCheck && x.LastCheckStatus == DataBase.Table.YoutubeMemberCheck.CheckStatus.NotYetStarted))
-                        .ToList();
-                    if (list.Count == 0)
+                            (!isOldCheck && x.LastCheckStatus == DataBase.Table.YoutubeMemberCheck.CheckStatus.NotYetStarted));
+                    if (!list.Any())
                         continue;
 
-                    var guild = _client.GetGuild(guildConfig.GuildId);
-                    if (guild == null)
+                    int totalCheckCount = list.Count();
+
+                    var guildConfig = db.GuildConfig.FirstOrDefault((x) => x.GuildId == guildYoutubeMemberConfig.GuildId);
+                    if (guildConfig == null)
                     {
-                        Log.Warn($"{guildConfig.GuildId} Guild不存在");
+                        db.GuildConfig.Add(new DataBase.Table.GuildConfig() { GuildId = guildYoutubeMemberConfig.GuildId });
+                        db.SaveChanges();
+                        Log.Warn($"{guildYoutubeMemberConfig.GuildId} Guild不存在於資料庫內");
                         continue;
                     }
 
-                    var role = guild.GetRole(guildConfig.MemberCheckGrantRoleId);
+                    var guild = _client.GetGuild(guildYoutubeMemberConfig.GuildId);
+                    if (guild == null)
+                    {
+                        Log.Warn($"{guildYoutubeMemberConfig.GuildId} Guild不存在");
+                        continue;
+                    }
+
+                    var role = guild.GetRole(guildYoutubeMemberConfig.MemberCheckGrantRoleId);
                     if (role == null)
                     {
-                        Log.Warn($"{guildConfig.GuildId} RoleId錯誤 {guildConfig.MemberCheckGrantRoleId}");
+                        Log.Warn($"{guildYoutubeMemberConfig.GuildId} RoleId錯誤 {guildYoutubeMemberConfig.MemberCheckGrantRoleId}");
                         continue;
                     }
 
                     var logChannel = guild.GetTextChannel(guildConfig.LogMemberStatusChannelId);
                     if (logChannel == null)
                     {
-                        Log.Warn($"{guildConfig.GuildId} 無紀錄頻道");
+                        Log.Warn($"{guildYoutubeMemberConfig.GuildId} 無紀錄頻道");
                         continue;
                     }
 
                     var permission = guild.GetUser(_client.CurrentUser.Id).GetPermissions(logChannel);
                     if (!permission.ViewChannel || !permission.SendMessages)
                     {
-                        Log.Warn($"{guildConfig.GuildId} / {guildConfig.LogMemberStatusChannelId} 無權限可紀錄");
+                        Log.Warn($"{guildYoutubeMemberConfig.GuildId} / {guildConfig.LogMemberStatusChannelId} 無權限可紀錄");
                         continue;
                     }
 
@@ -222,17 +367,10 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                         var token = await flow.LoadTokenAsync(item2.UserId.ToString(), CancellationToken.None);
                         if (token == null)
                         {
-                            await logChannel.SendErrorMessage(user, new EmbedBuilder().AddField("檢查頻道", guildConfig.MemberCheckChannelId).AddField("狀態", "未登入"));
+                            await logChannel.SendErrorMessage(user, new EmbedBuilder().AddField("檢查頻道", guildYoutubeMemberConfig.MemberCheckChannelTitle).AddField("狀態", "未登入"));
                             await userChannel.SendErrorMessage($"未登入，請至 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 登入並再次於伺服器執行 `/youtube-member check`");
 
-                            try
-                            {
-                                await _client.Rest.RemoveRoleAsync(guild.Id, item2.UserId, role.Id).ConfigureAwait(false);
-                            }
-                            catch (Exception ex) { Log.Warn(ex.ToString()); }
-
-                            db.YoutubeMemberCheck.Remove(item2);
-                            db.SaveChanges();
+                            Program.RedisSub.Publish("member.revokeToken", item2.UserId);
                             continue;
                         }
 
@@ -245,12 +383,12 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                         {
                             if (ex.Message == "RefreshToken空白")
                             {
-                                await logChannel.SendErrorMessage(user, new EmbedBuilder().AddField("檢查頻道", guildConfig.MemberCheckChannelId).AddField("狀態", "無法重複驗證"));
+                                await logChannel.SendErrorMessage(user, new EmbedBuilder().AddField("檢查頻道", guildYoutubeMemberConfig.MemberCheckChannelTitle).AddField("狀態", "無法重複驗證"));
                                 await userChannel.SendErrorMessage($"無法重新刷新您的授權\n" +
                                     $"請到 {Format.Url("Google安全性", "https://myaccount.google.com/permissions")} 移除 `直播小幫手會限確認` 的應用程式存取權後\n" +
                                     $"至 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 重新登入並再次於伺服器執行 `/youtube-member check`");
 
-                                await flow.DataStore.DeleteAsync<TokenResponse>(item2.UserId.ToString());
+                                await RevokeUserGoogleCert(item2.UserId.ToString());
                                 continue;
                             }
 
@@ -260,19 +398,12 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
 
                         if (userCredential == null)
                         {
-                            await logChannel.SendErrorMessage(user, new EmbedBuilder().AddField("檢查頻道", guildConfig.MemberCheckChannelId).AddField("狀態", "認證過期"));
+                            await logChannel.SendErrorMessage(user, new EmbedBuilder().AddField("檢查頻道", guildYoutubeMemberConfig.MemberCheckChannelTitle).AddField("狀態", "認證過期"));
                             await userChannel.SendErrorMessage($"您的Google認證已失效\n" +
                                 $"請到 {Format.Url("Google安全性", "https://myaccount.google.com/permissions")} 移除 `直播小幫手會限確認` 的應用程式存取權後\n" +
                                 $"至 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 重新登入並再次於伺服器執行 `/youtube-member check`");
 
-                            try
-                            {
-                                await _client.Rest.RemoveRoleAsync(guild.Id, item2.UserId, role.Id).ConfigureAwait(false);
-                            }
-                            catch (Exception ex) { Log.Warn(ex.ToString()); }
-
-                            db.YoutubeMemberCheck.Remove(item2);
-                            db.SaveChanges();
+                            Program.RedisSub.Publish("member.revokeToken", item2.UserId);
                             continue;
                         }
 
@@ -281,9 +412,9 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                             HttpClientInitializer = userCredential,
                             ApplicationName = "Discord Youtube Member Check"
                         }).CommentThreads.List("id");
-                        bool isMember = false;
+                        service.VideoId = guildYoutubeMemberConfig.MemberCheckVideoId;
 
-                        service.VideoId = guildConfig.MemberCheckVideoId;
+                        bool isMember = false;
                         try
                         {
                             await service.ExecuteAsync().ConfigureAwait(false);
@@ -295,18 +426,19 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                             {
                                 if (ex.Message.ToLower().Contains("parameter has disabled comments"))
                                 {
-                                    Log.Warn($"CheckMemberStatus: {guildConfig.GuildId} - {item2.UserId} 會限資格取得失敗: {guildConfig.MemberCheckVideoId}已關閉留言");
-                                    await (await Program.ApplicatonOwner.CreateDMChannelAsync()).SendErrorMessage($"{guildConfig.GuildId} - {item2.UserId} 會限資格取得失敗: {guildConfig.MemberCheckVideoId}已關閉留言");
+                                    Log.Warn($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {item2.UserId} 會限資格取得失敗");
+                                    Log.Warn($"{guildYoutubeMemberConfig.MemberCheckChannelTitle} ({guildYoutubeMemberConfig.MemberCheckChannelId}): {guildYoutubeMemberConfig.MemberCheckVideoId}已關閉留言");
+                                    await (await Program.ApplicatonOwner.CreateDMChannelAsync()).SendErrorMessage($"{guildYoutubeMemberConfig.GuildId} - {item2.UserId} 會限資格取得失敗: {guildYoutubeMemberConfig.MemberCheckVideoId}已關閉留言");
 
-                                    guildConfig.MemberCheckVideoId = "-";
-                                    db.GuildConfig.Update(guildConfig);
+                                    guildYoutubeMemberConfig.MemberCheckVideoId = "-";
+                                    db.GuildYoutubeMemberConfig.Update(guildYoutubeMemberConfig);
                                     db.SaveChanges();
 
                                     break;
                                 }
                                 else if (ex.Message.ToLower().Contains("403") || ex.Message.ToLower().Contains("the request might not be properly authorized"))
                                 {
-                                    Log.Warn($"CheckMemberStatus: {guildConfig.GuildId} - {item2.UserId} 會限資格取得失敗: 無會員");
+                                    Log.Warn($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {item2.UserId} 會限資格取得失敗: 無會員");
 
                                     db.YoutubeMemberCheck.Remove(item2);
                                     db.SaveChanges();
@@ -317,8 +449,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                     }
                                     catch (Exception ex2) { Log.Warn(ex2.ToString()); }
 
-                                    await logChannel.SendErrorMessage(user, new EmbedBuilder().AddField("檢查頻道", guildConfig.MemberCheckChannelId).AddField("狀態", "會員已過期"));
-                                    await userChannel.SendErrorMessage($"您在 `{guild.Name}` 的會限資格已失效\n" +
+                                    await logChannel.SendErrorMessage(user, new EmbedBuilder().AddField("檢查頻道", guildYoutubeMemberConfig.MemberCheckChannelTitle).AddField("狀態", "會員已過期"));
+                                    await userChannel.SendErrorMessage($"您在 `{guild.Name}` 的 `{guildYoutubeMemberConfig.MemberCheckChannelTitle}` 會限資格已失效\n" +
                                         $"如要重新驗證會員請於購買會員後再次於伺服器執行 `/youtube-member check`");
                                     continue;
                                 }
@@ -326,20 +458,13 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                     ex.Message.ToLower().Contains("the access token has expired and could not be refreshed") ||
                                     ex.Message.ToLower().Contains("authenticateduseraccountclosed") || ex.Message.ToLower().Contains("authenticateduseraccountsuspended"))
                                 {
-                                    Log.Warn($"CheckMemberStatus: {guildConfig.GuildId} - {item2.UserId} 會限資格取得失敗: AccessToken已過期或無法刷新");
+                                    Log.Warn($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {item2.UserId} 會限資格取得失敗: AccessToken已過期或無法刷新");
                                     Log.Warn(JsonConvert.SerializeObject(userCredential.Token));
                                     Log.Warn(ex.ToString());
 
-                                    db.YoutubeMemberCheck.Remove(item2);
-                                    db.SaveChanges();
+                                    Program.RedisSub.Publish("member.revokeToken", item2.UserId);
 
-                                    try
-                                    {
-                                        await _client.Rest.RemoveRoleAsync(guild.Id, item2.UserId, role.Id).ConfigureAwait(false);
-                                    }
-                                    catch (Exception ex2) { Log.Warn(ex2.ToString()); }
-
-                                    await logChannel.SendErrorMessage(user, new EmbedBuilder().AddField("檢查頻道", guildConfig.MemberCheckChannelId).AddField("狀態", "認證過期"));
+                                    await logChannel.SendErrorMessage(user, new EmbedBuilder().AddField("檢查頻道", guildYoutubeMemberConfig.MemberCheckChannelTitle).AddField("狀態", "認證過期"));
                                     await userChannel.SendErrorMessage($"您的Google認證已失效\n" +
                                         $"請到 {Format.Url("Google安全性", "https://myaccount.google.com/permissions?continue=https%3A%2F%2Fmyaccount.google.com%2Fsecurity")} 移除 `直播小幫手會限確認` 的應用程式存取權後\n" +
                                         $"至 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 重新登入並再次於伺服器執行 `/youtube-member check`");
@@ -347,19 +472,12 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                 }
                                 else if (ex.Message.ToLower().Contains("the added or subtracted value results in an un-representable"))
                                 {
-                                    Log.Error($"CheckMemberStatus: {guildConfig.GuildId} - {item2.UserId} 會限資格取得失敗: 時間加減錯誤");
+                                    Log.Error($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {item2.UserId} 會限資格取得失敗: 時間加減錯誤");
                                     Log.Error(ex.ToString());
 
-                                    db.YoutubeMemberCheck.Remove(item2);
-                                    db.SaveChanges();
+                                    Program.RedisSub.Publish("member.revokeToken", item2.UserId);
 
-                                    try
-                                    {
-                                        await _client.Rest.RemoveRoleAsync(guild.Id, item2.UserId, role.Id).ConfigureAwait(false);
-                                    }
-                                    catch (Exception ex2) { Log.Warn(ex2.ToString()); }
-
-                                    await logChannel.SendErrorMessage(user, new EmbedBuilder().AddField("檢查頻道", guildConfig.MemberCheckChannelId).AddField("狀態", "時間加減錯誤"));
+                                    await logChannel.SendErrorMessage(user, new EmbedBuilder().AddField("檢查頻道", guildYoutubeMemberConfig.MemberCheckChannelTitle).AddField("狀態", "時間加減錯誤"));
                                     await userChannel.SendErrorMessage($"遇到已知但尚未處理的問題，您可以重新嘗試登入\n" +
                                         $"請到 {Format.Url("Google安全性", "https://myaccount.google.com/permissions?continue=https%3A%2F%2Fmyaccount.google.com%2Fsecurity")} 移除 `直播小幫手會限確認` 的應用程式存取權後\n" +
                                         $"至 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 重新登入並再次於伺服器執行 `/youtube-member check`");
@@ -367,26 +485,19 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                 }
                                 else
                                 {
-                                    Log.Error($"CheckMemberStatus: {guildConfig.GuildId} - {item2.UserId} 會限資格取得失敗: 未知的錯誤");
+                                    Log.Error($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {item2.UserId} 會限資格取得失敗: 未知的錯誤");
                                     Log.Error(ex.ToString());
 
-                                    db.YoutubeMemberCheck.Remove(item2);
-                                    db.SaveChanges();
+                                    Program.RedisSub.Publish("member.revokeToken", item2.UserId);
 
-                                    try
-                                    {
-                                        await _client.Rest.RemoveRoleAsync(guild.Id, item2.UserId, role.Id).ConfigureAwait(false);
-                                    }
-                                    catch (Exception ex2) { Log.Warn(ex2.ToString()); }
-
-                                    await logChannel.SendErrorMessage(user, new EmbedBuilder().AddField("檢查頻道", guildConfig.MemberCheckChannelId).AddField("狀態", "不明的錯誤"));
+                                    await logChannel.SendErrorMessage(user, new EmbedBuilder().AddField("檢查頻道", guildYoutubeMemberConfig.MemberCheckChannelTitle).AddField("狀態", "不明的錯誤"));
                                     await userChannel.SendErrorMessage($"無法驗證您的帳號，請向 {Program.ApplicatonOwner} 確認問題");
                                     continue;
                                 }
                             }
                             catch (Exception ex2)
                             {
-                                Log.Error($"CheckMemberStatus: {guildConfig.GuildId} - {item2.UserId} 回傳會限資格訊息失敗: {ex}");
+                                Log.Error($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {item2.UserId} 回傳會限資格訊息失敗: {ex}");
                                 Log.Error(ex2.ToString());
                             }
                         }
@@ -403,8 +514,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                             Log.Error($"無法新增用戶組至用戶: {guild.Id} / {user.Id}");
                             Log.Error($"{ex}");
 
-                            await logChannel.SendErrorMessage(user, new EmbedBuilder().AddField("檢查頻道", guildConfig.MemberCheckChannelId).AddField("狀態", "已驗證但無法給予用戶組"));
-                            await userChannel.SendConfirmMessage($"你在 `{guild}` 的會限已通過驗證，但無法新增用戶組，請告知管理員協助新增");
+                            await logChannel.SendErrorMessage(user, new EmbedBuilder().AddField("檢查頻道", guildYoutubeMemberConfig.MemberCheckChannelTitle).AddField("狀態", "已驗證但無法給予用戶組"));
+                            await userChannel.SendConfirmMessage($"你在 `{guild}` 的 `{guildYoutubeMemberConfig.MemberCheckChannelTitle}` 會限已通過驗證，但無法新增用戶組，請告知管理員協助新增");
 
                             continue;
                         }
@@ -421,8 +532,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                             {
                                 if (!isOldCheck)
                                 {
-                                    await logChannel.SendConfirmMessage(user, new EmbedBuilder().AddField("檢查頻道", guildConfig.MemberCheckChannelId).AddField("狀態", "已驗證"));
-                                    await userChannel.SendConfirmMessage($"你在 `{guild}` 的會限已通過驗證，現在你可至該伺服器上觀看會限頻道了");
+                                    await logChannel.SendConfirmMessage(user, new EmbedBuilder().AddField("檢查頻道", guildYoutubeMemberConfig.MemberCheckChannelTitle).AddField("狀態", "已驗證"));
+                                    await userChannel.SendConfirmMessage($"你在 `{guild}`  的 `{guildYoutubeMemberConfig.MemberCheckChannelTitle}` 會限已通過驗證，現在你可至該伺服器上觀看會限頻道了");
                                 }
                             }
                             catch (Exception ex)
@@ -433,19 +544,20 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                         }
                         catch (Exception ex)
                         {
-                            Log.Error($"SaveDatebase: {guildConfig.GuildId} - {item2.UserId} 資料庫儲存失敗");
+                            Log.Error($"SaveDatebase: {guildYoutubeMemberConfig.GuildId} - {item2.UserId} 資料庫儲存失敗");
                             Log.Error($"{ex}");
                         }
                     }
 
-                    await logChannel.SendConfirmMessage((isOldCheck ? "舊" : "新") + "會限驗證完成", $"本次驗證 {list.Count} 位成員，共 {checkedMemberCount} 位驗證成功");
+                    await logChannel.SendConfirmMessage((isOldCheck ? "舊" : "新") + "會限驗證完成", $"檢查頻道: {guildYoutubeMemberConfig.MemberCheckChannelTitle}\n" +
+                        $"本次驗證 {totalCheckCount} 位成員，共 {checkedMemberCount} 位驗證成功");
                 }
             }
 
             Log.Info("會限檢查完畢");
         }
 
-        //Todo: 實作用戶組檢查
+        //Todo: 實作用戶組檢查，也可能不用了
         private async Task CheckRoleStatus()
         {
             return;
