@@ -84,7 +84,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
 
             var nowRecordStreamList = Utility.GetNowRecordStreamList();
 
-            if (nowRecordStreamList.ContainsKey(videoId))
+            if (nowRecordStreamList.Contains(videoId))
             {
                 await Context.Channel.SendConfirmAsync($"{videoId} 已經在錄影了").ConfigureAwait(false);
                 return;
@@ -290,7 +290,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
             try
             {
                 var yt = _service.yt.Videos.List("Snippet");
-                yt.Id = string.Join(',', newRecordStreamList.Keys);
+                yt.Id = string.Join(',', newRecordStreamList);
                 var result = await yt.ExecuteAsync().ConfigureAwait(false);
                 await Context.SendPaginatedConfirmAsync(0, (page) =>
                 {
@@ -300,7 +300,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                         .WithDescription(string.Join("\n\n",
                             result.Items.Skip(page * 9).Take(9)
                             .Select((x) => $"{Format.Url(x.Snippet.Title, $"https://www.youtube.com/watch?v={x.Id}")}\n" +
-                                $"{x.Snippet.ChannelTitle} - {newRecordStreamList[x.Id]}")))
+                                $"{x.Snippet.ChannelTitle}")))
                         .WithFooter($"{result.Items.Count}個頻道");
                 }, result.Items.Count, 9, false).ConfigureAwait(false);
             }
