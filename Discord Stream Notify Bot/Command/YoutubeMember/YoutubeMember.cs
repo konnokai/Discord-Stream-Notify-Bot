@@ -258,7 +258,7 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
 
                 await Context.Channel.SendConfirmAsync("現在可供驗證的會限頻道清單\n" +
                     string.Join('\n', guildYoutubeMemberConfigs.Select((x) =>
-                        $"{Format.Url(x.MemberCheckChannelTitle, $"https://www.youtube.com/channel/{x.MemberCheckChannelId}")}")));
+                        $"{Format.Url(x.MemberCheckChannelTitle, $"https://www.youtube.com/channel/{x.MemberCheckChannelId}")}: <@&{x.MemberCheckGrantRoleId}>")));
             }
         }
 

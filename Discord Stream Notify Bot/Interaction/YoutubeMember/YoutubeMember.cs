@@ -96,7 +96,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
 
                     try
                     {
-                        await _service.RevokeUserGoogleCert(Context.User.Id.ToString());
+                        await _service.RevokeUserGoogleCertAsync(Context.User.Id.ToString());
                         await Context.Interaction.SendConfirmAsync("已解除完成", true, true);
                     }
                     catch (NullReferenceException nullEx)
@@ -138,8 +138,53 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
 
                 await Context.Interaction.SendConfirmAsync("現在可供驗證的會限頻道清單\n" +
                     string.Join('\n', guildYoutubeMemberConfigs.Select((x) =>
-                        $"{Format.Url(x.MemberCheckChannelTitle, $"https://www.youtube.com/channel/{x.MemberCheckChannelId}")}")),
+                        $"{Format.Url(x.MemberCheckChannelTitle, $"https://www.youtube.com/channel/{x.MemberCheckChannelId}")}: <@&{x.MemberCheckGrantRoleId}>")),
                     false, true);
+            }
+        }
+
+        [SlashCommand("list-checked-member", "顯示現在已成功驗證的成員清單")]
+        [RequireContext(ContextType.Guild)]
+        [RequireUserPermission(GuildPermission.Administrator)]
+        public async Task ListCheckedMemberAsync([Summary("頁數")]int page = 1)
+        {
+            using (var db = DataBase.DBContext.GetDbContext())
+            {
+                var youtubeMemberChecks = db.YoutubeMemberCheck.Where((x) => x.GuildId == Context.Guild.Id && x.LastCheckStatus == DataBase.Table.YoutubeMemberCheck.CheckStatus.Success);
+                if (!youtubeMemberChecks.Any())
+                {
+                    await Context.Interaction.SendErrorAsync("尚無成員驗證成功");
+                    return;
+                }
+
+                page = Math.Min(0, page--);
+
+                await Context.SendPaginatedConfirmAsync(page, (page) =>
+                {
+                    return new EmbedBuilder().WithOkColor()
+                    .WithTitle("已驗證成功清單")
+                    .WithDescription(string.Join('\n', 
+                        youtubeMemberChecks.Skip(page * 20).Take(20)
+                            .Select((x) => $"<@{x.UserId}>: {x.CheckYTChannelId}")));
+                }, youtubeMemberChecks.Count(), 20, true, true);
+            }
+        }
+
+        [SlashCommand("show-youtube-account","顯示現在綁定的Youtube帳號")]
+        public async Task ShowYoutubeAccountAsync()
+        {
+            await DeferAsync(true);
+
+            try
+            {
+                var channelUrl = await _service.GetYoutubeDataAsync(Context.User.Id.ToString());
+                await Context.Interaction.SendConfirmAsync($"你已綁定的頻道: {channelUrl}", true);
+            }
+            catch (Exception ex)
+            {
+                await Context.Interaction.SendErrorAsync("錯誤，請確認是否已到網站上綁定或此Google帳號存在Youtube頻道\n" +
+                    "如有疑問請向`孤之界`詢問", true);
+                Log.Error(ex.ToString());
             }
         }
     }
