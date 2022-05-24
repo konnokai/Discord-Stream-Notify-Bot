@@ -306,6 +306,18 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
         private async Task OtherScheduleAsync()
         {
             if (Program.isOtherChannelSpider) return;
+            if (isFirstOther)
+            {
+                if (Program.RedisDb.KeyExists("youtube.otherStart"))
+                {
+                    var time = await Program.RedisDb.KeyTimeToLiveAsync("youtube.otherStart");
+                    Log.Warn($"已跑過其他頻道爬蟲，剩餘 {time}");
+                    isFirstOther = false;
+                    return;
+                }
+
+                await Program.RedisDb.StringSetAsync("youtube.otherStart", "0", TimeSpan.FromMinutes(15));
+            }
             //Log.Info("其他勢影片清單整理開始");
             Program.isOtherChannelSpider = true;
             Dictionary<string, List<string>> otherVideoDic = new Dictionary<string, List<string>>();

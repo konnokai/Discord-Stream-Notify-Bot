@@ -2,7 +2,6 @@
 using Discord.WebSocket;
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.Interaction;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
