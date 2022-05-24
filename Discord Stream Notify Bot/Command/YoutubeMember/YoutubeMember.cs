@@ -92,7 +92,6 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
             }
         }
 
-
         [Command("AddYoutubeMemberCheckChannel")]
         [Summary("新增會限驗證頻道，目前可上限為10個頻道\n" +
             "如新增同個頻道則可變更要授予的用戶組")]
@@ -105,6 +104,10 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
         public async Task AddYoutubeMemberCheckChannel([Summary("頻道連結")] string url, [Summary("@用戶組")] IRole role)
             => await AddYoutubeMemberCheckChannel(url, role.Id);
 
+        [Command("AddYoutubeMemberCheckChannel")]
+        [Alias("aymcc")]
+        [RequireContext(ContextType.Guild)]
+        [RequireUserPermission(GuildPermission.Administrator)]
         public async Task AddYoutubeMemberCheckChannel([Summary("頻道連結")] string url, [Summary("用戶組Id")] ulong roleId)
         {
             var currentBotUser = await Context.Guild.GetCurrentUserAsync() as SocketGuildUser;
@@ -152,6 +155,7 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
                         await Context.Channel.SendErrorAsync("本伺服器尚未設定會限驗證紀錄頻道\n" +
                             "請新增頻道並設定本機器人`讀取`與`發送`權限後使用 `s!snmsc` 設定紀錄頻道 (`s!h snmsc`)\n" +
                             "紀錄頻道為強制需要，若無頻道則無法驗證會限");
+                        return;
                     }
                     else if (Context.Guild.GetChannelAsync(guildConfig.LogMemberStatusChannelId) == null)
                     {
@@ -162,6 +166,7 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
                         guildConfig.LogMemberStatusChannelId = 0;
                         db.GuildConfig.Update(guildConfig);
                         db.SaveChanges();
+                        return;
                     }
 
                     bool channelDataExist = false;
@@ -280,11 +285,18 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
         [Alias("snmsc")]
         [RequireContext(ContextType.Guild)]
         [RequireUserPermission(GuildPermission.ManageMessages)]
+        [Priority(0)]
+        public async Task SetNoticeMemberStatusChannel([Summary("Discord頻道Id")] IChannel channel)
+            => await SetNoticeMemberStatusChannel(channel.Id);
+
+        [Command("SetNoticeMemberStatusChannel")]
+        [Alias("snmsc")]
+        [RequireContext(ContextType.Guild)]
+        [RequireUserPermission(GuildPermission.ManageMessages)]
         public async Task SetNoticeMemberStatusChannel([Summary("Discord頻道Id")] ulong cId)
         {
             using (var db = DataBase.DBContext.GetDbContext())
             {
-
                 var channel = await Context.Guild.GetTextChannelAsync(cId) as SocketTextChannel;
                 if (channel == null)
                 {
