@@ -122,7 +122,7 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
                     var role = Context.Guild.GetRole(roleId);
                     if (role == null)
                     {
-                        await Context.Channel.SendErrorAsync("用戶組Id錯誤");
+                        await Context.Channel.SendErrorAsync("用戶組Id錯誤或不存在");
                         return;
                     }
 
@@ -147,43 +147,55 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
                         return;
                     }
 
+                    if (guildConfig.LogMemberStatusChannelId == 0)
+                    {
+                        await Context.Channel.SendErrorAsync("本伺服器尚未設定會限驗證紀錄頻道\n" +
+                            "請新增頻道並設定本機器人`讀取`與`發送`權限後使用 `s!snmsc` 設定紀錄頻道 (`s!h snmsc`)\n" +
+                            "紀錄頻道為強制需要，若無頻道則無法驗證會限");
+                    }
+                    else if (Context.Guild.GetChannelAsync(guildConfig.LogMemberStatusChannelId) == null)
+                    {
+                        await Context.Channel.SendErrorAsync("本伺服器所設定的會限驗證紀錄頻道已刪除\n" +
+                            "請新增頻道並設定本機器人`讀取`與`發送`權限後使用 `s!snmsc` 設定紀錄頻道 (`s!h snmsc`)\n" +
+                            "紀錄頻道為強制需要，若無頻道則無法驗證會限");
+
+                        guildConfig.LogMemberStatusChannelId = 0;
+                        db.GuildConfig.Update(guildConfig);
+                        db.SaveChanges();
+                    }
+
+                    bool channelDataExist = false;
                     var guildYoutubeMemberConfig = db.GuildYoutubeMemberConfig.FirstOrDefault((x) => x.GuildId == Context.Guild.Id && x.MemberCheckChannelId == channelId);
                     if (guildYoutubeMemberConfig == null)
                     {
                         guildYoutubeMemberConfig = new DataBase.Table.GuildYoutubeMemberConfig()
-                        { 
-                            GuildId = Context.Guild.Id, 
+                        {
+                            GuildId = Context.Guild.Id,
                             MemberCheckChannelId = channelId,
                             MemberCheckGrantRoleId = roleId
                         };
+
+                        var youtubeChannel = db.GuildYoutubeMemberConfig.FirstOrDefault((x) => x.MemberCheckChannelId == channelId && !string.IsNullOrEmpty(x.MemberCheckChannelTitle) && x.MemberCheckVideoId != "-");
+                        if (youtubeChannel != null)
+                        {
+                            guildYoutubeMemberConfig.MemberCheckChannelTitle = youtubeChannel.MemberCheckChannelTitle;
+                            guildYoutubeMemberConfig.MemberCheckVideoId = youtubeChannel.MemberCheckVideoId;
+                            channelDataExist = true;
+                        }
+                       
                         db.GuildYoutubeMemberConfig.Add(guildYoutubeMemberConfig);
                     }
                     else
                     {
+                        channelDataExist = true;
                         guildYoutubeMemberConfig.MemberCheckGrantRoleId = role.Id;
-                        guildYoutubeMemberConfig.MemberCheckVideoId = "-";
                         db.GuildYoutubeMemberConfig.Update(guildYoutubeMemberConfig);
                     }
                     db.SaveChanges();
 
                     await Context.Channel.SendConfirmAsync($"已設定使用 `{channelId}` 作為會限驗證頻道\n" +
                         $"驗證成功的成員將會獲得 `{role.Name}` 用戶組\n" +
-                        $"請等待五分鐘後才可開始檢測會限");
-
-                    if (guildConfig.LogMemberStatusChannelId == 0)
-                    {
-                        await Context.Channel.SendErrorAsync("注意: 本伺服器尚未設定會限驗證紀錄頻道\n" +
-                            "請新增頻道並設定本機器人`讀取`與`發送`權限後使用 `s!snmsc` 設定紀錄頻道 (`s!h snmsc`)");
-                    }
-                    else if (Context.Guild.GetChannelAsync(guildConfig.LogMemberStatusChannelId) == null)
-                    {
-                        await Context.Channel.SendErrorAsync("注意: 本伺服器所設定的會限驗證紀錄頻道已刪除\n" +
-                            "請新增頻道並設定本機器人`讀取`與`發送`權限後使用 `s!snmsc` 設定紀錄頻道 (`s!h snmsc`)");
-
-                        guildConfig.LogMemberStatusChannelId = 0;
-                        db.GuildConfig.Update(guildConfig);
-                        db.SaveChanges();
-                    }
+                        (channelDataExist ? "可直接開始檢測會限" : "請等待五分鐘後才可開始檢測會限"));                    
                 }
                 catch (System.Exception ex)
                 {
