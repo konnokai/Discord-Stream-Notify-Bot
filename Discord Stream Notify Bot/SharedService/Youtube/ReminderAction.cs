@@ -377,7 +377,10 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     catch (Exception ex)
                     {
                         Log.Error($"Notice Youtube {item.GuildId} / {item.DiscordChannelId}\n{ex.Message}");
-                        if (ex.Message.Contains("50013") || ex.Message.Contains("50001")) db.NoticeYoutubeStreamChannel.Remove(item);
+                        if (ex.Message.Contains("50013") || ex.Message.Contains("50001"))
+                        {
+                            db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where((x) => x.DiscordChannelId == item.DiscordChannelId));
+                        }
                         db.SaveChanges();
                     }
                 }

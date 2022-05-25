@@ -175,6 +175,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                 await flow.RevokeTokenAsync(discordUserId, revokeToken, CancellationToken.None);
 
                 Log.Info($"{discordUserId} 已解除Google憑證");
+                Program.RedisSub.Publish("member.revokeToken", discordUserId);
             }
             catch (Exception ex)
             {
@@ -643,19 +644,26 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
 
                         if (!isMember) return;
 
-                        checkedMemberCount++; 
+                        checkedMemberCount++;
                         try
                         {
                             await _client.Rest.AddRoleAsync(guild.Id, item2.UserId, role.Id).ConfigureAwait(false);
                         }
                         catch (Exception ex)
                         {
-                            Log.Error($"無法新增用戶組至用戶: {guild.Id} / {user.Id}");
-                            Log.Error($"{ex}");
+                            if (guild.GetUser(item2.UserId) == null)
+                            {
+                                Log.Warn($"用戶已離開伺服器: {guild.Id} / {user.Id}");
+                                db.YoutubeMemberCheck.Remove(item2);
+                            }
+                            else
+                            {
+                                Log.Error($"無法新增用戶組至用戶: {guild.Id} / {user.Id}");
+                                Log.Error($"{ex}");
 
-                            await logChannel.SendErrorMessageAsync(user, new EmbedBuilder().AddField("檢查頻道", guildYoutubeMemberConfig.MemberCheckChannelTitle).AddField("狀態", "已驗證但無法給予用戶組"));
-                            await userChannel.SendConfirmMessageAsync($"你在 `{guild}` 的 `{guildYoutubeMemberConfig.MemberCheckChannelTitle}` 會限已通過驗證，但無法新增用戶組，請告知管理員協助新增", logChannel);
-
+                                await logChannel.SendErrorMessageAsync(user, new EmbedBuilder().AddField("檢查頻道", guildYoutubeMemberConfig.MemberCheckChannelTitle).AddField("狀態", "已驗證但無法給予用戶組"));
+                                await userChannel.SendConfirmMessageAsync($"你在 `{guild}` 的 `{guildYoutubeMemberConfig.MemberCheckChannelTitle}` 會限已通過驗證，但無法新增用戶組，請告知管理員協助新增", logChannel);
+                            }
                             continue;
                         }
 
@@ -710,7 +718,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                 {
                     if (token.IsExpired(Google.Apis.Util.SystemClock.Default))
                     {
-                        Log.Info($"{discordUserId} AccessToken過期，重新刷新");
                         if (!await credential.RefreshTokenAsync(CancellationToken.None))
                         {
                             Log.Warn($"{discordUserId} AccessToken無法刷新");
