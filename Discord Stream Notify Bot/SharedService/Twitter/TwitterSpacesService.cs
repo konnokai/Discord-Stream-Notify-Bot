@@ -207,6 +207,19 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
         {
             Log.Info($"{twitterSpace.UserName} ({twitterSpace.SpaecTitle}): {masterUrl}");
 
+            try
+            {
+                if (!System.IO.Directory.Exists(twitterSpaceRecordPath)) System.IO.Directory.CreateDirectory(twitterSpaceRecordPath);
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"推特語音保存路徑不存在且不可建立: {twitterSpaceRecordPath}");
+                Log.Error($"更改保存路徑至Data資料夾: {Program.GetDataFilePath("")}");
+                Log.Error(ex.ToString());
+
+                twitterSpaceRecordPath = Program.GetDataFilePath("");
+            }
+
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) Process.Start("tmux", $"new-window -d -n \"Twitter Space @{twitterSpace.UserScreenName}\" ffmpeg -i \"{masterUrl}\" \"{twitterSpaceRecordPath}twitter_{twitterSpace.UserId}_{twitterSpace.SpaecId}.m4a\"");
             else Process.Start(new ProcessStartInfo()
             {
