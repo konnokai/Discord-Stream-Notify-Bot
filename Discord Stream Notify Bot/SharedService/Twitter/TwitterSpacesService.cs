@@ -21,7 +21,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
         public bool IsEnbale { get; private set; } = true;
         public UserService UserService { get; private set; }
         public SpacesService SpacesService { get; private set; }
-        
+
+        string twitterSpaceRecordPath = "";
         OAuthInfo oAuthInfo;
         bool isRuning = false;
         DiscordSocketClient _client;
@@ -47,6 +48,9 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
             oAuthInfo = new() { ConsumerKey = botConfig.TwitterApiKey, ConsumerSecret = botConfig.TwitterApiKeySecret };
             UserService = new(oAuthInfo);
             SpacesService = new(oAuthInfo);
+            twitterSpaceRecordPath = botConfig.TwitterSpaceRecordPath;
+            if (string.IsNullOrEmpty(twitterSpaceRecordPath)) twitterSpaceRecordPath = Program.GetDataFilePath("");
+            if (!twitterSpaceRecordPath.EndsWith(Program.GetPlatformSlash())) twitterSpaceRecordPath += Program.GetPlatformSlash();
 
             timer = new(async (stats) =>
             {
@@ -191,7 +195,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                     catch (Exception ex)
                     {
                         Log.Error($"Notice Space {item.GuildId} / {item.DiscordChannelId}\n{ex.Message}");
-                        if (ex.Message.Contains("50013") || ex.Message.Contains("50001")) db.NoticeTwitterSpaceChannel.Remove(db.NoticeTwitterSpaceChannel.First((x) => x.DiscordChannelId == item.DiscordChannelId));
+                        if (ex.Message.Contains("50013") || ex.Message.Contains("50001")) db.NoticeTwitterSpaceChannel.RemoveRange(db.NoticeTwitterSpaceChannel.Where((x) => x.DiscordChannelId == item.DiscordChannelId));
                         db.SaveChanges();
                     }
                 }
@@ -203,7 +207,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
         {
             Log.Info($"{twitterSpace.UserName} ({twitterSpace.SpaecTitle}): {masterUrl}");
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) Process.Start("tmux", $"new-window -d -n \"Twitter Space @{twitterSpace.UserScreenName}\" ffmpeg -i \"{masterUrl}\" \"/mnt/live/twitter_{twitterSpace.UserId}_{twitterSpace.SpaecId}.m4a\"");
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) Process.Start("tmux", $"new-window -d -n \"Twitter Space @{twitterSpace.UserScreenName}\" ffmpeg -i \"{masterUrl}\" \"{twitterSpaceRecordPath}twitter_{twitterSpace.UserId}_{twitterSpace.SpaecId}.m4a\"");
             else Process.Start(new ProcessStartInfo()
             {
                 FileName = "ffmpeg",

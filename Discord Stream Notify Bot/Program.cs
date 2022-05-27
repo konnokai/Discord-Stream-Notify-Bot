@@ -312,10 +312,10 @@ namespace Discord_Stream_Notify_Bot
         }
 
         public static string GetDataFilePath(string fileName)
-        {
-            return AppDomain.CurrentDomain.BaseDirectory + "Data" +
-                (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "\\" : "/") + fileName;
-        }
+            => $"{AppDomain.CurrentDomain.BaseDirectory}Data{GetPlatformSlash()}{fileName}";        
+
+        public static string GetPlatformSlash()
+            => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "\\" : "/";        
 
         private static void Console_CancelKeyPress(object sender, ConsoleCancelEventArgs e)
         {

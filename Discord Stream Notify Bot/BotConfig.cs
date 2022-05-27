@@ -12,6 +12,7 @@ public class BotConfig
     public ulong TestSlashCommandGuildId { get; set; } = 0;
     public string TwitterApiKey { get; set; } = "";
     public string TwitterApiKeySecret { get; set; } = "";
+    public string TwitterSpaceRecordPath { get; set; } = "";
     public string WebHookUrl { get; set; } = "";
 
     public void InitBotConfig()
@@ -90,6 +91,7 @@ public class BotConfig
             GoogleApiKey = config.GoogleApiKey;
             TwitterApiKey = config.TwitterApiKey;
             TwitterApiKeySecret = config.TwitterApiKeySecret;
+            TwitterSpaceRecordPath = config.TwitterSpaceRecordPath;
             GoogleClientId = config.GoogleClientId;
             GoogleClientSecret = config.GoogleClientSecret;
             RedisOption = config.RedisOption;
