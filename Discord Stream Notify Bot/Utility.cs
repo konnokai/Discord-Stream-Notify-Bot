@@ -12,8 +12,7 @@ namespace Discord_Stream_Notify_Bot
         {
             try
             {
-                var set = Program.RedisDb.SetMembers("youtube.nowRecord");
-                return set.Select((x) => x.ToString()).ToList();
+                return Program.RedisDb.SetMembers("youtube.nowRecord").Select((x) => x.ToString()).ToList();
             }
             catch (Exception ex)
             {

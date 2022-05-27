@@ -54,23 +54,30 @@ namespace Discord_Stream_Notify_Bot.HttpClients
             if (string.IsNullOrEmpty(queryId))
                 await GetQueryIdAsync();
 
-            string query = WebUtility.UrlEncode(JsonConvert.SerializeObject(new
+            string variables = WebUtility.UrlEncode(JsonConvert.SerializeObject(new
             {
                 id = spaceId,
                 isMetatagsQuery = false,
-                withSuperFollowsUserFields = false,
-                withBirdwatchPivots = false,
+                withSuperFollowsUserFields = true,
                 withDownvotePerspective = false,
                 withReactionsMetadata = false,
                 withReactionsPerspective = false,
-                withSuperFollowsTweetFields = false,
-                withReplays = false,
-                withScheduledSpaces = false
+                withSuperFollowsTweetFields = true,
+                withReplays = true
+            }));
+
+            string features = WebUtility.UrlEncode(JsonConvert.SerializeObject(new
+            {
+                dont_mention_me_view_api_enabled = true,
+                interactive_text_enabled = true,
+                responsive_web_uc_gql_enabled = false,
+                vibe_tweet_context_enabled = false,
+                responsive_web_edit_tweet_api_enabled = false
             }));
 
             try
             {
-                string url = $"https://twitter.com/i/api/graphql/{queryId}/AudioSpaceById?variables=" + query;
+                string url = $"https://twitter.com/i/api/graphql/{queryId}/AudioSpaceById?variables={variables}&features={features}";
                 return JObject.Parse(await Client.GetStringAsync(url))["data"]["audioSpace"]["metadata"];
             }
             catch (Exception ex)
