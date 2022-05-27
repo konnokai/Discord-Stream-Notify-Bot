@@ -90,7 +90,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                                         try
                                         {
                                             var metadataJson = await _twitterClient.GetTwitterSpaceMetadataAsync(item.id);
-                                            masterUrl = await _twitterClient.GetTwitterSpaceMasterUrlAsync(metadataJson["media_key"].ToString());
+                                            masterUrl = (await _twitterClient.GetTwitterSpaceMasterUrlAsync(metadataJson["media_key"].ToString())).Replace(" ","");
                                         }
                                         catch (Exception ex) { Log.Error($"GetTwitterSpaceMasterUrl: {item.id}\n{ex}"); continue; }
 
