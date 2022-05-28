@@ -220,7 +220,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                 twitterSpaceRecordPath = Program.GetDataFilePath("");
             }
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) Process.Start("tmux", $"new-window -d -n \"Twitter Space @{twitterSpace.UserScreenName}\" ffmpeg -i \"{masterUrl}\" \"{twitterSpaceRecordPath}twitter_{twitterSpace.UserId}_{twitterSpace.SpaecId}.m4a\"");
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) Process.Start("tmux", $"new-window -d -n \"Twitter Space @{twitterSpace.UserScreenName}\" ffmpeg -i \"{masterUrl}\" \"{twitterSpaceRecordPath}[{twitterSpace.UserScreenName}]{twitterSpace.SpaecActualStartTime:yyyyMMdd} - {twitterSpace.SpaecId}.m4a\"");
             else Process.Start(new ProcessStartInfo()
             {
                 FileName = "ffmpeg",
