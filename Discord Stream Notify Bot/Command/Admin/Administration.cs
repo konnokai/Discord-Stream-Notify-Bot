@@ -95,6 +95,22 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
         [RequireOwner]
         public async Task SearchServerAsync([Summary("關鍵字")] string keyword = "", [Summary("頁數")] int page = 0)
         {
+            if (ulong.TryParse(keyword, out ulong guildId))
+            {
+                var guild = _client.GetGuild(guildId);
+                if (guild != null)
+                {
+                    bool isBotOwnerInGuild = guild.GetUser(Program.ApplicatonOwner.Id) != null;
+
+                    var embed = new EmbedBuilder().WithOkColor().AddField(guild.Name, "Id: " + guild.Id +
+                        "\nOwner Id: " + guild.OwnerId +
+                        "\n人數: " + guild.MemberCount +
+                        "\nBot擁有者是否在該伺服器: " + (isBotOwnerInGuild ? "是" : "否")).Build();
+                    await Context.Channel.SendMessageAsync(embed: embed);
+                    return;
+                }
+            }
+
             var list = _client.Guilds.Where((x) => x.Name.Contains(keyword));
             if (list.Count() == 0)
             {
@@ -108,12 +124,11 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
 
                 foreach (var item in list.Skip(cur * 5).Take(5))
                 {
-                    int totalMember = item.MemberCount;
                     bool isBotOwnerInGuild = item.GetUser(Program.ApplicatonOwner.Id) != null;
 
                     embedBuilder.AddField(item.Name, "Id: " + item.Id +
                         "\nOwner Id: " + item.OwnerId +
-                        "\n人數: " + totalMember.ToString() +
+                        "\n人數: " + item.MemberCount.ToString() +
                         "\nBot擁有者是否在該伺服器: " + (isBotOwnerInGuild ? "是" : "否"));
                 }
 
@@ -149,12 +164,18 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
 
         [Command("GetInviteURL")]
         [Summary("取得伺服器的邀請連結")]
+        [Alias("invite")]
         [RequireBotPermission(GuildPermission.CreateInstantInvite)]
         [RequireOwner]
         public async Task GetInviteURLAsync([Summary("伺服器Id")] ulong gid = 0, [Summary("頻道Id")] ulong cid = 0)
         {
             if (gid == 0) gid = Context.Guild.Id;
             SocketGuild guild = _client.GetGuild(gid);
+            if (guild == null)
+            {
+                await Context.Channel.SendErrorAsync($"伺服器 {gid} 不存在");
+                return;
+            }
 
             try
             {
