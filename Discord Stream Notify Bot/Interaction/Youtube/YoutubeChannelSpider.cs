@@ -23,7 +23,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
         [SlashCommand("add-youtube-spider", "新增非兩大箱的頻道檢測爬蟲")]
         public async Task AddChannelSpider([Summary("頻道網址")] string channelUrl)
         {
-            await DeferAsync().ConfigureAwait(false);
+            await DeferAsync(true).ConfigureAwait(false);
 
             string channelId = "";
             try
@@ -103,7 +103,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
         [SlashCommand("remove-youtube-spider", "移除非兩大箱的頻道檢測爬蟲")]
         public async Task RemoveChannelSpider([Summary("頻道網址")] string channelUrl)
         {
-            await DeferAsync().ConfigureAwait(false);
+            await DeferAsync(true).ConfigureAwait(false);
 
             string channelId = "";
             try

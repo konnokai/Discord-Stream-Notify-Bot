@@ -244,7 +244,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
         [SlashCommand("add-twitter-spider", "新增推特語音空間爬蟲")]
         public async Task AddSpider([Summary("推特使用者名稱")] string userScreenName)
         {
-            await DeferAsync(false).ConfigureAwait(false);
+            await DeferAsync(true).ConfigureAwait(false);
 
             if (string.IsNullOrWhiteSpace(userScreenName))
             {

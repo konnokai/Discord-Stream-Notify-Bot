@@ -351,7 +351,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
         [SlashCommand("remove-youtube-notice", "移除直播開台通知的頻道")]
         public async Task RemoveChannel([Summary("頻道網址")] string channelUrl)
         {
-            await DeferAsync().ConfigureAwait(false);
+            await DeferAsync(true).ConfigureAwait(false);
 
             string channelId = "";
             try
@@ -484,7 +484,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
         [SlashCommand("set-youtube-notice-message", "設定通知訊息")]
         public async Task SetMessage([Summary("頻道網址")] string channelUrl, [Summary("通知類型")] SharedService.Youtube.YoutubeStreamService.NoticeType noticeType, [Summary("通知訊息")] string message = "")
         {
-            await DeferAsync().ConfigureAwait(false);
+            await DeferAsync(true).ConfigureAwait(false);
 
             string channelId = "";
             try

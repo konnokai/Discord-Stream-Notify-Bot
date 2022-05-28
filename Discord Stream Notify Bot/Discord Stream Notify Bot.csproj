@@ -12,6 +12,10 @@
     <Compile Remove="Migrations\20210420131741_AddMemberCheck.Designer.cs" />
     <Compile Remove="Migrations\20210420132732_AddMemberCheck.cs" />
     <Compile Remove="Migrations\20210420132732_AddMemberCheck.Designer.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Logo_64.ico" />
   </ItemGroup>  
 
   <ItemGroup>
@@ -45,5 +49,6 @@
 	
 	<PropertyGroup>
 		<SourceRevisionId>build$([System.DateTime]::UtcNow.AddHours(8).ToString("yyyy/MM/dd HH:mm:ss"))</SourceRevisionId>
+		<ApplicationIcon>Logo_64.ico</ApplicationIcon>
 	</PropertyGroup>
 </Project>
