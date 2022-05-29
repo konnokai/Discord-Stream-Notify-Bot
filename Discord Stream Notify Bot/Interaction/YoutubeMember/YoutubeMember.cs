@@ -146,7 +146,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
         [SlashCommand("list-checked-member", "顯示現在已成功驗證的成員清單")]
         [RequireContext(ContextType.Guild)]
         [RequireUserPermission(GuildPermission.Administrator)]
-        public async Task ListCheckedMemberAsync([Summary("頁數")]int page = 1)
+        public async Task ListCheckedMemberAsync([Summary("頁數")] int page = 1)
         {
             using (var db = DataBase.DBContext.GetDbContext())
             {
@@ -163,14 +163,14 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
                 {
                     return new EmbedBuilder().WithOkColor()
                     .WithTitle("已驗證成功清單")
-                    .WithDescription(string.Join('\n', 
+                    .WithDescription(string.Join('\n',
                         youtubeMemberChecks.Skip(page * 20).Take(20)
                             .Select((x) => $"<@{x.UserId}>: {x.CheckYTChannelId}")));
                 }, youtubeMemberChecks.Count(), 20, true, true);
             }
         }
 
-        [SlashCommand("show-youtube-account","顯示現在綁定的Youtube帳號")]
+        [SlashCommand("show-youtube-account", "顯示現在綁定的Youtube帳號")]
         public async Task ShowYoutubeAccountAsync()
         {
             await DeferAsync(true);
@@ -179,6 +179,25 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
             {
                 var channelUrl = await _service.GetYoutubeDataAsync(Context.User.Id.ToString());
                 await Context.Interaction.SendConfirmAsync($"你已綁定的頻道: {channelUrl}", true);
+            }
+            catch (NullReferenceException nullEx)
+            {
+                switch (nullEx.Message)
+                {
+                    case "userId":
+                        await Context.Interaction.SendErrorAsync("UserId錯誤", true);
+                        break;
+                    case "token":
+                    case "userCert":
+                    case "channel":
+                        await Context.Interaction.SendErrorAsync("錯誤，請確認是否已到網站上綁定或此Google帳號存在Youtube頻道", true);
+                        break;
+                    default:
+                        await Context.Interaction.SendErrorAsync("錯誤，請確認是否已到網站上綁定或此Google帳號存在Youtube頻道\n" +
+                            "如有疑問請向`孤之界`詢問", true);
+                        Log.Error(nullEx.ToString());
+                        break;
+                }
             }
             catch (Exception ex)
             {
