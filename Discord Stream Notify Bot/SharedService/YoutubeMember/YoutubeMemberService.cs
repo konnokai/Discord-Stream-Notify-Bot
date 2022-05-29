@@ -770,7 +770,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                 if (ex.DiscordCode == DiscordErrorCode.CannotSendMessageToUser)
                 {
                     Log.Warn($"無法傳送訊息至: {dc.Name} ({userId})");
-                    await tc.SendMessageAsync($"無法傳送訊息至: {userId}\n請向該用戶提醒開啟 `允許來自伺服器成員的私人訊息`");
+                    await tc.SendMessageAsync($"無法傳送訊息至: <@{userId}>\n請向該用戶提醒開啟 `允許來自伺服器成員的私人訊息`");
                 }
                 else
                     Log.Error(ex.ToString());
@@ -794,7 +794,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                 if (ex.DiscordCode == DiscordErrorCode.CannotSendMessageToUser)
                 {
                     Log.Warn($"無法傳送訊息至: {dc.Name} ({userId})");
-                    await tc.SendMessageAsync($"無法傳送訊息至: {userId}\n請向該用戶提醒開啟 `允許來自伺服器成員的私人訊息`");
+                    await tc.SendMessageAsync($"無法傳送訊息至: <@{userId}>\n請向該用戶提醒開啟 `允許來自伺服器成員的私人訊息`");
                 }
                 else
                     Log.Error(ex.ToString());
