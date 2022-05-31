@@ -314,7 +314,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 return;
             }
 
-            await Program.RedisDb.StringSetAsync("youtube.otherStart", "0", TimeSpan.FromMinutes(15));
+            await Program.RedisDb.StringSetAsync("youtube.otherStart", "0", TimeSpan.FromMinutes(14));
             //Log.Info("其他勢影片清單整理開始");
             Program.isOtherChannelSpider = true;
             Dictionary<string, List<string>> otherVideoDic = new Dictionary<string, List<string>>();
