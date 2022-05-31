@@ -623,7 +623,22 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                         $"至 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 重新登入並再次於伺服器執行 `/youtube-member check`", item2.UserId, logChannel);
                                     continue;
                                 }
-                                else
+                                else if (ex.Message.ToLower().Contains("500"))
+                                {
+                                    Log.Error($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {item2.UserId} 會限資格取得失敗: 500內部錯誤");
+
+                                    await logChannel.SendErrorMessageAsync(user, new EmbedBuilder().AddField("檢查頻道", guildYoutubeMemberConfig.MemberCheckChannelTitle).AddField("狀態", "Google內部錯誤"));
+                                    continue;
+                                }
+                                else if (ex.Message.ToLower().Contains("bad req"))
+                                {
+                                    Log.Error($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {item2.UserId} 會限資格取得失敗: 400錯誤");
+                                    Log.Error(ex.ToString());
+
+                                    await logChannel.SendErrorMessageAsync(user, new EmbedBuilder().AddField("檢查頻道", guildYoutubeMemberConfig.MemberCheckChannelTitle).AddField("狀態", "400錯誤"));
+                                    continue;
+                                }
+                                else                                
                                 {
                                     Log.Error($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {item2.UserId} 會限資格取得失敗: 未知的錯誤");
                                     Log.Error(ex.ToString());
@@ -631,7 +646,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                     Program.RedisSub.Publish("member.revokeToken", item2.UserId);
 
                                     await logChannel.SendErrorMessageAsync(user, new EmbedBuilder().AddField("檢查頻道", guildYoutubeMemberConfig.MemberCheckChannelTitle).AddField("狀態", "不明的錯誤"));
-                                    await userChannel.SendErrorMessageAsync($"無法驗證您的帳號，請向 {Program.ApplicatonOwner} 確認問題", item2.UserId, logChannel);
+                                    await userChannel.SendErrorMessageAsync($"無法驗證您的帳號，可能是Google內部錯誤\n請重新於伺服器執行 `/youtube-member check` 並向 {Program.ApplicatonOwner} 確認問題", item2.UserId, logChannel);
                                     continue;
                                 }
                             }
