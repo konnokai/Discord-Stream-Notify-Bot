@@ -11,7 +11,8 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
     public partial class YoutubeStream : TopLevelModule<SharedService.Youtube.YoutubeStreamService>
     {
         [RequireContext(ContextType.Guild)]
-        [RequireUserPermission(GuildPermission.Administrator)]
+        [RequireUserPermission(GuildPermission.Administrator, Group = "bot_owner")]
+        [RequireOwner(Group = "bot_owner")]
         [RequireGuildMemberCount(300)]
         [CommandSummary("新增非兩大箱的頻道檢測爬蟲\n" +
            "**禁止新增非VTuber的頻道**\n" +
@@ -75,7 +76,11 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                     return;
                 }
 
-                db.YoutubeChannelSpider.Add(new DataBase.Table.YoutubeChannelSpider() { GuildId = Context.Interaction.User.Id == Program.ApplicatonOwner.Id ? 0 : Context.Guild.Id, ChannelId = channelId, ChannelTitle = channelTitle });
+                var spider = new DataBase.Table.YoutubeChannelSpider() { GuildId = Context.Guild.Id, ChannelId = channelId, ChannelTitle = channelTitle };
+                if (Context.User.Id == Program.ApplicatonOwner.Id && !await PromptUserConfirmAsync("設定該爬蟲為本伺服器使用?"))
+                    spider.GuildId = 0;
+
+                db.YoutubeChannelSpider.Add(spider);
                 db.SaveChanges();
 
                 await Context.Interaction.SendConfirmAsync($"已將 {channelTitle} 加入到爬蟲清單內\n" +
@@ -95,7 +100,8 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
         }
 
         [RequireContext(ContextType.Guild)]
-        [RequireUserPermission(GuildPermission.Administrator)]
+        [RequireUserPermission(GuildPermission.Administrator, Group = "bot_owner")]
+        [RequireOwner(Group = "bot_owner")]
         [CommandSummary("移除非兩大箱的頻道檢測爬蟲\n" +
             "爬蟲必須由本伺服器新增才可移除")]
         [CommandExample("https://www.youtube.com/channel/UC0qt9BfrpQo-drjuPKl_vdA",
