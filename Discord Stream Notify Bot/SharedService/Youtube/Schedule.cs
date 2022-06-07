@@ -11,6 +11,8 @@ using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Collections.Concurrent;
+using System.Diagnostics;
 
 namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 {
@@ -303,6 +305,9 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             //Log.Info("彩虹社影片清單整理完成");
         }
 
+        //Todo: BlockingCollection應用 (但還不知道要用甚麼)
+        //https://blog.darkthread.net/blog/blockingcollection/
+        //https://docs.microsoft.com/en-us/dotnet/standard/collections/thread-safe/blockingcollection-overview
         private async Task OtherScheduleAsync()
         {
             if (Program.isOtherChannelSpider) return;

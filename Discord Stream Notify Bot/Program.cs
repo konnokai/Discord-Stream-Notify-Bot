@@ -115,8 +115,7 @@ namespace Discord_Stream_Notify_Bot
                     UseCompiledLambda = true,
                     EnableAutocompleteHandlers = false,
                     DefaultRunMode = Discord.Interactions.RunMode.Async
-                }))
-                .AddDbContext<DataBase.DBContext>();
+                }));
 
             interactionServices.AddHttpClient<HttpClients.DiscordWebhookClient>();
             interactionServices.AddHttpClient<HttpClients.TwitterClient>();
@@ -138,8 +137,7 @@ namespace Discord_Stream_Notify_Bot
                 {
                     CaseSensitiveCommands = false,
                     DefaultRunMode = Discord.Commands.RunMode.Async
-                }))
-                .AddDbContext<DataBase.DBContext>();
+                }));
 
             commandServices.AddHttpClient<HttpClients.DiscordWebhookClient>();
             commandServices.AddHttpClient<HttpClients.TwitterClient>();
