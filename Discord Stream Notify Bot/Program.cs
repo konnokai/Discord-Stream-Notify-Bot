@@ -113,8 +113,9 @@ namespace Discord_Stream_Notify_Bot
                 {
                     AutoServiceScopes = true,
                     UseCompiledLambda = true,
-                    EnableAutocompleteHandlers = false,
-                    DefaultRunMode = Discord.Interactions.RunMode.Async
+                    EnableAutocompleteHandlers = true,
+                    DefaultRunMode = Discord.Interactions.RunMode.Async,
+                    ExitOnMissingModalField = true,
                 }));
 
             interactionServices.AddHttpClient<HttpClients.DiscordWebhookClient>();

@@ -4,12 +4,42 @@ using System.Linq;
 using System.Threading.Tasks;
 using Discord_Stream_Notify_Bot.Interaction.Attribute;
 using Discord.Interactions;
+using System.Collections.Generic;
 
 namespace Discord_Stream_Notify_Bot.Interaction.Youtube
 {
     [Group("youtube", "YT")]
     public partial class YoutubeStream : TopLevelModule<SharedService.Youtube.YoutubeStreamService>
     {
+        public class GuildYoutubeChannelSpiderAutocompleteHandler : AutocompleteHandler
+        {
+            public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+            {
+                using var db = DataBase.DBContext.GetDbContext();
+                IQueryable<DataBase.Table.YoutubeChannelSpider> channelList;
+
+                if (context.User.Id == Program.ApplicatonOwner.Id)
+                {
+                    channelList = db.YoutubeChannelSpider;
+                }
+                else
+                {
+                    if (!db.YoutubeChannelSpider.Any((x) => x.GuildId == context.Guild.Id))
+                        return AutocompletionResult.FromSuccess();
+
+                    channelList = db.YoutubeChannelSpider.Where((x) => x.GuildId == context.Guild.Id);
+                }
+
+                List<AutocompleteResult> results = new();
+                foreach (var item in channelList)
+                {
+                    results.Add(new AutocompleteResult(item.ChannelTitle, item.ChannelId));
+                }
+
+                return AutocompletionResult.FromSuccess(results.Take(25));
+            }
+        }
+
         [RequireContext(ContextType.Guild)]
         [RequireUserPermission(GuildPermission.Administrator, Group = "bot_owner")]
         [RequireOwner(Group = "bot_owner")]
@@ -107,7 +137,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
         [CommandExample("https://www.youtube.com/channel/UC0qt9BfrpQo-drjuPKl_vdA",
             "https://www.youtube.com/c/かぐらななななかぐ辛党Ch")]
         [SlashCommand("remove-youtube-spider", "移除非兩大箱的頻道檢測爬蟲")]
-        public async Task RemoveChannelSpider([Summary("頻道網址")] string channelUrl)
+        public async Task RemoveChannelSpider([Summary("頻道網址"), Autocomplete(typeof(GuildYoutubeChannelSpiderAutocompleteHandler))] string channelUrl)
         {
             await DeferAsync(true).ConfigureAwait(false);
 

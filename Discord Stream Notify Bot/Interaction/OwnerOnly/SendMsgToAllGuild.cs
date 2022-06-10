@@ -15,8 +15,8 @@ namespace Discord_Stream_Notify_Bot.Interaction.OwnerOnly
             var mb = new ModalBuilder()
             .WithTitle("傳送全球訊息訊息")
             .WithCustomId("send_message")
-            .AddTextInput("圖片網址", "image_url", placeholder: "https://...")
-            .AddTextInput("訊息", "message", TextInputStyle.Paragraph, "內容...");
+            .AddTextInput("圖片網址", "image_url", placeholder: "https://...", required: false)
+            .AddTextInput("訊息", "message", TextInputStyle.Paragraph, "內容...", required: true);
 
             await Context.Interaction.RespondWithModalAsync(mb.Build());
         }

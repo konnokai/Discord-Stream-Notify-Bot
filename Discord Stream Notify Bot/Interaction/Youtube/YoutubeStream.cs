@@ -15,6 +15,26 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
         private readonly DiscordSocketClient _client;
         private readonly HttpClients.DiscordWebhookClient _discordWebhookClient;
 
+        public class GuildNoticeYoutubeChannelIdAutocompleteHandler : AutocompleteHandler
+        {
+            public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+            {
+                using var db = DataBase.DBContext.GetDbContext();
+                if (!db.NoticeYoutubeStreamChannel.Any((x) => x.GuildId == context.Guild.Id))
+                    return AutocompletionResult.FromSuccess();
+
+                var channelIdList = db.NoticeYoutubeStreamChannel.Where((x) => x.GuildId == context.Guild.Id).Select((x) => x.NoticeStreamChannelId);
+
+                List<AutocompleteResult> results = new();
+                foreach (var item in channelIdList)
+                {
+                    results.Add(new AutocompleteResult(db.GetChannelTitleByChannelId(item), item));
+                }
+
+                return AutocompletionResult.FromSuccess(results.Take(25));
+            }
+        }
+
         public YoutubeStream(DiscordSocketClient client, HttpClients.DiscordWebhookClient discordWebhookClient)
         {
             _client = client;
@@ -37,7 +57,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
 
                     for (int i = 0; i < nowRecordList.Count; i += 50)
                     {
-                        list.AddRange(await GetChannelTitle(nowRecordList.Skip(i).Take(50)));
+                        list.AddRange(await GetChannelTitle(nowRecordList.Skip(i).Take(50), true));
                     }
 
                     list.Sort();
@@ -313,7 +333,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                     string channelTitle = await GetChannelTitle(channelId).ConfigureAwait(false);
                     if (channelTitle == "")
                     {
-                        await Context.Interaction.SendErrorAsync($"頻道 {channelId} 不存在",true).ConfigureAwait(false);
+                        await Context.Interaction.SendErrorAsync($"頻道 {channelId} 不存在", true).ConfigureAwait(false);
                         return;
                     }
 
@@ -349,7 +369,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             "輸入all移除全部 `Holo + 2434 + 非兩大箱` 的直播通知")]
         [CommandExample("https://www.youtube.com/channel/UCdn5BQ06XqgXoAxIhbqw5Rg", "all", "2434")]
         [SlashCommand("remove-youtube-notice", "移除直播開台通知的頻道")]
-        public async Task RemoveChannel([Summary("頻道網址")] string channelUrl)
+        public async Task RemoveChannel([Summary("頻道網址"), Autocomplete(typeof(GuildNoticeYoutubeChannelIdAutocompleteHandler))] string channelUrl)
         {
             await DeferAsync(true).ConfigureAwait(false);
 
@@ -421,7 +441,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
 
         [RequireContext(ContextType.Guild)]
         [SlashCommand("list-youtube-notice", "顯示現在已加入通知清單的直播頻道")]
-        public async Task ListChannel([Summary("頁數")]int page = 0)
+        public async Task ListChannel([Summary("頁數")] int page = 0)
         {
             using (var db = DataBase.DBContext.GetDbContext())
             {
@@ -482,7 +502,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             "UCUKD-uaobj9jiqB-VXt71mA newstream -",
             "UCXRlIK3Cw_TJIQC5kSJJQMg end")]
         [SlashCommand("set-youtube-notice-message", "設定通知訊息")]
-        public async Task SetMessage([Summary("頻道網址")] string channelUrl, [Summary("通知類型")] SharedService.Youtube.YoutubeStreamService.NoticeType noticeType, [Summary("通知訊息")] string message = "")
+        public async Task SetMessage([Summary("頻道網址"), Autocomplete(typeof(GuildNoticeYoutubeChannelIdAutocompleteHandler))] string channelUrl, [Summary("通知類型")] SharedService.Youtube.YoutubeStreamService.NoticeType noticeType, [Summary("通知訊息")] string message = "")
         {
             await DeferAsync(true).ConfigureAwait(false);
 
@@ -600,23 +620,6 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             }
         }
 
-        private async Task<string> TryGetChannelId(string channelName)
-        {
-            try
-            {
-                var channel = _service.yt.Channels.List("id");
-                channel.ForUsername = channelName;
-                var response = await channel.ExecuteAsync().ConfigureAwait(false);
-                return response.Items[0].Id;
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex.Message + "\n" + ex.StackTrace);
-                return "";
-            }
-
-        }
-
         private async Task<string> GetChannelTitle(string channelId)
         {
             try
@@ -633,14 +636,15 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             }
         }
 
-        private async Task<List<string>> GetChannelTitle(IEnumerable<string> channelId)
+        private async Task<List<string>> GetChannelTitle(IEnumerable<string> channelId, bool formatUrl)
         {
             try
             {
                 var channel = _service.yt.Channels.List("snippet");
                 channel.Id = string.Join(",", channelId);
                 var response = await channel.ExecuteAsync().ConfigureAwait(false);
-                return response.Items.Select((x) => Format.Url(x.Snippet.Title, $"https://www.youtube.com/channel/{x.Id}")).ToList();
+                if (formatUrl) return response.Items.Select((x) => Format.Url(x.Snippet.Title, $"https://www.youtube.com/channel/{x.Id}")).ToList();
+                else return response.Items.Select((x) => x.Snippet.Title).ToList();
             }
             catch (Exception ex)
             {

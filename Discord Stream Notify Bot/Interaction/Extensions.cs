@@ -88,43 +88,40 @@ namespace Discord_Stream_Notify_Bot.Interaction
         public static StreamVideo GetStreamVideoByVideoId(this DataBase.DBContext dBContext, string videoId)
         {
             videoId = videoId.Trim();
-            if (dBContext.HoloStreamVideo.Any((x) => x.VideoId == videoId))
-            {
-                return dBContext.HoloStreamVideo.First((x) => x.VideoId == videoId);
-            }
-            else if (dBContext.NijisanjiStreamVideo.Any((x) => x.VideoId == videoId))
-            {
-                return dBContext.NijisanjiStreamVideo.First((x) => x.VideoId == videoId);
-            }
-            else if (dBContext.OtherStreamVideo.Any((x) => x.VideoId == videoId))
-            {
-                return dBContext.OtherStreamVideo.First((x) => x.VideoId == videoId);
-            }
-            else
-            {
-                return null;
-            }
+            StreamVideo streamVideo;
+            if ((streamVideo = dBContext.HoloStreamVideo.FirstOrDefault((x) => x.VideoId == videoId)) != null)
+                return streamVideo;
+            if ((streamVideo = dBContext.NijisanjiStreamVideo.FirstOrDefault((x) => x.VideoId == videoId)) != null)
+                return streamVideo;
+            if ((streamVideo = dBContext.OtherStreamVideo.FirstOrDefault((x) => x.VideoId == videoId)) != null)
+                return streamVideo;
+            return null;                
         }
 
         public static StreamVideo GetLastStreamVideoByChannelId(this DataBase.DBContext dBContext, string channelId)
         {
             channelId = channelId.Trim();
-            if (dBContext.HoloStreamVideo.Any((x) => x.ChannelId == channelId))
-            {
-                return dBContext.HoloStreamVideo.ToList().Last((x) => x.ChannelId == channelId);
-            }
-            else if (dBContext.NijisanjiStreamVideo.Any((x) => x.ChannelId == channelId))
-            {
-                return dBContext.NijisanjiStreamVideo.ToList().Last((x) => x.ChannelId == channelId);
-            }
-            else if (dBContext.OtherStreamVideo.Any((x) => x.ChannelId == channelId))
-            {
-                return dBContext.OtherStreamVideo.ToList().Last((x) => x.ChannelId == channelId);
-            }
-            else
-            {
-                return null;
-            }
+            StreamVideo streamVideo;
+            if ((streamVideo = dBContext.HoloStreamVideo.LastOrDefault((x) => x.ChannelId == channelId)) != null)
+                return streamVideo;
+            if ((streamVideo = dBContext.NijisanjiStreamVideo.LastOrDefault((x) => x.ChannelId == channelId)) != null)
+                return streamVideo;
+            if ((streamVideo = dBContext.OtherStreamVideo.LastOrDefault((x) => x.ChannelId == channelId)) != null)
+                return streamVideo;
+            return null;
+        }
+
+        public static string GetChannelTitleByChannelId(this DataBase.DBContext dBContext, string channelId)
+        {
+            channelId = channelId.Trim();
+            StreamVideo streamVideo;
+            if ((streamVideo = dBContext.HoloStreamVideo.FirstOrDefault((x) => x.ChannelId == channelId)) != null)
+                return streamVideo.ChannelTitle;
+            if ((streamVideo = dBContext.NijisanjiStreamVideo.FirstOrDefault((x) => x.ChannelId == channelId)) != null)
+                return streamVideo.ChannelTitle;
+            if ((streamVideo = dBContext.OtherStreamVideo.FirstOrDefault((x) => x.ChannelId == channelId)) != null)
+                return streamVideo.ChannelTitle;
+            return channelId;
         }
 
         public static bool IsChannelInDb(this DataBase.DBContext dBContext, string channelId)
