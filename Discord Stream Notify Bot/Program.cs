@@ -174,27 +174,23 @@ namespace Discord_Stream_Notify_Bot
                 try
                 {
                     InteractionService interactionService = iService.GetService<InteractionService>();
-                    try
-                    {
-                        if (botConfig.TestSlashCommandGuildId == 0 || _client.GetGuild(botConfig.TestSlashCommandGuildId) == null)
-                            Log.Warn("未設定測試Slash指令的伺服器或伺服器不存在，略過");
-                        else
-                        {
-                            var result = await interactionService.AddCommandsToGuildAsync(botConfig.TestSlashCommandGuildId, true, interactionService.SlashCommands.Where((x) => x.Module.DontAutoRegister).ToArray());
-                            Log.Info($"已註冊指令: {string.Join(", ", result.Select((x) => x.Name))}");
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Error("註冊伺服器專用Slash指令失敗");
-                        Log.Error(ex.ToString());
-                    }
 
 #if DEBUG
                     if (botConfig.TestSlashCommandGuildId == 0 || _client.GetGuild(botConfig.TestSlashCommandGuildId) == null)
                         Log.Warn("未設定測試Slash指令的伺服器或伺服器不存在，略過");
                     else
-                        await interactionService.RegisterCommandsToGuildAsync(botConfig.TestSlashCommandGuildId);
+                    {
+                        try
+                        {
+                            var result = await interactionService.AddModulesToGuildAsync(botConfig.TestSlashCommandGuildId, false, interactionService.Modules.Where((x) => x.DontAutoRegister).ToArray());
+                            Log.Info($"已註冊指令 ({botConfig.TestSlashCommandGuildId}) : {string.Join(", ", result.Select((x) => x.Name))}");
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Error("註冊伺服器專用Slash指令失敗");
+                            Log.Error(ex.ToString());
+                        }
+                    }
 #else
 
                     try
