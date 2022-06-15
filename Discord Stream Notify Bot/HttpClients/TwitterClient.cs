@@ -49,7 +49,7 @@ namespace Discord_Stream_Notify_Bot.HttpClients
             }
         }
 
-        public async Task<JToken> GetTwitterSpaceMetadataAsync(string spaceId)
+        public async Task<JToken> GetTwitterSpaceMetadataAsync(string spaceId, bool isRefresh = false)
         {
             if (string.IsNullOrEmpty(queryId))
                 await GetQueryIdAsync();
@@ -66,6 +66,7 @@ namespace Discord_Stream_Notify_Bot.HttpClients
                 withReplays = true
             }));
 
+            //Todo: 讓這個爛參數可以自動新增變化
             string features = WebUtility.UrlEncode(JsonConvert.SerializeObject(new
             {
                 dont_mention_me_view_api_enabled = true,
@@ -84,10 +85,10 @@ namespace Discord_Stream_Notify_Bot.HttpClients
             }
             catch (Exception ex)
             {
-                if (ex.Message.Contains("40"))
+                if (ex.Message.Contains("40") && !isRefresh)
                 {
                     await GetQueryIdAsync();
-                    return await GetTwitterSpaceMetadataAsync(spaceId);
+                    return await GetTwitterSpaceMetadataAsync(spaceId, true);
                 }
                 else throw;
             }

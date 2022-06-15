@@ -92,8 +92,12 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                                             var metadataJson = await _twitterClient.GetTwitterSpaceMetadataAsync(item.id);
                                             masterUrl = (await _twitterClient.GetTwitterSpaceMasterUrlAsync(metadataJson["media_key"].ToString())).Replace(" ","");
                                         }
-                                        catch (Exception ex) { Log.Error($"GetTwitterSpaceMasterUrl: {item.id}\n{ex}"); continue; }
-
+                                        catch (Exception ex)
+                                        {
+                                            Log.Error($"GetTwitterSpaceMasterUrl: {item.id}\n{ex}"); 
+                                            hashSet.Add(item.id); 
+                                            continue;
+                                        }
 
                                         var spaceData = new DataBase.Table.TwitterSpace() { UserId = item.creator_id, UserName = user.UserName, UserScreenName = user.UserScreenName, SpaecId = item.id, SpaecTitle = item.title, SpaecActualStartTime = (item?.started_at).GetValueOrDefault(), SpaecMasterPlaylistUrl = masterUrl.Replace("dynamic_playlist.m3u8?type=live", "master_playlist.m3u8") };
 
