@@ -202,7 +202,18 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
 
                     await Context.Channel.SendConfirmAsync($"已設定使用 `{channelId}` 作為會限驗證頻道\n" +
                         $"驗證成功的成員將會獲得 `{role.Name}` 用戶組\n" +
-                        (channelDataExist ? "可直接開始檢測會限" : "請等待五分鐘後才可開始檢測會限"));                    
+                        (channelDataExist ? "可直接開始檢測會限" : "請等待五分鐘後才可開始檢測會限"));
+
+                    try
+                    {
+                        await (await Program.ApplicatonOwner.CreateDMChannelAsync()).SendMessageAsync(embed: new EmbedBuilder()
+                            .WithOkColor()
+                            .WithTitle("已新增會限驗證頻道")
+                            .AddField("頻道", Format.Url(channelId, $"https://www.youtube.com/channel/{channelId}"), false)
+                            .AddField("伺服器", $"{Context.Guild.Name} ({Context.Guild.Id})", false)
+                            .AddField("執行者", $"{Context.User.Username} ({Context.User.Id})", false).Build());
+                    }
+                    catch (System.Exception ex) { Log.Error(ex.ToString()); }
                 }
                 catch (System.Exception ex)
                 {
@@ -244,6 +255,17 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
                         {
                             db.GuildYoutubeMemberConfig.Remove(guildYoutubeMemberConfig);
                             await Context.Channel.SendConfirmAsync($"已移除 `{channelId}` 的會限驗證");
+
+                            try
+                            {
+                                await (await Program.ApplicatonOwner.CreateDMChannelAsync()).SendMessageAsync(embed: new EmbedBuilder()
+                                    .WithOkColor()
+                                    .WithTitle("已移除會限驗證頻道")
+                                    .AddField("頻道", Format.Url(channelId, $"https://www.youtube.com/channel/{channelId}"), false)
+                                    .AddField("伺服器", $"{Context.Guild.Name} ({Context.Guild.Id})", false)
+                                    .AddField("執行者", $"{Context.User.Username} ({Context.User.Id})", false).Build());
+                            }
+                            catch (System.Exception ex) { Log.Error(ex.ToString()); }
                         }
                     }
                     db.SaveChanges();
