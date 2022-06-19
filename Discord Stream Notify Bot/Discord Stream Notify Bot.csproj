@@ -16,6 +16,10 @@
 
   <ItemGroup>
     <Content Include="Logo_64.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\.editorconfig" Link=".editorconfig" />
   </ItemGroup>  
 
   <ItemGroup>

@@ -13,6 +13,7 @@ namespace Discord_Stream_Notify_Bot.HttpClients
     public class TwitterClient
     {
         private string queryId = "";
+        private string featureSwitches = "";
         public HttpClient Client { get; private set; }
 
         public TwitterClient(HttpClient httpClient)
@@ -23,10 +24,10 @@ namespace Discord_Stream_Notify_Bot.HttpClients
             httpClient.DefaultRequestHeaders.Add("ContentType", "application/json");
 
             Client = httpClient;
-            GetQueryIdAsync().Wait();
+            GetQueryIdAndFeatureSwitchesAsync().Wait();
         }
 
-        public async Task GetQueryIdAsync()
+        public async Task GetQueryIdAndFeatureSwitchesAsync()
         {
             HtmlAgilityPack.HtmlWeb htmlWeb = new HtmlAgilityPack.HtmlWeb();
             htmlWeb.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.82 Safari/537.36";
@@ -39,20 +40,30 @@ namespace Discord_Stream_Notify_Bot.HttpClients
             {
                 string mainJsText = await Client.GetStringAsync(mainJsUrl);
 
-                regex = new Regex("{queryId:\"([^\"]+)\",operationName:\"([^\"]+)\",operationType:\"([^\"]+)\"", RegexOptions.None);
+                regex = new Regex("{queryId:\"([^\"]+)\",operationName:\"([^\"]+)\",operationType:\"([^\"]+)\",metadata:{featureSwitches:\\[([^\\]]+)", RegexOptions.None);
                 var queryList = regex.Matches(mainJsText);
-                queryId = queryList.FirstOrDefault((x) => x.Groups[2].Value == "AudioSpaceById").Groups[1].Value;
+
+                var exports = queryList.FirstOrDefault((x) => x.Groups[2].Value == "AudioSpaceById");
+                queryId = exports.Groups[1].Value;
+                featureSwitches = "{" + string.Join(',', exports.Groups[4].Value.Split(new char[] { ','}, StringSplitOptions.RemoveEmptyEntries).Select((x) => $"{x}:false")) + "}";
+                featureSwitches = WebUtility.UrlEncode(featureSwitches);
 
                 Client.DefaultRequestHeaders.Remove("x-guest-token");
                 regex = new Regex(@"gt=(\d{19});");
-                Client.DefaultRequestHeaders.Add("x-guest-token", regex.Match(web.Text).Groups[1].Value);
+                var guestToken = regex.Match(web.Text).Groups[1].Value;
+                Client.DefaultRequestHeaders.Add("x-guest-token", guestToken);
+
+                Log.Info("NewTwitterMetadata Found!");
+                Log.Info($"QueryId: {queryId}");
+                Log.Info($"FeatureSwitches: {featureSwitches}");
+                Log.Info($"GuestToken: {guestToken}");
             }
         }
 
         public async Task<JToken> GetTwitterSpaceMetadataAsync(string spaceId, bool isRefresh = false)
         {
-            if (string.IsNullOrEmpty(queryId))
-                await GetQueryIdAsync();
+            if (string.IsNullOrEmpty(queryId) || string.IsNullOrEmpty(featureSwitches))
+                await GetQueryIdAndFeatureSwitchesAsync();
 
             string variables = WebUtility.UrlEncode(JsonConvert.SerializeObject(new
             {
@@ -66,28 +77,16 @@ namespace Discord_Stream_Notify_Bot.HttpClients
                 withReplays = true
             }));
 
-            //Todo: 讓這個爛參數可以自動新增變化
-            string features = WebUtility.UrlEncode(JsonConvert.SerializeObject(new
-            {
-                dont_mention_me_view_api_enabled = true,
-                interactive_text_enabled = true,
-                responsive_web_uc_gql_enabled = false,
-                vibe_tweet_context_enabled = false,
-                responsive_web_edit_tweet_api_enabled = false,
-                standardized_nudges_misinfo = false,
-                responsive_web_enhance_cards_enabled = false
-            }));
-
             try
             {
-                string url = $"https://twitter.com/i/api/graphql/{queryId}/AudioSpaceById?variables={variables}&features={features}";
+                string url = $"https://twitter.com/i/api/graphql/{queryId}/AudioSpaceById?variables={variables}&features={featureSwitches}";
                 return JObject.Parse(await Client.GetStringAsync(url))["data"]["audioSpace"]["metadata"];
             }
             catch (Exception ex)
             {
                 if (ex.Message.Contains("40") && !isRefresh)
                 {
-                    await GetQueryIdAsync();
+                    await GetQueryIdAndFeatureSwitchesAsync();
                     return await GetTwitterSpaceMetadataAsync(spaceId, true);
                 }
                 else throw;
@@ -100,21 +99,6 @@ namespace Discord_Stream_Notify_Bot.HttpClients
             {
                 string url = $"https://twitter.com/i/api/1.1/live_video_stream/status/{mediaKey}";
                 return JObject.Parse(await Client.GetStringAsync(url))["source"]["location"].ToString();
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-        }
-
-        [Obsolete]
-        private async Task<string> GetTwitterGuestTokenAsync()
-        {
-            try
-            {
-                var respone = await Client.PostAsync("https://api.twitter.com/1.1/guest/activate.json", new StringContent(""));
-                respone.EnsureSuccessStatusCode();
-                return JObject.Parse(await respone.Content.ReadAsStringAsync())["guest_token"].ToString();
             }
             catch (Exception)
             {
