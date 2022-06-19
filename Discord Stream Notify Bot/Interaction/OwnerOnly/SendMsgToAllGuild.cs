@@ -13,7 +13,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.OwnerOnly
         public async Task SendMessageToAllGuildAsync()
         {
             var mb = new ModalBuilder()
-            .WithTitle("傳送全球訊息訊息")
+            .WithTitle("傳送全球訊息")
             .WithCustomId("send_message")
             .AddTextInput("圖片網址", "image_url", placeholder: "https://...", required: false)
             .AddTextInput("訊息", "message", TextInputStyle.Paragraph, "內容...", required: true);

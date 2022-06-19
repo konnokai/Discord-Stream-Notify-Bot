@@ -3,13 +3,31 @@ using Discord.WebSocket;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace Discord_Stream_Notify_Bot.Interaction.OwnerOnly.Service
 {
     public class SendMsgToAllGuildService : IInteractionService
     {
+        private class ButtonCheckData
+        {
+            public ulong UserId { get; set; }
+            public ulong ChannelId { get; set; }
+            public string Guid { get; set; }
+            public Embed Embed { get; set; }
+
+            public ButtonCheckData(ulong userId, ulong channelId, string guid, Embed embed)
+            {
+                UserId = userId;
+                ChannelId = channelId;
+                Guid = guid;
+                Embed = embed;
+            }
+        }
+
         private readonly DiscordSocketClient _client;
+        private ButtonCheckData checkData;
+        private bool isSending = false;
+
         public SendMsgToAllGuildService(DiscordSocketClient discordSocketClient)
         {
             _client = discordSocketClient;
@@ -32,22 +50,57 @@ namespace Discord_Stream_Notify_Bot.Interaction.OwnerOnly.Service
                     .WithImageUrl(imageUrl)
                     .WithFooter("若看到此消息出現在非通知頻道上，請通知管理員重新設定直播通知").Build();
 
-                string guid = Guid.NewGuid().ToString().Replace("-", "");
+                var guid = Guid.NewGuid().ToString().Replace("-", "");
                 ComponentBuilder component = new ComponentBuilder()
                     .WithButton("是", $"{guid}-yes", ButtonStyle.Success)
                     .WithButton("否", $"{guid}-no", ButtonStyle.Danger);
 
                 await modal.FollowupAsync(embed: embed, components: component.Build(), ephemeral: true).ConfigureAwait(false);
-                if (await GetUserClickAsync(Program.ApplicatonOwner.Id, modal.ChannelId.GetValueOrDefault(), guid)) //Todo: 修正無法透過按鈕回傳確認的問題
+                checkData = new ButtonCheckData(modal.User.Id, modal.ChannelId.Value, guid, embed);
+            };
+
+            _client.ButtonExecuted += async button =>
+            {
+                if (checkData == null || isSending)
+                    return;
+
+                if (!button.Data.CustomId.StartsWith(checkData.Guid))
+                    return;
+
+                if (!(button is SocketMessageComponent userMsg) ||
+                    !(userMsg.Channel is ITextChannel chan) ||
+                    userMsg.User.Id != checkData.UserId ||
+                    userMsg.Channel.Id != checkData.ChannelId)
                 {
+                    await button.SendErrorAsync("你無法使用本功能", true).ConfigureAwait(false);
+                    return;
+                }
+
+                try
+                {
+                    await button.UpdateAsync((x) => x.Components = new ComponentBuilder()
+                            .WithButton("是", $"{checkData.Guid}-yes", ButtonStyle.Success, disabled: true)
+                            .WithButton("否", $"{checkData.Guid}-no", ButtonStyle.Danger, disabled: true).Build())
+                        .ConfigureAwait(false);
+                }
+                catch { }
+
+                //await button.DeferAsync(true);
+
+                if (button.Data.CustomId.EndsWith("yes"))
+                {
+                    isSending = true;
+
                     using (var db = DataBase.DBContext.GetDbContext())
                     {
                         try
                         {
                             var list = db.NoticeYoutubeStreamChannel.Distinct((x) => x.GuildId).Select((x) => new KeyValuePair<ulong, ulong>(x.GuildId, x.DiscordChannelId));
-                            int i = 1, num = list.Count();
+                            int i = 0, num = list.Count();
                             foreach (var item in list)
                             {
+                                i++;
+
                                 var guild = _client.GetGuild(item.Key);
                                 if (guild == null)
                                 {
@@ -68,7 +121,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.OwnerOnly.Service
 
                                 try
                                 {
-                                    await textChannel.SendMessageAsync(embed: embed);
+                                    await textChannel.SendMessageAsync(embed: checkData.Embed);
                                 }
                                 catch (Discord.Net.HttpException ex)
                                 {
@@ -88,7 +141,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.OwnerOnly.Service
                                 }
                                 finally
                                 {
-                                    Log.Info($"({i++}/{num}) {item.Key}");
+                                    Log.Info($"({i}/{num}) {item.Key}");
                                 }
                             }
                         }
@@ -97,61 +150,17 @@ namespace Discord_Stream_Notify_Bot.Interaction.OwnerOnly.Service
                             Log.Error($"{ex.Message}\n{ex.StackTrace}");
                         }
 
-                        await modal.SendConfirmAsync("已發送完成", true);
+                        await button.SendConfirmAsync("已發送完成", true);
                     }
                 }
                 else
-                    return;
-            };
-        }
-
-        public async Task<bool> GetUserClickAsync(ulong userId, ulong channelId, string guid)
-        {
-            var userInputTask = new TaskCompletionSource<bool>();
-
-            try
-            {
-                _client.ButtonExecuted += ButtonExecuted;
-
-                if ((await Task.WhenAny(userInputTask.Task, Task.Delay(5000)).ConfigureAwait(false)) != userInputTask.Task)
                 {
-                    return false;
+                    await button.SendErrorAsync("已取消發送", true);
                 }
 
-                return await userInputTask.Task.ConfigureAwait(false);
-            }
-            finally
-            {
-                _client.ButtonExecuted -= ButtonExecuted;
-            }
-
-            Task ButtonExecuted(SocketMessageComponent component)
-            {
-                var _ = Task.Run(async () =>
-                {
-                    if (!component.Data.CustomId.StartsWith(guid))
-                        return Task.CompletedTask;
-
-                    if (!(component is SocketMessageComponent userMsg) ||
-                        !(userMsg.Channel is ITextChannel chan) ||
-                        userMsg.User.Id != userId ||
-                        userMsg.Channel.Id != channelId)
-                    {
-                        await component.SendErrorAsync("你無法使用本功能", true).ConfigureAwait(false);
-                        return Task.CompletedTask;
-                    }
-
-                    if (userInputTask.TrySetResult(component.Data.CustomId.EndsWith("yes")))
-                    {
-                        await component.ModifyOriginalResponseAsync((x) => x.Components = new ComponentBuilder()
-                            .WithButton("是", $"{guid}-yes", ButtonStyle.Success, disabled: true)
-                            .WithButton("否", $"{guid}-no", ButtonStyle.Danger, disabled: true).Build())
-                        .ConfigureAwait(false);
-                    }
-                    return Task.CompletedTask;
-                });
-                return Task.CompletedTask;
-            }
+                checkData = null;
+                isSending = false;
+            };
         }
     }
 }
