@@ -40,7 +40,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                 DataStore = new RedisDataStore(RedisConnection.Instance.ConnectionMultiplexer)
             });
 
-            Program.RedisSub.Subscribe("member.revokeToken",async (channel, value) =>
+            Program.RedisSub.Subscribe("member.revokeToken", async (channel, value) =>
             {
                 try
                 {
@@ -502,16 +502,25 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                     foreach (var item2 in list)
                     {
                         var user = await _client.Rest.GetUserAsync(item2.UserId);
+                        if (guild.GetUser(item2.UserId) == null)
+                        {
+                            Program.RedisSub.Publish("member.revokeToken", item2.UserId);
+                            await logChannel.SendErrorMessageAsync(user, new EmbedBuilder().AddField("檢查頻道", guildYoutubeMemberConfig.MemberCheckChannelTitle).AddField("狀態", "已離開伺服器"));
+
+                            continue;
+                        }
+
                         var userChannel = await user.CreateDMChannelAsync();
                         if (userChannel == null) Log.Warn($"{item2.UserId} 無法建立使用者私訊");
 
                         var token = await flow.LoadTokenAsync(item2.UserId.ToString(), CancellationToken.None);
                         if (token == null)
                         {
+                            Program.RedisSub.Publish("member.revokeToken", item2.UserId);
+
                             await logChannel.SendErrorMessageAsync(user, new EmbedBuilder().AddField("檢查頻道", guildYoutubeMemberConfig.MemberCheckChannelTitle).AddField("狀態", "未登入"));
                             await userChannel.SendErrorMessageAsync($"未登入，請至 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 登入並再次於伺服器執行 `/youtube-member check`", item2.UserId, logChannel);
 
-                            Program.RedisSub.Publish("member.revokeToken", item2.UserId);
                             continue;
                         }
 
@@ -524,12 +533,13 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                         {
                             if (ex.Message == "RefreshToken空白")
                             {
+                                await RevokeUserGoogleCertAsync(item2.UserId.ToString());
+
                                 await logChannel.SendErrorMessageAsync(user, new EmbedBuilder().AddField("檢查頻道", guildYoutubeMemberConfig.MemberCheckChannelTitle).AddField("狀態", "無法重複驗證"));
                                 await userChannel.SendErrorMessageAsync($"無法重新刷新您的授權\n" +
                                     $"請到 {Format.Url("Google安全性", "https://myaccount.google.com/permissions")} 移除 `直播小幫手會限確認` 的應用程式存取權後\n" +
                                     $"至 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 重新登入並再次於伺服器執行 `/youtube-member check`", item2.UserId, logChannel);
 
-                                await RevokeUserGoogleCertAsync(item2.UserId.ToString());
                                 continue;
                             }
 
@@ -539,12 +549,13 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
 
                         if (userCredential == null)
                         {
+                            Program.RedisSub.Publish("member.revokeToken", item2.UserId);
+
                             await logChannel.SendErrorMessageAsync(user, new EmbedBuilder().AddField("檢查頻道", guildYoutubeMemberConfig.MemberCheckChannelTitle).AddField("狀態", "認證過期"));
                             await userChannel.SendErrorMessageAsync($"您的Google認證已失效\n" +
                                 $"請到 {Format.Url("Google安全性", "https://myaccount.google.com/permissions")} 移除 `直播小幫手會限確認` 的應用程式存取權後\n" +
                                 $"至 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 重新登入並再次於伺服器執行 `/youtube-member check`", item2.UserId, logChannel);
 
-                            Program.RedisSub.Publish("member.revokeToken", item2.UserId);
                             continue;
                         }
 

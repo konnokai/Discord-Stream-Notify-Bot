@@ -107,7 +107,9 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
         [Command("AddYoutubeMemberCheckChannel")]
         [Alias("aymcc")]
         [RequireContext(ContextType.Guild)]
-        [RequireUserPermission(GuildPermission.Administrator)]
+        [RequireUserPermission(GuildPermission.Administrator, Group = "bot_owner")]
+        [RequireOwner(Group = "bot_owner")]
+        [CommandExample("https://www.youtube.com/channel/UCR6qhsLpn62WVxCBK1dkLow 978648977954197584")]
         public async Task AddYoutubeMemberCheckChannel([Summary("頻道連結")] string url, [Summary("用戶組Id")] ulong roleId)
         {
             var currentBotUser = await Context.Guild.GetCurrentUserAsync() as SocketGuildUser;
@@ -214,7 +216,8 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
         [Summary("移除會限驗證頻道")]
         [Alias("rymcc")]
         [RequireContext(ContextType.Guild)]
-        [RequireUserPermission(GuildPermission.Administrator)]
+        [RequireUserPermission(GuildPermission.Administrator, Group = "bot_owner")]
+        [RequireOwner(Group = "bot_owner")]
         [CommandExample("https://www.youtube.com/channel/UCR6qhsLpn62WVxCBK1dkLow")]
         public async Task RemoveYoutubeMemberCheckChannel([Summary("頻道連結")] string url)
         {
@@ -284,7 +287,8 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
         [Summary("設定會限驗證狀態紀錄頻道")]
         [Alias("snmsc")]
         [RequireContext(ContextType.Guild)]
-        [RequireUserPermission(GuildPermission.ManageMessages)]
+        [RequireUserPermission(GuildPermission.ManageMessages, Group = "bot_owner")]
+        [RequireOwner(Group = "bot_owner")]
         [Priority(0)]
         public async Task SetNoticeMemberStatusChannel([Summary("Discord頻道Id")] IChannel channel)
             => await SetNoticeMemberStatusChannel(channel.Id);
@@ -292,7 +296,8 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
         [Command("SetNoticeMemberStatusChannel")]
         [Alias("snmsc")]
         [RequireContext(ContextType.Guild)]
-        [RequireUserPermission(GuildPermission.ManageMessages)]
+        [RequireUserPermission(GuildPermission.ManageMessages, Group = "bot_owner")]
+        [RequireOwner(Group = "bot_owner")]
         public async Task SetNoticeMemberStatusChannel([Summary("Discord頻道Id")] ulong cId)
         {
             using (var db = DataBase.DBContext.GetDbContext())
@@ -330,7 +335,7 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
         [Summary("顯示所有伺服器已完成驗證的會員數量")]
         [Alias("lagcm")]
         [RequireContext(ContextType.DM)]
-        [RequireOwner()]
+        [RequireOwner]
         public async Task ListAllGuildCheckedMemberAsync()
         {
             using (var db = DataBase.DBContext.GetDbContext())
@@ -371,36 +376,36 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
         }
 
         //https://gitlab.com/Kwoth/nadekobot/-/blob/v4/src/NadekoBot/Modules/Utility/Utility.cs#L113
-        [Command("Inrole")]
-        [RequireOwner]
-        public async Task InRoleTest(IRole role = null)
-        {
-            await Context.Channel.TriggerTypingAsync();
-            await _tracker.EnsureUsersDownloadedAsync(Context.Guild);
+        //[Command("Inrole")]
+        //[RequireOwner]
+        //public async Task InRoleTest(IRole role = null)
+        //{
+        //    await Context.Channel.TriggerTypingAsync();
+        //    await _tracker.EnsureUsersDownloadedAsync(Context.Guild);
 
-            var users = await Context.Guild.GetUsersAsync(
-                CacheMode.CacheOnly
-            );
+        //    var users = await Context.Guild.GetUsersAsync(
+        //        CacheMode.CacheOnly
+        //    );
 
-            var roleUsers = users.Where(u => role is null ? u.RoleIds.Count == 1 : u.RoleIds.Contains(role.Id))
-                            .Select(u => $"`{u.Id,18}` {u}")
-                            .ToArray();
+        //    var roleUsers = users.Where(u => role is null ? u.RoleIds.Count == 1 : u.RoleIds.Contains(role.Id))
+        //                    .Select(u => $"`{u.Id,18}` {u}")
+        //                    .ToArray();
 
-            await Context.SendPaginatedConfirmAsync(0,
-                cur =>
-                {
-                    var pageUsers = roleUsers.Skip(cur * 20).Take(20).ToList();
+        //    await Context.SendPaginatedConfirmAsync(0,
+        //        cur =>
+        //        {
+        //            var pageUsers = roleUsers.Skip(cur * 20).Take(20).ToList();
 
-                    if (pageUsers.Count == 0)
-                        return new EmbedBuilder().WithErrorColor().WithDescription("No user in role");
+        //            if (pageUsers.Count == 0)
+        //                return new EmbedBuilder().WithErrorColor().WithDescription("No user in role");
 
-                    return new EmbedBuilder()
-                              .WithOkColor()
-                              .WithTitle($"{role.Name}: {roleUsers.Length}")
-                              .WithDescription(string.Join("\n", pageUsers));
-                },
-                roleUsers.Length,
-                20);
-        }
+        //            return new EmbedBuilder()
+        //                      .WithOkColor()
+        //                      .WithTitle($"{role.Name}: {roleUsers.Length}")
+        //                      .WithDescription(string.Join("\n", pageUsers));
+        //        },
+        //        roleUsers.Length,
+        //        20);
+        //}
     }
 }
