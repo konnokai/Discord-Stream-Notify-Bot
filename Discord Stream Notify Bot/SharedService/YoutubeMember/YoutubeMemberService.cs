@@ -502,7 +502,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                         continue;
                     }
 
-                    if (currentUser.GuildPermissions.ManageRoles)
+                    if (!currentUser.GuildPermissions.ManageRoles)
                     {
                         await logChannel.SendMessageAsync("我沒有權限可以編輯用戶組，請幫我開啟伺服器的 `管理身分組` 權限");
                         continue;
