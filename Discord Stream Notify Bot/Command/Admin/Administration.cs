@@ -199,7 +199,17 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
                     await Context.Channel.SendConfirmAsync(invite.Url);
                 }
             }
-            catch (Exception ex) { Log.FormatColorWrite(ex.Message + "\n" + ex.StackTrace, ConsoleColor.Red); }
+            catch (Discord.Net.HttpException httpEx)
+            {
+               if (  httpEx.DiscordCode == DiscordErrorCode.InsufficientPermissions || httpEx.DiscordCode == DiscordErrorCode.MissingPermissions)
+                    await Context.Channel.SendErrorAsync("缺少邀請權限");
+                else 
+                    Log.Error(httpEx.ToString());
+            }
+            catch (Exception ex) 
+            {
+                Log.Error(ex.ToString()); 
+            }
         }
 
         [Command("GuildInfo")]
