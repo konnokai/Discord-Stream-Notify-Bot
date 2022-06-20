@@ -189,7 +189,7 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
                             guildYoutubeMemberConfig.MemberCheckVideoId = youtubeChannel.MemberCheckVideoId;
                             channelDataExist = true;
                         }
-                       
+
                         db.GuildYoutubeMemberConfig.Add(guildYoutubeMemberConfig);
                     }
                     else
@@ -369,7 +369,7 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
                     return;
                 }
 
-                var dic = new Dictionary<string, List< string>>();
+                var dic = new Dictionary<string, List<string>>();
                 foreach (var item in guildYoutubeMemberConfigs)
                 {
                     var checkedMemberCount = db.YoutubeMemberCheck.Count((x) => x.GuildId == item.GuildId &&
@@ -429,5 +429,12 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
         //        roleUsers.Length,
         //        20);
         //}
+
+        [Command("ForecCheck")]
+        [RequireOwner]
+        public async Task ForceCheckAsync()
+        {
+            await _service.CheckMemberShip(true);
+        }
     }
 }

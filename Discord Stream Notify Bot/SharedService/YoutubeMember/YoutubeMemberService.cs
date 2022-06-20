@@ -45,24 +45,27 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                 try
                 {
                     ulong userId = 0;
-                    if (!ulong.TryParse(value.ToString(), out userId))
-                        return;
-
-                    var user = _client.GetUser(userId);
-                    if (user == null) return;
-
-                    Log.Info($"接收到Revoke請求: {user.Username} ({userId})");
+                if (!ulong.TryParse(value.ToString(), out userId))
+                    return;
 
                     using var db = DataBase.DBContext.GetDbContext();
 
-                    var youtubeMembers = db.YoutubeMemberCheck.Where((x) => x.UserId == user.Id);
+                    if (!db.YoutubeMemberCheck.Any((x) => x.UserId == userId))
+                    {
+                        Log.Info($"接收到Revoke請求但不存在於資料庫內: {userId}");
+                        return;
+                    }
+
+                    Log.Info($"接收到Revoke請求: {userId}");
+
+                    var youtubeMembers = db.YoutubeMemberCheck.Where((x) => x.UserId == userId);
                     var guildYoutubeMemberConfigs = db.GuildYoutubeMemberConfig.Where((x) => youtubeMembers.Any((x2) => x2.GuildId == x.GuildId));
 
                     if (guildYoutubeMemberConfigs.Any())
                     {
                         foreach (var item in guildYoutubeMemberConfigs)
                         {
-                            try { await _client.Rest.RemoveRoleAsync(item.GuildId, user.Id, item.MemberCheckGrantRoleId); }
+                            try { await _client.Rest.RemoveRoleAsync(item.GuildId, userId, item.MemberCheckGrantRoleId); }
                             catch (Exception) { }
                         }
                     }
@@ -72,7 +75,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                 }
                 catch (Exception ex)
                 {
-                    Log.Error($"RevokeToken: {ex}");
+                    Log.Error($"MemberRevokeToken: {ex}");
                 }
             });
 
@@ -231,24 +234,24 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                 .WithCustomId("1234")
                 .WithDisabled(true);
 
+            var newComponent = new ComponentBuilder()
+                        .WithSelectMenu(selectMenuBuilder)
+                        .Build();
+
             try
             {
                 await component.UpdateAsync((act) =>
                 {
-                    act.Components = new Optional<MessageComponent>(new ComponentBuilder()
-                        .WithSelectMenu(selectMenuBuilder)
-                        .Build());
+                    act.Components = new Optional<MessageComponent>(newComponent);
                 });
             }
             catch
             {
                 await component.ModifyOriginalResponseAsync((act) =>
                 {
-                    act.Components = new Optional<MessageComponent>(new ComponentBuilder()
-                        .WithSelectMenu(selectMenuBuilder)
-                        .Build());
+                    act.Components = new Optional<MessageComponent>(newComponent);
                 });
-            }            
+            }
         }
 
         private async Task SendErrorMsgAndRemoveChannelConfigAsync(string checkChannelId, string msg)
@@ -436,7 +439,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
         //Todo: 驗證一次後可同時向同頻道多個伺服器設定驗證結果
         //https://github.com/member-gentei/member-gentei/blob/90f62385f554eb4c02ed8732e15061b9dd1dd6d0/gentei/membership/membership.go#L331
         //https://discord.com/channels/@me/userChannel.Id
-        private async Task CheckMemberShip(object stats)
+        public async Task CheckMemberShip(object stats)
         {
             bool isOldCheck = (bool)stats;
 
@@ -464,7 +467,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                         continue;
                     }
 
-                    var guild = _client.GetGuild(guildYoutubeMemberConfig.GuildId);
+                    var guild = await _client.Rest.GetGuildAsync(guildYoutubeMemberConfig.GuildId);
                     if (guild == null)
                     {
                         Log.Warn($"{guildYoutubeMemberConfig.GuildId} Guild不存在");
@@ -478,21 +481,28 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                         continue;
                     }
 
-                    var logChannel = guild.GetTextChannel(guildConfig.LogMemberStatusChannelId);
+                    var logChannel = await guild.GetTextChannelAsync(guildConfig.LogMemberStatusChannelId);
                     if (logChannel == null)
                     {
                         Log.Warn($"{guildYoutubeMemberConfig.GuildId} 無紀錄頻道");
                         continue;
                     }
 
-                    var permission = guild.GetUser(_client.CurrentUser.Id).GetPermissions(logChannel);
+                    var currentUser = await guild.GetCurrentUserAsync();
+                    if (currentUser == null)
+                    {
+                        Log.Warn($"{guildYoutubeMemberConfig.GuildId} Bot不存在於該伺服器內");
+                        continue;
+                    }
+
+                    var permission = currentUser.GetPermissions(logChannel);
                     if (!permission.ViewChannel || !permission.SendMessages)
                     {
                         Log.Warn($"{guildYoutubeMemberConfig.GuildId} / {guildConfig.LogMemberStatusChannelId} 無權限可紀錄");
                         continue;
                     }
 
-                    if (!guild.GetUser(_client.CurrentUser.Id).GuildPermissions.ManageRoles)
+                    if (currentUser.GuildPermissions.ManageRoles)
                     {
                         await logChannel.SendMessageAsync("我沒有權限可以編輯用戶組，請幫我開啟伺服器的 `管理身分組` 權限");
                         continue;
@@ -502,13 +512,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                     foreach (var item2 in list)
                     {
                         var user = await _client.Rest.GetUserAsync(item2.UserId);
-                        if (guild.GetUser(item2.UserId) == null)
-                        {
-                            Program.RedisSub.Publish("member.revokeToken", item2.UserId);
-                            await logChannel.SendErrorMessageAsync(user, new EmbedBuilder().AddField("檢查頻道", guildYoutubeMemberConfig.MemberCheckChannelTitle).AddField("狀態", "已離開伺服器"));
-
-                            continue;
-                        }
 
                         var userChannel = await user.CreateDMChannelAsync();
                         if (userChannel == null) Log.Warn($"{item2.UserId} 無法建立使用者私訊");
@@ -677,7 +680,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                         }
                         catch (Exception ex)
                         {
-                            if (guild.GetUser(item2.UserId) == null)
+                            if (_client.Rest.GetGuildUserAsync(guild.Id, item2.UserId) == null)
                             {
                                 Log.Warn($"用戶已離開伺服器: {guild.Id} / {user.Id}");
                                 db.YoutubeMemberCheck.Remove(item2);
@@ -774,16 +777,16 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
 
     static class Ext
     {
-        public static async Task SendConfirmMessageAsync(this SocketTextChannel tc, IUser user, EmbedBuilder embedBuilder)
+        public static async Task SendConfirmMessageAsync(this ITextChannel tc, IUser user, EmbedBuilder embedBuilder)
             => await tc.SendMessageAsync(embed: embedBuilder.WithOkColor().WithAuthor(user).WithThumbnailUrl(user.GetAvatarUrl()).Build());
 
-        public static async Task SendConfirmMessageAsync(this SocketTextChannel tc, string title, string dec)
+        public static async Task SendConfirmMessageAsync(this ITextChannel tc, string title, string dec)
             => await tc.SendMessageAsync(embed: new EmbedBuilder().WithOkColor().WithTitle(title).WithDescription(dec).Build());
 
-        public static async Task SendErrorMessageAsync(this SocketTextChannel tc, IUser user, EmbedBuilder embedBuilder)
+        public static async Task SendErrorMessageAsync(this ITextChannel tc, IUser user, EmbedBuilder embedBuilder)
             => await tc.SendMessageAsync(embed: embedBuilder.WithErrorColor().WithAuthor(user).WithThumbnailUrl(user.GetAvatarUrl()).Build());
 
-        public static async Task SendConfirmMessageAsync(this IDMChannel dc, string text, ulong userId, SocketTextChannel tc)
+        public static async Task SendConfirmMessageAsync(this IDMChannel dc, string text, ulong userId, ITextChannel tc)
         {
             if (dc == null) return;
 
@@ -807,7 +810,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
             }
         }
 
-        public static async Task SendErrorMessageAsync(this IDMChannel dc, string text, ulong userId, SocketTextChannel tc)
+        public static async Task SendErrorMessageAsync(this IDMChannel dc, string text, ulong userId, ITextChannel tc)
         {
             if (dc == null) return;
 

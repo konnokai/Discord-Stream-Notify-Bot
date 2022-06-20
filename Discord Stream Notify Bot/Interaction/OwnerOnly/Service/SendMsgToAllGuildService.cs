@@ -101,21 +101,21 @@ namespace Discord_Stream_Notify_Bot.Interaction.OwnerOnly.Service
                             {
                                 i++;
 
-                                var guild = _client.GetGuild(item.Key);
+                                var guild = await _client.Rest.GetGuildAsync(item.Key);
                                 if (guild == null)
                                 {
                                     Log.Warn($"伺服器不存在: {item.Key}");
-                                    db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where((x) => x.GuildId == item.Key));
-                                    db.SaveChanges();
+                                    //db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where((x) => x.GuildId == item.Key));
+                                    //db.SaveChanges();
                                     continue;
                                 }
 
-                                var textChannel = guild.GetTextChannel(item.Value);
+                                var textChannel = await guild.GetTextChannelAsync(item.Value);
                                 if (textChannel == null)
                                 {
                                     Log.Warn($"頻道不存在: {guild.Name} / {item.Value}");
-                                    db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where((x) => x.GuildId == item.Key));
-                                    db.SaveChanges();
+                                    //db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where((x) => x.GuildId == item.Key));
+                                    //db.SaveChanges();
                                     continue;
                                 }
 
@@ -127,7 +127,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.OwnerOnly.Service
                                 {
                                     if (ex.DiscordCode == DiscordErrorCode.MissingPermissions || ex.DiscordCode == DiscordErrorCode.InsufficientPermissions)
                                     {
-                                        Log.Warn($"無法傳送訊息至: {guild.Name} / {textChannel.Name}");
+                                        Log.Warn($"缺少權限導致無法傳送訊息至: {guild.Name} / {textChannel.Name}");
                                         db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where((x) => x.GuildId == item.Key));
                                         db.SaveChanges();
                                     }
