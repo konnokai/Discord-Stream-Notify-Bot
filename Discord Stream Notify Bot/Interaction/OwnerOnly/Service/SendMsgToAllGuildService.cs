@@ -95,27 +95,27 @@ namespace Discord_Stream_Notify_Bot.Interaction.OwnerOnly.Service
                     {
                         try
                         {
-                            var list = db.NoticeYoutubeStreamChannel.Distinct((x) => x.GuildId).Select((x) => new KeyValuePair<ulong, ulong>(x.GuildId, x.DiscordChannelId));
+                            var list = db.NoticeYoutubeStreamChannel.Distinct((x) => x.GuildId).Where((x)=> _client.Guilds.Any((x2)=> x2.Id == x.GuildId)).Select((x) => new KeyValuePair<ulong, ulong>(x.GuildId, x.DiscordChannelId));
                             int i = 0, num = list.Count();
                             foreach (var item in list)
                             {
                                 i++;
 
-                                var guild = await _client.Rest.GetGuildAsync(item.Key);
+                                var guild = _client.GetGuild(item.Key);
                                 if (guild == null)
                                 {
                                     Log.Warn($"伺服器不存在: {item.Key}");
-                                    //db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where((x) => x.GuildId == item.Key));
-                                    //db.SaveChanges();
+                                    db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where((x) => x.GuildId == item.Key));
+                                    db.SaveChanges();
                                     continue;
                                 }
 
-                                var textChannel = await guild.GetTextChannelAsync(item.Value);
+                                var textChannel = guild.GetTextChannel(item.Value);
                                 if (textChannel == null)
                                 {
                                     Log.Warn($"頻道不存在: {guild.Name} / {item.Value}");
-                                    //db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where((x) => x.GuildId == item.Key));
-                                    //db.SaveChanges();
+                                    db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where((x) => x.GuildId == item.Key));
+                                    db.SaveChanges();
                                     continue;
                                 }
 
