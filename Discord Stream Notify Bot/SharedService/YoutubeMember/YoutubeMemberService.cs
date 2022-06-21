@@ -467,7 +467,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                         continue;
                     }
 
-                    var guild = await _client.Rest.GetGuildAsync(guildYoutubeMemberConfig.GuildId);
+                    var guild = _client.GetGuild(guildYoutubeMemberConfig.GuildId);
                     if (guild == null)
                     {
                         Log.Warn($"{guildYoutubeMemberConfig.GuildId} Guild不存在");
@@ -481,19 +481,19 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                         continue;
                     }
 
-                    var logChannel = await guild.GetTextChannelAsync(guildConfig.LogMemberStatusChannelId);
+                    var logChannel = guild.GetTextChannel(guildConfig.LogMemberStatusChannelId);
                     if (logChannel == null)
                     {
                         Log.Warn($"{guildYoutubeMemberConfig.GuildId} 無紀錄頻道");
                         continue;
                     }
 
-                    var currentUser = await guild.GetCurrentUserAsync();
-                    if (currentUser == null)
-                    {
-                        Log.Warn($"{guildYoutubeMemberConfig.GuildId} Bot不存在於該伺服器內");
-                        continue;
-                    }
+                    var currentUser = guild.CurrentUser;
+                    //if (currentUser == null)
+                    //{
+                    //    Log.Warn($"{guildYoutubeMemberConfig.GuildId} Bot不存在於該伺服器內");
+                    //    continue;
+                    //}
 
                     var permission = currentUser.GetPermissions(logChannel);
                     if (!permission.ViewChannel || !permission.SendMessages)
