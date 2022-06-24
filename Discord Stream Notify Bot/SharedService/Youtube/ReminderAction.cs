@@ -394,7 +394,11 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                             Log.Error(httpEx.ToString());
                         }
                     }
-                    catch (Exception ex) 
+                    catch (TimeoutException)
+                    {
+                        Log.Warn($"Youtube 通知 - Timeout {item.GuildId} / {item.DiscordChannelId}");
+                    }
+                    catch (Exception ex)
                     {
                         Log.Error($"Youtube 通知 - 未知錯誤 {item.GuildId} / {item.DiscordChannelId}");
                         Log.Error(ex.ToString());
