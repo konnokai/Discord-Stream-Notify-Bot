@@ -323,7 +323,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 {
                     if (type != "other" || //如果不是其他類的頻道
                         !db.YoutubeChannelSpider.Any((x) => x.ChannelId == streamVideo.ChannelId) || //或該頻道非在爬蟲清單內
-                        !db.YoutubeChannelSpider.FirstOrDefault((x) => x.ChannelId == streamVideo.ChannelId).IsWarningChannel) //或該爬蟲非警告類的頻道
+                        !db.YoutubeChannelSpider.First((x) => x.ChannelId == streamVideo.ChannelId).IsWarningChannel) //或該爬蟲非警告類的頻道
                     {
                         noticeGuildList.AddRange(db.NoticeYoutubeStreamChannel.Where((x) => x.NoticeStreamChannelId == "all" || x.NoticeStreamChannelId == type));
                     }
@@ -368,20 +368,36 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         if (sendMessage == "-") continue;
 
                         var guild = _client.GetGuild(item.GuildId);
-                        if (guild == null) continue;
+                        if (guild == null)
+                        {
+                            Log.Warn($"Youtube 通知 - 找不到伺服器 {item.GuildId}");
+                            db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where((x) => x.GuildId == item.GuildId));
+                            db.SaveChanges();
+                            continue;
+                        }
                         var channel = guild.GetTextChannel(item.DiscordChannelId);
                         if (channel == null) continue;
 
                         await channel.SendMessageAsync(sendMessage, false, embed);
                     }
-                    catch (Exception ex)
+                    catch (Discord.Net.HttpException httpEx)
                     {
-                        Log.Error($"Notice Youtube {item.GuildId} / {item.DiscordChannelId}\n{ex.Message}");
-                        if (ex.Message.Contains("50013") || ex.Message.Contains("50001"))
+                        if (httpEx.DiscordCode.Value == DiscordErrorCode.InsufficientPermissions || httpEx.DiscordCode.Value == DiscordErrorCode.MissingPermissions)
                         {
+                            Log.Warn($"Youtube 通知 - 遺失權限 {item.GuildId} / {item.DiscordChannelId}");
                             db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where((x) => x.DiscordChannelId == item.DiscordChannelId));
+                            db.SaveChanges();
                         }
-                        db.SaveChanges();
+                        else
+                        {
+                            Log.Error($"Youtube 通知 - Discord 未知錯誤 {item.GuildId} / {item.DiscordChannelId}");
+                            Log.Error(httpEx.ToString());
+                        }
+                    }
+                    catch (Exception ex) 
+                    {
+                        Log.Error($"Youtube 通知 - 未知錯誤 {item.GuildId} / {item.DiscordChannelId}");
+                        Log.Error(ex.ToString());
                     }
                 }
             }

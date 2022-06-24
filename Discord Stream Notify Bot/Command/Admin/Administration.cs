@@ -102,16 +102,17 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
                 {
                     bool isBotOwnerInGuild = guild.GetUser(Program.ApplicatonOwner.Id) != null;
 
-                    var embed = new EmbedBuilder().WithOkColor().AddField(guild.Name, "Id: " + guild.Id +
-                        "\nOwner Id: " + guild.OwnerId +
-                        "\n人數: " + guild.MemberCount +
-                        "\nBot擁有者是否在該伺服器: " + (isBotOwnerInGuild ? "是" : "否")).Build();
+                    var embed = new EmbedBuilder().WithOkColor().AddField(guild.Name,
+                        $"Id: {guild.Id}\n" +
+                        $"擁有者Id: {guild.OwnerId}\n" +
+                        $"人數: {guild.MemberCount}\n").Build();
+
                     await Context.Channel.SendMessageAsync(embed: embed);
                     return;
                 }
             }
 
-            var list = _client.Guilds.Where((x) => x.Name.Contains(keyword));
+            var list = _client.Guilds.Where((x) => x.Name.Contains(keyword, StringComparison.InvariantCultureIgnoreCase));
             if (list.Count() == 0)
             {
                 await Context.Channel.SendErrorAsync("該關鍵字無伺服器");
@@ -120,20 +121,20 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
 
             await Context.SendPaginatedConfirmAsync(page, (cur) =>
             {
-                EmbedBuilder embedBuilder = new EmbedBuilder().WithOkColor().WithTitle("目前所在的伺服器有");
+                EmbedBuilder embedBuilder = new EmbedBuilder().WithOkColor().WithTitle($"查詢 `{keyword}` 後的伺服器有");
 
                 foreach (var item in list.Skip(cur * 5).Take(5))
                 {
-                    bool isBotOwnerInGuild = item.GetUser(Program.ApplicatonOwner.Id) != null;
-
-                    embedBuilder.AddField(item.Name, "Id: " + item.Id +
-                        "\nOwner Id: " + item.OwnerId +
-                        "\n人數: " + item.MemberCount.ToString() +
-                        "\nBot擁有者是否在該伺服器: " + (isBotOwnerInGuild ? "是" : "否"));
+                    embedBuilder.AddField(item.Name,
+                        $"Id: {item.Id}\n" +
+                        $"擁有者Id: {item.OwnerId}\n" +
+                        $"人數: {item.MemberCount}\n");
                 }
 
+                embedBuilder.WithFooter($"總數量: {list.Count()}");
+
                 return embedBuilder;
-            }, list.Count(), 5);
+            }, list.Count(), 5, false);
         }
 
         [Command("Die")]
@@ -154,10 +155,14 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
         [RequireOwner]
         public async Task LeaveAsync([Summary("伺服器Id")] ulong gid = 0)
         {
-            if (gid == 0) { await Context.Channel.SendConfirmAsync("伺服器Id為空"); return; }
+            if (gid == 0) { await Context.Channel.SendErrorAsync("伺服器Id為空"); return; }
 
-            try { await _client.GetGuild(gid).LeaveAsync(); }
-            catch (Exception) { await Context.Channel.SendConfirmAsync("失敗，請確認Id是否正確"); return; }
+            var guild = _client.GetGuild(gid);
+            if (guild == null)
+                await Context.Channel.SendErrorAsync("伺服器不存在");
+
+            try { await guild.LeaveAsync(); }
+            catch (Exception) { await Context.Channel.SendErrorAsync("失敗，請確認Id是否正確"); return; }
 
             await Context.Channel.SendConfirmAsync("✅");
         }
@@ -165,7 +170,6 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
         [Command("GetInviteURL")]
         [Summary("取得伺服器的邀請連結")]
         [Alias("invite")]
-        [RequireBotPermission(GuildPermission.CreateInstantInvite)]
         [RequireOwner]
         public async Task GetInviteURLAsync([Summary("伺服器Id")] ulong gid = 0, [Summary("頻道Id")] ulong cid = 0)
         {
@@ -201,14 +205,14 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
             }
             catch (Discord.Net.HttpException httpEx)
             {
-               if (  httpEx.DiscordCode == DiscordErrorCode.InsufficientPermissions || httpEx.DiscordCode == DiscordErrorCode.MissingPermissions)
+                if (httpEx.DiscordCode == DiscordErrorCode.InsufficientPermissions || httpEx.DiscordCode == DiscordErrorCode.MissingPermissions)
                     await Context.Channel.SendErrorAsync("缺少邀請權限");
-                else 
+                else
                     Log.Error(httpEx.ToString());
             }
-            catch (Exception ex) 
+            catch (Exception ex)
             {
-                Log.Error(ex.ToString()); 
+                Log.Error(ex.ToString());
             }
         }
 
@@ -229,19 +233,51 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
                     return;
                 }
 
+                string result = $"伺服器名稱: **{guild.Name}**\n" +
+                            $"伺服器Id: {guild.Id}\n" +
+                            $"擁有者Id: {guild.OwnerId}\n";
+
                 using (var db = DataBase.DBContext.GetDbContext())
                 {
-                    var channelList = db.NoticeYoutubeStreamChannel.ToList().Where((x) => x.GuildId == guild.Id).Select((x) => $"<#{x.DiscordChannelId}>: {x.NoticeStreamChannelId}");
+                    var guildConfig = db.GuildConfig.FirstOrDefault((x) => x.GuildId == gid);
+                    if (guildConfig != null && guildConfig.LogMemberStatusChannelId != 0)
+                    {
+                        var channel = guild.GetChannel(guildConfig.LogMemberStatusChannelId);
+                        if (channel != null)
+                            result += $"伺服器會限記錄頻道: {channel.Name} ({channel.Id})\n";
+                    }
 
-                    await Context.Channel.SendConfirmAsync($"伺服器名稱: {guild.Name}\n" +
-                            $"伺服器Id: {guild.Id}\n" +
-                            $"擁有者: {guild.Owner.Username} ({guild.Owner.Id})" +
-                            $"設定通知的頻道: \n{string.Join('\n', channelList)}").ConfigureAwait(false);
+                    var channelList = db.NoticeYoutubeStreamChannel.Where((x) => x.GuildId == guild.Id);
+                    if (channelList.Any())
+                    {
+                        List<string> channelListResult = new List<string>();
+
+                        foreach (var item in channelList)
+                        {
+                            var noticeChannel = guild.GetChannel(item.DiscordChannelId);
+
+                            if (noticeChannel != null)
+                                channelListResult.Add($"{noticeChannel}: {item.NoticeStreamChannelId}");
+                            else
+                                channelListResult.Add($"(不存在) {item.Id}: {item.NoticeStreamChannelId}");
+                        }
+
+                        result += $"設定通知的頻道: \n```{string.Join('\n', channelListResult)}```\n";
+                    }
+
+                    var memberChcekList = db.GuildYoutubeMemberConfig.Where((x) => x.GuildId == guild.Id);
+                    if (memberChcekList.Any())
+                    {
+                        var memberChcekListResult = memberChcekList.Select((x) => $"{x.MemberCheckChannelTitle}: {x.MemberCheckGrantRoleId}");
+                        result += $"設定會限的頻道: \n```{string.Join('\n', memberChcekListResult)}```";
+                    }
+
+                    await Context.Channel.SendConfirmAsync(result).ConfigureAwait(false);
                 }
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Message + "\n" + ex.StackTrace);
+                Log.Error(ex.ToString());
             }
         }
     }
