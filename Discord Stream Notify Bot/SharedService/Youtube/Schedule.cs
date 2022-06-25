@@ -406,6 +406,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 for (int i = 0; i < addVideoIdList.Count; i += 50)
                 {
                     if (Program.isDisconnect) break;
+
                     foreach (var item in await GetVideosAsync(addVideoIdList.Skip(i).Take(50)))
                     {
                         try

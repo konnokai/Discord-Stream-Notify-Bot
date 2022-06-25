@@ -156,8 +156,8 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
                     await Context.Interaction.SendErrorAsync("尚無成員驗證成功");
                     return;
                 }
-
-                page = Math.Min(0, page--);
+                page -= 1;
+                page = Math.Max(0, page);
 
                 await Context.SendPaginatedConfirmAsync(page, (page) =>
                 {
