@@ -178,7 +178,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                     return;
                 }
 
-                Log.Info($"接收到Rempve請求: {userId}");
+                Log.Info($"接收到Remove請求: {userId}");
 
                 var youtubeMembers = db.YoutubeMemberCheck.Where((x) => x.UserId == userId);
                 var guildYoutubeMemberConfigs = db.GuildYoutubeMemberConfig.Where((x) => youtubeMembers.Any((x2) => x2.GuildId == x.GuildId));
@@ -188,7 +188,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                     foreach (var item in guildYoutubeMemberConfigs)
                     {
                         try { await _client.Rest.RemoveRoleAsync(item.GuildId, userId, item.MemberCheckGrantRoleId); }
-                        catch (Exception) { }
+                        catch { }
                     }
                 }
 

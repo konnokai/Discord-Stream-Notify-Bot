@@ -60,7 +60,6 @@ namespace Discord_Stream_Notify_Bot.Interaction
                         return Task.CompletedTask;
 
                     if (!(component is SocketMessageComponent userMsg) ||
-                        !(userMsg.Channel is ITextChannel chan) ||
                         userMsg.User.Id != userId ||
                         userMsg.Channel.Id != channelId)
                     {
