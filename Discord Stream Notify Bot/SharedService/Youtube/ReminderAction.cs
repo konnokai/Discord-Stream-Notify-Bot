@@ -299,11 +299,13 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                 await SendStreamMessageAsync(streamVideo, embed, noticeType).ConfigureAwait(false);
             }
-        }
-        
+        }        
 
         private async Task SendStreamMessageAsync(StreamVideo streamVideo, Embed embed, NoticeType noticeType)
         {
+            if (!Program.isConnect)
+                return;
+
             string type = streamVideo.ChannelType == StreamVideo.YTChannelType.Holo ? "holo" : streamVideo.ChannelType == StreamVideo.YTChannelType.Nijisanji ? "2434" : "other";
             List<NoticeYoutubeStreamChannel> noticeGuildList = new List<NoticeYoutubeStreamChannel>();
 
