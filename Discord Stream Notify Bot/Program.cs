@@ -229,7 +229,7 @@ namespace Discord_Stream_Notify_Bot
                     }
                 }
 
-                iService.GetService<HttpClients.DiscordWebhookClient>().SendMessageToDiscord($"加入 {guild.Name}({guild.Id})\n擁有者: {guild.Owner.Username}({guild.Owner.Mention})");
+                iService.GetService<HttpClients.DiscordWebhookClient>().SendMessageToDiscord($"加入 {guild.Name}({guild.Id})\n擁有者: {guild.OwnerId}");
                 return Task.CompletedTask;
             };
             #endregion
