@@ -311,12 +311,20 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
         private async Task OtherScheduleAsync()
         {
             if (Program.isOtherChannelSpider) return;
-            if (Program.RedisDb.KeyExists("youtube.otherStart"))
+
+            try
             {
-                var time = await Program.RedisDb.KeyTimeToLiveAsync("youtube.otherStart");
-                Log.Warn($"已跑過其他頻道爬蟲，剩餘 {time:mm\\:ss}");
-                isFirstOther = false;
-                return;
+                if (Program.RedisDb.KeyExists("youtube.otherStart"))
+                {
+                    var time = await Program.RedisDb.KeyTimeToLiveAsync("youtube.otherStart");
+                    Log.Warn($"已跑過其他頻道爬蟲，剩餘 {time:mm\\:ss}");
+                    isFirstOther = false;
+                    return;
+                }
+            }
+            catch 
+            {
+                Log.Error("Redis又死了zzz");
             }
 
             await Program.RedisDb.StringSetAsync("youtube.otherStart", "0", TimeSpan.FromMinutes(14));
