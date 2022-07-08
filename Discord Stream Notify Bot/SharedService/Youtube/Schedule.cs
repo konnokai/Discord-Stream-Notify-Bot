@@ -415,7 +415,18 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 {
                     if (Program.isDisconnect) break;
 
-                    foreach (var item in await GetVideosAsync(addVideoIdList.Skip(i).Take(50)))
+                    IEnumerable<Video> videos;
+                    try
+                    {
+                        videos = await GetVideosAsync(addVideoIdList.Skip(i).Take(50));
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error($"OtherSchedule-GetVideosAsync: {ex}");
+                        return;
+                    }
+
+                    foreach (var item in videos)
                     {
                         try
                         {

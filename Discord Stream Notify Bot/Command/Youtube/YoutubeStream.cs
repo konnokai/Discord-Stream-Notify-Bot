@@ -90,7 +90,16 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                 return;
             }
 
-            var video = await _service.GetVideoAsync(videoId);
+            Video video;
+            try
+            {
+                video = await _service.GetVideoAsync(videoId, 3);
+            }
+            catch (Exception ex)
+            {
+                await Context.Channel.SendErrorAsync(ex.ToString());
+                return;
+            }
 
             if (video == null)
             {

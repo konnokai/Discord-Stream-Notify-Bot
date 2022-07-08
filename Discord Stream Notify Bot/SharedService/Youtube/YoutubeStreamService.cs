@@ -60,10 +60,11 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                             await Program.RedisSub.PublishAsync("youtube.deletestream", streamRecordJson.VideoId);
                             return;
                         }
+
                         DateTime startTime;
                         if (item.LiveStreamingDetails.ActualStartTime.HasValue)
                             startTime = item.LiveStreamingDetails.ActualStartTime.Value;
-                        else 
+                        else
                             startTime = item.LiveStreamingDetails.ScheduledStartTime.Value;
 
                         EmbedBuilder embedBuilder = new EmbedBuilder();
@@ -74,19 +75,9 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         .WithUrl($"https://www.youtube.com/watch?v={item.Id}")
                         .AddField("直播狀態", "開台中", true)
                         .AddField("開台時間", startTime.ConvertDateTimeToDiscordMarkdown());
-                        //.AddField("是否記錄直播", "是", true)
-                        //.AddField("存檔名稱", streamRecordJson.RecordFileName, false);
 
-                        //if (streamRecordJson.IsReRecord)
-                        //{
-                        //    if (noticeRecordChannel == null) noticeRecordChannel = _client.GetGuild(744593681587241041).GetTextChannel(752815296452231238); //Todo: 要自訂義
-                        //    await Program.ApplicatonOwner.SendMessageAsync(text: "重新錄影", embed: embedBuilder.Build()).ConfigureAwait(false);
-                        //}
-                        //else
-                        //{
-                            await SendStreamMessageAsync(item.Id, embedBuilder.Build(), NoticeType.Start).ConfigureAwait(false);
-                            await ChangeGuildBannerAsync(item.Snippet.ChannelId, item.Id);
-                        //}
+                        await SendStreamMessageAsync(item.Id, embedBuilder.Build(), NoticeType.Start).ConfigureAwait(false);
+                        await ChangeGuildBannerAsync(item.Snippet.ChannelId, item.Id);
                     }
                     catch (Exception ex)
                     {
@@ -109,6 +100,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                             await Program.RedisSub.PublishAsync("youtube.deletestream", streamRecordJson.VideoId);
                             return;
                         }
+
                         if (!item.LiveStreamingDetails.ActualEndTime.HasValue)
                         {
                             Log.Warn("還沒關台");
@@ -127,7 +119,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         .AddField("直播狀態", "已關台", true)
                         .AddField("直播時間", $"{endTime.Subtract(startTime):hh'時'mm'分'ss'秒'}", true)
                         .AddField("關台時間", endTime.ConvertDateTimeToDiscordMarkdown());
-                        // .AddField("存檔名稱", streamRecordJson.RecordFileName, false);
 
                         await SendStreamMessageAsync(item.Id, embedBuilder.Build(), NoticeType.End).ConfigureAwait(false);
                     }
@@ -196,6 +187,37 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         catch (Exception ex)
                         {
                             Log.Error($"Record-429Error {ex}");
+                        }
+                    }
+                });
+
+                Program.RedisSub.Subscribe("youtube.unarchived", async (channel, videoId) =>
+                {
+                    Log.Info($"{channel} - {videoId}");
+
+                    using (var db = DataBase.DBContext.GetDbContext())
+                    {
+                        try
+                        {
+                            if (db.HasStreamVideoByVideoId(videoId))
+                            {
+                                var streamVideo = db.GetStreamVideoByVideoId(videoId);
+                                EmbedBuilder embedBuilder = new EmbedBuilder();
+                                embedBuilder.WithTitle(streamVideo.VideoTitle)
+                                .WithOkColor()
+                                .WithDescription(Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}"))
+                                .WithImageUrl($"https://i.ytimg.com/vi/{streamVideo.VideoId}/maxresdefault.jpg")
+                                .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
+                                .AddField("直播狀態", "已關台並變更為私人存檔", true)
+                                .AddField("排定開台時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
+
+                                if (Program.ApplicatonOwner != null) await Program.ApplicatonOwner.SendMessageAsync("已關台並變更為私人存檔", false, embedBuilder.Build()).ConfigureAwait(false);
+                                await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.Delete).ConfigureAwait(false);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Error($"Record-UnArchived {ex}");
                         }
                     }
                 });

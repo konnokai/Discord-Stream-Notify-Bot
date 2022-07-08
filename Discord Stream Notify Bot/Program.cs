@@ -1,4 +1,6 @@
-﻿using Discord;
+﻿global using Google.Apis.YouTube.v3.Data;
+
+using Discord;
 using Discord.Commands;
 using Discord.Interactions;
 using Discord.WebSocket;

@@ -46,28 +46,39 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             var streamVideo = (StreamVideo)rObj;
 
             try
-            {
-                var videoResult = await GetVideoAsync(streamVideo.VideoId);
-
-                if (videoResult == null)
+            {                
+                Video videoResult;
+                try
                 {
-                    Log.Info($"{streamVideo.VideoId} 待機所被刪了");
+                    videoResult = await GetVideoAsync(streamVideo.VideoId);
+                    if (videoResult == null)
+                    {
+                        Log.Info($"{streamVideo.VideoId} 待機所被刪了");
 
-                    EmbedBuilder embedBuilder = new EmbedBuilder();
-                    embedBuilder.WithErrorColor()
-                    .WithTitle(streamVideo.VideoTitle)
-                    .WithDescription(Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}"))
-                    .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
-                    .AddField("直播狀態", "已刪除直播", true)
-                    .AddField("排定開台時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown(), true);
+                        EmbedBuilder embedBuilder = new EmbedBuilder();
+                        embedBuilder.WithErrorColor()
+                        .WithTitle(streamVideo.VideoTitle)
+                        .WithDescription(Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}"))
+                        .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
+                        .AddField("直播狀態", "已刪除直播", true)
+                        .AddField("排定開台時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown(), true);
 
-                    await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.Delete).ConfigureAwait(false);
+                        await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.Delete).ConfigureAwait(false);
+                        return;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Error($"ReminderTimerAction-CheckVideoExist: {ex}");
                     return;
                 }
 
-                DateTime startTime;
-                if (videoResult.LiveStreamingDetails.ScheduledStartTime.HasValue) startTime = videoResult.LiveStreamingDetails.ScheduledStartTime.Value;
-                else startTime = videoResult.LiveStreamingDetails.ActualStartTime.Value;
+                DateTime startTime = streamVideo.ScheduledStartTime;
+                if (videoResult != null)
+                {
+                    if (videoResult.LiveStreamingDetails.ScheduledStartTime.HasValue) startTime = videoResult.LiveStreamingDetails.ScheduledStartTime.Value;
+                    else startTime = videoResult.LiveStreamingDetails.ActualStartTime.Value;
+                }
 
                 using (var db = DataBase.DBContext.GetDbContext())
                 {
@@ -409,7 +420,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             }
         }
 
-        public async Task<Video> GetVideoAsync(string videoId)
+        public async Task<Video> GetVideoAsync(string videoId, int retryCount = 0)
         {
             try
             {
@@ -421,12 +432,17 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             }
             catch (Exception ex)
             {
-                Log.Error($"GetVideoAsync {ex.Message}\n{ex.StackTrace}");
-                return null;
+                if (ex.Message.Contains("Timeout") && retryCount <= 3)
+                {
+                    Log.Error($"ㄐㄐ，{videoId} Timeout了，嘗試重新執行第 {++retryCount} 次");
+                    return await GetVideoAsync(videoId, retryCount);
+                }
+
+                throw;
             }
         }
 
-        private async Task<IEnumerable<Video>> GetVideosAsync(IEnumerable<string> videoIds)
+        private async Task<IEnumerable<Video>> GetVideosAsync(IEnumerable<string> videoIds, int retryCount = 0)
         {
             try
             {
@@ -435,9 +451,15 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 var videoResult = await video.ExecuteAsync().ConfigureAwait(false);
                 return videoResult.Items;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return null;
+                if (ex.Message.Contains("Timeout"))
+                {
+                    Log.Error($"ㄐㄐ，Videos: `{string.Join(',', videoIds)}` Timeout了，嘗試重新執行第 {++retryCount} 次");
+                    return await GetVideosAsync(videoIds, retryCount);
+                }
+
+                throw;
             }
         }
     }
