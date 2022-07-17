@@ -269,7 +269,14 @@ namespace Discord_Stream_Notify_Bot
 
         public static void ChangeStatus()
         {
-            Action<string> setGame = new Action<string>(async (text) => { await _client.SetGameAsync($"s!h | {text}", type: ActivityType.Playing); });
+            Action<string> setGame = new Action<string>(async (text) =>
+            {
+                try
+                {
+                    await _client.SetGameAsync($"s!h | {text}", type: ActivityType.Playing);
+                }
+                catch (Exception) { }
+            });
 
             switch (Status)
             {
@@ -295,13 +302,13 @@ namespace Discord_Stream_Notify_Bot
                             switch (new Random().Next(0, 2))
                             {
                                 case 0:
-                                    list = Queryable.Select(db.HoloStreamVideo, (x) => (StreamVideo)x).ToList();
+                                    list = db.HoloStreamVideo.Select((x) => (StreamVideo)x).ToList();
                                     break;
                                 case 1:
-                                    list = Queryable.Select(db.NijisanjiStreamVideo, (x) => (StreamVideo)x).ToList();
+                                    list = db.NijisanjiStreamVideo.Select((x) => (StreamVideo)x).ToList();
                                     break;
                                 case 2:
-                                    list = Queryable.Select(db.OtherStreamVideo, (x) => (StreamVideo)x).ToList();
+                                    list = db.OtherStreamVideo.Select((x) => (StreamVideo)x).ToList();
                                     break;
                             }
                             var item = list[new Random().Next(0, list.Count)];

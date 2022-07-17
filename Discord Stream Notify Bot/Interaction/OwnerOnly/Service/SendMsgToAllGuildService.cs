@@ -105,8 +105,15 @@ namespace Discord_Stream_Notify_Bot.Interaction.OwnerOnly.Service
                                 if (guild == null)
                                 {
                                     Log.Warn($"伺服器不存在: {item.Key}");
-                                    db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where((x) => x.GuildId == item.Key));
-                                    db.SaveChanges();
+                                    try
+                                    {
+                                        db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where((x) => x.GuildId == item.Key));
+                                        db.SaveChanges();
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        Log.Error(ex.ToString());
+                                    }
                                     continue;
                                 }
 
@@ -114,8 +121,15 @@ namespace Discord_Stream_Notify_Bot.Interaction.OwnerOnly.Service
                                 if (textChannel == null)
                                 {
                                     Log.Warn($"頻道不存在: {guild.Name} / {item.Value}");
-                                    db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where((x) => x.GuildId == item.Key));
-                                    db.SaveChanges();
+                                    try
+                                    {
+                                        db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where((x) => x.GuildId == item.Key));
+                                        db.SaveChanges();
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        Log.Error(ex.ToString());
+                                    }
                                     continue;
                                 }
 
