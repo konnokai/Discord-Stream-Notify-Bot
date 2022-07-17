@@ -831,7 +831,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                 {
                     return new EmbedBuilder()
                         .WithOkColor()
-                        .WithTitle("直播通知清單為空")
+                        .WithTitle("直播通知清單")
                         .WithDescription(string.Join('\n', channelTitleList.Skip(page * 20).Take(20)))
                         .WithFooter($"{Math.Min(channelTitleList.Count, (page + 1) * 20)} / {channelTitleList.Count}個頻道");
                 }, channelTitleList.Count, 20, false);

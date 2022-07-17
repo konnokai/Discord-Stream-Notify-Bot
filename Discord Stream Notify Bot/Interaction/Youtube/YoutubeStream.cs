@@ -137,7 +137,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
         {
             try
             {
-                List<Google.Apis.YouTube.v3.Data.Video> result = new List<Google.Apis.YouTube.v3.Data.Video>();
+                List<Video> result = new List<Video>();
 
                 for (int i = 0; i < _service.Reminders.Values.Count; i += 50)
                 {
