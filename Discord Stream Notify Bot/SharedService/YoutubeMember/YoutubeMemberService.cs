@@ -593,7 +593,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                             {
                                 if (ex.Message.ToLower().Contains("parameter has disabled comments"))
                                 {
-                                    Log.Warn($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {item2.UserId} 會限資格取得失敗");
+                                    Log.Warn($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {item2.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 的會限資格取得失敗");
                                     Log.Warn($"{guildYoutubeMemberConfig.MemberCheckChannelTitle} ({guildYoutubeMemberConfig.MemberCheckChannelId}): {guildYoutubeMemberConfig.MemberCheckVideoId}已關閉留言");
                                     await (await Program.ApplicatonOwner.CreateDMChannelAsync()).SendErrorMessageAsync($"{guildYoutubeMemberConfig.GuildId} - {item2.UserId} 會限資格取得失敗: {guildYoutubeMemberConfig.MemberCheckVideoId}已關閉留言", item2.UserId, logChannel);
 
@@ -605,7 +605,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                 }
                                 else if (ex.Message.ToLower().Contains("403") || ex.Message.ToLower().Contains("the request might not be properly authorized"))
                                 {
-                                    Log.Warn($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {item2.UserId} 會限資格取得失敗: 無會員");
+                                    Log.Warn($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {item2.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 的會限資格取得失敗: 無會員");
 
                                     db.YoutubeMemberCheck.Remove(item2);
 
@@ -633,7 +633,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                     ex.Message.ToLower().Contains("the access token has expired and could not be refreshed") ||
                                     ex.Message.ToLower().Contains("authenticateduseraccountclosed") || ex.Message.ToLower().Contains("authenticateduseraccountsuspended"))
                                 {
-                                    Log.Warn($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {item2.UserId} 會限資格取得失敗: AccessToken已過期或無法刷新");
+                                    Log.Warn($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {item2.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 的會限資格取得失敗: AccessToken已過期或無法刷新");
                                     Log.Warn(JsonConvert.SerializeObject(userCredential.Token));
                                     Log.Warn(ex.ToString());
 
@@ -647,7 +647,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                 }
                                 else if (ex.Message.ToLower().Contains("the added or subtracted value results in an un-representable"))
                                 {
-                                    Log.Error($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {item2.UserId} 會限資格取得失敗: 時間加減錯誤");
+                                    Log.Error($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {item2.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 的會限資格取得失敗: 時間加減錯誤");
                                     Log.Error(ex.ToString());
 
                                     await RevokeUserGoogleCertAsync(item2.UserId.ToString());
@@ -660,22 +660,22 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                 }
                                 else if (ex.Message.ToLower().Contains("500"))
                                 {
-                                    Log.Error($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {item2.UserId} 會限資格取得失敗: 500內部錯誤");
+                                    Log.Error($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {item2.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 的會限資格取得失敗: 500內部錯誤");
 
                                     await logChannel.SendErrorMessageAsync(user, guildYoutubeMemberConfig.MemberCheckChannelTitle, "Google內部錯誤");
                                     continue;
                                 }
                                 else if (ex.Message.ToLower().Contains("bad req"))
                                 {
-                                    Log.Error($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {item2.UserId} 會限資格取得失敗: 400錯誤");
+                                    Log.Error($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {item2.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 的會限資格取得失敗: 400錯誤");
                                     Log.Error(ex.ToString());
 
                                     await logChannel.SendErrorMessageAsync(user, guildYoutubeMemberConfig.MemberCheckChannelTitle, "400錯誤");
                                     continue;
                                 }
-                                else                                
+                                else
                                 {
-                                    Log.Error($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {item2.UserId} 會限資格取得失敗: 未知的錯誤");
+                                    Log.Error($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {item2.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 的會限資格取得失敗: 未知的錯誤");
                                     Log.Error(ex.ToString());
 
                                     await RevokeUserGoogleCertAsync(item2.UserId.ToString());
@@ -687,7 +687,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                             }
                             catch (Exception ex2)
                             {
-                                Log.Error($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {item2.UserId} 回傳會限資格訊息失敗: {ex}");
+                                Log.Error($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {item2.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 回傳會限資格訊息失敗: {ex}");
                                 Log.Error(ex2.ToString());
                             }
                         }
@@ -753,7 +753,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                         }
                         catch (Exception ex)
                         {
-                            Log.Error($"MemberCheckSaveDb: {guildYoutubeMemberConfig.GuildId} - {item2.UserId} 資料庫儲存失敗");
+                            Log.Error($"MemberCheckUpdateDb: {guildYoutubeMemberConfig.GuildId} - {item2.UserId} 資料庫更新失敗");
                             Log.Error($"{ex}");
                         }
                     }
@@ -762,7 +762,14 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                         $"本次驗證 {totalCheckCount} 位成員，共 {checkedMemberCount} 位驗證成功");
                 }
 
-                db.SaveChanges();
+                try
+                {
+                    db.SaveChanges();
+                }
+                catch (Exception ex)
+                {
+                    Log.Error($"CheckMemberShip-SaveChanges: {ex}");
+                }
             }
 
             //Log.Info("會限檢查完畢");
