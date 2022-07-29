@@ -97,7 +97,8 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
             "如新增同個頻道則可變更要授予的用戶組")]
         [Alias("aymcc")]
         [RequireContext(ContextType.Guild)]
-        [RequireUserPermission(GuildPermission.Administrator)]
+        [RequireUserPermission(GuildPermission.Administrator, Group = "bot_owner")]
+        [RequireOwner(Group = "bot_owner")]
         [CommandExample("https://www.youtube.com/channel/UCdn5BQ06XqgXoAxIhbqw5Rg <@&977481980222521344>",
             "https://www.youtube.com/channel/UCR6qhsLpn62WVxCBK1dkLow 837652679303757824")]
         [Priority(0)]

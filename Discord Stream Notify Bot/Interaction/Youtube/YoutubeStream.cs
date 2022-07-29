@@ -168,9 +168,11 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             }
         }
 
+        
         [RequireContext(ContextType.Guild)]
         [RequireBotPermission(GuildPermission.ManageGuild)]
-        [RequireUserPermission(GuildPermission.ManageGuild)]
+        [RequireUserPermission(GuildPermission.ManageGuild, Group = "bot_owner")]
+        [RequireOwner(Group = "bot_owner")]
         [CommandSummary("設定伺服器橫幅使用指定頻道的最新影片(直播)縮圖\n" +
             "若未輸入頻道網址則關閉本設定\n\n" +
             "Bot需要有管理伺服器權限\n" +
@@ -248,7 +250,8 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
         }
 
         [RequireContext(ContextType.Guild)]
-        [RequireUserPermission(GuildPermission.ManageMessages)]
+        [RequireUserPermission(GuildPermission.ManageMessages, Group = "bot_owner")]
+        [RequireOwner(Group = "bot_owner")]
         [CommandSummary("新增直播開台通知的頻道\n" +
             "輸入 `holo` 通知全部 `Holo成員` 的直播\n" +
             "輸入 `2434` 通知全部 `彩虹社成員` 的直播\n" +
@@ -361,7 +364,8 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
         }
 
         [RequireContext(ContextType.Guild)]
-        [RequireUserPermission(GuildPermission.ManageMessages)]
+        [RequireUserPermission(GuildPermission.ManageMessages, Group = "bot_owner")]
+        [RequireOwner(Group = "bot_owner")]
         [CommandSummary("移除直播開台通知的頻道\n" +
             "輸入holo移除全部 `Holo成員` 的直播通知\n" +
             "輸入2434移除全部 `彩虹社成員` 的直播通知\n" +
@@ -482,7 +486,8 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
         }
 
         [RequireContext(ContextType.Guild)]
-        [RequireUserPermission(GuildPermission.ManageMessages | GuildPermission.MentionEveryone)]
+        [RequireUserPermission(GuildPermission.ManageMessages | GuildPermission.MentionEveryone, Group = "bot_owner")]
+        [RequireOwner(Group = "bot_owner")]
         [RequireBotPermission(GuildPermission.MentionEveryone)]
         [CommandSummary("設定通知訊息\n" +
             "不輸入通知訊息的話則會關閉該類型的通知\n" +

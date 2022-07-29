@@ -625,7 +625,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                     {
                                         await logChannel.SendErrorMessageAsync(user, guildYoutubeMemberConfig.MemberCheckChannelTitle, "無會員");
                                         await userChannel.SendErrorMessageAsync($"無法在 `{guild.Name}` 的 `{guildYoutubeMemberConfig.MemberCheckChannelTitle}` 上存取會限資格\n" +
-                                         $"請先使用 `/youtube-member show-youtube-account` 確認綁定的頻道是否正確，並確認已購買會\n若都正確請向 `{Program.ApplicatonOwner}` 確認問題", item2.UserId, logChannel);
+                                         $"請先使用 `/youtube-member show-youtube-account` 確認綁定的頻道是否正確，並確認已購買會員\n若都正確請向 `{Program.ApplicatonOwner}` 確認問題", item2.UserId, logChannel);
                                     }
                                     continue;
                                 }

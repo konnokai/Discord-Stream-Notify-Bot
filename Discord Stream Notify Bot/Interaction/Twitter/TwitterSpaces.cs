@@ -24,7 +24,8 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
         }
 
         [RequireContext(ContextType.Guild)]
-        [RequireUserPermission(GuildPermission.ManageMessages)]
+        [RequireUserPermission(GuildPermission.ManageMessages, Group = "bot_owner")]
+        [RequireOwner(Group = "bot_owner")]
         [CommandSummary("新增推特語音空間開台通知的頻道\n" +
             "請使用@後面的使用者名稱來新增\n" +
             "可以使用`/twitter-space list-space-notice`查詢有哪些頻道\n")]
@@ -75,7 +76,8 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
         }
 
         [RequireContext(ContextType.Guild)]
-        [RequireUserPermission(GuildPermission.ManageMessages)]
+        [RequireUserPermission(GuildPermission.ManageMessages, Group = "bot_owner")]
+        [RequireOwner(Group = "bot_owner")]
         [CommandSummary("移除推特語音空間通知的頻道\n" +
              "請使用@後面的使用者名稱來移除")]
         [CommandExample("LaplusDarknesss", "@inui_toko")]
@@ -137,7 +139,8 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
         }
 
         [RequireContext(ContextType.Guild)]
-        [RequireUserPermission(GuildPermission.ManageMessages | GuildPermission.MentionEveryone)]
+        [RequireUserPermission(GuildPermission.ManageMessages | GuildPermission.MentionEveryone, Group = "bot_owner")]
+        [RequireOwner(Group = "bot_owner")]
         [RequireBotPermission(GuildPermission.MentionEveryone)]
         [CommandSummary("設定通知訊息\n" +
             "不輸入通知訊息的話則會關閉通知訊息\n" +
@@ -232,7 +235,8 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
 
         [RequireContext(ContextType.Guild)]
         [RequireGuildMemberCount(500)]
-        [RequireUserPermission(GuildPermission.Administrator)]
+        [RequireUserPermission(GuildPermission.Administrator, Group = "bot_owner")]
+        [RequireOwner(Group = "bot_owner")]
         [CommandSummary("新增推特語音空間爬蟲\n" +
             "(請使用@後面的使用者名稱來新增)\n\n" +
            "**禁止新增非VTuber的推主**\n" +
@@ -319,7 +323,8 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
         [RequireContext(ContextType.Guild)]
         [CommandSummary("移除推特語音空間爬蟲\n" +
            "爬蟲必須由本伺服器新增才可移除")]
-        [RequireUserPermission(GuildPermission.Administrator)]
+        [RequireUserPermission(GuildPermission.Administrator, Group = "bot_owner")]
+        [RequireOwner(Group = "bot_owner")]
         [CommandExample("LaplusDarknesss", "@inui_toko")]
         [SlashCommand("remove-twitter-spider", "移除推特語音空間爬蟲")]
         public async Task RemoveSpider([Summary("推特使用者名稱")]string userScreenName)
