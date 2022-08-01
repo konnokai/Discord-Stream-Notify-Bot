@@ -18,6 +18,9 @@ namespace Discord_Stream_Notify_Bot.HttpClients
 
         public TwitterClient(HttpClient httpClient)
         {
+#if DEBUG
+            return;
+#endif
             httpClient.DefaultRequestHeaders.Add("UserAgent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.82 Safari/537.36");
             httpClient.DefaultRequestHeaders.Add("Referer", "https://twitter.com/");
             httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", "AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs=1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA");

@@ -181,6 +181,30 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
 
         [RequireContext(ContextType.Guild)]
         [RequireOwner]
+        [Command("ListDeathChannelSpider")]
+        [Summary("顯示已死去的爬蟲檢測頻道")]
+        [Alias("ldcs")]
+        public async Task ListDeathChannelSpider(int page = 0)
+        {
+            if (page < 0) page = 0;
+
+            using (var db = DataBase.DBContext.GetDbContext())
+            {
+                var list = db.YoutubeChannelSpider.ToList().Where((x) => x.GuildId != 0 && _client.GetGuild(x.GuildId) == null).Select((x) => Format.Url(x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}"));
+
+                await Context.SendPaginatedConfirmAsync(page, page =>
+                {
+                    return new EmbedBuilder()
+                        .WithOkColor()
+                        .WithTitle("死去的直播爬蟲清單")
+                        .WithDescription(string.Join('\n', list.Skip(page * 10).Take(10)))
+                        .WithFooter($"{Math.Min(list.Count(), (page + 1) * 10)} / {list.Count()}個頻道");
+                }, list.Count(), 10, false).ConfigureAwait(false);
+            }
+        }
+
+        [RequireContext(ContextType.Guild)]
+        [RequireOwner]
         [Command("ListWarningChannelSpider")]
         [Summary("顯示已加入爬蟲檢測的\"警告\"頻道")]
         [Alias("lwcs")]

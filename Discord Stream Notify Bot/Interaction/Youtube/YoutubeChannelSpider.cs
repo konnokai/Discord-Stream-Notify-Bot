@@ -20,7 +20,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
 
                 if (context.User.Id == Program.ApplicatonOwner.Id)
                 {
-                    channelList = db.YoutubeChannelSpider;
+                    channelList = db.YoutubeChannelSpider.Skip(db.YoutubeChannelSpider.Count() - 25);
                 }
                 else
                 {

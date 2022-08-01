@@ -1,4 +1,5 @@
 ﻿using Discord;
+using Discord.Interactions;
 using Discord.WebSocket;
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.Interaction;
@@ -21,7 +22,18 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
     {
         public enum NoticeType
         {
-            NewStream, NewVideo, Start, End, ChangeTime, Delete
+            [ChoiceDisplay("新待機室")]
+            NewStream,
+            [ChoiceDisplay("新上傳影片")]
+            NewVideo,
+            [ChoiceDisplay("開始實況\\首播")]
+            Start,
+            [ChoiceDisplay("結束實況\\首播")]
+            End,
+            [ChoiceDisplay("更改開台時間")]
+            ChangeTime,
+            [ChoiceDisplay("已刪除或私人化實況")]
+            Delete
         }
 
         public ConcurrentDictionary<StreamVideo, ReminderItem> Reminders { get; } = new ConcurrentDictionary<StreamVideo, ReminderItem>();

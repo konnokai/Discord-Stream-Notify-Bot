@@ -312,7 +312,7 @@ namespace Discord_Stream_Notify_Bot
                                     break;
                             }
                             var item = list[new Random().Next(0, list.Count)];
-                            setGame($"{item.VideoTitle}\n{item.ChannelTitle}");
+                            _client.SetGameAsync(item.VideoTitle, $"https://www.youtube.com/watch?v={item.VideoId}", ActivityType.Streaming);
                         }
                     }
                     catch (Exception ex)

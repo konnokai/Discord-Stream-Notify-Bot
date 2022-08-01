@@ -45,6 +45,7 @@ namespace Discord_Stream_Notify_Bot.Interaction
                 {
                     if (!regex.IsMatch(item2.Key))
                         Log.Error(item2.Key);
+
                     foreach (var item3 in item2.Value)
                     {
                         if (!regex.IsMatch(item3))
