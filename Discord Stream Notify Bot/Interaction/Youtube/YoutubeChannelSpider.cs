@@ -18,20 +18,44 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                 using var db = DataBase.DBContext.GetDbContext();
                 IQueryable<DataBase.Table.YoutubeChannelSpider> channelList;
 
-                if (context.User.Id == Program.ApplicatonOwner.Id)
+                if (autocompleteInteraction.User.Id == Program.ApplicatonOwner.Id)
                 {
-                    channelList = db.YoutubeChannelSpider.Skip(db.YoutubeChannelSpider.Count() - 25);
+                    channelList = db.YoutubeChannelSpider;
                 }
                 else
                 {
-                    if (!db.YoutubeChannelSpider.Any((x) => x.GuildId == context.Guild.Id))
+                    if (!db.YoutubeChannelSpider.Any((x) => x.GuildId == autocompleteInteraction.GuildId))
                         return AutocompletionResult.FromSuccess();
 
-                    channelList = db.YoutubeChannelSpider.Where((x) => x.GuildId == context.Guild.Id);
+                    channelList = db.YoutubeChannelSpider.Where((x) => x.GuildId == autocompleteInteraction.GuildId);
+                }
+
+                var channelList2 = new List<DataBase.Table.YoutubeChannelSpider>();
+                try
+                {
+                    string value = autocompleteInteraction.Data.Current.Value.ToString();
+                    if (!string.IsNullOrEmpty(value))
+                    {
+                        foreach (var item in channelList)   
+                        {
+                            if (item.ChannelTitle.Contains(value, StringComparison.CurrentCultureIgnoreCase) || item.ChannelId.Contains(value, StringComparison.CurrentCultureIgnoreCase))
+                            {
+                                channelList2.Add(item);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        channelList2 = channelList.ToList();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Error($"GuildYoutubeChannelSpiderAutocompleteHandler - {ex}");
                 }
 
                 List<AutocompleteResult> results = new();
-                foreach (var item in channelList)
+                foreach (var item in channelList2)
                 {
                     results.Add(new AutocompleteResult(item.ChannelTitle, item.ChannelId));
                 }

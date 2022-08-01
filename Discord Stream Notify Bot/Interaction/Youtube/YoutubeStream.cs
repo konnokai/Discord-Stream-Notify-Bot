@@ -23,12 +23,39 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                 if (!db.NoticeYoutubeStreamChannel.Any((x) => x.GuildId == context.Guild.Id))
                     return AutocompletionResult.FromSuccess();
 
-                var channelIdList = db.NoticeYoutubeStreamChannel.Where((x) => x.GuildId == context.Guild.Id).Select((x) => x.NoticeStreamChannelId);
+                var channelIdList = db.NoticeYoutubeStreamChannel.Where((x) => x.GuildId == context.Guild.Id).Select((x) => new KeyValuePair<string, string>(db.GetChannelTitleByChannelId(x.NoticeStreamChannelId), x.NoticeStreamChannelId));
+
+                var channelIdList2 = new Dictionary<string,string>();
+                try
+                {
+                    string value = autocompleteInteraction.Data.Current.Value.ToString();
+                    if (!string.IsNullOrEmpty(value))
+                    {
+                        foreach (var item in channelIdList)
+                        {
+                            if (item.Key.Contains(value, StringComparison.CurrentCultureIgnoreCase) || item.Value.Contains(value, StringComparison.CurrentCultureIgnoreCase))
+                            {
+                                channelIdList2.Add(item.Key,item.Value);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        foreach (var item in channelIdList)
+                        {
+                            channelIdList2.Add(item.Key, item.Value);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Error($"GuildYoutubeChannelSpiderAutocompleteHandler - {ex}");
+                }
 
                 List<AutocompleteResult> results = new();
-                foreach (var item in channelIdList)
+                foreach (var item in channelIdList2)
                 {
-                    results.Add(new AutocompleteResult(db.GetChannelTitleByChannelId(item), item));
+                    results.Add(new AutocompleteResult(item.Key, item.Value));
                 }
 
                 return AutocompletionResult.FromSuccess(results.Take(25));
