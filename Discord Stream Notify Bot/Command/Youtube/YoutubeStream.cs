@@ -292,7 +292,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
 
             if (newRecordStreamList.Count == 0)
             {
-                await Context.Channel.SendConfirmAsync("現在沒有直播記錄").ConfigureAwait(false);
+                await Context.Channel.SendErrorAsync("現在沒有直播記錄").ConfigureAwait(false);
                 return;
             }
 
@@ -300,22 +300,37 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
             {
                 var yt = _service.yt.Videos.List("Snippet");
                 yt.Id = string.Join(',', newRecordStreamList);
-                var result = await yt.ExecuteAsync().ConfigureAwait(false);
+                var result = (await yt.ExecuteAsync().ConfigureAwait(false)).Items.ToList();
+
+                var endStreamList = result.Where((x) => x.Snippet.LiveBroadcastContent == "none").ToList();
+                foreach (var item in endStreamList)
+                {
+                    try
+                    {
+                        result.Remove(item);
+                        await Program.RedisDb.SetRemoveAsync("youtube.nowRecord", item.Id);
+                    }
+                    catch (Exception ex)
+                    {
+                        await Context.Channel.SendErrorAsync(ex.Message).ConfigureAwait(false);
+                    }
+                }
+
                 await Context.SendPaginatedConfirmAsync(0, (page) =>
                 {
                     return new EmbedBuilder()
                         .WithOkColor()
                         .WithTitle("正在錄影的直播")
                         .WithDescription(string.Join("\n\n",
-                            result.Items.Skip(page * 9).Take(9)
+                            result.Skip(page * 9).Take(9)
                             .Select((x) => $"{Format.Url(x.Snippet.Title, $"https://www.youtube.com/watch?v={x.Id}")}\n" +
                                 $"{x.Snippet.ChannelTitle}")))
-                        .WithFooter($"{result.Items.Count}個頻道");
-                }, result.Items.Count, 9, false).ConfigureAwait(false);
+                        .WithFooter($"{result.Count}個頻道");
+                }, result.Count, 9, false).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
-                await Context.Channel.SendConfirmAsync(ex.Message).ConfigureAwait(false);
+                await Context.Channel.SendErrorAsync(ex.Message).ConfigureAwait(false);
             }
         }
 

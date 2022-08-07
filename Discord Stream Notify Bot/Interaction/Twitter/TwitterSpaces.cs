@@ -149,7 +149,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
             "(建議在私人頻道中設定以免Ping到用戶組造成不必要的誤會)")]
         [CommandExample("LaplusDarknesss", "LaplusDarknesss @直播通知 總帥突襲開語音啦")]
         [SlashCommand("set-space-notice-message", "設定通知訊息")]
-        public async Task SetMessage([Summary("推特使用者名稱")] string userScreenName, [Summary("通知訊息")] string message)
+        public async Task SetMessage([Summary("推特使用者名稱")] string userScreenName, [Summary("通知訊息")] string message = "")
         {
             if (string.IsNullOrWhiteSpace(userScreenName))
             {

@@ -1,10 +1,13 @@
 ﻿using Discord;
 using Discord.Interactions;
 using System.Threading.Tasks;
+using Discord_Stream_Notify_Bot.Interaction.Attribute;
 
 namespace Discord_Stream_Notify_Bot.Interaction.OwnerOnly
 {
     [DontAutoRegister]
+    [RequireGuild(506083124015398932)]
+    [DefaultMemberPermissions(GuildPermission.Administrator)]
     public class SendMsgToAllGuild : TopLevelModule<Service.SendMsgToAllGuildService>
     {
         [SlashCommand("send-message", "傳送訊息到所有伺服器")]

@@ -176,15 +176,17 @@ namespace Discord_Stream_Notify_Bot
                 try
                 {
                     InteractionService interactionService = iService.GetService<InteractionService>();
-
 #if DEBUG
-                    if (botConfig.TestSlashCommandGuildId == 0 || _client.GetGuild(botConfig.TestSlashCommandGuildId) == null)
+                    if (botConfig.TestSlashCommandGuildId == 0 || Client.GetGuild(botConfig.TestSlashCommandGuildId) == null)
                         Log.Warn("未設定測試Slash指令的伺服器或伺服器不存在，略過");
                     else
                     {
                         try
                         {
-                            var result = await interactionService.AddModulesToGuildAsync(botConfig.TestSlashCommandGuildId, false, interactionService.Modules.Where((x) => x.DontAutoRegister).ToArray());
+                            var result = await interactionService.RegisterCommandsToGuildAsync(botConfig.TestSlashCommandGuildId);
+                            Log.Info($"已註冊指令 ({botConfig.TestSlashCommandGuildId}) : {string.Join(", ", result.Select((x) => x.Name))}");
+
+                            result = await interactionService.AddModulesToGuildAsync(botConfig.TestSlashCommandGuildId, false, interactionService.Modules.Where((x) => x.DontAutoRegister).ToArray());
                             Log.Info($"已註冊指令 ({botConfig.TestSlashCommandGuildId}) : {string.Join(", ", result.Select((x) => x.Name))}");
                         }
                         catch (Exception ex)
@@ -194,7 +196,6 @@ namespace Discord_Stream_Notify_Bot
                         }
                     }
 #else
-
                     try
                     {
                         var commandCount = (await RedisDb.StringGetSetAsync("discord_stream_bot:command_count", iService.GetService<InteractionHandler>().CommandCount)).ToString();
@@ -206,6 +207,30 @@ namespace Discord_Stream_Notify_Bot
                         Log.Error(ex.Message);
                         isDisconnect = true;
                         return;
+                    }
+
+                    try
+                    {
+                        foreach (var item in interactionService.Modules.Where((x) => x.Preconditions.Any((x) => x is Interaction.Attribute.RequireGuildAttribute)))
+                        {
+                            var guildId = ((Interaction.Attribute.RequireGuildAttribute)item.Preconditions.FirstOrDefault((x) => x is Interaction.Attribute.RequireGuildAttribute)).GuildId;
+                            var guild = _client.GetGuild(guildId.Value);
+
+                            if (guild == null)
+                            {
+                                Log.Warn($"{item.Name} 註冊失敗，伺服器 {guildId} 不存在");
+                                continue;
+                            }
+
+                            var result = await interactionService.AddModulesToGuildAsync(guild, false, item);
+                            Log.Info($"已在 {guild.Name}({guild.Id}) 註冊指令: {string.Join(", ", result.Select((x) => x.Name))}");
+
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error("註冊伺服器專用Slash指令失敗");
+                        Log.Error(ex.ToString());
                     }
 
                     await interactionService.RegisterCommandsGloballyAsync();
@@ -337,7 +362,7 @@ namespace Discord_Stream_Notify_Bot
             => $"{AppDomain.CurrentDomain.BaseDirectory}Data{GetPlatformSlash()}{fileName}";        
 
         public static string GetPlatformSlash()
-            => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "\\" : "/";        
+            => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "\\" : "/";
 
         private static void Console_CancelKeyPress(object sender, ConsoleCancelEventArgs e)
         {
