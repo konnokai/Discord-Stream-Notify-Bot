@@ -27,7 +27,6 @@ namespace Discord_Stream_Notify_Bot.HttpClients
             httpClient.DefaultRequestHeaders.Add("ContentType", "application/json");
 
             Client = httpClient;
-            GetQueryIdAndFeatureSwitchesAsync().Wait();
         }
 
         public async Task GetQueryIdAndFeatureSwitchesAsync()

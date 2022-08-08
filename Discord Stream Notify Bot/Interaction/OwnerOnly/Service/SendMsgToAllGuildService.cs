@@ -93,10 +93,11 @@ namespace Discord_Stream_Notify_Bot.Interaction.OwnerOnly.Service
 
                     using (var db = DataBase.DBContext.GetDbContext())
                     {
+                        List<KeyValuePair<ulong, ulong>> list = db.NoticeYoutubeStreamChannel.Distinct((x) => x.GuildId).Where((x) => _client.Guilds.Any((x2) => x2.Id == x.GuildId)).Select((x) => new KeyValuePair<ulong, ulong>(x.GuildId, x.DiscordChannelId)).ToList(); ;
+
                         try
                         {
-                            var list = db.NoticeYoutubeStreamChannel.Distinct((x) => x.GuildId).Where((x)=> _client.Guilds.Any((x2)=> x2.Id == x.GuildId)).Select((x) => new KeyValuePair<ulong, ulong>(x.GuildId, x.DiscordChannelId));
-                            int i = 0, num = list.Count();
+                            int i = 0, num = list.Count;
                             foreach (var item in list)
                             {
                                 i++;
@@ -108,7 +109,6 @@ namespace Discord_Stream_Notify_Bot.Interaction.OwnerOnly.Service
                                     try
                                     {
                                         db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where((x) => x.GuildId == item.Key));
-                                        db.SaveChanges();
                                     }
                                     catch (Exception ex)
                                     {
@@ -124,7 +124,6 @@ namespace Discord_Stream_Notify_Bot.Interaction.OwnerOnly.Service
                                     try
                                     {
                                         db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where((x) => x.GuildId == item.Key));
-                                        db.SaveChanges();
                                     }
                                     catch (Exception ex)
                                     {
@@ -139,7 +138,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.OwnerOnly.Service
                                 }
                                 catch (Discord.Net.HttpException ex)
                                 {
-                                    if (ex.DiscordCode == DiscordErrorCode.MissingPermissions || ex.DiscordCode == DiscordErrorCode.InsufficientPermissions)
+                                    if (ex.DiscordCode.HasValue && ex.DiscordCode == DiscordErrorCode.MissingPermissions || ex.DiscordCode == DiscordErrorCode.InsufficientPermissions)
                                     {
                                         Log.Warn($"缺少權限導致無法傳送訊息至: {guild.Name} / {textChannel.Name}");
                                         db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where((x) => x.GuildId == item.Key));
@@ -161,10 +160,86 @@ namespace Discord_Stream_Notify_Bot.Interaction.OwnerOnly.Service
                         }
                         catch (Exception ex)
                         {
-                            Log.Error($"{ex.Message}\n{ex.StackTrace}");
+                            Log.Error($"{ex}");
                         }
 
-                        await button.SendConfirmAsync("已發送完成", true);
+                        await button.SendConfirmAsync("已於通知頻道發送完成", true);
+                        db.SaveChanges();
+
+                        try
+                        {
+                            var memberList = db.GuildConfig.Distinct((x) => x.GuildId).Where((x) => x.LogMemberStatusChannelId != 0 && !list.Any((x2) => x.GuildId == x2.Key) && _client.Guilds.Any((x2) => x2.Id == x.GuildId)).Select((x) => new KeyValuePair<ulong, ulong>(x.GuildId, x.LogMemberStatusChannelId)).ToList();
+
+                            int i = 0, num = memberList.Count;
+                            foreach (var item in memberList)
+                            {
+                                i++;
+
+                                var guild = _client.GetGuild(item.Key);
+                                if (guild == null)
+                                {
+                                    Log.Warn($"伺服器不存在: {item.Key}");
+                                    try
+                                    {
+                                        db.GuildConfig.RemoveRange(db.GuildConfig.Where((x) => x.GuildId == item.Key));
+                                        db.GuildYoutubeMemberConfig.RemoveRange(db.GuildYoutubeMemberConfig.Where((x) => x.GuildId == item.Key));
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        Log.Error(ex.ToString());
+                                    }
+                                    continue;
+                                }
+
+                                var textChannel = guild.GetTextChannel(item.Value);
+                                if (textChannel == null)
+                                {
+                                    Log.Warn($"頻道不存在: {guild.Name} / {item.Value}");
+                                    try
+                                    {
+                                        db.GuildConfig.RemoveRange(db.GuildConfig.Where((x) => x.GuildId == item.Key));
+                                        db.GuildYoutubeMemberConfig.RemoveRange(db.GuildYoutubeMemberConfig.Where((x) => x.GuildId == item.Key));
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        Log.Error(ex.ToString());
+                                    }
+                                    continue;
+                                }
+
+                                try
+                                {
+                                    await textChannel.SendMessageAsync(embed: checkData.Embed);
+                                }
+                                catch (Discord.Net.HttpException ex)
+                                {
+                                    if (ex.DiscordCode.HasValue && ex.DiscordCode == DiscordErrorCode.MissingPermissions || ex.DiscordCode == DiscordErrorCode.InsufficientPermissions)
+                                    {
+                                        Log.Warn($"缺少權限導致無法傳送訊息至: {guild.Name} / {textChannel.Name}");
+                                        db.GuildConfig.RemoveRange(db.GuildConfig.Where((x) => x.GuildId == item.Key));
+                                        db.GuildYoutubeMemberConfig.RemoveRange(db.GuildYoutubeMemberConfig.Where((x) => x.GuildId == item.Key));
+                                    }
+                                    else
+                                        Log.Error(ex.ToString());
+                                }
+                                catch (Exception ex)
+                                {
+                                    Log.Error($"MSG: {guild.Name} / {textChannel.Name}");
+                                    Log.Error(ex.Message);
+                                }
+                                finally
+                                {
+                                    Log.Info($"({i}/{num}) {item.Key}");
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Error($"{ex}");
+                        }
+
+                        await button.SendConfirmAsync("已於會限驗證紀錄頻道發送完成", true);
+                        db.SaveChanges();
                     }
                 }
                 else

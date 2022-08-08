@@ -17,6 +17,106 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
         private readonly DiscordSocketClient _client;
         private readonly HttpClients.DiscordWebhookClient _discordWebhookClient;
 
+        public class GuildNoticeTwitterSpaceIdAutocompleteHandler : AutocompleteHandler
+        {
+            public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+            {
+                using var db = DataBase.DBContext.GetDbContext();
+                if (!db.NoticeTwitterSpaceChannel.Any((x) => x.GuildId == context.Guild.Id))
+                    return AutocompletionResult.FromSuccess();
+
+                var channelIdList = db.NoticeTwitterSpaceChannel.Where((x) => x.GuildId == context.Guild.Id).Select((x) => new KeyValuePair<string, string>(db.GetTwitterUserNameByUserScreenName(x.NoticeTwitterSpaceUserScreenName), x.NoticeTwitterSpaceUserScreenName));
+
+                var channelIdList2 = new Dictionary<string, string>();
+                try
+                {
+                    string value = autocompleteInteraction.Data.Current.Value.ToString();
+                    if (!string.IsNullOrEmpty(value))
+                    {
+                        foreach (var item in channelIdList)
+                        {
+                            if (item.Key.Contains(value, StringComparison.CurrentCultureIgnoreCase) || item.Value.Contains(value, StringComparison.CurrentCultureIgnoreCase))
+                            {
+                                channelIdList2.Add(item.Key, item.Value);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        foreach (var item in channelIdList)
+                        {
+                            channelIdList2.Add(item.Key, item.Value);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Error($"GuildNoticeTwitterSpaceIdAutocompleteHandler - {ex}");
+                }
+
+                List<AutocompleteResult> results = new();
+                foreach (var item in channelIdList2)
+                {
+                    results.Add(new AutocompleteResult(item.Key, item.Value));
+                }
+
+                return AutocompletionResult.FromSuccess(results.Take(25));
+            }
+        }
+
+        public class GuildTwitterSpaceSpiderAutocompleteHandler : AutocompleteHandler
+        {
+            public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+            {
+                using var db = DataBase.DBContext.GetDbContext();
+                IQueryable<TwitterSpaecSpider> channelList;
+
+                if (autocompleteInteraction.User.Id == Program.ApplicatonOwner.Id)
+                {
+                    channelList = db.TwitterSpaecSpider;
+                }
+                else
+                {
+                    if (!db.TwitterSpaecSpider.Any((x) => x.GuildId == autocompleteInteraction.GuildId))
+                        return AutocompletionResult.FromSuccess();
+
+                    channelList = db.TwitterSpaecSpider.Where((x) => x.GuildId == autocompleteInteraction.GuildId);
+                }
+
+                var channelList2 = new List<TwitterSpaecSpider>();
+                try
+                {
+                    string value = autocompleteInteraction.Data.Current.Value.ToString();
+                    if (!string.IsNullOrEmpty(value))
+                    {
+                        foreach (var item in channelList)
+                        {
+                            if (item.UserName.Contains(value, StringComparison.CurrentCultureIgnoreCase) || item.UserScreenName.Contains(value, StringComparison.CurrentCultureIgnoreCase))
+                            {
+                                channelList2.Add(item);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        channelList2 = channelList.ToList();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Error($"GuildTwitterSpaceSpiderAutocompleteHandler - {ex}");
+                }
+
+                List<AutocompleteResult> results = new();
+                foreach (var item in channelList2)
+                {
+                    results.Add(new AutocompleteResult(item.UserName, item.UserScreenName));
+                }
+
+                return AutocompletionResult.FromSuccess(results.Take(25));
+            }
+        }
+
         public TwitterSpaces(DiscordSocketClient client,HttpClients.DiscordWebhookClient discordWebhookClient)
         {
             _client = client;
@@ -82,7 +182,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
              "請使用@後面的使用者名稱來移除")]
         [CommandExample("LaplusDarknesss", "@inui_toko")]
         [SlashCommand("remove-space-notice", "移除推特語音空間開台通知的頻道")]
-        public async Task RemoveChannel([Summary("推特使用者名稱")] string userScreenName)
+        public async Task RemoveChannel([Summary("推特使用者名稱"), Autocomplete(typeof(GuildNoticeTwitterSpaceIdAutocompleteHandler))] string userScreenName)
         {
             if (string.IsNullOrWhiteSpace(userScreenName))
             {
@@ -149,7 +249,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
             "(建議在私人頻道中設定以免Ping到用戶組造成不必要的誤會)")]
         [CommandExample("LaplusDarknesss", "LaplusDarknesss @直播通知 總帥突襲開語音啦")]
         [SlashCommand("set-space-notice-message", "設定通知訊息")]
-        public async Task SetMessage([Summary("推特使用者名稱")] string userScreenName, [Summary("通知訊息")] string message = "")
+        public async Task SetMessage([Summary("推特使用者名稱"), Autocomplete(typeof(GuildNoticeTwitterSpaceIdAutocompleteHandler))] string userScreenName, [Summary("通知訊息")] string message = "")
         {
             if (string.IsNullOrWhiteSpace(userScreenName))
             {
@@ -327,7 +427,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
         [RequireOwner(Group = "bot_owner")]
         [CommandExample("LaplusDarknesss", "@inui_toko")]
         [SlashCommand("remove-twitter-spider", "移除推特語音空間爬蟲")]
-        public async Task RemoveSpider([Summary("推特使用者名稱")]string userScreenName)
+        public async Task RemoveSpider([Summary("推特使用者名稱"), Autocomplete(typeof(GuildTwitterSpaceSpiderAutocompleteHandler))] string userScreenName)
         {
             if (string.IsNullOrWhiteSpace(userScreenName))
             {

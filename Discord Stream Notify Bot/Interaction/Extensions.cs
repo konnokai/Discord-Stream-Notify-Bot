@@ -124,6 +124,16 @@ namespace Discord_Stream_Notify_Bot.Interaction
             return channelId;
         }
 
+        public static string GetTwitterUserNameByUserScreenName(this DataBase.DBContext dBContext, string userScreenName)
+        {
+            userScreenName = userScreenName.Trim();
+            var twitterSpaecSpider = dBContext.TwitterSpaecSpider.FirstOrDefault((x) => x.UserScreenName.ToLower() == userScreenName.ToLower());
+            if (twitterSpaecSpider != null)
+                return twitterSpaecSpider.UserName;
+            else
+                return userScreenName;
+        }
+
         public static bool IsChannelInDb(this DataBase.DBContext dBContext, string channelId)
             => dBContext.HoloStreamVideo.Any((x) => x.ChannelId == channelId) ||
                 dBContext.NijisanjiStreamVideo.Any((x) => x.ChannelId == channelId) ||

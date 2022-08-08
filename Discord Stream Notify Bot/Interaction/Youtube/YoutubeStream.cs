@@ -49,7 +49,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                 }
                 catch (Exception ex)
                 {
-                    Log.Error($"GuildYoutubeChannelSpiderAutocompleteHandler - {ex}");
+                    Log.Error($"GuildNoticeYoutubeChannelIdAutocompleteHandler - {ex}");
                 }
 
                 List<AutocompleteResult> results = new();
