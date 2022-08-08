@@ -17,6 +17,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
 {
     public class YoutubeMemberService : IInteractionService
     {
+        public bool Enable { get; private set; } = true;
+
         Timer checkMemberShipOnlyVideoId, checkOldMemberStatus, checkNewMemberStatus;
         YoutubeStreamService _streamService;
         GoogleAuthorizationCodeFlow flow;
@@ -25,9 +27,17 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
 
         public YoutubeMemberService(YoutubeStreamService streamService, DiscordSocketClient discordSocketClient, BotConfig botConfig)
         {
+            _botConfig = botConfig;
             _streamService = streamService;
             _client = discordSocketClient;
-            _botConfig = botConfig;
+
+            if (string.IsNullOrEmpty(_botConfig.GoogleClientId) || string.IsNullOrEmpty(_botConfig.GoogleClientSecret))
+            {
+                Log.Warn($"{nameof(BotConfig.GoogleClientId)} 或 {nameof(BotConfig.GoogleClientSecret)} 空白，無法使用會限驗證系統");
+                Enable = false;
+                return;
+            }
+
             flow = new GoogleAuthorizationCodeFlow(new GoogleAuthorizationCodeFlow.Initializer
             {
                 ClientSecrets = new ClientSecrets
@@ -110,7 +120,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
 
                         foreach (var item in component.Data.Values)
                         {
-                            db.YoutubeMemberCheck.Add(new DataBase.Table.YoutubeMemberCheck() { UserId = userId, GuildId = guildId, CheckYTChannelId = item });                            
+                            db.YoutubeMemberCheck.Add(new DataBase.Table.YoutubeMemberCheck() { UserId = userId, GuildId = guildId, CheckYTChannelId = item });
                         }
                         db.SaveChanges();
 
@@ -118,7 +128,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                         catch
                         {
                             await DisableSelectMenuAsync(component, $"已選擇 {component.Data.Values.Count} 個頻道");
-                        }                       
+                        }
 
                         await component.SendConfirmAsync("已記錄至資料庫，請稍等至多5分鐘讓Bot驗證\n請確認已開啟本伺服器的 `允許來自伺服器成員的私人訊息` ，以避免收不到通知", true, true);
                     }
@@ -128,12 +138,15 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                     await component.SendErrorAsync("錯誤，請向孤之界回報此問題", true);
                     Log.Error(ex.ToString());
                     return;
-                }                
+                }
             };
 
             checkMemberShipOnlyVideoId = new Timer(CheckMemberShipOnlyVideoId, null, TimeSpan.FromSeconds(30), TimeSpan.FromMinutes(5));
             checkOldMemberStatus = new Timer(new TimerCallback(async (obj) => await CheckMemberShip(obj)), true, TimeSpan.FromHours(12), TimeSpan.FromHours(24));
             checkNewMemberStatus = new Timer(new TimerCallback(async (obj) => await CheckMemberShip(obj)), false, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(5));
+
+            Program.RedisSub.Publish("member.syncRedisToken", _botConfig.RedisTokenKey);
+            Log.Info("已同步Redis Token");
         }
 
         public async Task<bool> IsExistUserTokenAsync(string discordUserId)

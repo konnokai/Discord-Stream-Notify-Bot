@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Discord_Stream_Notify_Bot;
+using Newtonsoft.Json;
 using System;
 using System.IO;
 
@@ -14,6 +15,7 @@ public class BotConfig
     public string TwitterApiKeySecret { get; set; } = "";
     public string TwitterSpaceRecordPath { get; set; } = "";
     public string WebHookUrl { get; set; } = "";
+    public string RedisTokenKey { get; set; } = "";
 
     public void InitBotConfig()
     {
@@ -54,38 +56,6 @@ public class BotConfig
                 Environment.Exit(3);
             }
 
-            //if (string.IsNullOrWhiteSpace(config.TwitterApiKey))
-            //{
-            //    Log.Error("TwitterApiKey遺失，請輸入至bot_config.json後重開Bot");
-            //    if (!Console.IsInputRedirected)
-            //        Console.ReadKey();
-            //    Environment.Exit(3);
-            //}
-
-            //if (string.IsNullOrWhiteSpace(config.TwitterApiKeySecret))
-            //{
-            //    Log.Error("TwitterApiKeySecret遺失，請輸入至bot_config.json後重開Bot");
-            //    if (!Console.IsInputRedirected)
-            //        Console.ReadKey();
-            //    Environment.Exit(3);
-            //}
-
-            //if (string.IsNullOrWhiteSpace(config.GoogleClientId))
-            //{
-            //    Log.Error("GoogleClientId遺失，請輸入至credentials.json後重開Bot");
-            //    if (!Console.IsInputRedirected)
-            //        Console.ReadKey();
-            //    Environment.Exit(3);
-            //}
-
-            //if (string.IsNullOrWhiteSpace(config.GoogleClientSecret))
-            //{
-            //    Log.Error("GoogleClientSecret遺失，請輸入至credentials.json後重開Bot");
-            //    if (!Console.IsInputRedirected)
-            //        Console.ReadKey();
-            //    Environment.Exit(3);
-            //}
-
             DiscordToken = config.DiscordToken;
             WebHookUrl = config.WebHookUrl;
             GoogleApiKey = config.GoogleApiKey;
@@ -96,11 +66,44 @@ public class BotConfig
             GoogleClientSecret = config.GoogleClientSecret;
             RedisOption = config.RedisOption;
             TestSlashCommandGuildId = config.TestSlashCommandGuildId;
+            RedisTokenKey = config.RedisTokenKey;
+
+            if (string.IsNullOrWhiteSpace(config.RedisTokenKey) || string.IsNullOrWhiteSpace(RedisTokenKey))
+            {
+                Log.Error($"{nameof(RedisTokenKey)}遺失，將重新建立隨機亂數");
+
+                RedisTokenKey = GenRandomKey();
+
+                try { File.WriteAllText("bot_config.json", JsonConvert.SerializeObject(this, Formatting.Indented)); }
+                catch (Exception ex)
+                {
+                    Log.Error($"設定檔保存失敗: {ex}");
+                    Log.Error($"請手動將此字串填入設定檔中的 \"{nameof(RedisTokenKey)}\" 欄位: {RedisTokenKey}");
+                    Environment.Exit(3);
+                }
+            }
+
+            Utility.RedisKey = RedisTokenKey;
         }
         catch (Exception ex)
         {
-            Log.Error(ex.Message);
+            Log.Error($"設定檔讀取失敗: {ex}");
             throw;
+        }       
+    }
+
+    private static string GenRandomKey()
+    {
+        var characters = "ABCDEF_GHIJKLMNOPQRSTUVWXYZ@abcdefghijklmnopqrstuvwx-yz0123456789";
+        var Charsarr = new char[128];
+        var random = new Random();
+
+        for (int i = 0; i < Charsarr.Length; i++)
+        {
+            Charsarr[i] = characters[random.Next(characters.Length)];
         }
+
+        var resultString = new string(Charsarr);
+        return resultString;
     }
 }

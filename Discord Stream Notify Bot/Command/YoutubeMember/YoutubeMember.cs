@@ -30,6 +30,12 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
         [RequireBotPermission(GuildPermission.ManageRoles)]
         public async Task YoutubeMemberLoginCheck()
         {
+            if (!_service.Enable)
+            {
+                await Context.Channel.SendErrorAsync($"該Bot未啟用會限驗證系統，請向 {Program.ApplicatonOwner} 確認");
+                return;
+            }
+
             using (var db = DataBase.DBContext.GetDbContext())
             {
                 var guildYoutubeMemberConfigs = db.GuildYoutubeMemberConfig.Where((x) => x.GuildId == Context.Guild.Id);
@@ -113,6 +119,12 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
         [CommandExample("https://www.youtube.com/channel/UCR6qhsLpn62WVxCBK1dkLow 978648977954197584")]
         public async Task AddYoutubeMemberCheckChannel([Summary("頻道連結")] string url, [Summary("用戶組Id")] ulong roleId)
         {
+            if (!_service.Enable)
+            {
+                await Context.Channel.SendErrorAsync($"該Bot未啟用會限驗證系統，請向 {Program.ApplicatonOwner} 確認");
+                return;
+            }
+
             var currentBotUser = await Context.Guild.GetCurrentUserAsync() as SocketGuildUser;
             if (!currentBotUser.GuildPermissions.ManageRoles)
             {
@@ -285,6 +297,12 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
         [RequireContext(ContextType.Guild)]
         public async Task ListYoutubeMemberCheckChannel()
         {
+            if (!_service.Enable)
+            {
+                await Context.Channel.SendErrorAsync($"該Bot未啟用會限驗證系統，請向 {Program.ApplicatonOwner} 確認");
+                return;
+            }
+
             using (var db = DataBase.DBContext.GetDbContext())
             {
                 var guildYoutubeMemberConfigs = db.GuildYoutubeMemberConfig.Where((x) => x.GuildId == Context.Guild.Id);
@@ -323,6 +341,12 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
         [RequireOwner(Group = "bot_owner")]
         public async Task SetNoticeMemberStatusChannel([Summary("Discord頻道Id")] ulong cId)
         {
+            if (!_service.Enable)
+            {
+                await Context.Channel.SendErrorAsync($"該Bot未啟用會限驗證系統，請向 {Program.ApplicatonOwner} 確認");
+                return;
+            }
+
             using (var db = DataBase.DBContext.GetDbContext())
             {
                 var channel = await Context.Guild.GetTextChannelAsync(cId) as SocketTextChannel;

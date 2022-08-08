@@ -3,12 +3,14 @@ using Newtonsoft.Json;
 using StackExchange.Redis;
 using System;
 using System.Threading.Tasks;
+using Discord_Stream_Notify_Bot.Auth;
 
 namespace Discord_Stream_Notify_Bot
 {
     public class RedisDataStore : IDataStore
     {
         private readonly IDatabase _database;
+        private readonly string _key = Utility.RedisKey;
 
         public RedisDataStore(ConnectionMultiplexer connectionMultiplexer)
         {
@@ -30,14 +32,32 @@ namespace Discord_Stream_Notify_Bot
             if (!await _database.KeyExistsAsync(GenerateStoredKey(key, typeof(T))))
                 return default(T);
 
-            var str = await _database.StringGetAsync(GenerateStoredKey(key, typeof(T)));
-            var result = JsonConvert.DeserializeObject<T>(str.ToString());
-            return result;
+            var str = (await _database.StringGetAsync(GenerateStoredKey(key, typeof(T)))).ToString();
+
+            try
+            {
+                return TokenManager.GetTokenResponseValue<T>(str, _key);
+            }
+            catch (Exception ex)
+            {
+                Log.Warn($"RedisDataStore-GetAsync ({key}): 解密失敗，也許還沒加密? {ex}");
+
+                try
+                {
+                    return JsonConvert.DeserializeObject<T>(str);
+                }
+                catch (Exception ex2)
+                {
+                    Log.Error($"RedisDataStore-GetAsync ({key}): JsonDes失敗 {ex2}");
+                    return default(T);
+                }
+            }
         }
 
         public async Task StoreAsync<T>(string key, T value)
         {
-            await _database.StringSetAsync(GenerateStoredKey(key, typeof(T)), JsonConvert.SerializeObject(value));
+            var encValue = TokenManager.CreateToken(value, _key);
+            await _database.StringSetAsync(GenerateStoredKey(key, typeof(T)), encValue);
         }
 
         public static string GenerateStoredKey(string key, Type t)

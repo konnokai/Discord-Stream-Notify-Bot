@@ -7,7 +7,7 @@ namespace Discord_Stream_Notify_Bot
     public static class Utility
     {
         //static Regex videoIdRegex = new Regex(@"youtube_(?'ChannelId'[\w\-]{24})_(?'Date'[\d]{8})_(?'Time'[\d]{6})_(?'VideoId'[\w\-]{11}).mp4.part");
-
+        public static string RedisKey { get; set; } = "";
         public static List<string> GetNowRecordStreamList()
         {
             try

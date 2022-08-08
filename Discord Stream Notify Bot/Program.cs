@@ -177,7 +177,7 @@ namespace Discord_Stream_Notify_Bot
                 {
                     InteractionService interactionService = iService.GetService<InteractionService>();
 #if DEBUG
-                    if (botConfig.TestSlashCommandGuildId == 0 || Client.GetGuild(botConfig.TestSlashCommandGuildId) == null)
+                    if (botConfig.TestSlashCommandGuildId == 0 || _client.GetGuild(botConfig.TestSlashCommandGuildId) == null)
                         Log.Warn("未設定測試Slash指令的伺服器或伺服器不存在，略過");
                     else
                     {

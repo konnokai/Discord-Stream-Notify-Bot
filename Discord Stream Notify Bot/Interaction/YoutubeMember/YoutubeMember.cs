@@ -22,6 +22,12 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
         {
             await DeferAsync(true);
 
+            if (!_service.Enable)
+            {
+                await Context.Interaction.SendErrorAsync($"該Bot未啟用會限驗證系統，請向 {Program.ApplicatonOwner} 確認", true);
+                return;
+            }
+
             using (var db = DataBase.DBContext.GetDbContext())
             {
                 var guildYoutubeMemberConfigs = db.GuildYoutubeMemberConfig.Where((x) => x.GuildId == Context.Guild.Id);
@@ -83,6 +89,12 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
         public async Task UnlinkAsync()
         {
             await DeferAsync(true);
+
+            if (!_service.Enable)
+            {
+                await Context.Interaction.SendErrorAsync($"該Bot未啟用會限驗證系統，請向 {Program.ApplicatonOwner} 確認", true);
+                return;
+            }
 
             using (var db = DataBase.DBContext.GetDbContext())
             {
@@ -174,6 +186,12 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
         public async Task ShowYoutubeAccountAsync()
         {
             await DeferAsync(true);
+
+            if (!_service.Enable)
+            {
+                await Context.Interaction.SendErrorAsync($"該Bot未啟用會限驗證系統，請向 {Program.ApplicatonOwner} 確認", true);
+                return;
+            }
 
             try
             {
