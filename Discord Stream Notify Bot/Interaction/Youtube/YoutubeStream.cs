@@ -195,7 +195,38 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             }
         }
 
-        
+        [SlashCommand("get-member-only-playlist", "將頻道網址轉換成會員限定清單網址")]
+        public async Task GetMemberOnlyPlayListAsync([Summary("頻道網址")]string channelUrl)
+        {
+            await DeferAsync(true);
+
+            try
+            {
+                string channelId = "";
+                try
+                {
+                    channelId = await _service.GetChannelIdAsync(channelUrl).ConfigureAwait(false);
+                    await Context.Interaction.SendConfirmAsync($"https://www.youtube.com/playlist?list={channelId.Replace("UC", "UUMO")}", true,true);
+                }
+                catch (FormatException fex)
+                {
+                    await Context.Interaction.SendErrorAsync(fex.Message, true);
+                    return;
+                }
+                catch (ArgumentNullException)
+                {
+                    await Context.Interaction.SendErrorAsync("網址不可空白", true);
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Message + "r\n" + ex.StackTrace);
+                await Context.Interaction.SendErrorAsync("不明的錯誤，請向Bot擁有者回報", true);
+            }
+        }
+
+
         [RequireContext(ContextType.Guild)]
         [RequireBotPermission(GuildPermission.ManageGuild)]
         [RequireUserPermission(GuildPermission.ManageGuild, Group = "bot_owner")]

@@ -242,11 +242,11 @@ namespace Discord_Stream_Notify_Bot.Interaction
                options: new RequestOptions { RetryMode = RetryMode.AlwaysRetry }, ephemeral: ephemeral);
 
 
-        public static Task SendPaginatedConfirmAsync(this IInteractionContext ctx, int currentPage, Func<int, EmbedBuilder> pageFunc, int totalElements, int itemsPerPage, bool addPaginatedFooter = true, bool ephemeral = false)
-            => ctx.SendPaginatedConfirmAsync(currentPage, (x) => Task.FromResult(pageFunc(x)), totalElements, itemsPerPage, addPaginatedFooter, ephemeral);
+        public static Task SendPaginatedConfirmAsync(this IInteractionContext ctx, int currentPage, Func<int, EmbedBuilder> pageFunc, int totalElements, int itemsPerPage, bool addPaginatedFooter = true, bool ephemeral = false, bool isFollowup = false)
+            => ctx.SendPaginatedConfirmAsync(currentPage, (x) => Task.FromResult(pageFunc(x)), totalElements, itemsPerPage, addPaginatedFooter, ephemeral, isFollowup);
 
         public static async Task SendPaginatedConfirmAsync(this IInteractionContext ctx, int currentPage,
-    Func<int, Task<EmbedBuilder>> pageFunc, int totalElements, int itemsPerPage, bool addPaginatedFooter = true, bool ephemeral = false)
+    Func<int, Task<EmbedBuilder>> pageFunc, int totalElements, int itemsPerPage, bool addPaginatedFooter = true, bool ephemeral = false, bool isFollowup = false)
         {
             var embed = await pageFunc(currentPage).ConfigureAwait(false);
 
@@ -255,7 +255,8 @@ namespace Discord_Stream_Notify_Bot.Interaction
             if (addPaginatedFooter)
                 embed.AddPaginatedFooter(currentPage, lastPage);
 
-            await ctx.Interaction.RespondAsync(ephemeral ? "私人回應，無法換頁\n如需換頁請直接使用指令換頁" : null, embed: embed.Build(), ephemeral: ephemeral).ConfigureAwait(false);
+            if (isFollowup) await ctx.Interaction.FollowupAsync(ephemeral ? "私人回應，無法換頁\n如需換頁請直接使用指令換頁" : null, embed: embed.Build(), ephemeral: ephemeral).ConfigureAwait(false);
+            else await ctx.Interaction.RespondAsync(ephemeral ? "私人回應，無法換頁\n如需換頁請直接使用指令換頁" : null, embed: embed.Build(), ephemeral: ephemeral).ConfigureAwait(false);
 
             if (ephemeral)
                 return;
