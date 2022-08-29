@@ -11,7 +11,7 @@
 5. Google Console的API金鑰並確保已於程式庫開啟Youtube Data API v3 ([Google Console網址](https://console.cloud.google.com/apis/library/youtube.googleapis.com))
 6. Twitter V2 Access API Key 跟 Secret (如不需要推特語音通知則不需要) ([Twitter Dev網址](https://developer.twitter.com/))
 7. 錄影功能需搭配隔壁 [Youtube Stream Record](https://gitlab.com/jun112561/youtube-stream-record) 使用
-8. Discord & Google 的 OAuth Client ID 跟 Client Secret 會限驗證，需搭配[網站](https://github.com/jun112561/Discord-Member-Check)使用
+8. Discord & Google 的 OAuth Client ID 跟 Client Secret 會限驗證，需搭配[網站](https://github.com/jun112561/Discord-Stream-Bot-Backend)使用
 
 建置環境
 - 
