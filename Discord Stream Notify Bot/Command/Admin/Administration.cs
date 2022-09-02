@@ -16,15 +16,7 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
             _client = discordSocketClient;
         }
 
-        [RequireContext(ContextType.Guild)]
-        [RequireOwner]
-        [Command("Clear")]
-        [Summary("清除機器人的發言")]
-        public async Task Clear()
-        {
-            await _service.ClearUser((ITextChannel)Context.Channel);
-        }
-
+        [RequireContext(ContextType.DM)]
         [Command("UpdateStatus")]
         [Summary("更新機器人的狀態\n參數: Guild, Member, Stream, StreamCount, Info")]
         [Alias("UpStats")]
@@ -56,14 +48,7 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
             return;
         }
 
-        [Command("Say")]
-        [Summary("說話")]
-        [RequireOwner]
-        public async Task SayAsync([Summary("內容")][Remainder] string text)
-        {
-            await Context.Channel.SendConfirmAsync(text);
-        }
-
+        [RequireContext(ContextType.DM)]
         [Command("ListServer")]
         [Summary("顯示所有的伺服器")]
         [Alias("LS")]
@@ -89,6 +74,7 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
             }, _client.Guilds.Count, 5);
         }
 
+        [RequireContext(ContextType.DM)]
         [Command("SearchServer")]
         [Summary("查詢伺服器")]
         [Alias("SS")]
@@ -137,6 +123,7 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
             }, list.Count(), 5, false);
         }
 
+        [RequireContext(ContextType.DM)]
         [Command("Die")]
         [Summary("關閉機器人")]
         [Alias("Bye")]
@@ -150,6 +137,7 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
             await Context.Channel.SendConfirmAsync("關閉中");
         }
 
+        [RequireContext(ContextType.DM)]
         [Command("Leave")]
         [Summary("讓機器人離開指定的伺服器")]
         [RequireOwner]
@@ -167,6 +155,7 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
             await Context.Channel.SendConfirmAsync("✅");
         }
 
+        [RequireContext(ContextType.DM)]
         [Command("GetInviteURL")]
         [Summary("取得伺服器的邀請連結")]
         [Alias("invite")]
@@ -216,6 +205,7 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
             }
         }
 
+        [RequireContext(ContextType.DM)]
         [Command("GuildInfo")]
         [Summary("顯示伺服器資訊")]
         [Alias("ginfo")]

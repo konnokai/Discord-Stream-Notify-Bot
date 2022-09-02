@@ -423,6 +423,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     catch (Exception ex)
                     {
                         Log.Error($"OtherSchedule-GetVideosAsync: {ex}");
+                        Program.isOtherChannelSpider = false;
                         return;
                     }
 

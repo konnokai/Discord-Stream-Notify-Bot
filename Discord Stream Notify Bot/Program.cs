@@ -93,11 +93,7 @@ namespace Discord_Stream_Notify_Bot
         {
             _client = new DiscordSocketClient(new DiscordSocketConfig
             {
-#if DEBUG
                 LogLevel = LogSeverity.Verbose,
-#else
-                LogLevel = LogSeverity.Critical,
-#endif
                 ConnectionTimeout = int.MaxValue,
                 MessageCacheSize = 50,
                 GatewayIntents = GatewayIntents.AllUnprivileged
@@ -211,9 +207,12 @@ namespace Discord_Stream_Notify_Bot
 
                     try
                     {
+                        List<ulong> addedGuildList = new List<ulong>();
                         foreach (var item in interactionService.Modules.Where((x) => x.Preconditions.Any((x) => x is Interaction.Attribute.RequireGuildAttribute)))
                         {
                             var guildId = ((Interaction.Attribute.RequireGuildAttribute)item.Preconditions.FirstOrDefault((x) => x is Interaction.Attribute.RequireGuildAttribute)).GuildId;
+                            if (addedGuildList.Contains(guildId.Value)) continue;
+
                             var guild = _client.GetGuild(guildId.Value);
 
                             if (guild == null)
@@ -224,6 +223,7 @@ namespace Discord_Stream_Notify_Bot
 
                             var result = await interactionService.AddModulesToGuildAsync(guild, false, item);
                             Log.Info($"已在 {guild.Name}({guild.Id}) 註冊指令: {string.Join(", ", result.Select((x) => x.Name))}");
+                            addedGuildList.Add(guildId.Value);
 
                         }
                     }
@@ -260,6 +260,12 @@ namespace Discord_Stream_Notify_Bot
                 return Task.CompletedTask;
             };
             #endregion
+
+            AppDomain.CurrentDomain.UnhandledException += (sender, args) =>
+            {
+                Exception e = (Exception)args.ExceptionObject;
+                iService.GetService<HttpClients.DiscordWebhookClient>().SendMessageToDiscord($"{ApplicatonOwner.Mention} {e}");
+            };
 
             await _client.LoginAsync(TokenType.Bot, botConfig.DiscordToken);
             await _client.StartAsync();

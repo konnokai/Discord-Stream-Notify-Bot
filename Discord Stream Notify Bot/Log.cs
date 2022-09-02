@@ -1,10 +1,11 @@
 ﻿using Discord;
 using System;
-using System.Threading.Tasks;
 using System.IO;
+using System.Threading.Tasks;
+
 public static class Log
 {
-    enum LogType { NewS, Info, Warn, Error }
+    enum LogType { Verb, NewS, Info, Warn, Error }
     static string logPath = DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss") + "_log.txt";
 
     private static void WriteLogToFile(LogType type, string text)
@@ -63,7 +64,11 @@ public static class Log
                 break;
         }
 
+#if DEBUG
         if (!string.IsNullOrEmpty(message.Message)) FormatColorWrite(message.Message, consoleColor);
+#else
+        WriteLogToFile(LogType.Verb, message.Message);
+#endif
 
         if (message.Exception != null)
         {

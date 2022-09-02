@@ -15,6 +15,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="Interaction\OwnerOnly\af0hdhuw.25x~" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Include="Logo_64.ico" />
   </ItemGroup>
 

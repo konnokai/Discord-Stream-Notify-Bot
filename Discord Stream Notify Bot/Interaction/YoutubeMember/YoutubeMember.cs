@@ -1,21 +1,15 @@
 ﻿using Discord;
 using Discord.Interactions;
-using Discord.WebSocket;
+using Discord_Stream_Notify_Bot.SharedService.YoutubeMember;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
 {
-    [Group("youtube-member", "yt-member")]
-    public class YoutubeMember : TopLevelModule<SharedService.YoutubeMember.YoutubeMemberService>
+    [Group("member", "yt-member")]
+    public class YoutubeMember : TopLevelModule<YoutubeMemberService>
     {
-        private readonly DiscordSocketClient _client;
-        public YoutubeMember(DiscordSocketClient client)
-        {
-            _client = client;
-        }
-
         [SlashCommand("check", "確認是否已到網站登入綁定")]
         [RequireContext(ContextType.Guild)]
         public async Task CheckAsync()
@@ -129,7 +123,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
             }
         }
 
-        [SlashCommand("list-check-channel", "顯示現在可供驗證的會限頻道清單")]
+        [SlashCommand("list-can-check-channel", "顯示現在可供驗證的會限頻道清單")]
         [RequireContext(ContextType.Guild)]
         public async Task ListCheckChannel()
         {
@@ -155,34 +149,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
             }
         }
 
-        [SlashCommand("list-checked-member", "顯示現在已成功驗證的成員清單")]
-        [RequireContext(ContextType.Guild)]
-        [RequireUserPermission(GuildPermission.Administrator)]
-        public async Task ListCheckedMemberAsync([Summary("頁數")] int page = 1)
-        {
-            using (var db = DataBase.DBContext.GetDbContext())
-            {
-                var youtubeMemberChecks = db.YoutubeMemberCheck.Where((x) => x.GuildId == Context.Guild.Id && x.LastCheckStatus == DataBase.Table.YoutubeMemberCheck.CheckStatus.Success);
-                if (!youtubeMemberChecks.Any())
-                {
-                    await Context.Interaction.SendErrorAsync("尚無成員驗證成功");
-                    return;
-                }
-                page -= 1;
-                page = Math.Max(0, page);
-
-                await Context.SendPaginatedConfirmAsync(page, (page) =>
-                {
-                    return new EmbedBuilder().WithOkColor()
-                    .WithTitle("已驗證成功清單")
-                    .WithDescription(string.Join('\n',
-                        youtubeMemberChecks.Skip(page * 20).Take(20)
-                            .Select((x) => $"<@{x.UserId}>: {x.CheckYTChannelId}")));
-                }, youtubeMemberChecks.Count(), 20, true, true);
-            }
-        }
-
-        [SlashCommand("show-youtube-account", "顯示現在綁定的Youtube帳號")]
+        [SlashCommand("show-my-youtube-account", "顯示現在綁定的Youtube帳號")]
         public async Task ShowYoutubeAccountAsync()
         {
             await DeferAsync(true);

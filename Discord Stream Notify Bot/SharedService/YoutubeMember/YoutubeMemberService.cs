@@ -519,7 +519,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                     }
 
                     var permission = guild.CurrentUser.GetPermissions(logChannel);
-                    if (!permission.ViewChannel || !permission.SendMessages)
+                    if (!permission.ViewChannel || !permission.SendMessages || !permission.EmbedLinks)
                     {
                         Log.Warn($"{guildYoutubeMemberConfig.GuildId} / {guildConfig.LogMemberStatusChannelId} 無權限可紀錄");
                         db.GuildYoutubeMemberConfig.Remove(guildYoutubeMemberConfig);
@@ -755,6 +755,18 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                 if (!isOldCheck)
                                 {
                                     await logChannel.SendConfirmMessageAsync(user, new EmbedBuilder().AddField("檢查頻道", guildYoutubeMemberConfig.MemberCheckChannelTitle).AddField("狀態", "已驗證"));
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                Log.Warn($"無法傳送紀錄訊息: {guild.Id} / {logChannel.Id}");
+                                Log.Error($"{ex}");
+                            }
+
+                            try
+                            {
+                                if (!isOldCheck)
+                                {
                                     await userChannel.SendConfirmMessageAsync($"你在 `{guild}`  的 `{guildYoutubeMemberConfig.MemberCheckChannelTitle}` 會限已通過驗證，現在你可至該伺服器上觀看會限頻道了", item2.UserId, logChannel);
                                 }
                             }

@@ -141,6 +141,19 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
 
             await DeferAsync(true).ConfigureAwait(false);
 
+            var permissions = (Context.Guild.GetUser(_client.CurrentUser.Id)).GetPermissions(textChannel);
+            if (!permissions.ViewChannel || !permissions.SendMessages)
+            {
+                await Context.Interaction.SendErrorAsync($"我在 `{textChannel}` 沒有 `讀取&編輯頻道` 的權限，請給予權限後再次執行本指令", true);
+                return;
+            }
+
+            if (!permissions.EmbedLinks)
+            {
+                await Context.Interaction.SendErrorAsync($"我在 `{textChannel}` 沒有 `嵌入連結` 的權限，請給予權限後再次執行本指令", true);
+                return;
+            }
+
             userScreenName = userScreenName.Replace("@", "");
 
             UserModel user = _service.GetTwitterUser(userScreenName);
