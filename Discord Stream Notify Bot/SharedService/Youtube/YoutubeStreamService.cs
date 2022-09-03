@@ -529,6 +529,10 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             if (!match.Success)
                 throw new UriFormatException("錯誤，請確認是否輸入YouTube頻道網址");
 
+            string host = match.Groups["Host"].Value.ToLower();
+            if (host != "youtube.com")
+                throw new UriFormatException("錯誤，請確認是否輸入YouTube頻道網址");
+
             string type = match.Groups["Type"].Value.ToLower();
             if (type == "channel")
             {
@@ -571,6 +575,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     }
                 }
             }
+            else throw new UriFormatException("錯誤，網址格式不正確");
 
             return channelId;
         }
