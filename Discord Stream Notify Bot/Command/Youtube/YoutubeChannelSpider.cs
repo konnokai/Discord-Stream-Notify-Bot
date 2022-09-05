@@ -91,7 +91,45 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
 
                     await Context.Channel.SendConfirmAsync($"已設定 {channel.ChannelTitle} 為 " + (channel.IsWarningChannel ? "警告" : "普通") + " 狀態").ConfigureAwait(false);
                 }
-            }       
+            }
+        }
+
+        [RequireContext(ContextType.DM)]
+        [RequireOwner]
+        [Command("ToggleIsVTuberChannel")]
+        [Summary("切換頻道是否為VT頻道")]
+        [CommandExample("https://www.youtube.com/channel/UC0qt9BfrpQo-drjuPKl_vdA")]
+        [Alias("tvc")]
+        public async Task ToggleIsVTuberChannel([Summary("頻道網址")] string channelUrl = "")
+        {
+            string channelId = "";
+            try
+            {
+                channelId = await _service.GetChannelIdAsync(channelUrl).ConfigureAwait(false);
+            }
+            catch (FormatException fex)
+            {
+                await Context.Channel.SendErrorAsync(fex.Message);
+                return;
+            }
+            catch (ArgumentNullException)
+            {
+                await Context.Channel.SendErrorAsync("網址不可空白");
+                return;
+            }
+
+            using (var db = DataBase.DBContext.GetDbContext())
+            {
+                if (db.YoutubeChannelSpider.Any((x) => x.ChannelId == channelId))
+                {
+                    var channel = db.YoutubeChannelSpider.First((x) => x.ChannelId == channelId);
+                    channel.IsWarningChannel = !channel.IsVTuberChannel;
+                    db.YoutubeChannelSpider.Update(channel);
+                    db.SaveChanges();
+
+                    await Context.Channel.SendConfirmAsync($"已設定 {channel.ChannelTitle} 為 " + (channel.IsVTuberChannel ? "" : "非 ") + "VT頻道").ConfigureAwait(false);
+                }
+            }
         }
     }
 }

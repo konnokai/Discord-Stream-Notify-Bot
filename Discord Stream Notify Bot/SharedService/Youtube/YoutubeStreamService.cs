@@ -10,7 +10,9 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -40,10 +42,11 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
         public bool IsRecord { get; set; } = true;
         public YouTubeService yt;
 
-        private Timer holoSchedule, nijisanjiSchedule, otherSchedule, checkScheduleTime, saveDateBase/*, checkHoloNowStream, holoScheduleEmoji*/;
+        private Timer holoSchedule, nijisanjiSchedule, otherSchedule, checkScheduleTime, saveDateBase, subscribePubSub/*, checkHoloNowStream, holoScheduleEmoji*/;
         private SocketTextChannel noticeRecordChannel;
         private DiscordSocketClient _client;
         private readonly IHttpClientFactory _httpClientFactory;
+        private string callbackUrl;
 
         public YoutubeStreamService(DiscordSocketClient client, IHttpClientFactory httpClientFactory, BotConfig botConfig)
         {
@@ -54,6 +57,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 ApplicationName = "DiscordStreamBot",
                 ApiKey = botConfig.GoogleApiKey,
             });
+
+            callbackUrl = botConfig.PubSubCallbackUrl;
 
             if (Program.Redis != null)
             {
@@ -192,7 +197,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                 .AddField("直播狀態", "開台中", true)
                                 .AddField("排定開台時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
 
-                                if (Program.ApplicatonOwner != null) await Program.ApplicatonOwner.SendMessageAsync("429錯誤", false, embedBuilder.Build()).ConfigureAwait(false); 
+                                if (Program.ApplicatonOwner != null) await Program.ApplicatonOwner.SendMessageAsync("429錯誤", false, embedBuilder.Build()).ConfigureAwait(false);
                                 await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.Start).ConfigureAwait(false);
                             }
                         }
@@ -230,6 +235,95 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         catch (Exception ex)
                         {
                             Log.Error($"Record-UnArchived {ex}");
+                        }
+                    }
+                });
+
+                Program.RedisSub.Subscribe("youtube.pubsub.CreateOrUpdate", async (channel, youtubeNotificationJson) =>
+                {
+                    YoutubePubSubNotification youtubePubSubNotification = JsonConvert.DeserializeObject<YoutubePubSubNotification>(youtubeNotificationJson.ToString());
+
+                    Log.Info($"{channel} - {youtubePubSubNotification.VideoId}");
+
+                    using (var db = DataBase.DBContext.GetDbContext())
+                    {
+                        if (!db.HasStreamVideoByVideoId(youtubePubSubNotification.VideoId))
+                        {
+                            StreamVideo streamVideo;
+                            var youtubeChannelSpider = db.YoutubeChannelSpider.FirstOrDefault((x) => x.ChannelId == youtubePubSubNotification.ChannelId);
+                            if (youtubeChannelSpider.IsVTuberChannel)
+                            {
+                                var item = await GetVideoAsync(youtubePubSubNotification.VideoId).ConfigureAwait(false);
+                                if (item == null)
+                                {
+                                    Log.Warn($"{youtubePubSubNotification.VideoId} Delete");
+                                    return;
+                                }
+
+                                try
+                                {
+                                    await AddOtherDataAsync(item, true);
+                                }
+                                catch (Exception ex)
+                                {
+                                    Log.Error($"PubSub_AddData_CreateOrUpdate: {item.Id}");
+                                    Log.Error($"{ex}");
+                                }
+                            }
+                            else
+                            {
+                                streamVideo = new StreamVideo()
+                                {
+                                    ChannelId = youtubePubSubNotification.ChannelId,
+                                    ChannelTitle = db.GetNotVTuberChannelTitleByChannelId(youtubePubSubNotification.ChannelId),
+                                    VideoId = youtubePubSubNotification.VideoId,
+                                    VideoTitle = youtubePubSubNotification.Title,
+                                    ScheduledStartTime = youtubePubSubNotification.Published,
+                                    ChannelType = StreamVideo.YTChannelType.NotVTuber
+                                };
+
+                                Log.NewStream($"(非VTuber新影片) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
+
+                                EmbedBuilder embedBuilder = new EmbedBuilder();
+                                embedBuilder.WithOkColor()
+                                .WithTitle(streamVideo.VideoTitle)
+                                .WithDescription(Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}"))
+                                .WithImageUrl($"https://i.ytimg.com/vi/{streamVideo.VideoId}/maxresdefault.jpg")
+                                .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
+                                .AddField("所屬", "非VTuber", true)
+                                .AddField("上傳時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
+
+                                if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo))
+                                    await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.NewVideo).ConfigureAwait(false);
+                            }
+                        }
+                    }
+                });
+
+                Program.RedisSub.Subscribe("youtube.pubsub.Deleted", async (channel, youtubeNotificationJson) =>
+                {
+                    YoutubePubSubNotification youtubePubSubNotification = JsonConvert.DeserializeObject<YoutubePubSubNotification>(youtubeNotificationJson.ToString());
+
+                    Log.Info($"{channel} - {youtubePubSubNotification.VideoId}");
+
+                    using (var db = DataBase.DBContext.GetDbContext())
+                    {
+                        if (db.HasStreamVideoByVideoId(youtubePubSubNotification.VideoId))
+                        {
+                            StreamVideo streamVideo = db.GetStreamVideoByVideoId(youtubePubSubNotification.VideoId);
+                            if (streamVideo == null)
+                            {
+                                EmbedBuilder embedBuilder = new EmbedBuilder();
+                                embedBuilder.WithOkColor()
+                                .WithTitle(streamVideo.VideoTitle)
+                                .WithDescription(Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}"))
+                                .WithImageUrl($"https://i.ytimg.com/vi/{streamVideo.VideoId}/maxresdefault.jpg")
+                                .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
+                                .AddField("狀態", "已刪除", true)
+                                .AddField("排定開台/上傳時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
+
+                                await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.Delete).ConfigureAwait(false);
+                            }
                         }
                     }
                 });
@@ -467,6 +561,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             }, null, TimeSpan.FromMinutes(15), TimeSpan.FromMinutes(15));
 
             saveDateBase = new Timer((onjState) => SaveDateBase(), null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(3));
+
+            //subscribePubSub = new Timer((onjState) => SubscribePubSub(), null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(30));
         }
 
         public async Task<Embed> GetNowStreamingChannel()
@@ -578,6 +674,65 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             else throw new UriFormatException("錯誤，網址格式不正確");
 
             return channelId;
+        }
+
+        private async void SubscribePubSub()
+        {
+            using (var db = DataBase.DBContext.GetDbContext())
+            {
+                foreach (var item in db.YoutubeChannelSpider.Where((x) => x.LastSubscribeTime < DateTime.Now.AddDays(-7))) 
+                {
+                    if (await PostSubscribeRequestAsync(item.ChannelId))
+                    {
+                        Log.Info($"已註冊YT PubSub: {item.ChannelTitle} ({item.ChannelId})");
+                        item.LastSubscribeTime = DateTime.Now;
+                        db.Update(item);
+                    }
+                }
+                db.SaveChanges();
+            }
+        }
+
+        //https://github.com/JulianusIV/PubSubHubBubReciever/blob/master/DefaultPlugins/YouTubeConsumer/YouTubeConsumerPlugin.cs
+        public async Task<bool> PostSubscribeRequestAsync(string channelId, bool subscribe = true)
+        {
+            try
+            {
+                var httpClient = _httpClientFactory.CreateClient();
+                using var request = new HttpRequestMessage();
+
+                request.RequestUri = new("https://pubsubhubbub.appspot.com/subscribe");
+                request.Method = HttpMethod.Post;
+                string guid = Guid.NewGuid().ToString();
+
+                var formList = new Dictionary<string, string>()
+                {
+                    { "hub.mode", subscribe ? "subscribe" : "unsubscribe" },
+                    { "hub.topic", $"https://www.youtube.com/xml/feeds/videos.xml?channel_id={channelId}" },
+                    { "hub.callback", callbackUrl },
+                    { "hub.verify", "async" },
+                    { "hub.secret", guid },
+                    { "hub.verify_token", guid },
+                    { "hub.lease_seconds", "864000"}
+                };
+
+                request.Content = new FormUrlEncodedContent(formList);
+                var response = await httpClient.SendAsync(request);
+                var result = response.StatusCode == HttpStatusCode.Accepted;
+                if (!result)
+                {
+                    Log.Error($"{channelId} PubSub註冊失敗");
+                    Log.Error(response.StatusCode + " - " + await response.Content.ReadAsStringAsync());
+                    return false;
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"{channelId} PubSub註冊失敗");
+                Log.Error(ex.ToString());
+                return false;
+            }
         }
 
         #region scnse
@@ -735,5 +890,45 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
         public StreamVideo StreamVideo { get; set; }
         public Timer Timer { get; set; }
         public StreamVideo.YTChannelType ChannelType { get; set; }
+    }
+
+    public class YoutubePubSubNotification
+    {
+        public enum YTNotificationType { CreateOrUpdated, Deleted }
+
+        public YTNotificationType NotificationType { get; set; } = YTNotificationType.CreateOrUpdated;
+        public string VideoId { get; set; }
+        public string ChannelId { get; set; }
+        public string Title { get; set; }
+        public string Link { get; set; }
+        public DateTime Published { get; set; }
+        public DateTime Updated { get; set; }
+
+        public override string ToString()
+        {
+            switch (NotificationType)
+            {
+                case YTNotificationType.CreateOrUpdated:
+                    return $"({NotificationType} at {Updated}) {ChannelId} - {VideoId} | {Title}";
+                case YTNotificationType.Deleted:
+                    return $"({NotificationType} at {Published}) {ChannelId} - {VideoId}";
+            }
+            return "";
+        }
+    }
+
+    public static class Ext
+    {
+        public static DateTime? ConvertDateTime(this string text)
+        {
+            try
+            {
+                return Convert.ToDateTime(text);
+            }
+            catch
+            {
+                return new DateTime();
+            }
+        }
     }
 }

@@ -8,7 +8,7 @@ namespace Discord_Stream_Notify_Bot.DataBase.Table
     {
         public enum YTChannelType
         {
-            Holo, Nijisanji, Other
+            Holo, Nijisanji, Other, NotVTuber
         }
 
         public string ChannelId { get; set; }
@@ -25,6 +25,8 @@ namespace Discord_Stream_Notify_Bot.DataBase.Table
             new NijisanjiStreamVideo() { ChannelId = ChannelId, ChannelTitle = ChannelTitle, VideoId = VideoId, VideoTitle = VideoTitle, ChannelType = ChannelType, ScheduledStartTime = ScheduledStartTime };
         public OtherStreamVideo ConvertToOtherStreamVideo() =>
             new OtherStreamVideo() { ChannelId = ChannelId, ChannelTitle = ChannelTitle, VideoId = VideoId, VideoTitle = VideoTitle, ChannelType = ChannelType, ScheduledStartTime = ScheduledStartTime };
+        public NotVTuberStreamVideo ConvertToNotVTuberStreamVideo() =>
+            new NotVTuberStreamVideo() { ChannelId = ChannelId, ChannelTitle = ChannelTitle, VideoId = VideoId, VideoTitle = VideoTitle, ChannelType = ChannelType, ScheduledStartTime = ScheduledStartTime };
 
         public override int GetHashCode()
         {

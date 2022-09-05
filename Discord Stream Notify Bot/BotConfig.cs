@@ -16,6 +16,7 @@ public class BotConfig
     public string TwitterSpaceRecordPath { get; set; } = "";
     public string WebHookUrl { get; set; } = "";
     public string RedisTokenKey { get; set; } = "";
+    public string PubSubCallbackUrl { get; set; } = "";
 
     public void InitBotConfig()
     {
@@ -56,8 +57,17 @@ public class BotConfig
                 Environment.Exit(3);
             }
 
+            if (string.IsNullOrWhiteSpace(config.PubSubCallbackUrl))
+            {
+                Log.Error("PubSubCallbackUrl遺失，請輸入至bot_config.json後重開Bot");
+                if (!Console.IsInputRedirected)
+                    Console.ReadKey();
+                Environment.Exit(3);
+            }
+
             DiscordToken = config.DiscordToken;
             WebHookUrl = config.WebHookUrl;
+            PubSubCallbackUrl = config.PubSubCallbackUrl;
             GoogleApiKey = config.GoogleApiKey;
             TwitterApiKey = config.TwitterApiKey;
             TwitterApiKeySecret = config.TwitterApiKeySecret;

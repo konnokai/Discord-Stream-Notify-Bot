@@ -2,6 +2,8 @@
 using Discord.WebSocket;
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.Interaction;
+using Google.Apis.Services;
+using Google.Apis.YouTube.v3;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
@@ -82,7 +84,8 @@ namespace Discord_Stream_Notify_Bot.Interaction
             videoId = videoId.Trim();
             return dBContext.HoloStreamVideo.Any((x) => x.VideoId == videoId) ||
                 dBContext.NijisanjiStreamVideo.Any((x) => x.VideoId == videoId) ||
-                dBContext.OtherStreamVideo.Any((x) => x.VideoId == videoId);
+                dBContext.OtherStreamVideo.Any((x) => x.VideoId == videoId) ||
+                dBContext.NotVTuberStreamVideo.Any((x) => x.VideoId == videoId);
         }
 
         public static StreamVideo GetStreamVideoByVideoId(this DataBase.DBContext dBContext, string videoId)
@@ -94,6 +97,8 @@ namespace Discord_Stream_Notify_Bot.Interaction
             if ((streamVideo = dBContext.NijisanjiStreamVideo.FirstOrDefault((x) => x.VideoId == videoId)) != null)
                 return streamVideo;
             if ((streamVideo = dBContext.OtherStreamVideo.FirstOrDefault((x) => x.VideoId == videoId)) != null)
+                return streamVideo;
+            if ((streamVideo = dBContext.NotVTuberStreamVideo.FirstOrDefault((x) => x.VideoId == videoId)) != null)
                 return streamVideo;
             return null;                
         }
@@ -108,12 +113,19 @@ namespace Discord_Stream_Notify_Bot.Interaction
                 return streamVideo;
             if ((streamVideo = dBContext.OtherStreamVideo.LastOrDefault((x) => x.ChannelId == channelId)) != null)
                 return streamVideo;
+            if ((streamVideo = dBContext.NotVTuberStreamVideo.LastOrDefault((x) => x.ChannelId == channelId)) != null)
+                return streamVideo;
             return null;
         }
 
         public static string GetChannelTitleByChannelId(this DataBase.DBContext dBContext, string channelId)
         {
             channelId = channelId.Trim();
+
+            YoutubeChannelSpider youtubeChannelSpider;
+            if ((youtubeChannelSpider = dBContext.YoutubeChannelSpider.FirstOrDefault((x) => x.ChannelId == channelId)) != null)
+                return youtubeChannelSpider.ChannelTitle;
+
             StreamVideo streamVideo;
             if ((streamVideo = dBContext.HoloStreamVideo.FirstOrDefault((x) => x.ChannelId == channelId)) != null)
                 return streamVideo.ChannelTitle;
@@ -121,6 +133,22 @@ namespace Discord_Stream_Notify_Bot.Interaction
                 return streamVideo.ChannelTitle;
             if ((streamVideo = dBContext.OtherStreamVideo.FirstOrDefault((x) => x.ChannelId == channelId)) != null)
                 return streamVideo.ChannelTitle;
+
+            return channelId;
+        }
+
+        public static string GetNotVTuberChannelTitleByChannelId(this DataBase.DBContext dBContext, string channelId)
+        {
+            channelId = channelId.Trim();
+
+            YoutubeChannelSpider youtubeChannelSpider;
+            if ((youtubeChannelSpider = dBContext.YoutubeChannelSpider.FirstOrDefault((x) => x.ChannelId == channelId)) != null)
+                return youtubeChannelSpider.ChannelTitle;
+
+            StreamVideo streamVideo;
+            if ((streamVideo = dBContext.NotVTuberStreamVideo.FirstOrDefault((x) => x.ChannelId == channelId)) != null)
+                return streamVideo.ChannelTitle;
+
             return channelId;
         }
 
