@@ -5,12 +5,17 @@ using System.Threading.Tasks;
 using Discord_Stream_Notify_Bot.Interaction.Attribute;
 using Discord.Interactions;
 using System.Collections.Generic;
+using Discord.WebSocket;
 
 namespace Discord_Stream_Notify_Bot.Interaction.Youtube
 {
-    [Group("youtube", "YT")]
-    public partial class YoutubeStream : TopLevelModule<SharedService.Youtube.YoutubeStreamService>
+    [DefaultMemberPermissions(GuildPermission.Administrator)]
+    [Group("youtube-spider", "YouTube爬蟲設定")]
+    [EnabledInDm(false)]
+    public class YoutubeChannelSpider : TopLevelModule<SharedService.Youtube.YoutubeStreamService>
     {
+        private readonly DiscordSocketClient _client;
+        private readonly HttpClients.DiscordWebhookClient _discordWebhookClient;
         public class GuildYoutubeChannelSpiderAutocompleteHandler : AutocompleteHandler
         {
             public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
@@ -64,6 +69,12 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             }
         }
 
+        public YoutubeChannelSpider(DiscordSocketClient client, HttpClients.DiscordWebhookClient discordWebhookClient)
+        {
+            _client = client;
+            _discordWebhookClient = discordWebhookClient;
+        }
+
         [RequireContext(ContextType.Guild)]
         [RequireUserPermission(GuildPermission.Administrator, Group = "bot_owner")]
         [RequireOwner(Group = "bot_owner")]
@@ -75,7 +86,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
            "如有任何需要請向擁有者詢問")]
         [CommandExample("https://www.youtube.com/channel/UC0qt9BfrpQo-drjuPKl_vdA",
             "https://www.youtube.com/c/かぐらななななかぐ辛党Ch")]
-        [SlashCommand("add-youtube-spider", "新增非兩大箱的頻道檢測爬蟲")]
+        [SlashCommand("add", "新增非兩大箱的頻道檢測爬蟲")]
         public async Task AddChannelSpider([Summary("頻道網址")] string channelUrl)
         {
             await DeferAsync(true).ConfigureAwait(false);
@@ -123,7 +134,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                     return;
                 }
 
-                string channelTitle = await GetChannelTitle(channelId).ConfigureAwait(false);
+                string channelTitle = await _service.GetChannelTitle(channelId).ConfigureAwait(false);
                 if (channelTitle == "")
                 {
                     await Context.Interaction.SendErrorAsync($"頻道 {channelId} 不存在", true).ConfigureAwait(false);
@@ -160,7 +171,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             "爬蟲必須由本伺服器新增才可移除")]
         [CommandExample("https://www.youtube.com/channel/UC0qt9BfrpQo-drjuPKl_vdA",
             "https://www.youtube.com/c/かぐらななななかぐ辛党Ch")]
-        [SlashCommand("remove-youtube-spider", "移除非兩大箱的頻道檢測爬蟲")]
+        [SlashCommand("remove", "移除非兩大箱的頻道檢測爬蟲")]
         public async Task RemoveChannelSpider([Summary("頻道網址"), Autocomplete(typeof(GuildYoutubeChannelSpiderAutocompleteHandler))] string channelUrl)
         {
             await DeferAsync(true).ConfigureAwait(false);
@@ -213,25 +224,47 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
         }
 
         [RequireContext(ContextType.Guild)]
-        [SlashCommand("list-youtube-spider", "顯示已加入爬蟲檢測的頻道")]
+        [SlashCommand("list", "顯示已加入爬蟲檢測的頻道")]
         public async Task ListChannelSpider([Summary("頁數")] int page = 0)
         {
             if (page < 0) page = 0;
 
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                var list = db.YoutubeChannelSpider.ToList().Where((x) => !x.IsWarningChannel).Select((x) => Format.Url(x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}") +
+                var list = db.YoutubeChannelSpider.ToList().Where((x) => !x.IsVTuberChannel).Select((x) => Format.Url(x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}") +
                     $" 由 `" + (x.GuildId == 0 ? "Bot擁有者" : (_client.GetGuild(x.GuildId) != null ? _client.GetGuild(x.GuildId).Name : "已退出的伺服器")) + "` 新增");
-                int warningChannelNum = db.YoutubeChannelSpider.Count((x) => x.IsWarningChannel);
+                int warningChannelNum = db.YoutubeChannelSpider.Count((x) => !x.IsVTuberChannel);
 
                 await Context.SendPaginatedConfirmAsync(page, page =>
                 {
                     return new EmbedBuilder()
                         .WithOkColor()
                         .WithTitle("直播爬蟲清單")
-                        .WithDescription(string.Join('\n', list.Skip(page * 10).Take(10)))
-                        .WithFooter($"{Math.Min(list.Count(), (page + 1) * 10)} / {list.Count()}個頻道 ({warningChannelNum}個隱藏的警告爬蟲)");
+                        .WithDescription(string.Join('\n', list.Skip(page * 20).Take(20)))
+                        .WithFooter($"{Math.Min(list.Count(), (page + 1) * 20)} / {list.Count()}個頻道 ({warningChannelNum}個非VTuber的爬蟲)");
                 }, list.Count(), 10, false).ConfigureAwait(false);
+            }
+        }
+
+        [RequireContext(ContextType.Guild)]
+        [SlashCommand("list-not-vtuber", "顯示已加入爬蟲檢測的頻道 (本清單可能內含中之人或前世的頻道)")]
+        public async Task ListNotVTuberChannelSpider([Summary("頁數")] int page = 0)
+        {
+            if (page < 0) page = 0;
+
+            using (var db = DataBase.DBContext.GetDbContext())
+            {
+                var list = db.YoutubeChannelSpider.ToList().Where((x) => !x.IsVTuberChannel).Select((x) => Format.Url(x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}") +
+                    $" 由 `" + (x.GuildId == 0 ? "Bot擁有者" : (_client.GetGuild(x.GuildId) != null ? _client.GetGuild(x.GuildId).Name : "已退出的伺服器")) + "` 新增");
+
+                await Context.SendPaginatedConfirmAsync(page, page =>
+                {
+                    return new EmbedBuilder()
+                        .WithOkColor()
+                        .WithTitle("非VTuber爬蟲清單")
+                        .WithDescription(string.Join('\n', list.Skip(page * 20).Take(20)))
+                        .WithFooter($"{Math.Min(list.Count(), (page + 1) * 20)} / {list.Count()}個頻道");
+                }, list.Count(), 10, false, true).ConfigureAwait(false);
             }
         }
     }

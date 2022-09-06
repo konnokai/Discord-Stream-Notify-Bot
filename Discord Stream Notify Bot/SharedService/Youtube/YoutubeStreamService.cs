@@ -243,60 +243,68 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 {
                     YoutubePubSubNotification youtubePubSubNotification = JsonConvert.DeserializeObject<YoutubePubSubNotification>(youtubeNotificationJson.ToString());
 
-                    Log.Info($"{channel} - {youtubePubSubNotification.VideoId}");
-
-                    using (var db = DataBase.DBContext.GetDbContext())
+                    try
                     {
-                        if (!db.HasStreamVideoByVideoId(youtubePubSubNotification.VideoId))
+                        using (var db = DataBase.DBContext.GetDbContext())
                         {
-                            StreamVideo streamVideo;
-                            var youtubeChannelSpider = db.YoutubeChannelSpider.FirstOrDefault((x) => x.ChannelId == youtubePubSubNotification.ChannelId);
-                            if (youtubeChannelSpider.IsVTuberChannel)
+                            if (!addNewStreamVideo.ContainsKey(youtubePubSubNotification.VideoId) && !db.HasStreamVideoByVideoId(youtubePubSubNotification.VideoId))
                             {
-                                var item = await GetVideoAsync(youtubePubSubNotification.VideoId).ConfigureAwait(false);
-                                if (item == null)
-                                {
-                                    Log.Warn($"{youtubePubSubNotification.VideoId} Delete");
-                                    return;
-                                }
+                                Log.Info($"{channel} - (新影片) {youtubePubSubNotification.ChannelId}: {youtubePubSubNotification.VideoId}");
 
-                                try
+                                StreamVideo streamVideo;
+                                var youtubeChannelSpider = db.YoutubeChannelSpider.FirstOrDefault((x) => x.ChannelId == youtubePubSubNotification.ChannelId);
+                                if (youtubeChannelSpider != null && youtubeChannelSpider.IsVTuberChannel)
                                 {
-                                    await AddOtherDataAsync(item, true);
+                                    var item = await GetVideoAsync(youtubePubSubNotification.VideoId).ConfigureAwait(false);
+                                    if (item == null)
+                                    {
+                                        Log.Warn($"{youtubePubSubNotification.VideoId} Delete");
+                                        return;
+                                    }
+
+                                    try
+                                    {
+                                        await AddOtherDataAsync(item, true);
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        Log.Error($"PubSub_AddData_CreateOrUpdate: {item.Id}");
+                                        Log.Error($"{ex}");
+                                    }
                                 }
-                                catch (Exception ex)
+                                else
                                 {
-                                    Log.Error($"PubSub_AddData_CreateOrUpdate: {item.Id}");
-                                    Log.Error($"{ex}");
+                                    streamVideo = new StreamVideo()
+                                    {
+                                        ChannelId = youtubePubSubNotification.ChannelId,
+                                        ChannelTitle = db.GetNotVTuberChannelTitleByChannelId(youtubePubSubNotification.ChannelId),
+                                        VideoId = youtubePubSubNotification.VideoId,
+                                        VideoTitle = youtubePubSubNotification.Title,
+                                        ScheduledStartTime = youtubePubSubNotification.Published,
+                                        ChannelType = StreamVideo.YTChannelType.NotVTuber
+                                    };
+
+                                    Log.NewStream($"(非VTuber新影片) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
+
+                                    EmbedBuilder embedBuilder = new EmbedBuilder();
+                                    embedBuilder.WithOkColor()
+                                    .WithTitle(streamVideo.VideoTitle)
+                                    .WithDescription(Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}"))
+                                    .WithImageUrl($"https://i.ytimg.com/vi/{streamVideo.VideoId}/maxresdefault.jpg")
+                                    .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
+                                    .AddField("所屬", "非VTuber", true)
+                                    .AddField("上傳時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
+
+                                    if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo))
+                                        await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.NewVideo).ConfigureAwait(false);
                                 }
                             }
-                            else
-                            {
-                                streamVideo = new StreamVideo()
-                                {
-                                    ChannelId = youtubePubSubNotification.ChannelId,
-                                    ChannelTitle = db.GetNotVTuberChannelTitleByChannelId(youtubePubSubNotification.ChannelId),
-                                    VideoId = youtubePubSubNotification.VideoId,
-                                    VideoTitle = youtubePubSubNotification.Title,
-                                    ScheduledStartTime = youtubePubSubNotification.Published,
-                                    ChannelType = StreamVideo.YTChannelType.NotVTuber
-                                };
-
-                                Log.NewStream($"(非VTuber新影片) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
-
-                                EmbedBuilder embedBuilder = new EmbedBuilder();
-                                embedBuilder.WithOkColor()
-                                .WithTitle(streamVideo.VideoTitle)
-                                .WithDescription(Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}"))
-                                .WithImageUrl($"https://i.ytimg.com/vi/{streamVideo.VideoId}/maxresdefault.jpg")
-                                .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
-                                .AddField("所屬", "非VTuber", true)
-                                .AddField("上傳時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
-
-                                if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo))
-                                    await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.NewVideo).ConfigureAwait(false);
-                            }
+                            else Log.Info($"{channel} - (編輯或關台) {youtubePubSubNotification.ChannelId}: {youtubePubSubNotification.VideoId}");
                         }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error($"PubSub-CreateOrUpdate {ex}");
                     }
                 });
 
@@ -306,25 +314,32 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                     Log.Info($"{channel} - {youtubePubSubNotification.VideoId}");
 
-                    using (var db = DataBase.DBContext.GetDbContext())
+                    try
                     {
-                        if (db.HasStreamVideoByVideoId(youtubePubSubNotification.VideoId))
+                        using (var db = DataBase.DBContext.GetDbContext())
                         {
-                            StreamVideo streamVideo = db.GetStreamVideoByVideoId(youtubePubSubNotification.VideoId);
-                            if (streamVideo == null)
+                            if (db.HasStreamVideoByVideoId(youtubePubSubNotification.VideoId))
                             {
-                                EmbedBuilder embedBuilder = new EmbedBuilder();
-                                embedBuilder.WithOkColor()
-                                .WithTitle(streamVideo.VideoTitle)
-                                .WithDescription(Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}"))
-                                .WithImageUrl($"https://i.ytimg.com/vi/{streamVideo.VideoId}/maxresdefault.jpg")
-                                .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
-                                .AddField("狀態", "已刪除", true)
-                                .AddField("排定開台/上傳時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
+                                StreamVideo streamVideo = db.GetStreamVideoByVideoId(youtubePubSubNotification.VideoId);
+                                if (streamVideo == null)
+                                {
+                                    EmbedBuilder embedBuilder = new EmbedBuilder();
+                                    embedBuilder.WithOkColor()
+                                    .WithTitle(streamVideo.VideoTitle)
+                                    .WithDescription(Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}"))
+                                    .WithImageUrl($"https://i.ytimg.com/vi/{streamVideo.VideoId}/maxresdefault.jpg")
+                                    .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
+                                    .AddField("狀態", "已刪除", true)
+                                    .AddField("排定開台/上傳時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
 
-                                await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.Delete).ConfigureAwait(false);
+                                    await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.Delete).ConfigureAwait(false);
+                                }
                             }
                         }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error($"PubSub-Deleted {ex}");
                     }
                 });
 
@@ -443,7 +458,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
             nijisanjiSchedule = new Timer(async (objState) => await NijisanjiScheduleAsync(), null, TimeSpan.FromSeconds(10), TimeSpan.FromMinutes(5));
 
-            otherSchedule = new Timer(async (onjState) => await OtherScheduleAsync(), null, TimeSpan.FromSeconds(20), TimeSpan.FromMinutes(15));
+            otherSchedule = new Timer(async (onjState) => await OtherScheduleAsync(), null, TimeSpan.FromSeconds(20), TimeSpan.FromMinutes(5));
 
             checkScheduleTime = new Timer(async (objState) =>
             {
@@ -562,7 +577,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
             saveDateBase = new Timer((onjState) => SaveDateBase(), null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(3));
 
-            //subscribePubSub = new Timer((onjState) => SubscribePubSub(), null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(30));
+            subscribePubSub = new Timer((onjState) => SubscribePubSub(), null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(30));
         }
 
         public async Task<Embed> GetNowStreamingChannel()
@@ -674,6 +689,39 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             else throw new UriFormatException("錯誤，網址格式不正確");
 
             return channelId;
+        }
+
+        public async Task<string> GetChannelTitle(string channelId)
+        {
+            try
+            {
+                var channel = yt.Channels.List("snippet");
+                channel.Id = channelId;
+                var response = await channel.ExecuteAsync().ConfigureAwait(false);
+                return response.Items[0].Snippet.Title;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Message + "\n" + ex.StackTrace);
+                return "";
+            }
+        }
+
+        public async Task<List<string>> GetChannelTitle(IEnumerable<string> channelId, bool formatUrl)
+        {
+            try
+            {
+                var channel = yt.Channels.List("snippet");
+                channel.Id = string.Join(",", channelId);
+                var response = await channel.ExecuteAsync().ConfigureAwait(false);
+                if (formatUrl) return response.Items.Select((x) => Format.Url(x.Snippet.Title, $"https://www.youtube.com/channel/{x.Id}")).ToList();
+                else return response.Items.Select((x) => x.Snippet.Title).ToList();
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Message + "\n" + ex.StackTrace);
+                return null;
+            }
         }
 
         private async void SubscribePubSub()

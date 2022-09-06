@@ -336,7 +336,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 {
                     if (type != "other" || //如果不是其他類的頻道
                         !db.YoutubeChannelSpider.Any((x) => x.ChannelId == streamVideo.ChannelId) || //或該頻道非在爬蟲清單內
-                        !db.YoutubeChannelSpider.First((x) => x.ChannelId == streamVideo.ChannelId).IsWarningChannel) //或該爬蟲非警告類的頻道
+                        db.YoutubeChannelSpider.First((x) => x.ChannelId == streamVideo.ChannelId).IsVTuberChannel) //該爬蟲是VTuber的頻道
                     {
                         noticeGuildList.AddRange(db.NoticeYoutubeStreamChannel.Where((x) => x.NoticeStreamChannelId == "all" || x.NoticeStreamChannelId == type));
                     }

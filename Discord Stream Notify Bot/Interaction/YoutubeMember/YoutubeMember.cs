@@ -7,11 +7,12 @@ using System.Threading.Tasks;
 
 namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
 {
-    [Group("member", "yt-member")]
+    [Group("member", "會限驗證相關指令")]
     public class YoutubeMember : TopLevelModule<YoutubeMemberService>
     {
         [SlashCommand("check", "確認是否已到網站登入綁定")]
         [RequireContext(ContextType.Guild)]
+        [EnabledInDm(false)]
         public async Task CheckAsync()
         {
             await DeferAsync(true);
@@ -125,6 +126,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
 
         [SlashCommand("list-can-check-channel", "顯示現在可供驗證的會限頻道清單")]
         [RequireContext(ContextType.Guild)]
+        [EnabledInDm(false)]
         public async Task ListCheckChannel()
         {
             using (var db = DataBase.DBContext.GetDbContext())

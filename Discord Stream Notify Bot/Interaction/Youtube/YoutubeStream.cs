@@ -10,10 +10,10 @@ using System.Threading.Tasks;
 
 namespace Discord_Stream_Notify_Bot.Interaction.Youtube
 {
-    public partial class YoutubeStream : TopLevelModule<SharedService.Youtube.YoutubeStreamService>
+    [Group("youtube", "YouTube通知設定")]
+    public class YoutubeStream : TopLevelModule<SharedService.Youtube.YoutubeStreamService>
     {
         private readonly DiscordSocketClient _client;
-        private readonly HttpClients.DiscordWebhookClient _discordWebhookClient;
 
         public class GuildNoticeYoutubeChannelIdAutocompleteHandler : AutocompleteHandler
         {
@@ -25,7 +25,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
 
                 var channelIdList = db.NoticeYoutubeStreamChannel.Where((x) => x.GuildId == context.Guild.Id).Select((x) => new KeyValuePair<string, string>(db.GetChannelTitleByChannelId(x.NoticeStreamChannelId), x.NoticeStreamChannelId));
 
-                var channelIdList2 = new Dictionary<string,string>();
+                var channelIdList2 = new Dictionary<string, string>();
                 try
                 {
                     string value = autocompleteInteraction.Data.Current.Value.ToString();
@@ -35,7 +35,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                         {
                             if (item.Key.Contains(value, StringComparison.CurrentCultureIgnoreCase) || item.Value.Contains(value, StringComparison.CurrentCultureIgnoreCase))
                             {
-                                channelIdList2.Add(item.Key,item.Value);
+                                channelIdList2.Add(item.Key, item.Value);
                             }
                         }
                     }
@@ -62,10 +62,9 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             }
         }
 
-        public YoutubeStream(DiscordSocketClient client, HttpClients.DiscordWebhookClient discordWebhookClient)
+        public YoutubeStream(DiscordSocketClient client)
         {
             _client = client;
-            _discordWebhookClient = discordWebhookClient;
         }
 
         [SlashCommand("list-record-channel", "顯示直播記錄頻道")]
@@ -75,8 +74,8 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             {
                 var nowRecordList = db.RecordYoutubeChannel.ToList().Select((x) => x.YoutubeChannelId).ToList();
 
-                db.YoutubeChannelSpider.ToList().ForEach((item) => { if (item.IsWarningChannel && nowRecordList.Contains(item.ChannelId)) nowRecordList.Remove(item.ChannelId); });
-                int warningChannelNum = db.YoutubeChannelSpider.Count((x) => x.IsWarningChannel);
+                db.YoutubeChannelSpider.ToList().ForEach((item) => { if (!item.IsVTuberChannel && nowRecordList.Contains(item.ChannelId)) nowRecordList.Remove(item.ChannelId); });
+                int warningChannelNum = db.YoutubeChannelSpider.Count((x) => x.IsVTuberChannel);
 
                 if (nowRecordList.Count > 0)
                 {
@@ -84,7 +83,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
 
                     for (int i = 0; i < nowRecordList.Count; i += 50)
                     {
-                        list.AddRange(await GetChannelTitle(nowRecordList.Skip(i).Take(50), true));
+                        list.AddRange(await _service.GetChannelTitle(nowRecordList.Skip(i).Take(50), true));
                     }
 
                     list.Sort();
@@ -94,7 +93,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                             .WithOkColor()
                             .WithTitle("直播記錄清單")
                             .WithDescription(string.Join('\n', list.Skip(page * 20).Take(20)))
-                            .WithFooter($"{Math.Min(list.Count, (page + 1) * 20)} / {list.Count}個頻道 ({warningChannelNum}個隱藏的警告頻道)");
+                            .WithFooter($"{Math.Min(list.Count, (page + 1) * 20)} / {list.Count}個頻道 ({warningChannelNum}個非VTuber的頻道)");
                     }, list.Count, 20, false);
                 }
                 else await Context.Interaction.SendErrorAsync($"直播記錄清單中沒有任何頻道").ConfigureAwait(false);
@@ -196,7 +195,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
         }
 
         [SlashCommand("get-member-only-playlist", "將頻道網址轉換成會員限定清單網址")]
-        public async Task GetMemberOnlyPlayListAsync([Summary("頻道網址")]string channelUrl)
+        public async Task GetMemberOnlyPlayListAsync([Summary("頻道網址")] string channelUrl)
         {
             await DeferAsync(true);
 
@@ -206,7 +205,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                 try
                 {
                     channelId = await _service.GetChannelIdAsync(channelUrl).ConfigureAwait(false);
-                    await Context.Interaction.SendConfirmAsync($"https://www.youtube.com/playlist?list={channelId.Replace("UC", "UUMO")}", true,true);
+                    await Context.Interaction.SendConfirmAsync($"https://www.youtube.com/playlist?list={channelId.Replace("UC", "UUMO")}", true, true);
                 }
                 catch (FormatException fex)
                 {
@@ -226,7 +225,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             }
         }
 
-
+        [EnabledInDm(false)]
         [RequireContext(ContextType.Guild)]
         [RequireBotPermission(GuildPermission.ManageGuild)]
         [RequireUserPermission(GuildPermission.ManageGuild, Group = "bot_owner")]
@@ -282,7 +281,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                         return;
                     }
 
-                    string channelTitle = await GetChannelTitle(channelId);
+                    string channelTitle = await _service.GetChannelTitle(channelId);
 
                     if (channelTitle == "")
                     {
@@ -307,6 +306,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             }
         }
 
+        [EnabledInDm(false)]
         [RequireContext(ContextType.Guild)]
         [RequireUserPermission(GuildPermission.ManageMessages, Group = "bot_owner")]
         [RequireOwner(Group = "bot_owner")]
@@ -404,7 +404,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                 }
                 else
                 {
-                    string channelTitle = await GetChannelTitle(channelId).ConfigureAwait(false);
+                    string channelTitle = await _service.GetChannelTitle(channelId).ConfigureAwait(false);
                     if (channelTitle == "")
                     {
                         await Context.Interaction.SendErrorAsync($"頻道 {channelId} 不存在", true).ConfigureAwait(false);
@@ -434,6 +434,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             }
         }
 
+        [EnabledInDm(false)]
         [RequireContext(ContextType.Guild)]
         [RequireUserPermission(GuildPermission.ManageMessages, Group = "bot_owner")]
         [RequireOwner(Group = "bot_owner")]
@@ -498,7 +499,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                     }
                     else if (db.NoticeYoutubeStreamChannel.Any((x) => x.GuildId == Context.Guild.Id && x.NoticeStreamChannelId == channelId))
                     {
-                        string channelTitle = await GetChannelTitle(channelId).ConfigureAwait(false);
+                        string channelTitle = await _service.GetChannelTitle(channelId).ConfigureAwait(false);
                         if (channelTitle == "")
                         {
                             await Context.Interaction.SendErrorAsync($"頻道 {channelId} 不存在", true).ConfigureAwait(false);
@@ -514,6 +515,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             }
         }
 
+        [EnabledInDm(false)]
         [RequireContext(ContextType.Guild)]
         [SlashCommand("list-youtube-notice", "顯示現在已加入通知清單的直播頻道")]
         public async Task ListChannel([Summary("頁數")] int page = 0)
@@ -556,6 +558,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             }
         }
 
+        [EnabledInDm(false)]
         [RequireContext(ContextType.Guild)]
         [RequireUserPermission(GuildPermission.ManageMessages | GuildPermission.MentionEveryone, Group = "bot_owner")]
         [RequireOwner(Group = "bot_owner")]
@@ -651,6 +654,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
         string GetCurrectMessage(string message)
             => message == "-" ? "(已關閉本類別的通知)" : message;
 
+        [EnabledInDm(false)]
         [RequireContext(ContextType.Guild)]
         [SlashCommand("list-youtube-notice-message", "列出已設定的通知訊息")]
         public async Task ListMessage([Summary("頁數")] int page = 0)
@@ -665,7 +669,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                     foreach (var item in noticeStreamChannels)
                     {
                         var channelTitle = item.NoticeStreamChannelId;
-                        if (channelTitle.StartsWith("UC")) channelTitle = (await GetChannelTitle(channelTitle).ConfigureAwait(false)) + $" ({item.NoticeStreamChannelId})";
+                        if (channelTitle.StartsWith("UC")) channelTitle = (await _service.GetChannelTitle(channelTitle).ConfigureAwait(false)) + $" ({item.NoticeStreamChannelId})";
 
                         dic.Add(channelTitle,
                             $"新待機所: {GetCurrectMessage(item.NewStreamMessage)}\n" +
@@ -693,39 +697,6 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                 {
                     await Context.Interaction.SendErrorAsync($"並未設定直播通知\n請先使用 `/help get-command-help add-youtube-notice` 查看說明並新增直播通知").ConfigureAwait(false);
                 }
-            }
-        }
-
-        private async Task<string> GetChannelTitle(string channelId)
-        {
-            try
-            {
-                var channel = _service.yt.Channels.List("snippet");
-                channel.Id = channelId;
-                var response = await channel.ExecuteAsync().ConfigureAwait(false);
-                return response.Items[0].Snippet.Title;
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex.Message + "\n" + ex.StackTrace);
-                return "";
-            }
-        }
-
-        private async Task<List<string>> GetChannelTitle(IEnumerable<string> channelId, bool formatUrl)
-        {
-            try
-            {
-                var channel = _service.yt.Channels.List("snippet");
-                channel.Id = string.Join(",", channelId);
-                var response = await channel.ExecuteAsync().ConfigureAwait(false);
-                if (formatUrl) return response.Items.Select((x) => Format.Url(x.Snippet.Title, $"https://www.youtube.com/channel/{x.Id}")).ToList();
-                else return response.Items.Select((x) => x.Snippet.Title).ToList();
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex.Message + "\n" + ex.StackTrace);
-                return null;
             }
         }
     }

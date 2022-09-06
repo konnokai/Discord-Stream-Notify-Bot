@@ -221,8 +221,8 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
             {
                 var nowRecordList = db.RecordYoutubeChannel.ToList().Select((x) => x.YoutubeChannelId).ToList();
 
-                db.YoutubeChannelSpider.ToList().ForEach((item) => { if (item.IsWarningChannel && nowRecordList.Contains(item.ChannelId)) nowRecordList.Remove(item.ChannelId); });
-                int warningChannelNum = db.YoutubeChannelSpider.Count((x) => x.IsWarningChannel);
+                db.YoutubeChannelSpider.ToList().ForEach((item) => { if (!item.IsVTuberChannel && nowRecordList.Contains(item.ChannelId)) nowRecordList.Remove(item.ChannelId); });
+                int warningChannelNum = db.YoutubeChannelSpider.Count((x) => x.IsVTuberChannel);
 
                 if (nowRecordList.Count > 0)
                 {
@@ -240,48 +240,10 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                             .WithOkColor()
                             .WithTitle("直播記錄清單")
                             .WithDescription(string.Join('\n', list.Skip(page * 20).Take(20)))
-                            .WithFooter($"{Math.Min(list.Count, (page + 1) * 20)} / {list.Count}個頻道 ({warningChannelNum}個隱藏的警告頻道)");
+                            .WithFooter($"{Math.Min(list.Count, (page + 1) * 20)} / {list.Count}個頻道 ({warningChannelNum}個非VTuber的頻道)");
                     }, list.Count, 20, false);
                 }
                 else await Context.Channel.SendConfirmAsync($"直播記錄清單中沒有任何頻道").ConfigureAwait(false);
-            }
-        }
-
-        [RequireContext(ContextType.DM)]
-        [RequireOwner]
-        [Command("ListWarningRecordChannel")]
-        [Summary("顯示警告的直播記錄頻道")]
-        [Alias("LWRC")]
-        public async Task ListWarningRecordChannel()
-        {
-            await Context.Channel.TriggerTypingAsync().ConfigureAwait(false);
-            using (var db = DataBase.DBContext.GetDbContext())
-            {
-                var dbRecordList = db.RecordYoutubeChannel.ToList().Select((x) => x.YoutubeChannelId).ToList();
-                var nowRecordList = new List<string>();
-
-                db.YoutubeChannelSpider.ToList().ForEach((item) => { if (item.IsWarningChannel && dbRecordList.Contains(item.ChannelId)) nowRecordList.Add(item.ChannelId); });
-
-                if (nowRecordList.Count > 0)
-                {
-                    var list = new List<string>();
-
-                    for (int i = 0; i < nowRecordList.Count; i += 50)
-                    {
-                        list.AddRange(await GetChannelTitle(nowRecordList.Skip(i).Take(50)));
-                    }
-
-                    list.Sort();
-                    await Context.SendPaginatedConfirmAsync(0, page =>
-                    {
-                        return new EmbedBuilder()
-                            .WithOkColor()
-                            .WithTitle("警告的直播記錄清單")
-                            .WithDescription(string.Join('\n', list.Skip(page * 20).Take(20)))
-                            .WithFooter($"{Math.Min(list.Count, (page + 1) * 20)} / {list.Count}個頻道");
-                    }, list.Count, 20, false);
-                }
-                else await Context.Channel.SendConfirmAsync($"警告直播記錄清單中沒有任何頻道").ConfigureAwait(false);
             }
         }
 
@@ -426,7 +388,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
 
             try
             {
-                List<Google.Apis.YouTube.v3.Data.Video> result = new List<Google.Apis.YouTube.v3.Data.Video>();
+                List<Video> result = new List<Video>();
 
                 for (int i = 0; i < _service.Reminders.Values.Count; i += 50)
                 {

@@ -315,7 +315,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 if (Program.RedisDb.KeyExists("youtube.otherStart"))
                 {
                     var time = await Program.RedisDb.KeyTimeToLiveAsync("youtube.otherStart");
-                    Log.Warn($"已跑過其他頻道爬蟲，剩餘 {time:mm\\:ss}");
+                    Log.Warn($"已跑過突襲開台檢測爬蟲，剩餘 {time:mm\\:ss}");
                     isFirstOther = false;
                     return;
                 }
@@ -325,15 +325,16 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 Log.Error("Redis又死了zzz");
             }
 
-            await Program.RedisDb.StringSetAsync("youtube.otherStart", "0", TimeSpan.FromMinutes(14));
-            //Log.Info("其他勢影片清單整理開始");
+            await Program.RedisDb.StringSetAsync("youtube.otherStart", "0", TimeSpan.FromMinutes(4));
             Program.isOtherChannelSpider = true;
             Dictionary<string, List<string>> otherVideoDic = new Dictionary<string, List<string>>();
             var addVideoIdList = new List<string>();
 
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                foreach (var item in db.YoutubeChannelSpider.Where((x) => x.IsVTuberChannel))
+                var channelList = db.YoutubeChannelSpider.Where((x) => db.RecordYoutubeChannel.Any((x2) => x.ChannelId == x2.YoutubeChannelId));
+                Log.Info($"突襲開台檢測開始: {channelList.Count()}頻道");
+                foreach (var item in channelList)
                 {
                     if (Program.isDisconnect) break;
 
@@ -533,6 +534,21 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                 if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo) && item.Snippet.LiveBroadcastContent == "live")
                     ReminderTimerAction(streamVideo);
+            }
+            else if (item.LiveStreamingDetails.ActualStartTime == null && item.LiveStreamingDetails.ActiveLiveChatId != null)
+            {
+                var streamVideo = new StreamVideo()
+                {
+                    ChannelId = item.Snippet.ChannelId,
+                    ChannelTitle = item.Snippet.ChannelTitle,
+                    VideoId = item.Id,
+                    VideoTitle = item.Snippet.Title,
+                    ScheduledStartTime = item.Snippet.PublishedAt.Value,
+                    ChannelType = StreamVideo.YTChannelType.Other
+                };
+
+                Log.NewStream($"(一般路過的新直播室) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
+                addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo);
             }
         }
 

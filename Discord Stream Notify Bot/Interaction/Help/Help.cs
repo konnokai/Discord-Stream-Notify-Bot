@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Discord_Stream_Notify_Bot.Interaction.Help
 {
-    [Group("help", "取得說明")]
+    [Group("help", "說明")]
     public class Help : TopLevelModule<Service.HelpService>
     {
         private readonly InteractionService _interaction;

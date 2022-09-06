@@ -11,8 +11,9 @@ using System.Threading.Tasks;
 
 namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
 {
-    [Group("member-set", "yt-member-set")]
+    [Group("member-set", "會限驗證設定")]
     [DefaultMemberPermissions(GuildPermission.Administrator)]
+    [EnabledInDm(false)]
     public class YoutubeMemberSetting : TopLevelModule<YoutubeMemberService>
     {
         private readonly DiscordSocketClient _client;
