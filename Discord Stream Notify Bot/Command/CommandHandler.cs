@@ -46,7 +46,7 @@ namespace Discord_Stream_Notify_Bot.Command
 
                     if (!result.IsSuccess)
                     {
-                        Log.FormatColorWrite($"[{context.Guild.Name}/{context.Message.Channel.Name}] {message.Author.Username} 執行 {context.Message} 發生錯誤", ConsoleColor.Red);
+                        Log.FormatColorWrite($"[{context.Guild?.Name}/{context.Message.Channel?.Name}] {message.Author.Username} 執行 {context.Message} 發生錯誤", ConsoleColor.Red);
                         Log.FormatColorWrite(result.ErrorReason, ConsoleColor.Red);
                         await context.Channel.SendErrorAsync(result.ErrorReason);
                     }
@@ -54,7 +54,7 @@ namespace Discord_Stream_Notify_Bot.Command
                     {
                         try { if (context.Message.Author.Id == Program.ApplicatonOwner.Id || context.Message.CleanContent == "s!ymlc") await message.DeleteAsync(); }
                         catch { }
-                        Log.FormatColorWrite($"[{context.Guild.Name}/{context.Message.Channel.Name}] {message.Author.Username} 執行 {context.Message}", ConsoleColor.DarkYellow);
+                        Log.FormatColorWrite($"[{context.Guild?.Name}/{context.Message.Channel?.Name}] {message.Author.Username} 執行 {context.Message}", ConsoleColor.DarkYellow);
                     }
                 }
             }

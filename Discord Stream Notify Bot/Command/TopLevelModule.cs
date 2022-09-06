@@ -56,7 +56,6 @@ namespace Discord_Stream_Notify_Bot.Command
                 var _ = Task.Run(() =>
                 {
                     if (!(arg is SocketUserMessage userMsg) ||
-                        !(userMsg.Channel is ITextChannel chan) ||
                         userMsg.Author.Id != userId ||
                         userMsg.Channel.Id != channelId)
                     {
