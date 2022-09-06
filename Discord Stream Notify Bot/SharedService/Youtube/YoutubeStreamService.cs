@@ -253,7 +253,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                                 StreamVideo streamVideo;
                                 var youtubeChannelSpider = db.YoutubeChannelSpider.FirstOrDefault((x) => x.ChannelId == youtubePubSubNotification.ChannelId);
-                                if (youtubeChannelSpider != null && youtubeChannelSpider.IsVTuberChannel)
+
+                                if ((db.RecordYoutubeChannel.Any((x) => x.YoutubeChannelId == youtubePubSubNotification.ChannelId)) || (youtubeChannelSpider != null && youtubeChannelSpider.IsVTuberChannel))
                                 {
                                     var item = await GetVideoAsync(youtubePubSubNotification.VideoId).ConfigureAwait(false);
                                     if (item == null)
