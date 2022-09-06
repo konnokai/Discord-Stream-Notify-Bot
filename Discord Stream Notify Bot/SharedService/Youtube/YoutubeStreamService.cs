@@ -252,8 +252,10 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                 Log.Info($"{channel} - (新影片) {youtubePubSubNotification.ChannelId}: {youtubePubSubNotification.VideoId}");
 
                                 StreamVideo streamVideo;
+                                var recordYoutubeChannel = db.RecordYoutubeChannel.FirstOrDefault((x) => x.YoutubeChannelId == youtubePubSubNotification.ChannelId);
                                 var youtubeChannelSpider = db.YoutubeChannelSpider.FirstOrDefault((x) => x.ChannelId == youtubePubSubNotification.ChannelId);
-                                if (youtubeChannelSpider != null && youtubeChannelSpider.IsVTuberChannel)
+
+                                if ((recordYoutubeChannel != null) || (youtubeChannelSpider != null && youtubeChannelSpider.IsVTuberChannel))
                                 {
                                     var item = await GetVideoAsync(youtubePubSubNotification.VideoId).ConfigureAwait(false);
                                     if (item == null)
