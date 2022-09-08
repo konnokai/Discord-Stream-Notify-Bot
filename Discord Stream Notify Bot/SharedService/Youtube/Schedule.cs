@@ -80,7 +80,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                     .AddField("上傳時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
 
                                     if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo) && !isFirstHolo)
-                                        await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.NewVideo).ConfigureAwait(false);
+                                        await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.NewVideo).ConfigureAwait(false);
                                 }
                                 else if (item.LiveStreamingDetails.ScheduledStartTime != null) //首播 & 直播
                                 {
@@ -112,7 +112,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                                         if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo))
                                         {
-                                            if (!isFirstHolo) await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.NewStream).ConfigureAwait(false);
+                                            if (!isFirstHolo) await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.NewStream).ConfigureAwait(false);
                                             StartReminder(streamVideo, streamVideo.ChannelType);
                                         }
                                     }
@@ -227,7 +227,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                         .AddField("上傳時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
 
                                         if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo) && !isFirst2434)
-                                            await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.NewVideo).ConfigureAwait(false);
+                                            await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.NewVideo).ConfigureAwait(false);
                                     }
                                     else if (item.LiveStreamingDetails.ScheduledStartTime != null)
                                     {
@@ -259,7 +259,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                                             if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo))
                                             {
-                                                if (!isFirst2434) await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.NewStream).ConfigureAwait(false);
+                                                if (!isFirst2434) await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.NewStream).ConfigureAwait(false);
                                                 StartReminder(streamVideo, streamVideo.ChannelType);
                                             }
                                         }
@@ -472,7 +472,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 .AddField("上傳時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
 
                 if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo) && !isFirstOther)
-                    await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.NewVideo).ConfigureAwait(false);
+                    await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.NewVideo).ConfigureAwait(false);
             }
             else if (item.LiveStreamingDetails.ScheduledStartTime != null)
             {
@@ -505,7 +505,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                     if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo))
                     {
-                        if (!isFirstOther) await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.NewStream).ConfigureAwait(false);
+                        if (!isFirstOther) await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.NewStream).ConfigureAwait(false);
                         StartReminder(streamVideo, streamVideo.ChannelType);
                     }
                 }

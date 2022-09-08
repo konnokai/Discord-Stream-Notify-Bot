@@ -185,6 +185,9 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                 if (isRecord) embedBuilder.WithRecordColor();
                 else embedBuilder.WithOkColor();
 
+                string description = embedBuilder.Description;
+                embedBuilder.WithDescription(description + $"\n\n您可以透過 {Format.Url("Patreon", Utility.PatreonUrl)} 或 {Format.Url("Paypal", Utility.PaypalUrl)} 來贊助直播小幫手");
+
                 foreach (var item in noticeGuildList)
                 {
                     try

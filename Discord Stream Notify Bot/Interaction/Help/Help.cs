@@ -13,8 +13,6 @@ namespace Discord_Stream_Notify_Bot.Interaction.Help
         private readonly InteractionService _interaction;
         private readonly IServiceProvider _services;
 
-        public const string PatreonUrl = "https://patreon.com/jun112561";
-        public const string PaypalUrl = "https://paypal.me/jun112561";
         public Help(InteractionService interaction, IServiceProvider service)
         {
             _interaction = interaction;
@@ -83,7 +81,8 @@ namespace Discord_Stream_Notify_Bot.Interaction.Help
 #if DEBUG
                 embed.Title += " (測試版)";
 #endif
-                embed.WithDescription(System.IO.File.ReadAllText(Program.GetDataFilePath("HelpDescription.txt")).Replace("\\n", "\n") + $"\n\n您可以透過: [Patreon]({PatreonUrl}) 或 [Paypal]({PaypalUrl}) 來贊助直播小幫手");
+                embed.WithDescription(System.IO.File.ReadAllText(Program.GetDataFilePath("HelpDescription.txt")).Replace("\\n", "\n") + 
+                    $"\n\n您可以透過 {Format.Url("Patreon", Discord_Stream_Notify_Bot.Utility.PatreonUrl)} 或 {Format.Url("Paypal", Discord_Stream_Notify_Bot.Utility.PaypalUrl)} 來贊助直播小幫手");
                 await RespondAsync(embed: embed.Build());
                 return;
             }

@@ -74,8 +74,8 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             {
                 var nowRecordList = db.RecordYoutubeChannel.ToList().Select((x) => x.YoutubeChannelId).ToList();
 
-                db.YoutubeChannelSpider.ToList().ForEach((item) => { if (!item.IsVTuberChannel && nowRecordList.Contains(item.ChannelId)) nowRecordList.Remove(item.ChannelId); });
-                int warningChannelNum = db.YoutubeChannelSpider.Count((x) => x.IsVTuberChannel);
+                db.YoutubeChannelSpider.ToList().ForEach((item) => { if (!item.IsTrustedChannel && nowRecordList.Contains(item.ChannelId)) nowRecordList.Remove(item.ChannelId); });
+                int warningChannelNum = db.YoutubeChannelSpider.Count((x) => x.IsTrustedChannel);
 
                 if (nowRecordList.Count > 0)
                 {

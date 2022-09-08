@@ -35,21 +35,22 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
 
         [RequireContext(ContextType.DM)]
         [RequireOwner]
-        [Command("ListNotVTuberChannelSpider")]
-        [Summary("顯示已加入爬蟲檢測的\"非VTuber\"頻道")]
+        [Command("ListNotTrustedChannelSpider")]
+        [Summary("顯示已加入爬蟲檢測的\"未認可\"頻道\n" +
+            "注意: 本清單可能含有中之人或前世頻道")]
         [Alias("lnvcs")]
         public async Task ListNotVTuberChannelSpider()
         {
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                var list = db.YoutubeChannelSpider.ToList().Where((x) => !x.IsVTuberChannel).Select((x) => Format.Url(x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}") +
+                var list = db.YoutubeChannelSpider.ToList().Where((x) => !x.IsTrustedChannel).Select((x) => Format.Url(x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}") +
                     $" 由 `" + (x.GuildId == 0 ? "Bot擁有者" : $"{_client.GetGuild(x.GuildId).Name}") + "` 新增");
 
                 await Context.SendPaginatedConfirmAsync(0, page =>
                 {
                     return new EmbedBuilder()
                         .WithOkColor()
-                        .WithTitle("警告的直播爬蟲清單")
+                        .WithTitle("未認可的爬蟲清單")
                         .WithDescription(string.Join('\n', list.Skip(page * 10).Take(10)))
                         .WithFooter($"{Math.Min(list.Count(), (page + 1) * 10)} / {list.Count()}個頻道");
                 }, list.Count(), 10, false).ConfigureAwait(false);
@@ -58,11 +59,11 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
 
         [RequireContext(ContextType.DM)]
         [RequireOwner]
-        [Command("ToggleIsVTuberChannel")]
-        [Summary("切換頻道是否為VT頻道")]
+        [Command("ToggleIsTrustedChannel")]
+        [Summary("切換頻道是否為認可頻道")]
         [CommandExample("https://www.youtube.com/channel/UC0qt9BfrpQo-drjuPKl_vdA")]
-        [Alias("tvc")]
-        public async Task ToggleIsVTuberChannel([Summary("頻道網址")] string channelUrl = "")
+        [Alias("ttc")]
+        public async Task ToggleIsTrustedChannel([Summary("頻道網址")] string channelUrl = "")
         {
             string channelId = "";
             try
@@ -85,11 +86,11 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                 if (db.YoutubeChannelSpider.Any((x) => x.ChannelId == channelId))
                 {
                     var channel = db.YoutubeChannelSpider.First((x) => x.ChannelId == channelId);
-                    channel.IsVTuberChannel = !channel.IsVTuberChannel;
+                    channel.IsTrustedChannel = !channel.IsTrustedChannel;
                     db.YoutubeChannelSpider.Update(channel);
                     db.SaveChanges();
 
-                    await Context.Channel.SendConfirmAsync($"已設定 {channel.ChannelTitle} 為 " + (channel.IsVTuberChannel ? "" : "非 ") + "VT頻道").ConfigureAwait(false);
+                    await Context.Channel.SendConfirmAsync($"已設定 {channel.ChannelTitle} 為`" + (channel.IsTrustedChannel ? "已" : "未") + "`認可頻道").ConfigureAwait(false);
                 }
             }
         }

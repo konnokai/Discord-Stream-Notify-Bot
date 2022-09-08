@@ -1,7 +1,6 @@
 ﻿using Discord;
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.Interaction;
-using Google.Apis.YouTube.v3.Data;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -63,7 +62,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         .AddField("直播狀態", "已刪除直播", true)
                         .AddField("排定開台時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown(), true);
 
-                        await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.Delete).ConfigureAwait(false);
+                        await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.Delete).ConfigureAwait(false);
                         return;
                     }
                 }
@@ -188,7 +187,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                             .AddField("直播狀態", "開台中", true);
                             //.AddField("是否記錄直播", "否", true);
 
-                            await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.Start).ConfigureAwait(false);
+                            await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.Start).ConfigureAwait(false);
                         }
 
                         if (Reminders.TryRemove(streamVideo, out var t))
@@ -254,7 +253,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                 break;
                         }
 
-                        await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.ChangeTime).ConfigureAwait(false);
+                        await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.ChangeTime).ConfigureAwait(false);
 
                         if (Reminders.TryRemove(streamVideo, out var t))
                             t.Timer.Change(Timeout.Infinite, Timeout.Infinite);
@@ -268,7 +267,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             catch (Exception ex) { Log.Error($"ReminderAction: {streamVideo.VideoId}\n{ex}"); }
         }
 
-        private async Task SendStreamMessageAsync(string videolId, Embed embed, NoticeType noticeType)
+        private async Task SendStreamMessageAsync(string videolId, EmbedBuilder embedBuilder, NoticeType noticeType)
         {
             using (var db = DataBase.DBContext.GetDbContext())
             {
@@ -308,11 +307,11 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     }
                 }
 
-                await SendStreamMessageAsync(streamVideo, embed, noticeType).ConfigureAwait(false);
+                await SendStreamMessageAsync(streamVideo, embedBuilder, noticeType).ConfigureAwait(false);
             }
         }        
 
-        private async Task SendStreamMessageAsync(StreamVideo streamVideo, Embed embed, NoticeType noticeType)
+        private async Task SendStreamMessageAsync(StreamVideo streamVideo, EmbedBuilder embedBuilder, NoticeType noticeType)
         {
             if (!Program.isConnect)
                 return;
@@ -336,7 +335,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 {
                     if (type != "other" || //如果不是其他類的頻道
                         !db.YoutubeChannelSpider.Any((x) => x.ChannelId == streamVideo.ChannelId) || //或該頻道非在爬蟲清單內
-                        db.YoutubeChannelSpider.First((x) => x.ChannelId == streamVideo.ChannelId).IsVTuberChannel) //該爬蟲是VTuber的頻道
+                        db.YoutubeChannelSpider.First((x) => x.ChannelId == streamVideo.ChannelId).IsTrustedChannel) //該爬蟲是已認可的頻道
                     {
                         noticeGuildList.AddRange(db.NoticeYoutubeStreamChannel.Where((x) => x.NoticeStreamChannelId == "all" || x.NoticeStreamChannelId == type));
                     }
@@ -347,6 +346,12 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 }
 
                 Log.NewStream($"發送直播通知 ({noticeGuildList.Count} / {noticeType}): {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
+
+                if (noticeType == NoticeType.Start)
+                {
+                    string description = embedBuilder.Description;
+                    embedBuilder.WithDescription(description + $"\n\n您可以透過 {Format.Url("Patreon", Utility.PatreonUrl)} 或 {Format.Url("Paypal", Utility.PaypalUrl)} 來贊助直播小幫手");
+                }
 
 #if DEBUG
                 return;
@@ -391,7 +396,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         var channel = guild.GetTextChannel(item.DiscordChannelId);
                         if (channel == null) continue;
 
-                        await channel.SendMessageAsync(sendMessage, false, embed);
+                        await channel.SendMessageAsync(sendMessage, false, embedBuilder.Build());
                     }
                     catch (Discord.Net.HttpException httpEx)
                     {
