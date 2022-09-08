@@ -40,7 +40,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         if (url.StartsWith("https://www.youtube.com/watch"))
                         {
                             string videoId = url.Split("?v=")[1].Trim();
-                            if (!db.HasStreamVideoByVideoId(videoId) && !newStreamList.Contains(videoId)) idList.Add(videoId);
+                            if (!db.HasStreamVideoByVideoId(videoId) && !newStreamList.Contains(videoId) && !addNewStreamVideo.ContainsKey(videoId)) idList.Add(videoId);
                             newStreamList.Add(videoId);
                         }
                     }
@@ -187,7 +187,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         foreach (var item in nijisanjiJson.data.events)
                         {
                             string videoId = item.url.Split("?v=")[1].Trim();
-                            if (!db.HasStreamVideoByVideoId(videoId) && !newStreamList.Contains(videoId)) idList.Add(videoId);
+                            if (!db.HasStreamVideoByVideoId(videoId) && !newStreamList.Contains(videoId) && !addNewStreamVideo.ContainsKey(videoId)) idList.Add(videoId);
                             newStreamList.Add(videoId);
                         }
 
@@ -390,7 +390,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                     if (!otherVideoDic[item.ChannelId].Contains(videoId))
                                     {
                                         otherVideoDic[item.ChannelId].Add(videoId);
-                                        if (!db.HasStreamVideoByVideoId(videoId) && !newStreamList.Contains(videoId)) addVideoIdList.Add(videoId);
+                                        if (!db.HasStreamVideoByVideoId(videoId) && !newStreamList.Contains(videoId) && !addNewStreamVideo.ContainsKey(videoId)) addVideoIdList.Add(videoId);
                                         newStreamList.Add(videoId);
                                     }
                                 }

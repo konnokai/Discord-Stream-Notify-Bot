@@ -9,6 +9,7 @@ using Google.Apis.Services;
 using Google.Apis.YouTube.v3;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -475,6 +476,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                 var needCheckList = db.GuildYoutubeMemberConfig.Where((x) => !string.IsNullOrEmpty(x.MemberCheckChannelId) && !string.IsNullOrEmpty(x.MemberCheckChannelTitle) && x.MemberCheckVideoId != "-");
                 Log.Info((isOldCheck ? "舊" : "新") + $"會限檢查開始: {needCheckList.Count()}個頻道");
 
+                HashSet<string> checkedMemberSet = new();
                 foreach (var guildYoutubeMemberConfig in needCheckList)
                 {
                     var list = db.YoutubeMemberCheck
@@ -541,171 +543,175 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                         var userChannel = await user.CreateDMChannelAsync();
                         if (userChannel == null) Log.Warn($"{item2.UserId} 無法建立使用者私訊");
 
-                        var token = await flow.LoadTokenAsync(item2.UserId.ToString(), CancellationToken.None);
-                        if (token == null)
+                        if (!checkedMemberSet.Contains($"{item2.Id}-{item2.CheckYTChannelId}"))
                         {
-                            await RemoveMemberCheckFromDbAsync(item2.UserId);
-
-                            await logChannel.SendErrorMessageAsync(user, guildYoutubeMemberConfig.MemberCheckChannelTitle, "未登入");
-                            await userChannel.SendErrorMessageAsync($"未登入，請至 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 登入並再次於伺服器執行 `/youtube-member check`", item2.UserId, logChannel);
-
-                            continue;
-                        }
-
-                        UserCredential userCredential = null;
-                        try
-                        {
-                            userCredential = await GetUserCredentialAsync(item2.UserId.ToString(), token);
-                        }
-                        catch (Exception ex)
-                        {
-                            if (ex.Message == "RefreshToken空白")
+                            var token = await flow.LoadTokenAsync(item2.UserId.ToString(), CancellationToken.None);
+                            if (token == null)
                             {
-                                await RevokeUserGoogleCertAsync(item2.UserId.ToString());
+                                await RemoveMemberCheckFromDbAsync(item2.UserId);
 
-                                await logChannel.SendErrorMessageAsync(user, guildYoutubeMemberConfig.MemberCheckChannelTitle,  "無法重複驗證");
-                                await userChannel.SendErrorMessageAsync($"無法重新刷新您的授權\n" +
+                                await logChannel.SendErrorMessageAsync(user, guildYoutubeMemberConfig.MemberCheckChannelTitle, "未登入");
+                                await userChannel.SendErrorMessageAsync($"未登入，請至 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 登入並再次於伺服器執行 `/youtube-member check`", item2.UserId, logChannel);
+
+                                continue;
+                            }
+
+                            UserCredential userCredential = null;
+                            try
+                            {
+                                userCredential = await GetUserCredentialAsync(item2.UserId.ToString(), token);
+                            }
+                            catch (Exception ex)
+                            {
+                                if (ex.Message == "RefreshToken空白")
+                                {
+                                    await RevokeUserGoogleCertAsync(item2.UserId.ToString());
+
+                                    await logChannel.SendErrorMessageAsync(user, guildYoutubeMemberConfig.MemberCheckChannelTitle, "無法重複驗證");
+                                    await userChannel.SendErrorMessageAsync($"無法重新刷新您的授權\n" +
+                                        $"請到 {Format.Url("Google安全性", "https://myaccount.google.com/permissions")} 移除 `直播小幫手會限確認` 的應用程式存取權後\n" +
+                                        $"至 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 重新登入並再次於伺服器執行 `/youtube-member check`", item2.UserId, logChannel);
+
+                                    continue;
+                                }
+
+                                Log.Error(ex.ToString());
+                                continue;
+                            }
+
+                            if (userCredential == null)
+                            {
+                                await RemoveMemberCheckFromDbAsync(item2.UserId);
+
+                                await logChannel.SendErrorMessageAsync(user, guildYoutubeMemberConfig.MemberCheckChannelTitle, "認證過期");
+                                await userChannel.SendErrorMessageAsync($"您的Google認證已失效\n" +
                                     $"請到 {Format.Url("Google安全性", "https://myaccount.google.com/permissions")} 移除 `直播小幫手會限確認` 的應用程式存取權後\n" +
                                     $"至 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 重新登入並再次於伺服器執行 `/youtube-member check`", item2.UserId, logChannel);
 
                                 continue;
                             }
 
-                            Log.Error(ex.ToString());
-                            continue;
-                        }
+                            var service = new YouTubeService(new BaseClientService.Initializer()
+                            {
+                                HttpClientInitializer = userCredential,
+                                ApplicationName = "Discord Youtube Member Check"
+                            }).CommentThreads.List("id");
+                            service.VideoId = guildYoutubeMemberConfig.MemberCheckVideoId;
 
-                        if (userCredential == null)
-                        {
-                            await RemoveMemberCheckFromDbAsync(item2.UserId);
-
-                            await logChannel.SendErrorMessageAsync(user, guildYoutubeMemberConfig.MemberCheckChannelTitle, "認證過期");
-                            await userChannel.SendErrorMessageAsync($"您的Google認證已失效\n" +
-                                $"請到 {Format.Url("Google安全性", "https://myaccount.google.com/permissions")} 移除 `直播小幫手會限確認` 的應用程式存取權後\n" +
-                                $"至 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 重新登入並再次於伺服器執行 `/youtube-member check`", item2.UserId, logChannel);
-
-                            continue;
-                        }
-
-                        var service = new YouTubeService(new BaseClientService.Initializer()
-                        {
-                            HttpClientInitializer = userCredential,
-                            ApplicationName = "Discord Youtube Member Check"
-                        }).CommentThreads.List("id");
-                        service.VideoId = guildYoutubeMemberConfig.MemberCheckVideoId;
-
-                        bool isMember = false;
-                        try
-                        {
-                            await service.ExecuteAsync().ConfigureAwait(false);
-                            isMember = true;
-                        }
-                        catch (Exception ex)
-                        {
+                            bool isMember = false;
                             try
                             {
-                                if (ex.Message.ToLower().Contains("parameter has disabled comments"))
+                                await service.ExecuteAsync().ConfigureAwait(false);
+                                isMember = true;
+                            }
+                            catch (Exception ex)
+                            {
+                                try
                                 {
-                                    Log.Warn($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {item2.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 的會限資格取得失敗");
-                                    Log.Warn($"{guildYoutubeMemberConfig.MemberCheckChannelTitle} ({guildYoutubeMemberConfig.MemberCheckChannelId}): {guildYoutubeMemberConfig.MemberCheckVideoId}已關閉留言");
-                                    await (await Program.ApplicatonOwner.CreateDMChannelAsync()).SendErrorMessageAsync($"{guildYoutubeMemberConfig.GuildId} - {item2.UserId} 會限資格取得失敗: {guildYoutubeMemberConfig.MemberCheckVideoId}已關閉留言", item2.UserId, logChannel);
-
-                                    guildYoutubeMemberConfig.MemberCheckVideoId = "-";
-                                    db.GuildYoutubeMemberConfig.Update(guildYoutubeMemberConfig);
-                                    db.SaveChanges();
-
-                                    break;
-                                }
-                                else if (ex.Message.ToLower().Contains("403") || ex.Message.ToLower().Contains("the request might not be properly authorized"))
-                                {
-                                    Log.Warn($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {item2.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 的會限資格取得失敗: 無會員");
-
-                                    db.YoutubeMemberCheck.Remove(item2);
-
-                                    try
+                                    if (ex.Message.ToLower().Contains("parameter has disabled comments"))
                                     {
-                                        await _client.Rest.RemoveRoleAsync(guild.Id, item2.UserId, role.Id).ConfigureAwait(false);
+                                        Log.Warn($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {item2.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 的會限資格取得失敗");
+                                        Log.Warn($"{guildYoutubeMemberConfig.MemberCheckChannelTitle} ({guildYoutubeMemberConfig.MemberCheckChannelId}): {guildYoutubeMemberConfig.MemberCheckVideoId}已關閉留言");
+                                        await (await Program.ApplicatonOwner.CreateDMChannelAsync()).SendErrorMessageAsync($"{guildYoutubeMemberConfig.GuildId} - {item2.UserId} 會限資格取得失敗: {guildYoutubeMemberConfig.MemberCheckVideoId}已關閉留言", item2.UserId, logChannel);
+
+                                        guildYoutubeMemberConfig.MemberCheckVideoId = "-";
+                                        db.GuildYoutubeMemberConfig.Update(guildYoutubeMemberConfig);
+                                        db.SaveChanges();
+
+                                        break;
                                     }
-                                    catch (Exception ex2) { Log.Warn(ex2.ToString()); }
-
-                                    if (isOldCheck)
+                                    else if (ex.Message.ToLower().Contains("403") || ex.Message.ToLower().Contains("the request might not be properly authorized"))
                                     {
-                                        await logChannel.SendErrorMessageAsync(user, guildYoutubeMemberConfig.MemberCheckChannelTitle, "會員已過期");
-                                        await userChannel.SendErrorMessageAsync($"您在 `{guild.Name}` 的 `{guildYoutubeMemberConfig.MemberCheckChannelTitle}` 會限資格已失效\n" +
-                                         $"如要重新驗證會員請於購買會員後再次於伺服器執行 `/youtube-member check`", item2.UserId, logChannel);
+                                        Log.Warn($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {item2.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 的會限資格取得失敗: 無會員");
+
+                                        db.YoutubeMemberCheck.Remove(item2);
+
+                                        try
+                                        {
+                                            await _client.Rest.RemoveRoleAsync(guild.Id, item2.UserId, role.Id).ConfigureAwait(false);
+                                        }
+                                        catch (Exception ex2) { Log.Warn(ex2.ToString()); }
+
+                                        if (isOldCheck)
+                                        {
+                                            await logChannel.SendErrorMessageAsync(user, guildYoutubeMemberConfig.MemberCheckChannelTitle, "會員已過期");
+                                            await userChannel.SendErrorMessageAsync($"您在 `{guild.Name}` 的 `{guildYoutubeMemberConfig.MemberCheckChannelTitle}` 會限資格已失效\n" +
+                                             $"如要重新驗證會員請於購買會員後再次於伺服器執行 `/youtube-member check`", item2.UserId, logChannel);
+                                        }
+                                        else
+                                        {
+                                            await logChannel.SendErrorMessageAsync(user, guildYoutubeMemberConfig.MemberCheckChannelTitle, "無會員");
+                                            await userChannel.SendErrorMessageAsync($"無法在 `{guild.Name}` 的 `{guildYoutubeMemberConfig.MemberCheckChannelTitle}` 上存取會限資格\n" +
+                                             $"請先使用 `/youtube-member show-youtube-account` 確認綁定的頻道是否正確，並確認已購買會員\n若都正確請向 `{Program.ApplicatonOwner}` 確認問題", item2.UserId, logChannel);
+                                        }
+                                        continue;
+                                    }
+                                    else if (ex.Message.ToLower().Contains("token has been expired or revoked") ||
+                                        ex.Message.ToLower().Contains("the access token has expired and could not be refreshed") ||
+                                        ex.Message.ToLower().Contains("authenticateduseraccountclosed") || ex.Message.ToLower().Contains("authenticateduseraccountsuspended"))
+                                    {
+                                        Log.Warn($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {item2.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 的會限資格取得失敗: AccessToken已過期或無法刷新");
+                                        Log.Warn(JsonConvert.SerializeObject(userCredential.Token));
+                                        Log.Warn(ex.ToString());
+
+                                        await RemoveMemberCheckFromDbAsync(item2.UserId);
+
+                                        await logChannel.SendErrorMessageAsync(user, guildYoutubeMemberConfig.MemberCheckChannelTitle, "認證過期");
+                                        await userChannel.SendErrorMessageAsync($"您的Google認證已失效\n" +
+                                            $"請到 {Format.Url("Google安全性", "https://myaccount.google.com/permissions?continue=https%3A%2F%2Fmyaccount.google.com%2Fsecurity")} 移除 `直播小幫手會限確認` 的應用程式存取權後\n" +
+                                            $"至 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 重新登入並再次於伺服器執行 `/youtube-member check`", item2.UserId, logChannel);
+                                        continue;
+                                    }
+                                    else if (ex.Message.ToLower().Contains("the added or subtracted value results in an un-representable"))
+                                    {
+                                        Log.Error($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {item2.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 的會限資格取得失敗: 時間加減錯誤");
+                                        Log.Error(ex.ToString());
+
+                                        await RevokeUserGoogleCertAsync(item2.UserId.ToString());
+
+                                        await logChannel.SendErrorMessageAsync(user, guildYoutubeMemberConfig.MemberCheckChannelTitle, "時間加減錯誤");
+                                        await userChannel.SendErrorMessageAsync($"遇到已知但尚未處理的問題，您可以重新嘗試登入\n" +
+                                            $"請到 {Format.Url("Google安全性", "https://myaccount.google.com/permissions?continue=https%3A%2F%2Fmyaccount.google.com%2Fsecurity")} 移除 `直播小幫手會限確認` 的應用程式存取權後\n" +
+                                            $"至 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 重新登入並再次於伺服器執行 `/youtube-member check`", item2.UserId, logChannel);
+                                        continue;
+                                    }
+                                    else if (ex.Message.ToLower().Contains("500"))
+                                    {
+                                        Log.Error($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {item2.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 的會限資格取得失敗: 500內部錯誤");
+
+                                        await logChannel.SendErrorMessageAsync(user, guildYoutubeMemberConfig.MemberCheckChannelTitle, "Google內部錯誤");
+                                        continue;
+                                    }
+                                    else if (ex.Message.ToLower().Contains("bad req"))
+                                    {
+                                        Log.Error($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {item2.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 的會限資格取得失敗: 400錯誤");
+                                        Log.Error(ex.ToString());
+
+                                        await logChannel.SendErrorMessageAsync(user, guildYoutubeMemberConfig.MemberCheckChannelTitle, "400錯誤");
+                                        continue;
                                     }
                                     else
                                     {
-                                        await logChannel.SendErrorMessageAsync(user, guildYoutubeMemberConfig.MemberCheckChannelTitle, "無會員");
-                                        await userChannel.SendErrorMessageAsync($"無法在 `{guild.Name}` 的 `{guildYoutubeMemberConfig.MemberCheckChannelTitle}` 上存取會限資格\n" +
-                                         $"請先使用 `/youtube-member show-youtube-account` 確認綁定的頻道是否正確，並確認已購買會員\n若都正確請向 `{Program.ApplicatonOwner}` 確認問題", item2.UserId, logChannel);
+                                        Log.Error($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {item2.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 的會限資格取得失敗: 未知的錯誤");
+                                        Log.Error(ex.ToString());
+
+                                        await RevokeUserGoogleCertAsync(item2.UserId.ToString());
+
+                                        await logChannel.SendErrorMessageAsync(user, guildYoutubeMemberConfig.MemberCheckChannelTitle, "不明的錯誤");
+                                        await userChannel.SendErrorMessageAsync($"無法驗證您的帳號，可能是Google內部錯誤\n請重新執行驗證步驟並向 {Program.ApplicatonOwner} 確認問題", item2.UserId, logChannel);
+                                        continue;
                                     }
-                                    continue;
                                 }
-                                else if (ex.Message.ToLower().Contains("token has been expired or revoked") ||
-                                    ex.Message.ToLower().Contains("the access token has expired and could not be refreshed") ||
-                                    ex.Message.ToLower().Contains("authenticateduseraccountclosed") || ex.Message.ToLower().Contains("authenticateduseraccountsuspended"))
+                                catch (Exception ex2)
                                 {
-                                    Log.Warn($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {item2.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 的會限資格取得失敗: AccessToken已過期或無法刷新");
-                                    Log.Warn(JsonConvert.SerializeObject(userCredential.Token));
-                                    Log.Warn(ex.ToString());
-
-                                    await RemoveMemberCheckFromDbAsync(item2.UserId);
-
-                                    await logChannel.SendErrorMessageAsync(user, guildYoutubeMemberConfig.MemberCheckChannelTitle, "認證過期");
-                                    await userChannel.SendErrorMessageAsync($"您的Google認證已失效\n" +
-                                        $"請到 {Format.Url("Google安全性", "https://myaccount.google.com/permissions?continue=https%3A%2F%2Fmyaccount.google.com%2Fsecurity")} 移除 `直播小幫手會限確認` 的應用程式存取權後\n" +
-                                        $"至 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 重新登入並再次於伺服器執行 `/youtube-member check`", item2.UserId, logChannel);
-                                    continue;
-                                }
-                                else if (ex.Message.ToLower().Contains("the added or subtracted value results in an un-representable"))
-                                {
-                                    Log.Error($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {item2.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 的會限資格取得失敗: 時間加減錯誤");
-                                    Log.Error(ex.ToString());
-
-                                    await RevokeUserGoogleCertAsync(item2.UserId.ToString());
-
-                                    await logChannel.SendErrorMessageAsync(user, guildYoutubeMemberConfig.MemberCheckChannelTitle, "時間加減錯誤");
-                                    await userChannel.SendErrorMessageAsync($"遇到已知但尚未處理的問題，您可以重新嘗試登入\n" +
-                                        $"請到 {Format.Url("Google安全性", "https://myaccount.google.com/permissions?continue=https%3A%2F%2Fmyaccount.google.com%2Fsecurity")} 移除 `直播小幫手會限確認` 的應用程式存取權後\n" +
-                                        $"至 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 重新登入並再次於伺服器執行 `/youtube-member check`", item2.UserId, logChannel);
-                                    continue;
-                                }
-                                else if (ex.Message.ToLower().Contains("500"))
-                                {
-                                    Log.Error($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {item2.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 的會限資格取得失敗: 500內部錯誤");
-
-                                    await logChannel.SendErrorMessageAsync(user, guildYoutubeMemberConfig.MemberCheckChannelTitle, "Google內部錯誤");
-                                    continue;
-                                }
-                                else if (ex.Message.ToLower().Contains("bad req"))
-                                {
-                                    Log.Error($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {item2.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 的會限資格取得失敗: 400錯誤");
-                                    Log.Error(ex.ToString());
-
-                                    await logChannel.SendErrorMessageAsync(user, guildYoutubeMemberConfig.MemberCheckChannelTitle, "400錯誤");
-                                    continue;
-                                }
-                                else
-                                {
-                                    Log.Error($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {item2.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 的會限資格取得失敗: 未知的錯誤");
-                                    Log.Error(ex.ToString());
-
-                                    await RevokeUserGoogleCertAsync(item2.UserId.ToString());
-
-                                    await logChannel.SendErrorMessageAsync(user, guildYoutubeMemberConfig.MemberCheckChannelTitle, "不明的錯誤");
-                                    await userChannel.SendErrorMessageAsync($"無法驗證您的帳號，可能是Google內部錯誤\n請重新執行驗證步驟並向 {Program.ApplicatonOwner} 確認問題", item2.UserId, logChannel);
-                                    continue;
+                                    Log.Error($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {item2.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 回傳會限資格訊息失敗: {ex}");
+                                    Log.Error(ex2.ToString());
                                 }
                             }
-                            catch (Exception ex2)
-                            {
-                                Log.Error($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {item2.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 回傳會限資格訊息失敗: {ex}");
-                                Log.Error(ex2.ToString());
-                            }
+
+                            if (!isMember) return;
+                            checkedMemberSet.Add($"{item2.Id}-{item2.CheckYTChannelId}");
                         }
-
-                        if (!isMember) return;
 
                         checkedMemberCount++;
                         try
