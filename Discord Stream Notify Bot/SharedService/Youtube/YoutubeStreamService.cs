@@ -285,7 +285,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                         ChannelType = StreamVideo.YTChannelType.NotVTuber
                                     };
 
-                                    Log.NewStream($"(非VTuber新影片) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
+                                    Log.NewStream($"(非已認可的新影片) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
 
                                     EmbedBuilder embedBuilder = new EmbedBuilder();
                                     embedBuilder.WithOkColor()
@@ -293,7 +293,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                     .WithDescription(Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}"))
                                     .WithImageUrl($"https://i.ytimg.com/vi/{streamVideo.VideoId}/maxresdefault.jpg")
                                     .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
-                                    .AddField("所屬", "非VTuber", true)
                                     .AddField("上傳時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
 
                                     if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo))

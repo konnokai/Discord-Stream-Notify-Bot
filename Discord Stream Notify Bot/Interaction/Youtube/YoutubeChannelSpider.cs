@@ -1,11 +1,11 @@
 ﻿using Discord;
+using Discord.Interactions;
+using Discord.WebSocket;
+using Discord_Stream_Notify_Bot.Interaction.Attribute;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Discord_Stream_Notify_Bot.Interaction.Attribute;
-using Discord.Interactions;
-using System.Collections.Generic;
-using Discord.WebSocket;
 
 namespace Discord_Stream_Notify_Bot.Interaction.Youtube
 {
@@ -73,6 +73,113 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
         {
             _client = client;
             _discordWebhookClient = discordWebhookClient;
+
+            _client.ButtonExecuted += async (button) =>
+            {
+                try
+                {
+                    if (button.HasResponded || !button.Data.CustomId.StartsWith("spider:"))
+                        return;
+
+                    Log.Info($"\"{button.User}\" Click Button: {button.Data.CustomId}");
+                    await button.DeferAsync(false);
+
+                    string[] buttonData = button.Data.CustomId.Split(new char[] { ':' });
+                    if (buttonData.Length != 3)
+                    {
+                        await button.SendErrorAsync("此按鈕無法使用", true, false);
+                        return;
+                    }
+
+                    using var db = DataBase.DBContext.GetDbContext();
+                    var youtubeChannelSpider = db.YoutubeChannelSpider.FirstOrDefault((x) => x.ChannelId == buttonData[2]);
+                    if (youtubeChannelSpider == null)
+                    {
+                        await button.SendErrorAsync("找不到此按鈕的頻道，可能已被移除", true, false);
+                        return;
+                    }
+
+                    if (buttonData[1].Contains("trusted"))
+                    {
+
+                        youtubeChannelSpider.IsTrustedChannel = buttonData[1] == "trusted";
+                        db.YoutubeChannelSpider.Update(youtubeChannelSpider);
+                        db.SaveChanges();
+
+                        await button.SendConfirmAsync($"已設定 {youtubeChannelSpider.ChannelTitle} 為`" + (youtubeChannelSpider.IsTrustedChannel ? "已" : "未") + "`認可頻道", true);
+                    }
+                    else if (buttonData[1].Contains("record"))
+                    {
+                        if (buttonData[1] == "record")
+                        {
+                            if (db.RecordYoutubeChannel.Any((x) => x.YoutubeChannelId == buttonData[2]))
+                            {
+                                await button.SendErrorAsync("該頻道已存在於錄影清單內", true);
+                                return;
+                            }
+                            else
+                            {
+                                db.RecordYoutubeChannel.Add(new DataBase.Table.RecordYoutubeChannel() { YoutubeChannelId = buttonData[2] });
+                                await button.SendConfirmAsync("已新增到錄影清單內", true);
+                                db.SaveChanges();
+                            }
+                        }
+                        else if (buttonData[1] == "unrecord")
+                        {
+                            if (!db.RecordYoutubeChannel.Any((x) => x.YoutubeChannelId == buttonData[2]))
+                            {
+                                await button.SendErrorAsync("該頻道未存在於錄影清單內", true);
+                                return;
+                            }
+                            else
+                            {
+                                db.RecordYoutubeChannel.Remove(db.RecordYoutubeChannel.First((x) => x.YoutubeChannelId == buttonData[2]));
+                                await button.SendConfirmAsync("已於錄影清單移除", true);
+                            }
+                        }
+                    }
+
+                    db.SaveChanges();
+
+                    try
+                    {
+                        var guild = button.Message.Embeds.First().Fields.FirstOrDefault((x) => x.Name == "伺服器").Value;
+                        var user = button.Message.Embeds.First().Fields.FirstOrDefault((x) => x.Name == "執行者").Value;
+                        var embed = new EmbedBuilder()
+                                        .WithOkColor()
+                                        .WithTitle("已新增爬蟲頻道")
+                                        .AddField("頻道", Format.Url(youtubeChannelSpider.ChannelTitle, $"https://www.youtube.com/channel/{youtubeChannelSpider.ChannelId}"), false)
+                                        .AddField("伺服器", guild, false)
+                                        .AddField("執行者", user, false)
+                                        .AddField("認可頻道", youtubeChannelSpider.IsTrustedChannel ? "是" : "否", true)
+                                        .AddField("錄影頻道", db.RecordYoutubeChannel.Any((x) => x.YoutubeChannelId == buttonData[2]) ? "是" : "否", true).Build();
+                        try
+                        {
+                            await button.UpdateAsync((func) =>
+                            {
+                                func.Embed = embed;
+                            });
+                        }
+                        catch
+                        {
+                            await button.ModifyOriginalResponseAsync((func) =>
+                            {
+                                func.Embed = embed;
+                            });
+                        }
+                    }
+                    catch (Exception)
+                    {
+
+                        throw;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    await button.SendErrorAsync(ex.Message, true);
+                    Log.Error(ex.ToString());
+                }                
+            };
         }
 
         [RequireContext(ContextType.Guild)]
@@ -149,16 +256,23 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                 db.SaveChanges();
 
                 await Context.Interaction.SendConfirmAsync($"已將 {channelTitle} 加入到爬蟲清單內\n" +
-                    $"請到通知頻道內使用 `/youtube add-youtube-notice https://www.youtube.com/channel/{channelId}` 來開啟通知", true).ConfigureAwait(false);
+                    $"請到通知頻道內使用 `/youtube add-youtube-notice https://www.youtube.com/channel/{channelId}` 來開啟通知", true,true).ConfigureAwait(false);
 
                 try
                 {
                     await (await Program.ApplicatonOwner.CreateDMChannelAsync()).SendMessageAsync(embed: new EmbedBuilder()
-                        .WithOkColor()
-                        .WithTitle("已新增檢測頻道")
-                        .AddField("頻道", Format.Url(channelTitle, $"https://www.youtube.com/channel/{channelId}"), false)
-                        .AddField("伺服器", $"{Context.Guild.Name} ({Context.Guild.Id})", false)
-                        .AddField("執行者", $"{Context.User.Username} ({Context.User.Id})", false).Build());
+                            .WithOkColor()
+                            .WithTitle("已新增爬蟲頻道")
+                            .AddField("頻道", Format.Url(channelTitle, $"https://www.youtube.com/channel/{channelId}"), false)
+                            .AddField("伺服器", spider.GuildId != 0 ? $"{Context.Guild.Name} ({Context.Guild.Id})" : "擁有者", false)
+                            .AddField("執行者", $"{Context.User.Username} ({Context.User.Id})", false)
+                            .AddField("認可頻道", "否", true)
+                            .AddField("錄影頻道", "否", true).Build(),
+                        components: new ComponentBuilder()
+                            .WithButton("加入認可頻道", $"spider:trusted:{channelId}", ButtonStyle.Success)
+                            .WithButton("移除認可頻道", $"spider:untrusted:{channelId}", ButtonStyle.Danger)
+                            .WithButton("加入錄影頻道", $"spider:record:{channelId}", ButtonStyle.Success, row: 1)
+                            .WithButton("移除錄影頻道", $"spider:unrecord:{channelId}", ButtonStyle.Danger, row: 1).Build());
                 }
                 catch (Exception ex) { Log.Error(ex.ToString()); }
             }
