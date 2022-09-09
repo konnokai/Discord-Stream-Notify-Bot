@@ -237,6 +237,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                     ApplicationName = "Discord Youtube Member Check"
                 }).Channels.List("id,snippet");
                 service.Mine = true;
+
                 try 
                 { 
                     var result = await service.ExecuteAsync();
@@ -307,7 +308,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                         db.GuildConfig.Add(new DataBase.Table.GuildConfig { GuildId = guild.Id });
                         db.GuildYoutubeMemberConfig.Remove(item);
 
-                        msg += $"\n另外: `{guild.Name}` 無會限紀錄頻道，請新增頻道並給予小幫手 `讀取&發送` 權限後使用 `s!snmsc` 設定 (s!h snmsc)";
+                        msg += $"\n另外: `{guild.Name}` 無會限紀錄頻道，請新增頻道並給予小幫手 `讀取&發送` 權限後使用 `/member-set set-notice-member-status-channel` 設定";
                         try { await guild.Owner.SendMessageAsync(embed: new EmbedBuilder().WithErrorColor().WithDescription(msg).Build()); }
                         catch { }
 
@@ -318,7 +319,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                     if (logChannel == null)
                     {
                         isExistLogChannel = false;
-                        msg += $"\n另外: `{guild.Name}` 無會限紀錄頻道，請新增頻道並給予小幫手 `讀取&發送` 權限後使用 `s!snmsc` 設定 (s!h snmsc)";
+                        msg += $"\n另外: `{guild.Name}` 無會限紀錄頻道，請新增頻道並給予小幫手 `讀取&發送` 權限後使用 `/member-set set-notice-member-status-channel` 設定";
                     }
                     else
                     {
@@ -481,8 +482,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                 {
                     var list = db.YoutubeMemberCheck
                         .Where((x) => x.GuildId == guildYoutubeMemberConfig.GuildId && x.CheckYTChannelId == guildYoutubeMemberConfig.MemberCheckChannelId)
-                        .Where((x) => (isOldCheck && x.LastCheckStatus != DataBase.Table.YoutubeMemberCheck.CheckStatus.NotYetStarted) ||
-                            (!isOldCheck && x.LastCheckStatus == DataBase.Table.YoutubeMemberCheck.CheckStatus.NotYetStarted));
+                        .Where((x) => (isOldCheck && x.IsChecked) || (!isOldCheck && !x.IsChecked));
                     if (!list.Any())
                         continue;
 
@@ -551,7 +551,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                 await RemoveMemberCheckFromDbAsync(item2.UserId);
 
                                 await logChannel.SendErrorMessageAsync(user, guildYoutubeMemberConfig.MemberCheckChannelTitle, "未登入");
-                                await userChannel.SendErrorMessageAsync($"未登入，請至 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 登入並再次於伺服器執行 `/youtube-member check`", item2.UserId, logChannel);
+                                await userChannel.SendErrorMessageAsync($"未登入，請至 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 登入並再次於伺服器執行 `/member check`", item2.UserId, logChannel);
 
                                 continue;
                             }
@@ -570,7 +570,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                     await logChannel.SendErrorMessageAsync(user, guildYoutubeMemberConfig.MemberCheckChannelTitle, "無法重複驗證");
                                     await userChannel.SendErrorMessageAsync($"無法重新刷新您的授權\n" +
                                         $"請到 {Format.Url("Google安全性", "https://myaccount.google.com/permissions")} 移除 `直播小幫手會限確認` 的應用程式存取權後\n" +
-                                        $"至 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 重新登入並再次於伺服器執行 `/youtube-member check`", item2.UserId, logChannel);
+                                        $"至 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 重新登入並再次於伺服器執行 `/member check`", item2.UserId, logChannel);
 
                                     continue;
                                 }
@@ -586,7 +586,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                 await logChannel.SendErrorMessageAsync(user, guildYoutubeMemberConfig.MemberCheckChannelTitle, "認證過期");
                                 await userChannel.SendErrorMessageAsync($"您的Google認證已失效\n" +
                                     $"請到 {Format.Url("Google安全性", "https://myaccount.google.com/permissions")} 移除 `直播小幫手會限確認` 的應用程式存取權後\n" +
-                                    $"至 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 重新登入並再次於伺服器執行 `/youtube-member check`", item2.UserId, logChannel);
+                                    $"至 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 重新登入並再次於伺服器執行 `/member check`", item2.UserId, logChannel);
 
                                 continue;
                             }
@@ -636,13 +636,13 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                         {
                                             await logChannel.SendErrorMessageAsync(user, guildYoutubeMemberConfig.MemberCheckChannelTitle, "會員已過期");
                                             await userChannel.SendErrorMessageAsync($"您在 `{guild.Name}` 的 `{guildYoutubeMemberConfig.MemberCheckChannelTitle}` 會限資格已失效\n" +
-                                             $"如要重新驗證會員請於購買會員後再次於伺服器執行 `/youtube-member check`", item2.UserId, logChannel);
+                                             $"如要重新驗證會員請於購買會員後再次於伺服器執行 `/member check`", item2.UserId, logChannel);
                                         }
                                         else
                                         {
                                             await logChannel.SendErrorMessageAsync(user, guildYoutubeMemberConfig.MemberCheckChannelTitle, "無會員");
                                             await userChannel.SendErrorMessageAsync($"無法在 `{guild.Name}` 的 `{guildYoutubeMemberConfig.MemberCheckChannelTitle}` 上存取會限資格\n" +
-                                             $"請先使用 `/youtube-member show-youtube-account` 確認綁定的頻道是否正確，並確認已購買會員\n若都正確請向 `{Program.ApplicatonOwner}` 確認問題", item2.UserId, logChannel);
+                                             $"請先使用 `/member show-youtube-account` 確認綁定的頻道是否正確，並確認已購買會員\n若都正確請向 `{Program.ApplicatonOwner}` 確認問題", item2.UserId, logChannel);
                                         }
                                         continue;
                                     }
@@ -659,7 +659,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                         await logChannel.SendErrorMessageAsync(user, guildYoutubeMemberConfig.MemberCheckChannelTitle, "認證過期");
                                         await userChannel.SendErrorMessageAsync($"您的Google認證已失效\n" +
                                             $"請到 {Format.Url("Google安全性", "https://myaccount.google.com/permissions?continue=https%3A%2F%2Fmyaccount.google.com%2Fsecurity")} 移除 `直播小幫手會限確認` 的應用程式存取權後\n" +
-                                            $"至 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 重新登入並再次於伺服器執行 `/youtube-member check`", item2.UserId, logChannel);
+                                            $"至 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 重新登入並再次於伺服器執行 `/member check`", item2.UserId, logChannel);
                                         continue;
                                     }
                                     else if (ex.Message.ToLower().Contains("the added or subtracted value results in an un-representable"))
@@ -672,7 +672,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                         await logChannel.SendErrorMessageAsync(user, guildYoutubeMemberConfig.MemberCheckChannelTitle, "時間加減錯誤");
                                         await userChannel.SendErrorMessageAsync($"遇到已知但尚未處理的問題，您可以重新嘗試登入\n" +
                                             $"請到 {Format.Url("Google安全性", "https://myaccount.google.com/permissions?continue=https%3A%2F%2Fmyaccount.google.com%2Fsecurity")} 移除 `直播小幫手會限確認` 的應用程式存取權後\n" +
-                                            $"至 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 重新登入並再次於伺服器執行 `/youtube-member check`", item2.UserId, logChannel);
+                                            $"至 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 重新登入並再次於伺服器執行 `/member check`", item2.UserId, logChannel);
                                         continue;
                                     }
                                     else if (ex.Message.ToLower().Contains("500"))
@@ -751,7 +751,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
 
                         try
                         {
-                            item2.LastCheckStatus = DataBase.Table.YoutubeMemberCheck.CheckStatus.Success;
+                            item2.IsChecked = true;
                             item2.LastCheckTime = DateTime.Now;
 
                             db.YoutubeMemberCheck.Update(item2);

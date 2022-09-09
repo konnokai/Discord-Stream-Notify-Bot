@@ -28,8 +28,7 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
                 foreach (var item in guildYoutubeMemberConfigs)
                 {
                     var checkedMemberCount = db.YoutubeMemberCheck.Count((x) => x.GuildId == item.GuildId &&
-                        x.CheckYTChannelId == item.MemberCheckChannelId &&
-                        x.LastCheckStatus == DataBase.Table.YoutubeMemberCheck.CheckStatus.Success);
+                        x.CheckYTChannelId == item.MemberCheckChannelId && x.IsChecked);
 
                     if (checkedMemberCount == 0)
                         continue;

@@ -293,7 +293,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
         {
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                var youtubeMemberChecks = db.YoutubeMemberCheck.Where((x) => x.GuildId == Context.Guild.Id && x.LastCheckStatus == DataBase.Table.YoutubeMemberCheck.CheckStatus.Success);
+                var youtubeMemberChecks = db.YoutubeMemberCheck.Where((x) => x.GuildId == Context.Guild.Id && x.IsChecked);
                 if (!youtubeMemberChecks.Any())
                 {
                     await Context.Interaction.SendErrorAsync("尚無成員驗證成功");
