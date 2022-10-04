@@ -28,10 +28,16 @@ namespace Discord_Stream_Notify_Bot
         {
             try
             {
-                using (var db = DataBase.DBContext.GetDbContext())
-                {
-                    return db.HoloStreamVideo.Count() + db.NijisanjiStreamVideo.Count() + db.OtherStreamVideo.Count();
-                }
+                int total = 0;
+
+                using (var db = DataBase.HoloVideoContext.GetDbContext())
+                    total += db.Video.Count();
+                using (var db = DataBase.NijisanjiVideoContext.GetDbContext())
+                    total += db.Video.Count();
+                using (var db = DataBase.OtherVideoContext.GetDbContext())
+                    total += db.Video.Count();
+
+                return total;
             }
             catch (Exception ex)
             {

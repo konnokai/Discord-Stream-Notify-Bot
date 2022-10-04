@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Video = Google.Apis.YouTube.v3.Data.Video;
 
 namespace Discord_Stream_Notify_Bot.Interaction.Youtube
 {
@@ -424,7 +425,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                     else
                     {
                         string addString = "";
-                        if (!db.IsChannelInDb(channelId)) addString += $"\n\n(注意: 該頻道未加入爬蟲清單\n如長時間無通知請使用 `/help get-command-help add-youtube-spider` 查看說明並加入爬蟲)";
+                        if (!Extensions.IsChannelInDb(channelId)) addString += $"\n\n(注意: 該頻道未加入爬蟲清單\n如長時間無通知請使用 `/help get-command-help add-youtube-spider` 查看說明並加入爬蟲)";
                         db.NoticeYoutubeStreamChannel.Add(new NoticeYoutubeStreamChannel() { GuildId = Context.Guild.Id, DiscordChannelId = textChannel.Id, NoticeStreamChannelId = channelId });
                         await Context.Interaction.SendConfirmAsync($"已將 {channelTitle} 加入到通知頻道清單內{addString}", true).ConfigureAwait(false);
                     }

@@ -16,7 +16,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                foreach (var item in db.BannerChange.ToList().Where(x => x.ChannelId == channelId))
+                foreach (var item in db.BannerChange.Where(x => x.ChannelId == channelId))
                 {
                     try
                     {
@@ -26,19 +26,19 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         if (videoId != item.LastChangeStreamId)
                         {
                             MemoryStream memStream;
-                                try
-                                {
-                                    memStream = new MemoryStream(await _httpClientFactory.CreateClient("").GetByteArrayAsync($"https://i.ytimg.com/vi/{videoId}/maxresdefault.jpg"));
-                                    if (memStream.Length < 2048) memStream = null;
-                                }
-                                catch (Exception ex)
-                                {
-                                    Log.Error($"DownloadGuildBanner - {item.GuildId}\n" +
-                                        $"{channelId} / {videoId}\n" +
-                                        $"{ex.Message}\n" +
-                                        $"{ex.StackTrace}");
-                                    continue;
-                                }                            
+                            try
+                            {
+                                memStream = new MemoryStream(await _httpClientFactory.CreateClient("").GetByteArrayAsync($"https://i.ytimg.com/vi/{videoId}/maxresdefault.jpg"));
+                                if (memStream.Length < 2048) memStream = null;
+                            }
+                            catch (Exception ex)
+                            {
+                                Log.Error($"DownloadGuildBanner - {item.GuildId}\n" +
+                                    $"{channelId} / {videoId}\n" +
+                                    $"{ex.Message}\n" +
+                                    $"{ex.StackTrace}");
+                                continue;
+                            }
 
                             try
                             {
@@ -55,7 +55,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                             }
                             catch (Exception ex)
                             {
-
                                 Log.Error($"ChangeGuildBanner - {item.GuildId}\n" +
                                     $"{channelId} / {videoId}" +
                                     $"{ex.Message}\n" +
@@ -72,7 +71,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         continue;
                     }
                 }
-            }            
+            }
         }
     }
 }

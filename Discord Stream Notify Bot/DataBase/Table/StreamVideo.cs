@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace Discord_Stream_Notify_Bot.DataBase.Table
 {
-    public class StreamVideo
+    public class Video
     {
         public enum YTChannelType
         {
@@ -19,19 +19,11 @@ namespace Discord_Stream_Notify_Bot.DataBase.Table
         public DateTime ScheduledStartTime { get; set; }
         public YTChannelType ChannelType { get; set; }
 
-        public HoloStreamVideo ConvertToHoloStreamVideo() =>
-          new HoloStreamVideo() { ChannelId = ChannelId, ChannelTitle = ChannelTitle, VideoId = VideoId, VideoTitle = VideoTitle, ChannelType = ChannelType, ScheduledStartTime = ScheduledStartTime };
-        public NijisanjiStreamVideo ConvertToNijisanjiStreamVideo() =>
-            new NijisanjiStreamVideo() { ChannelId = ChannelId, ChannelTitle = ChannelTitle, VideoId = VideoId, VideoTitle = VideoTitle, ChannelType = ChannelType, ScheduledStartTime = ScheduledStartTime };
-        public OtherStreamVideo ConvertToOtherStreamVideo() =>
-            new OtherStreamVideo() { ChannelId = ChannelId, ChannelTitle = ChannelTitle, VideoId = VideoId, VideoTitle = VideoTitle, ChannelType = ChannelType, ScheduledStartTime = ScheduledStartTime };
-        public NotVTuberStreamVideo ConvertToNotVTuberStreamVideo() =>
-            new NotVTuberStreamVideo() { ChannelId = ChannelId, ChannelTitle = ChannelTitle, VideoId = VideoId, VideoTitle = VideoTitle, ChannelType = ChannelType, ScheduledStartTime = ScheduledStartTime };
-
         public override int GetHashCode()
         {
             return VideoId.ToCharArray().Sum((x) => x);
         }
+
         public override string ToString()
         {
             return ChannelTitle + " - " + VideoTitle;

@@ -8,6 +8,6 @@ namespace Discord_Stream_Notify_Bot.DataBase.Table
         [Key]
         public string ChannelId { get; set; }
         public string ChannelTitle { get; set; } = null;
-        public StreamVideo.YTChannelType ChannelType { get; set; } = StreamVideo.YTChannelType.Other;
+        public Video.YTChannelType ChannelType { get; set; } = Video.YTChannelType.Other;
     }
 }

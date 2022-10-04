@@ -91,7 +91,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                 return;
             }
 
-            Video video;
+            Google.Apis.YouTube.v3.Data.Video video;
             try
             {
                 video = await _service.GetVideoAsync(videoId, 3);
@@ -388,7 +388,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
 
             try
             {
-                List<Video> result = new List<Video>();
+                List<Google.Apis.YouTube.v3.Data.Video> result = new List<Google.Apis.YouTube.v3.Data.Video>();
 
                 for (int i = 0; i < _service.Reminders.Values.Count; i += 50)
                 {
@@ -441,7 +441,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                     return;
                 }
 
-                var video = db.GetStreamVideoByVideoId(videoId);
+                var video = Extensions.GetStreamVideoByVideoId(videoId);
                 EmbedBuilder embedBuilder = new EmbedBuilder().WithOkColor()
                     .WithTitle(video.VideoTitle)
                     .WithUrl($"https://www.youtube.com/watch?v={videoId}")
@@ -461,7 +461,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
             "2: 其他")]
         [CommandExample("https://www.youtube.com/channel/UCXRlIK3Cw_TJIQC5kSJJQMg 1")]
         [Alias("SCT")]
-        public async Task SetChannelType([Summary("頻道網址")] string channelUrl = "", StreamVideo.YTChannelType channelType = StreamVideo.YTChannelType.Other)
+        public async Task SetChannelType([Summary("頻道網址")] string channelUrl = "", DataBase.Table.Video.YTChannelType channelType = DataBase.Table.Video.YTChannelType.Other)
         {
             string channelId = "";
             try

@@ -48,6 +48,12 @@ namespace Discord_Stream_Notify_Bot
             Console.OutputEncoding = System.Text.Encoding.UTF8;
             Console.CancelKeyPress += Console_CancelKeyPress;
 
+            AppDomain.CurrentDomain.UnhandledException += (sender, e) =>
+            {
+                Log.Error(e.ToString());
+                Environment.Exit(20);
+            };
+
             botConfig.InitBotConfig();
             timerUpdateStatus = new Timer(TimerHandler);
 
@@ -55,9 +61,15 @@ namespace Discord_Stream_Notify_Bot
                 Directory.CreateDirectory(Path.GetDirectoryName(GetDataFilePath("")));
 
             using (var db = DataBase.DBContext.GetDbContext())
-            {
                 db.Database.EnsureCreated();
-            }
+            using (var db = DataBase.HoloVideoContext.GetDbContext())
+                db.Database.EnsureCreated();
+            using (var db = DataBase.NijisanjiVideoContext.GetDbContext())
+                db.Database.EnsureCreated();
+            using (var db = DataBase.OtherVideoContext.GetDbContext())
+                db.Database.EnsureCreated();
+            using (var db = DataBase.NotVTuberVideoContext.GetDbContext())
+                db.Database.EnsureCreated();
 
             try
             {
@@ -327,24 +339,24 @@ namespace Discord_Stream_Notify_Bot
                     Status = BotPlayingStatus.StreamCount;
                     try
                     {
-                        using (var db = DataBase.DBContext.GetDbContext())
+                        List<DataBase.Table.Video> list = null;
+                        switch (new Random().Next(0, 2))
                         {
-                            List<StreamVideo> list = null;
-                            switch (new Random().Next(0, 2))
-                            {
-                                case 0:
-                                    list = db.HoloStreamVideo.Select((x) => (StreamVideo)x).ToList();
-                                    break;
-                                case 1:
-                                    list = db.NijisanjiStreamVideo.Select((x) => (StreamVideo)x).ToList();
-                                    break;
-                                case 2:
-                                    list = db.OtherStreamVideo.Select((x) => (StreamVideo)x).ToList();
-                                    break;
-                            }
-                            var item = list[new Random().Next(0, list.Count)];
-                            _client.SetGameAsync(item.VideoTitle, $"https://www.youtube.com/watch?v={item.VideoId}", ActivityType.Streaming);
+                            case 0:
+                                using (var db = DataBase.HoloVideoContext.GetDbContext())
+                                    list = db.Video.ToList();
+                                break;
+                            case 1:
+                                using (var db = DataBase.NijisanjiVideoContext.GetDbContext())
+                                    list = db.Video.ToList();
+                                break;
+                            case 2:
+                                using (var db = DataBase.OtherVideoContext.GetDbContext())
+                                    list = db.Video.ToList();
+                                break;
                         }
+                        var item = list[new Random().Next(0, list.Count)];
+                        _client.SetGameAsync(item.VideoTitle, $"https://www.youtube.com/watch?v={item.VideoId}", ActivityType.Streaming);
                     }
                     catch (Exception ex)
                     {

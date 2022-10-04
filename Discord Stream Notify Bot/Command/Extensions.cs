@@ -1,8 +1,6 @@
 ﻿using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
-using Discord_Stream_Notify_Bot.DataBase.Table;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
@@ -36,11 +34,11 @@ namespace Discord_Stream_Notify_Bot.Command
             return $"<t:{UTCTime}:F> (<t:{UTCTime}:R>)";
         }
 
-        public static StreamVideo.YTChannelType GetProductionType(this StreamVideo streamVideo)
+        public static DataBase.Table.Video.YTChannelType GetProductionType(this DataBase.Table.Video streamVideo)
         {
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                StreamVideo.YTChannelType type;
+                DataBase.Table.Video.YTChannelType type;
                 var channel = db.YoutubeChannelOwnedType.FirstOrDefault((x) => x.ChannelId == streamVideo.ChannelId);
 
                 if (channel != null)
@@ -52,8 +50,8 @@ namespace Discord_Stream_Notify_Bot.Command
             }
         }
 
-        public static string GetProductionName(this StreamVideo.YTChannelType channelType) =>        
-                channelType == StreamVideo.YTChannelType.Holo ? "Hololive" : channelType == StreamVideo.YTChannelType.Nijisanji ? "彩虹社" : "其他";
+        public static string GetProductionName(this DataBase.Table.Video.YTChannelType channelType) =>        
+                channelType == DataBase.Table.Video.YTChannelType.Holo ? "Hololive" : channelType == DataBase.Table.Video.YTChannelType.Nijisanji ? "彩虹社" : "其他";
 
         public static string GetCommandLine(this Process process)
         {
@@ -81,56 +79,59 @@ namespace Discord_Stream_Notify_Bot.Command
         public static bool HasStreamVideoByVideoId(this DataBase.DBContext dBContext, string videoId)
         {
             videoId = videoId.Trim();
-            return dBContext.HoloStreamVideo.Any((x) => x.VideoId == videoId) ||
-                dBContext.NijisanjiStreamVideo.Any((x) => x.VideoId == videoId) || 
-                dBContext.OtherStreamVideo.Any((x) => x.VideoId == videoId);
+
+            using (var db = DataBase.HoloVideoContext.GetDbContext())
+                if (db.Video.Any((x) => x.VideoId == videoId)) return true;
+            using (var db = DataBase.NijisanjiVideoContext.GetDbContext())
+                if (db.Video.Any((x) => x.VideoId == videoId)) return true;
+            using (var db = DataBase.OtherVideoContext.GetDbContext())
+                if (db.Video.Any((x) => x.VideoId == videoId)) return true;
+
+            return false;
         }
 
-        public static StreamVideo GetStreamVideoByVideoId(this DataBase.DBContext dBContext, string videoId)
+        public static DataBase.Table.Video GetStreamVideoByVideoId(string videoId)
         {
             videoId = videoId.Trim();
-            if (dBContext.HoloStreamVideo.Any((x) => x.VideoId == videoId))
-            {
-                return dBContext.HoloStreamVideo.First((x) => x.VideoId == videoId);
-            }
-            else if (dBContext.NijisanjiStreamVideo.Any((x) => x.VideoId == videoId))
-            {
-                return dBContext.NijisanjiStreamVideo.First((x) => x.VideoId == videoId);
-            }
-            else if (dBContext.OtherStreamVideo.Any((x) => x.VideoId == videoId))
-            {
-                return dBContext.OtherStreamVideo.First((x) => x.VideoId == videoId);
-            }
-            else
-            {
-                return null;
-            }
+
+            using (var db = DataBase.HoloVideoContext.GetDbContext())
+                if (db.Video.Any((x) => x.VideoId == videoId)) return db.Video.First((x) => x.VideoId == videoId);
+            using (var db = DataBase.NijisanjiVideoContext.GetDbContext())
+                if (db.Video.Any((x) => x.VideoId == videoId)) return db.Video.First((x) => x.VideoId == videoId);
+            using (var db = DataBase.OtherVideoContext.GetDbContext())
+                if (db.Video.Any((x) => x.VideoId == videoId)) return db.Video.First((x) => x.VideoId == videoId);
+
+            return null;
         }
 
-        public static StreamVideo GetLastStreamVideoByChannelId(this DataBase.DBContext dBContext, string channelId)
+        public static DataBase.Table.Video GetLastStreamVideoByChannelId(string channelId)
         {
             channelId = channelId.Trim();
-            if (dBContext.HoloStreamVideo.Any((x) => x.ChannelId == channelId))
-            {
-                return dBContext.HoloStreamVideo.ToList().Last((x) => x.ChannelId == channelId);
-            }
-            else if (dBContext.NijisanjiStreamVideo.Any((x) => x.ChannelId == channelId))
-            {
-                return dBContext.NijisanjiStreamVideo.ToList().Last((x) => x.ChannelId == channelId);
-            }
-            else if (dBContext.OtherStreamVideo.Any((x) => x.ChannelId == channelId))
-            {
-                return dBContext.OtherStreamVideo.ToList().Last((x) => x.ChannelId == channelId);
-            }
-            else
-            {
-                return null;
-            }
+
+            using (var db = DataBase.HoloVideoContext.GetDbContext())
+                if (db.Video.Any((x) => x.ChannelId == channelId)) return db.Video.Last((x) => x.ChannelId == channelId);
+            using (var db = DataBase.NijisanjiVideoContext.GetDbContext())
+                if (db.Video.Any((x) => x.ChannelId == channelId)) return db.Video.Last((x) => x.ChannelId == channelId);
+            using (var db = DataBase.OtherVideoContext.GetDbContext())
+                if (db.Video.Any((x) => x.ChannelId == channelId)) return db.Video.Last((x) => x.ChannelId == channelId);
+
+            return null;
         }
-        public static bool IsChannelInDb(this DataBase.DBContext dBContext, string channelId)
-            => dBContext.HoloStreamVideo.Any((x) => x.ChannelId == channelId) ||
-                dBContext.NijisanjiStreamVideo.Any((x) => x.ChannelId == channelId) ||
-                dBContext.OtherStreamVideo.Any((x) => x.ChannelId == channelId);
+
+        public static bool IsChannelInDb(string channelId)
+        {
+
+            channelId = channelId.Trim();
+
+            using (var db = DataBase.HoloVideoContext.GetDbContext())
+                if (db.Video.Any((x) => x.ChannelId == channelId)) return true;
+            using (var db = DataBase.NijisanjiVideoContext.GetDbContext())
+                if (db.Video.Any((x) => x.ChannelId == channelId)) return true;
+            using (var db = DataBase.OtherVideoContext.GetDbContext())
+                if (db.Video.Any((x) => x.ChannelId == channelId)) return true;
+
+            return false;
+        }
 
         public static bool IsTwitterUserInDb(this DataBase.DBContext dBContext, string userId)
             => dBContext.TwitterSpaecSpider.Any((x) => x.UserId == userId);

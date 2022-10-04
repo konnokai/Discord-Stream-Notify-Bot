@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.Commands;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -8,6 +9,13 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
 {
     public class YoutubeMember : TopLevelModule, ICommandService
     {
+        private readonly SharedService.Youtube.YoutubeStreamService _service;
+
+        public YoutubeMember(SharedService.Youtube.YoutubeStreamService service)
+        {
+            _service = service;
+        }
+
         [Command("ListAllGuildCheckedMember")]
         [Summary("顯示所有伺服器已完成驗證的會員數量")]
         [Alias("lagcm")]
@@ -49,6 +57,57 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
                     )));
                 }, dic.Count(), 7);
             }
+        }
+
+        [Command("SetMemberCheckVideoId")]
+        [Summary("設定指定頻道的會限影片Id")]
+        [Alias("smcvi")]
+        [RequireContext(ContextType.DM)]
+        [RequireOwner]
+        public async Task SetMemberCheckVideoIdAsync(string channelId, string videoId)
+        {
+            try
+            {
+                channelId = await _service.GetChannelIdAsync(channelId).ConfigureAwait(false);
+                videoId = _service.GetVideoId(videoId);
+            }
+            catch (FormatException fex)
+            {
+                await Context.Channel.SendErrorAsync(fex.Message);
+                return;
+            }
+            catch (ArgumentNullException)
+            {
+                await Context.Channel.SendErrorAsync("網址不可空白");
+                return;
+            }
+
+            try
+            {
+                using (var db = DataBase.DBContext.GetDbContext())
+                {
+                    var guildYoutubeMemberConfigs = db.GuildYoutubeMemberConfig.Where((x) => x.MemberCheckChannelId == channelId);
+                    if (!guildYoutubeMemberConfigs.Any())
+                    {
+                        await Context.Channel.SendErrorAsync($"{channelId} 不存在資料");
+                        return;
+                    }
+
+                    foreach (var guildYoutubeMemberConfig in guildYoutubeMemberConfigs)
+                    {
+                        guildYoutubeMemberConfig.MemberCheckVideoId = videoId;
+                        db.GuildYoutubeMemberConfig.Update(guildYoutubeMemberConfig);
+                    }
+
+                    db.SaveChanges();
+                    await Context.Channel.SendConfirmAsync($"已將 `{guildYoutubeMemberConfigs.First().MemberCheckChannelTitle}` 的會限檢測影片更改為 `{guildYoutubeMemberConfigs.First().MemberCheckVideoId}`");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.ToString());
+                await Context.Channel.SendErrorAsync(ex.Message);
+            }           
         }
     }
 }

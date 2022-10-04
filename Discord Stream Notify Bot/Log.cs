@@ -7,11 +7,15 @@ public static class Log
 {
     enum LogType { Verb, NewS, Info, Warn, Error }
     static string logPath = DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss") + "_log.txt";
+    private static object lockObj = new object();
 
     private static void WriteLogToFile(LogType type, string text)
     {
-        text = $"[{DateTime.Now}] [{type.ToString().ToUpper()}] | {text}\r\n";
-        File.AppendAllText(logPath, text);
+        lock (lockObj)
+        {
+            text = $"[{DateTime.Now}] [{type.ToString().ToUpper()}] | {text}\r\n";
+            File.AppendAllText(logPath, text);
+        }
     }
 
     public static void NewStream(string text, bool newLine = true)
@@ -73,6 +77,7 @@ public static class Log
         if (message.Exception != null)
         {
             consoleColor = ConsoleColor.DarkRed;
+            FormatColorWrite(message.Exception.GetType().FullName, consoleColor);
             FormatColorWrite(message.Exception.Message, consoleColor);
             FormatColorWrite(message.Exception.StackTrace, consoleColor);
         }

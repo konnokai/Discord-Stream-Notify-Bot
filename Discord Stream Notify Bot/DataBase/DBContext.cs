@@ -8,12 +8,8 @@ namespace Discord_Stream_Notify_Bot.DataBase
         public DbSet<GuildConfig> GuildConfig { get; set; }
         public DbSet<GuildYoutubeMemberConfig> GuildYoutubeMemberConfig { get; set; }
         public DbSet<BannerChange> BannerChange { get; set; }
-        public DbSet<HoloStreamVideo> HoloStreamVideo { get; set; }
-        public DbSet<NijisanjiStreamVideo> NijisanjiStreamVideo { get; set; }
         public DbSet<NoticeTwitterSpaceChannel> NoticeTwitterSpaceChannel { get; set; }
         public DbSet<NoticeYoutubeStreamChannel> NoticeYoutubeStreamChannel { get; set; }
-        public DbSet<OtherStreamVideo> OtherStreamVideo { get; set; }
-        public DbSet<NotVTuberStreamVideo> NotVTuberStreamVideo { get; set; }
         public DbSet<RecordYoutubeChannel> RecordYoutubeChannel { get; set; }
         public DbSet<TwitterSpace> TwitterSpace { get; set; }
         public DbSet<TwitterSpaecSpider> TwitterSpaecSpider { get; set; }

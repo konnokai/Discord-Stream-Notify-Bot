@@ -216,7 +216,13 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
 
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                if ((db.HoloStreamVideo.Any((x) => x.ChannelId == channelId) || db.NijisanjiStreamVideo.Any((x) => x.ChannelId == channelId)) && !db.YoutubeChannelOwnedType.Any((x) => x.ChannelId == channelId))
+                bool isTwoBox = false;
+                using (var Holodb = DataBase.HoloVideoContext.GetDbContext())
+                    if (Holodb.Video.Any((x) => x.ChannelId == channelId)) isTwoBox =  true;
+                using (var Nijidb = DataBase.NijisanjiVideoContext.GetDbContext())
+                    if (Nijidb.Video.Any((x) => x.ChannelId == channelId)) isTwoBox = true;
+
+                if (isTwoBox && !db.YoutubeChannelOwnedType.Any((x) => x.ChannelId == channelId))
                 {
                     await Context.Interaction.SendErrorAsync($"不可新增兩大箱的頻道", true).ConfigureAwait(false);
                     return;

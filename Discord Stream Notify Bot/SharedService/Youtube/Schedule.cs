@@ -9,14 +9,16 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Extensions = Discord_Stream_Notify_Bot.Interaction.Extensions;
 
 namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 {
     public partial class YoutubeStreamService
     {
-        private static Dictionary<string, StreamVideo> addNewStreamVideo = new();
+        private static Dictionary<string, DataBase.Table.Video> addNewStreamVideo = new();
         private static HashSet<string> newStreamList = new();
         private bool isFirstHolo = true, isFirst2434 = true, isFirstOther = true;
 
@@ -40,7 +42,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         if (url.StartsWith("https://www.youtube.com/watch"))
                         {
                             string videoId = url.Split("?v=")[1].Trim();
-                            if (!db.HasStreamVideoByVideoId(videoId) && !newStreamList.Contains(videoId) && !addNewStreamVideo.ContainsKey(videoId)) idList.Add(videoId);
+                            if (!Extensions.HasStreamVideoByVideoId(videoId) && !newStreamList.Contains(videoId) && !addNewStreamVideo.ContainsKey(videoId)) idList.Add(videoId);
                             newStreamList.Add(videoId);
                         }
                     }
@@ -58,14 +60,14 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                             {
                                 if (item.LiveStreamingDetails == null) //上傳影片
                                 {
-                                    var streamVideo = new StreamVideo()
+                                    var streamVideo = new DataBase.Table.Video()
                                     {
                                         ChannelId = item.Snippet.ChannelId,
                                         ChannelTitle = item.Snippet.ChannelTitle,
                                         VideoId = item.Id,
                                         VideoTitle = item.Snippet.Title,
                                         ScheduledStartTime = item.Snippet.PublishedAt.Value,
-                                        ChannelType = StreamVideo.YTChannelType.Holo
+                                        ChannelType = DataBase.Table.Video.YTChannelType.Holo
                                     };
 
                                     Log.NewStream($"(新影片) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
@@ -85,14 +87,14 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                 else if (item.LiveStreamingDetails.ScheduledStartTime != null) //首播 & 直播
                                 {
                                     var startTime = item.LiveStreamingDetails.ScheduledStartTime.Value;
-                                    var streamVideo = new StreamVideo()
+                                    var streamVideo = new DataBase.Table.Video()
                                     {
                                         ChannelId = item.Snippet.ChannelId,
                                         ChannelTitle = item.Snippet.ChannelTitle,
                                         VideoId = item.Id,
                                         VideoTitle = item.Snippet.Title,
                                         ScheduledStartTime = startTime,
-                                        ChannelType = StreamVideo.YTChannelType.Holo
+                                        ChannelType = DataBase.Table.Video.YTChannelType.Holo
                                     };
 
                                     Log.NewStream($"(排程) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
@@ -126,14 +128,14 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                 else if (item.LiveStreamingDetails.ActualStartTime != null) //未排程直播
                                 {
                                     var startTime = item.LiveStreamingDetails.ActualStartTime.Value;
-                                    var streamVideo = new StreamVideo()
+                                    var streamVideo = new DataBase.Table.Video()
                                     {
                                         ChannelId = item.Snippet.ChannelId,
                                         ChannelTitle = item.Snippet.ChannelTitle,
                                         VideoId = item.Id,
                                         VideoTitle = item.Snippet.Title,
                                         ScheduledStartTime = startTime,
-                                        ChannelType = StreamVideo.YTChannelType.Holo
+                                        ChannelType = DataBase.Table.Video.YTChannelType.Holo
                                     };
 
                                     Log.NewStream($"(未排程) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
@@ -161,133 +163,131 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             if (Program.isNijisanjiChannelSpider) return;
             //Log.Info("彩虹社影片清單整理開始");
             Program.isNijisanjiChannelSpider = true;
+            using var httpClient = _httpClientFactory.CreateClient();
 
             try
             {
-                using (WebClient webClient = new WebClient())
+                NijisanjiJson nijisanjiJson = null;
+                try
                 {
-                    NijisanjiJson nijisanjiJson = null;
-                    try
+                    string json = await httpClient.GetStringAsync("https://api.itsukaralink.jp/v1.2/events.json");
+                    nijisanjiJson = JsonConvert.DeserializeObject<NijisanjiJson>(json);
+                }
+                catch (Exception ex)
+                {
+                    if (!ex.Message.Contains("EOF or 0 bytes") && !ex.Message.Contains("504") && !ex.Message.Contains("500"))
+                        Log.Error($"NijisanjiStream: {ex}");
+                    Program.isNijisanjiChannelSpider = false;
+                    return;
+                }
+
+                List<string> idList = new List<string>();
+
+                using (var db = DataBase.DBContext.GetDbContext())
+                {
+                    foreach (var item in nijisanjiJson.data.events)
                     {
-                        string json = await webClient.DownloadStringTaskAsync("https://api.itsukaralink.jp/v1.2/events.json").ConfigureAwait(false);
-                        nijisanjiJson = JsonConvert.DeserializeObject<NijisanjiJson>(json);
+                        string videoId = item.url.Split("?v=")[1].Trim();
+                        if (!Extensions.HasStreamVideoByVideoId(videoId) && !newStreamList.Contains(videoId) && !addNewStreamVideo.ContainsKey(videoId)) idList.Add(videoId);
+                        newStreamList.Add(videoId);
                     }
-                    catch (Exception ex)
+
+                    if (idList.Count > 0)
                     {
-                        if (!ex.Message.Contains("EOF or 0 bytes") && !ex.Message.Contains("504") && !ex.Message.Contains("500"))
-                            Log.Error($"NijisanjiStream: {ex}");
-                        Program.isNijisanjiChannelSpider = false;
-                        return;
-                    }
+                        Log.NewStream($"Nijisanji Id: {string.Join(", ", idList)}");
 
-                    List<string> idList = new List<string>();
-
-                    using (var db = DataBase.DBContext.GetDbContext())
-                    {
-                        foreach (var item in nijisanjiJson.data.events)
+                        for (int i = 0; i < idList.Count; i += 50)
                         {
-                            string videoId = item.url.Split("?v=")[1].Trim();
-                            if (!db.HasStreamVideoByVideoId(videoId) && !newStreamList.Contains(videoId) && !addNewStreamVideo.ContainsKey(videoId)) idList.Add(videoId);
-                            newStreamList.Add(videoId);
-                        }
+                            var video = yt.Videos.List("snippet,liveStreamingDetails");
+                            video.Id = string.Join(",", idList.Skip(i).Take(50));
+                            var videoResult = await video.ExecuteAsync().ConfigureAwait(false);
 
-                        if (idList.Count > 0)
-                        {
-                            Log.NewStream($"Nijisanji Id: {string.Join(", ", idList)}");
-
-                            for (int i = 0; i < idList.Count; i += 50)
+                            foreach (var item in videoResult.Items)
                             {
-                                var video = yt.Videos.List("snippet,liveStreamingDetails");
-                                video.Id = string.Join(",", idList.Skip(i).Take(50));
-                                var videoResult = await video.ExecuteAsync().ConfigureAwait(false);
-
-                                foreach (var item in videoResult.Items)
+                                if (item.LiveStreamingDetails == null)
                                 {
-                                    if (item.LiveStreamingDetails == null)
+                                    var streamVideo = new DataBase.Table.Video()
                                     {
-                                        var streamVideo = new StreamVideo()
-                                        {
-                                            ChannelId = item.Snippet.ChannelId,
-                                            ChannelTitle = item.Snippet.ChannelTitle,
-                                            VideoId = item.Id,
-                                            VideoTitle = item.Snippet.Title,
-                                            ScheduledStartTime = item.Snippet.PublishedAt.Value,
-                                            ChannelType = StreamVideo.YTChannelType.Nijisanji
-                                        };
+                                        ChannelId = item.Snippet.ChannelId,
+                                        ChannelTitle = item.Snippet.ChannelTitle,
+                                        VideoId = item.Id,
+                                        VideoTitle = item.Snippet.Title,
+                                        ScheduledStartTime = item.Snippet.PublishedAt.Value,
+                                        ChannelType = DataBase.Table.Video.YTChannelType.Nijisanji
+                                    };
 
-                                        Log.NewStream($"(新影片) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
+                                    Log.NewStream($"(新影片) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
 
+                                    EmbedBuilder embedBuilder = new EmbedBuilder();
+                                    embedBuilder.WithOkColor()
+                                    .WithTitle(streamVideo.VideoTitle)
+                                    .WithDescription(Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}"))
+                                    .WithImageUrl($"https://i.ytimg.com/vi/{streamVideo.VideoId}/maxresdefault.jpg")
+                                    .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
+                                    .AddField("所屬", streamVideo.GetProductionType().GetProductionName(), true)
+                                    .AddField("上傳時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
+
+                                    if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo) && !isFirst2434)
+                                        await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.NewVideo).ConfigureAwait(false);
+                                }
+                                else if (item.LiveStreamingDetails.ScheduledStartTime != null)
+                                {
+                                    var startTime = item.LiveStreamingDetails.ScheduledStartTime.Value;
+                                    var streamVideo = new DataBase.Table.Video()
+                                    {
+                                        ChannelId = item.Snippet.ChannelId,
+                                        ChannelTitle = item.Snippet.ChannelTitle,
+                                        VideoId = item.Id,
+                                        VideoTitle = item.Snippet.Title,
+                                        ScheduledStartTime = startTime,
+                                        ChannelType = DataBase.Table.Video.YTChannelType.Nijisanji
+                                    };
+
+                                    Log.NewStream($"(排程) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
+
+                                    if (startTime > DateTime.Now && startTime < DateTime.Now.AddDays(7))
+                                    {
                                         EmbedBuilder embedBuilder = new EmbedBuilder();
-                                        embedBuilder.WithOkColor()
+                                        embedBuilder.WithErrorColor()
                                         .WithTitle(streamVideo.VideoTitle)
                                         .WithDescription(Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}"))
                                         .WithImageUrl($"https://i.ytimg.com/vi/{streamVideo.VideoId}/maxresdefault.jpg")
                                         .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
                                         .AddField("所屬", streamVideo.GetProductionType().GetProductionName(), true)
-                                        .AddField("上傳時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
+                                        .AddField("直播狀態", "尚未開台", true)
+                                        .AddField("排定開台時間", startTime.ConvertDateTimeToDiscordMarkdown());
+                                        //.AddField("是否記錄直播", (CanRecord(db, streamVideo) ? "是" : "否"), true);
 
-                                        if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo) && !isFirst2434)
-                                            await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.NewVideo).ConfigureAwait(false);
-                                    }
-                                    else if (item.LiveStreamingDetails.ScheduledStartTime != null)
-                                    {
-                                        var startTime = item.LiveStreamingDetails.ScheduledStartTime.Value;
-                                        var streamVideo = new StreamVideo()
+                                        if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo))
                                         {
-                                            ChannelId = item.Snippet.ChannelId,
-                                            ChannelTitle = item.Snippet.ChannelTitle,
-                                            VideoId = item.Id,
-                                            VideoTitle = item.Snippet.Title,
-                                            ScheduledStartTime = startTime,
-                                            ChannelType = StreamVideo.YTChannelType.Nijisanji
-                                        };
-
-                                        Log.NewStream($"(排程) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
-
-                                        if (startTime > DateTime.Now && startTime < DateTime.Now.AddDays(7))
-                                        {
-                                            EmbedBuilder embedBuilder = new EmbedBuilder();
-                                            embedBuilder.WithErrorColor()
-                                            .WithTitle(streamVideo.VideoTitle)
-                                            .WithDescription(Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}"))
-                                            .WithImageUrl($"https://i.ytimg.com/vi/{streamVideo.VideoId}/maxresdefault.jpg")
-                                            .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
-                                            .AddField("所屬", streamVideo.GetProductionType().GetProductionName(), true)
-                                            .AddField("直播狀態", "尚未開台", true)
-                                            .AddField("排定開台時間", startTime.ConvertDateTimeToDiscordMarkdown());
-                                            //.AddField("是否記錄直播", (CanRecord(db, streamVideo) ? "是" : "否"), true);
-
-                                            if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo))
-                                            {
-                                                if (!isFirst2434) await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.NewStream).ConfigureAwait(false);
-                                                StartReminder(streamVideo, streamVideo.ChannelType);
-                                            }
+                                            if (!isFirst2434) await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.NewStream).ConfigureAwait(false);
+                                            StartReminder(streamVideo, streamVideo.ChannelType);
                                         }
-                                        else if (item.Snippet.LiveBroadcastContent == "live")
-                                        {
-                                            if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo))
-                                                StartReminder(streamVideo, streamVideo.ChannelType);
-                                        }
-                                        else addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo);
                                     }
-                                    else if (item.LiveStreamingDetails.ActualStartTime != null) //未排程直播
+                                    else if (item.Snippet.LiveBroadcastContent == "live")
                                     {
-                                        var startTime = item.LiveStreamingDetails.ActualStartTime.Value;
-                                        var streamVideo = new StreamVideo()
-                                        {
-                                            ChannelId = item.Snippet.ChannelId,
-                                            ChannelTitle = item.Snippet.ChannelTitle,
-                                            VideoId = item.Id,
-                                            VideoTitle = item.Snippet.Title,
-                                            ScheduledStartTime = startTime,
-                                            ChannelType = StreamVideo.YTChannelType.Nijisanji
-                                        };
-
-                                        Log.NewStream($"(未排程) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
-
-                                        if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo) && item.Snippet.LiveBroadcastContent == "live")
-                                            ReminderTimerAction(streamVideo);
+                                        if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo))
+                                            StartReminder(streamVideo, streamVideo.ChannelType);
                                     }
+                                    else addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo);
+                                }
+                                else if (item.LiveStreamingDetails.ActualStartTime != null) //未排程直播
+                                {
+                                    var startTime = item.LiveStreamingDetails.ActualStartTime.Value;
+                                    var streamVideo = new DataBase.Table.Video()
+                                    {
+                                        ChannelId = item.Snippet.ChannelId,
+                                        ChannelTitle = item.Snippet.ChannelTitle,
+                                        VideoId = item.Id,
+                                        VideoTitle = item.Snippet.Title,
+                                        ScheduledStartTime = startTime,
+                                        ChannelType = DataBase.Table.Video.YTChannelType.Nijisanji
+                                    };
+
+                                    Log.NewStream($"(未排程) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
+
+                                    if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo) && item.Snippet.LiveBroadcastContent == "live")
+                                        ReminderTimerAction(streamVideo);
                                 }
                             }
                         }
@@ -359,46 +359,44 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     try
                     {
                         List<JToken> videoList = new List<JToken>();
+                        using var httpClient = _httpClientFactory.CreateClient();
 
-                        using (WebClient web = new WebClient())
+                        httpClient.DefaultRequestHeaders.Add("User-Agent","Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36");
+                        httpClient.DefaultRequestHeaders.Add("AcceptLanguage", "zh-TW");
+
+                        Regex regex;
+                        var response = await httpClient.GetStringAsync($"https://www.youtube.com/channel/{item.ChannelId}/videos?view=57&flow=grid");
+
+                        if (response.Contains("window[\"ytInitialData\"]"))
+                            regex = new Regex("window\\[\"ytInitialData\"\\] = (.*);");
+                        else
+                            regex = new Regex(">var ytInitialData = (.*?);</script>");
+
+                        var group = regex.Match(response).Groups[1];
+                        var jObject = JObject.Parse(group.Value);
+
+                        videoList.AddRange(jObject.Descendants().Where((x) => x.ToString().StartsWith("\"gridVideoRenderer")));
+                        videoList.AddRange(jObject.Descendants().Where((x) => x.ToString().StartsWith("\"videoRenderer")));
+
+                        if (!otherVideoDic.ContainsKey(item.ChannelId)) otherVideoDic.Add(item.ChannelId, new List<string>());
+
+                        foreach (var item2 in videoList)
                         {
-                            web.Headers.Add(HttpRequestHeader.UserAgent, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36");
-                            web.Headers.Add(HttpRequestHeader.AcceptLanguage, "zh-TW");
-
-                            Regex regex;
-                            var response = await web.DownloadStringTaskAsync($"https://www.youtube.com/channel/{item.ChannelId}/videos?view=57&flow=grid");
-
-                            if (response.Contains("window[\"ytInitialData\"]"))
-                                regex = new Regex("window\\[\"ytInitialData\"\\] = (.*);");
-                            else
-                                regex = new Regex(">var ytInitialData = (.*?);</script>");
-
-                            var group = regex.Match(response).Groups[1];
-                            var jObject = JObject.Parse(group.Value);
-
-                            videoList.AddRange(jObject.Descendants().Where((x) => x.ToString().StartsWith("\"gridVideoRenderer")));
-                            videoList.AddRange(jObject.Descendants().Where((x) => x.ToString().StartsWith("\"videoRenderer")));
-
-                            if (!otherVideoDic.ContainsKey(item.ChannelId)) otherVideoDic.Add(item.ChannelId, new List<string>());
-
-                            foreach (var item2 in videoList)
+                            try
                             {
-                                try
-                                {
-                                    videoId = JObject.Parse(item2.ToString().Substring(item2.ToString().IndexOf("{")))["videoId"].ToString();
+                                videoId = JObject.Parse(item2.ToString().Substring(item2.ToString().IndexOf("{")))["videoId"].ToString();
 
-                                    if (!otherVideoDic[item.ChannelId].Contains(videoId))
-                                    {
-                                        otherVideoDic[item.ChannelId].Add(videoId);
-                                        if (!db.HasStreamVideoByVideoId(videoId) && !newStreamList.Contains(videoId) && !addNewStreamVideo.ContainsKey(videoId)) addVideoIdList.Add(videoId);
-                                        newStreamList.Add(videoId);
-                                    }
-                                }
-                                catch (Exception ex)
+                                if (!otherVideoDic[item.ChannelId].Contains(videoId))
                                 {
-                                    Log.Error(ex.ToString());
+                                    otherVideoDic[item.ChannelId].Add(videoId);
+                                    if (!Extensions.HasStreamVideoByVideoId(videoId) && !newStreamList.Contains(videoId) && !addNewStreamVideo.ContainsKey(videoId)) addVideoIdList.Add(videoId);
+                                    newStreamList.Add(videoId);
                                 }
-                            }                            
+                            }
+                            catch (Exception ex)
+                            {
+                                Log.Error(ex.ToString());
+                            }
                         }
                     }
                     catch (Exception ex)
@@ -414,7 +412,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 {
                     if (Program.isDisconnect) break;
 
-                    IEnumerable<Video> videos;
+                    IEnumerable<Google.Apis.YouTube.v3.Data.Video> videos;
                     try
                     {
                         videos = await GetVideosAsync(addVideoIdList.Skip(i).Take(50));
@@ -445,18 +443,18 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             //Log.Info("其他勢影片清單整理完成");
         }
 
-        public async Task AddOtherDataAsync(Video item, bool isFromPubSub = false)
+        public async Task AddOtherDataAsync(Google.Apis.YouTube.v3.Data.Video item, bool isFromPubSub = false)
         {
             if (item.LiveStreamingDetails == null)
             {
-                var streamVideo = new StreamVideo()
+                var streamVideo = new DataBase.Table.Video()
                 {
                     ChannelId = item.Snippet.ChannelId,
                     ChannelTitle = item.Snippet.ChannelTitle,
                     VideoId = item.Id,
                     VideoTitle = item.Snippet.Title,
                     ScheduledStartTime = item.Snippet.PublishedAt.Value,
-                    ChannelType = StreamVideo.YTChannelType.Other
+                    ChannelType = DataBase.Table.Video.YTChannelType.Other
                 };
 
                 streamVideo.ChannelType = streamVideo.GetProductionType();
@@ -477,14 +475,14 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             else if (item.LiveStreamingDetails.ScheduledStartTime != null)
             {
                 var startTime = item.LiveStreamingDetails.ScheduledStartTime.Value;
-                var streamVideo = new StreamVideo()
+                var streamVideo = new DataBase.Table.Video()
                 {
                     ChannelId = item.Snippet.ChannelId,
                     ChannelTitle = item.Snippet.ChannelTitle,
                     VideoId = item.Id,
                     VideoTitle = item.Snippet.Title,
                     ScheduledStartTime = startTime,
-                    ChannelType = StreamVideo.YTChannelType.Other
+                    ChannelType = DataBase.Table.Video.YTChannelType.Other
                 };
 
                 streamVideo.ChannelType = streamVideo.GetProductionType();
@@ -519,14 +517,14 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             else if (item.LiveStreamingDetails.ActualStartTime != null) //未排程直播
             {
                 var startTime = item.LiveStreamingDetails.ActualStartTime.Value;
-                var streamVideo = new StreamVideo()
+                var streamVideo = new DataBase.Table.Video()
                 {
                     ChannelId = item.Snippet.ChannelId,
                     ChannelTitle = item.Snippet.ChannelTitle,
                     VideoId = item.Id,
                     VideoTitle = item.Snippet.Title,
                     ScheduledStartTime = startTime,
-                    ChannelType = StreamVideo.YTChannelType.Other
+                    ChannelType = DataBase.Table.Video.YTChannelType.Other
                 };
 
                 streamVideo.ChannelType = streamVideo.GetProductionType();
@@ -537,14 +535,14 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             }
             else if (item.LiveStreamingDetails.ActualStartTime == null && item.LiveStreamingDetails.ActiveLiveChatId != null)
             {
-                var streamVideo = new StreamVideo()
+                var streamVideo = new DataBase.Table.Video()
                 {
                     ChannelId = item.Snippet.ChannelId,
                     ChannelTitle = item.Snippet.ChannelTitle,
                     VideoId = item.Id,
                     VideoTitle = item.Snippet.Title,
                     ScheduledStartTime = item.Snippet.PublishedAt.Value,
-                    ChannelType = StreamVideo.YTChannelType.Other
+                    ChannelType = DataBase.Table.Video.YTChannelType.Other
                 };
 
                 Log.NewStream($"(一般路過的新直播室) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
@@ -558,21 +556,17 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
             try
             {
-                using (var db = DataBase.DBContext.GetDbContext())
+                if (!Program.isHoloChannelSpider && addNewStreamVideo.Any((x) => x.Value.ChannelType == DataBase.Table.Video.YTChannelType.Holo))
                 {
-#if DEBUG
-                    Log.Info(db.ChangeTracker.DebugView.LongView);
-#endif
-
-                    if (!Program.isHoloChannelSpider && addNewStreamVideo.Any((x) => x.Value.ChannelType == StreamVideo.YTChannelType.Holo))
+                    using (var db = DataBase.HoloVideoContext.GetDbContext())
                     {
-                        foreach (var item in addNewStreamVideo.Where((x) => x.Value.ChannelType == StreamVideo.YTChannelType.Holo))
+                        foreach (var item in addNewStreamVideo.Where((x) => x.Value.ChannelType == DataBase.Table.Video.YTChannelType.Holo))
                         {
-                            if (!db.HoloStreamVideo.Any((x) => x.VideoId == item.Key))
+                            if (!db.Video.Any((x) => x.VideoId == item.Key))
                             {
                                 try
                                 {
-                                    db.HoloStreamVideo.Add(item.Value.ConvertToHoloStreamVideo()); saveNum++;
+                                    db.Video.Add(item.Value); saveNum++;
                                 }
                                 catch (Exception ex)
                                 {
@@ -585,20 +579,23 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                         Log.Info($"Holo資料庫已儲存: {db.SaveChanges()}筆");
                     }
+                }
 
-                    if (!Program.isNijisanjiChannelSpider && addNewStreamVideo.Any((x) => x.Value.ChannelType == StreamVideo.YTChannelType.Nijisanji))
+                if (!Program.isNijisanjiChannelSpider && addNewStreamVideo.Any((x) => x.Value.ChannelType == DataBase.Table.Video.YTChannelType.Nijisanji))
+                {
+                    using (var db = DataBase.NijisanjiVideoContext.GetDbContext())
                     {
-                        foreach (var item in addNewStreamVideo.Where((x) => x.Value.ChannelType == StreamVideo.YTChannelType.Nijisanji))
+                        foreach (var item in addNewStreamVideo.Where((x) => x.Value.ChannelType == DataBase.Table.Video.YTChannelType.Nijisanji))
                         {
-                            if (!db.NijisanjiStreamVideo.Any((x) => x.VideoId == item.Key))
+                            if (!db.Video.Any((x) => x.VideoId == item.Key))
                             {
                                 try
                                 {
-                                    db.NijisanjiStreamVideo.Add(item.Value.ConvertToNijisanjiStreamVideo()); saveNum++;
+                                    db.Video.Add(item.Value); saveNum++;
                                 }
                                 catch (Exception ex)
                                 {
-                                    Log.Error($"SaveOtherDateBase {ex}");
+                                    Log.Error($"Save2434DateBase {ex}");
                                 }
                             }
 
@@ -607,21 +604,23 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                         Log.Info($"2434資料庫已儲存: {db.SaveChanges()}筆");
                     }
+                }
 
-                    if (!Program.isOtherChannelSpider && addNewStreamVideo.Any((x) => x.Value.ChannelType == StreamVideo.YTChannelType.Other))
+                if (!Program.isOtherChannelSpider && addNewStreamVideo.Any((x) => x.Value.ChannelType == DataBase.Table.Video.YTChannelType.Other))
+                {
+                    using (var db = DataBase.OtherVideoContext.GetDbContext())
                     {
-                        foreach (var item in addNewStreamVideo.Where((x) => x.Value.ChannelType == StreamVideo.YTChannelType.Other))
+                        foreach (var item in addNewStreamVideo.Where((x) => x.Value.ChannelType == DataBase.Table.Video.YTChannelType.Other))
                         {
-                            if (!db.OtherStreamVideo.Any((x) => x.VideoId == item.Key))
+                            if (!db.Video.Any((x) => x.VideoId == item.Key))
                             {
                                 try
                                 {
-                                    db.OtherStreamVideo.Add(item.Value.ConvertToOtherStreamVideo()); saveNum++;
+                                    db.Video.Add(item.Value); saveNum++;
                                 }
                                 catch (Exception ex)
                                 {
                                     Log.Error($"SaveOtherDateBase {ex}");
-                                    Log.Warn(db.ChangeTracker.DebugView.LongView);
                                 }
                             }
 
@@ -630,21 +629,23 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                         Log.Info($"Other資料庫已儲存: {db.SaveChanges()}筆");
                     }
+                }
 
-                    if (addNewStreamVideo.Any((x) => x.Value.ChannelType == StreamVideo.YTChannelType.NotVTuber))
+                if (addNewStreamVideo.Any((x) => x.Value.ChannelType == DataBase.Table.Video.YTChannelType.NotVTuber))
+                {
+                    using (var db = DataBase.NotVTuberVideoContext.GetDbContext())
                     {
-                        foreach (var item in addNewStreamVideo.Where((x) => x.Value.ChannelType == StreamVideo.YTChannelType.NotVTuber))
+                        foreach (var item in addNewStreamVideo.Where((x) => x.Value.ChannelType == DataBase.Table.Video.YTChannelType.NotVTuber))
                         {
-                            if (!db.NotVTuberStreamVideo.Any((x) => x.VideoId == item.Key))
+                            if (!db.Video.Any((x) => x.VideoId == item.Key))
                             {
                                 try
                                 {
-                                    db.NotVTuberStreamVideo.Add(item.Value.ConvertToNotVTuberStreamVideo()); saveNum++;
+                                    db.Video.Add(item.Value); saveNum++;
                                 }
                                 catch (Exception ex)
                                 {
                                     Log.Error($"SaveNotVTuberDateBase {ex}");
-                                    Log.Warn(db.ChangeTracker.DebugView.LongView);
                                 }
                             }
 

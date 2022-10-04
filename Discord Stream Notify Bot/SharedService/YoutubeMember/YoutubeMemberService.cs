@@ -283,77 +283,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
             }
         }
 
-        private async Task SendErrorMsgAndRemoveChannelConfigAsync(string checkChannelId, string msg)
-        {
-            using var db = DataBase.DBContext.GetDbContext();
-
-            foreach (var item in db.GuildYoutubeMemberConfig.Where((x) => x.MemberCheckChannelId == checkChannelId))
-            {
-                try
-                {
-                    bool isExistLogChannel = true;
-
-                    var guild = _client.GetGuild(item.GuildId);
-                    if (guild == null)
-                    {
-                        Log.Warn($"SendErrorMsgAndRemoveChannelConfig: {item.GuildId} 不存在!");
-                        db.GuildYoutubeMemberConfig.Remove(item);
-                        continue;
-                    }
-
-                    var guildConfig = db.GuildConfig.FirstOrDefault((x) => x.GuildId == item.GuildId);
-                    if (guildConfig == null)
-                    {
-                        Log.Warn($"SendErrorMsgAndRemoveChannelConfig: {item.GuildId} 無GuildConfig");
-                        db.GuildConfig.Add(new DataBase.Table.GuildConfig { GuildId = guild.Id });
-                        db.GuildYoutubeMemberConfig.Remove(item);
-
-                        msg += $"\n另外: `{guild.Name}` 無會限紀錄頻道，請新增頻道並給予小幫手 `讀取、發送及嵌入連結` 權限後使用 `/member-set set-notice-member-status-channel` 設定";
-                        try { await guild.Owner.SendMessageAsync(embed: new EmbedBuilder().WithErrorColor().WithDescription(msg).Build()); }
-                        catch { }
-
-                        continue;
-                    }
-
-                    var logChannel = guild.GetTextChannel(guildConfig.LogMemberStatusChannelId);
-                    if (logChannel == null)
-                    {
-                        isExistLogChannel = false;
-                        msg += $"\n另外: `{guild.Name}` 無會限紀錄頻道，請新增頻道並給予小幫手 `讀取、發送及嵌入連結` 權限後使用 `/member-set set-notice-member-status-channel` 設定";
-                    }
-                    else
-                    {
-                        var permission = guild.GetUser(_client.CurrentUser.Id).GetPermissions(logChannel);
-                        if (!permission.ViewChannel || !permission.SendMessages || !permission.EmbedLinks)
-                        {
-                            Log.Warn($"{item.GuildId} / {guildConfig.LogMemberStatusChannelId} 無權限可紀錄");
-                            msg += $"\n另外: `{guild.Name}` 的 `{logChannel.Name}`無權限可紀錄，請給予小幫手 `讀取、發送及嵌入連結` 權限";
-                            isExistLogChannel = false;
-                        }
-                    }
-
-                    var embed = new EmbedBuilder().WithErrorColor().WithDescription(msg).Build();
-
-                    try { await guild.Owner.SendMessageAsync(embed: embed); }
-                    catch { }
-
-                    if (isExistLogChannel)
-                    {
-                        try { await logChannel.SendMessageAsync(embed: embed); }
-                        catch { }
-                    }
-
-                    db.GuildYoutubeMemberConfig.Remove(item);
-                }
-                catch (Exception ex)
-                {
-                    Log.Error($"SendErrorMsgAndRemoveChannelConfig: {ex}");
-                }
-            }
-
-            db.SaveChanges();
-        }
-
         //https://github.com/member-gentei/member-gentei/blob/90f62385f554eb4c02ed8732e15061b9dd1dd6d0/gentei/apis/youtube.go#L100
         private async void CheckMemberShipOnlyVideoId(object stats)
         {
@@ -374,7 +303,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                             if (videoList.Count == 0)
                             {
                                 await Program.ApplicatonOwner.SendMessageAsync($"{item.MemberCheckChannelId} 無任何可檢測的會限影片!");
-                                await SendErrorMsgAndRemoveChannelConfigAsync(item.MemberCheckChannelId, $"{item.MemberCheckChannelId} 無會限影片，請等待該頻道主有新的會限影片時再使用會限驗證功能\n" +
+                                await SendMsgToLogChannelAsync(item.MemberCheckChannelId, $"{item.MemberCheckChannelId} 無會限影片，請等待該頻道主有新的會限影片且可留言時時再使用會限驗證功能\n" +
                                     $"你可以使用 `/youtube get-member-only-playlist` 來確認該頻道是否有可驗證的影片");
                                 break;
                             }
@@ -397,6 +326,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                 else if (ex.Message.ToLower().Contains("403") || ex.Message.ToLower().Contains("the request might not be properly authorized"))
                                 {
                                     Log.Info($"新會限影片 - ({item.MemberCheckChannelId}): {videoId}");
+                                    await SendMsgToLogChannelAsync(item.MemberCheckChannelId, $"新會限檢測影片 - ({item.MemberCheckChannelId}): {videoId}", false, false);
 
                                     foreach (var item2 in db.GuildYoutubeMemberConfig.Where((x) => x.MemberCheckChannelId == item.MemberCheckChannelId))
                                     {
@@ -427,7 +357,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                         if (ex.Message.ToLower().Contains("playlistid"))
                         {
                             Log.Warn($"CheckMemberShipOnlyVideoId: {item.GuildId} / {item.MemberCheckChannelId} 無會限影片可供檢測");
-                            await SendErrorMsgAndRemoveChannelConfigAsync(item.MemberCheckChannelId, $"{item.MemberCheckChannelId} 無會限影片，請等待該頻道主有新的會限影片時再使用會限驗證功能\n" +
+                            await SendMsgToLogChannelAsync(item.MemberCheckChannelId, $"{item.MemberCheckChannelId} 無會限影片，請等待該頻道主有新的會限影片且可留言時再使用會限驗證功能\n" +
                                 $"你可以使用 `/youtube get-member-only-playlist` 來確認該頻道是否有可驗證的影片");
                             continue;
                         }
@@ -446,6 +376,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                         var channel = channelResult.Items.First();
 
                         Log.Info($"會限頻道名稱已變更 - ({item.MemberCheckChannelId}): `" + (string.IsNullOrEmpty(item.MemberCheckChannelTitle) ? "無" : item.MemberCheckChannelTitle) + $"` -> `{channel.Snippet.Title}`");
+                        await SendMsgToLogChannelAsync(item.MemberCheckChannelId, $"會限頻道名稱已變更: `" + (string.IsNullOrEmpty(item.MemberCheckChannelTitle) ? "無" : item.MemberCheckChannelTitle) + $"` -> `{channel.Snippet.Title}`", false, false);
 
                         foreach (var item2 in db.GuildYoutubeMemberConfig.Where((x) => x.MemberCheckChannelId == item.MemberCheckChannelId))
                         {
@@ -465,6 +396,78 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
             }
 
             //Log.Info("檢查新會限影片完成");
+        }
+
+        private async Task SendMsgToLogChannelAsync(string checkChannelId, string msg, bool isNeedRemove = true, bool isNeedSendToOwner = true)
+        {
+            using var db = DataBase.DBContext.GetDbContext();
+
+            foreach (var item in db.GuildYoutubeMemberConfig.Where((x) => x.MemberCheckChannelId == checkChannelId))
+            {
+                try
+                {
+                    bool isExistLogChannel = true;
+
+                    var guild = _client.GetGuild(item.GuildId);
+                    if (guild == null)
+                    {
+                        Log.Warn($"SendMsgToLogChannelAsync: {item.GuildId} 不存在!");
+                        db.GuildYoutubeMemberConfig.Remove(item);
+                        continue;
+                    }
+
+                    var guildConfig = db.GuildConfig.FirstOrDefault((x) => x.GuildId == item.GuildId);
+                    if (guildConfig == null)
+                    {
+                        Log.Warn($"SendMsgToLogChannelAsync: {item.GuildId} 無GuildConfig");
+                        db.GuildConfig.Add(new DataBase.Table.GuildConfig { GuildId = guild.Id });
+                        db.GuildYoutubeMemberConfig.Remove(item);
+
+                        msg += $"\n另外: `{guild.Name}` 無會限紀錄頻道，請新增頻道並給予小幫手 `讀取、發送及嵌入連結` 權限後使用 `/member-set set-notice-member-status-channel` 設定";
+                        try { await guild.Owner.SendMessageAsync(embed: new EmbedBuilder().WithErrorColor().WithDescription(msg).Build()); }
+                        catch { }
+
+                        continue;
+                    }
+
+                    var logChannel = guild.GetTextChannel(guildConfig.LogMemberStatusChannelId);
+                    if (logChannel == null)
+                    {
+                        isExistLogChannel = false;
+                        msg += $"\n另外: `{guild.Name}` 無會限紀錄頻道，請新增頻道並給予小幫手 `讀取、發送及嵌入連結` 權限後使用 `/member-set set-notice-member-status-channel` 設定";
+                    }
+                    else
+                    {
+                        var permission = guild.GetUser(_client.CurrentUser.Id).GetPermissions(logChannel);
+                        if (!permission.ViewChannel || !permission.SendMessages || !permission.EmbedLinks)
+                        {
+                            Log.Warn($"{item.GuildId} / {guildConfig.LogMemberStatusChannelId} 無權限可紀錄");
+                            msg += $"\n另外: `{guild.Name}` 的 `{logChannel.Name}`無權限可紀錄，請給予小幫手 `讀取、發送及嵌入連結` 權限";
+                            isExistLogChannel = false;
+                        }
+                    }
+
+                    var embed = new EmbedBuilder().WithErrorColor().WithDescription(msg).Build();
+
+                    if (isNeedSendToOwner)
+                    {
+                        try { await guild.Owner.SendMessageAsync(embed: embed); }
+                        catch { }
+                    }
+
+                    if (isExistLogChannel)
+                    {
+                        try { await logChannel.SendMessageAsync(embed: embed); }
+                        catch { }
+                    }
+
+                    if (isNeedRemove) db.GuildYoutubeMemberConfig.Remove(item);
+                }
+                catch (Exception ex)
+                {
+                    Log.Error($"SendMsgToLogChannelAsync: {ex}");
+                }
+            }
         }
 
         //Todo: 驗證一次後可同時向同頻道多個伺服器設定驗證結果
