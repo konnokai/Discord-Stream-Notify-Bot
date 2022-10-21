@@ -116,13 +116,13 @@ namespace Discord_Stream_Notify_Bot.Interaction
             channelId = channelId.Trim();
 
             using (var db = DataBase.HoloVideoContext.GetDbContext())
-                if (db.Video.Any((x) => x.ChannelId == channelId)) return db.Video.Last((x) => x.ChannelId == channelId);
+                if (db.Video.Any((x) => x.ChannelId == channelId)) return db.Video.OrderByDescending((x) => x.ScheduledStartTime).First((x) => x.ChannelId == channelId);
             using (var db = DataBase.NijisanjiVideoContext.GetDbContext())
-                if (db.Video.Any((x) => x.ChannelId == channelId)) return db.Video.Last((x) => x.ChannelId == channelId);
+                if (db.Video.Any((x) => x.ChannelId == channelId)) return db.Video.OrderByDescending((x) => x.ScheduledStartTime).First((x) => x.ChannelId == channelId);
             using (var db = DataBase.OtherVideoContext.GetDbContext())
-                if (db.Video.Any((x) => x.ChannelId == channelId)) return db.Video.Last((x) => x.ChannelId == channelId);
+                if (db.Video.Any((x) => x.ChannelId == channelId)) return db.Video.OrderByDescending((x) => x.ScheduledStartTime).First((x) => x.ChannelId == channelId);
             using (var db = DataBase.NotVTuberVideoContext.GetDbContext())
-                if (db.Video.Any((x) => x.ChannelId == channelId)) return db.Video.Last((x) => x.ChannelId == channelId);
+                if (db.Video.Any((x) => x.ChannelId == channelId)) return db.Video.OrderByDescending((x) => x.ScheduledStartTime).First((x) => x.ChannelId == channelId);
 
             return null;
         }
@@ -153,11 +153,11 @@ namespace Discord_Stream_Notify_Bot.Interaction
                 return youtubeChannelSpider.ChannelTitle;
 
             using (var db = DataBase.HoloVideoContext.GetDbContext())
-                if (db.Video.Any((x) => x.ChannelId == channelId)) return db.Video.Last((x) => x.ChannelId == channelId).ChannelId;
+                if (db.Video.Any((x) => x.ChannelId == channelId)) return db.Video.OrderByDescending((x) => x.ScheduledStartTime).First((x) => x.ChannelId == channelId).ChannelId;
             using (var db = DataBase.NijisanjiVideoContext.GetDbContext())
-                if (db.Video.Any((x) => x.ChannelId == channelId)) return db.Video.Last((x) => x.ChannelId == channelId).ChannelId;
+                if (db.Video.Any((x) => x.ChannelId == channelId)) return db.Video.OrderByDescending((x) => x.ScheduledStartTime).First((x) => x.ChannelId == channelId).ChannelId;
             using (var db = DataBase.OtherVideoContext.GetDbContext())
-                if (db.Video.Any((x) => x.ChannelId == channelId)) return db.Video.Last((x) => x.ChannelId == channelId).ChannelId;
+                if (db.Video.Any((x) => x.ChannelId == channelId)) return db.Video.OrderByDescending((x) => x.ScheduledStartTime).First((x) => x.ChannelId == channelId).ChannelId;
 
             return channelId;
         }
@@ -171,7 +171,7 @@ namespace Discord_Stream_Notify_Bot.Interaction
                 return youtubeChannelSpider.ChannelTitle;
 
             using (var db = DataBase.NotVTuberVideoContext.GetDbContext())
-                if (db.Video.Any((x) => x.ChannelId == channelId)) return db.Video.Last((x) => x.ChannelId == channelId).ChannelId;
+                if (db.Video.Any((x) => x.ChannelId == channelId)) return db.Video.OrderByDescending((x) => x.ScheduledStartTime).First((x) => x.ChannelId == channelId).ChannelId;
 
             return channelId;
         }
