@@ -122,7 +122,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
 
                         foreach (var item in component.Data.Values)
                         {
-                            db.YoutubeMemberCheck.Add(new DataBase.Table.YoutubeMemberCheck() { UserId = userId, GuildId = guildId, CheckYTChannelId = item });
+                            db.YoutubeMemberCheck.Add(new YoutubeMemberCheck() { UserId = userId, GuildId = guildId, CheckYTChannelId = item });
                         }
                         db.SaveChanges();
 
@@ -289,6 +289,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
         {
             using (var db = DataBase.DBContext.GetDbContext())
             {
+                List<GuildYoutubeMemberConfig> needRemoveList = new();
                 foreach (var item in db.GuildYoutubeMemberConfig.Where((x) => !string.IsNullOrEmpty(x.MemberCheckChannelId) && x.MemberCheckChannelId.Length == 24 && (x.MemberCheckVideoId == "-" || string.IsNullOrEmpty(x.MemberCheckChannelTitle))).Distinct((x) => x.MemberCheckChannelId))
                 {
                     try
@@ -304,8 +305,9 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                             if (videoList.Count == 0)
                             {
                                 await Program.ApplicatonOwner.SendMessageAsync($"{item.MemberCheckChannelId} 無任何可檢測的會限影片!");
-                                await SendMsgToLogChannelAsync(item.MemberCheckChannelId, $"{item.MemberCheckChannelId} 無會限影片，請等待該頻道主有新的會限影片且可留言時時再使用會限驗證功能\n" +
+                                await SendMsgToLogChannelAsync(item.MemberCheckChannelId, $"{item.MemberCheckChannelId} 無會限影片，請等待該頻道主有新的會限影片且可留言時再使用會限驗證功能\n" +
                                     $"你可以使用 `/youtube get-member-only-playlist` 來確認該頻道是否有可驗證的影片");
+                                needRemoveList.Add(item);
                                 break;
                             }
 
@@ -360,6 +362,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                             Log.Warn($"CheckMemberShipOnlyVideoId: {item.GuildId} / {item.MemberCheckChannelId} 無會限影片可供檢測");
                             await SendMsgToLogChannelAsync(item.MemberCheckChannelId, $"{item.MemberCheckChannelId} 無會限影片，請等待該頻道主有新的會限影片且可留言時再使用會限驗證功能\n" +
                                 $"你可以使用 `/youtube get-member-only-playlist` 來確認該頻道是否有可驗證的影片");
+                            needRemoveList.Add(item);
                             continue;
                         }
                         else Log.Warn($"CheckMemberShipOnlyVideoId: {item.GuildId} / {item.MemberCheckChannelId}\n{ex.Message}");
@@ -393,6 +396,26 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                     {
                         db.SaveChanges();
                     }
+                }
+
+                try
+                {
+                    db.GuildYoutubeMemberConfig.RemoveRange(needRemoveList);
+                }
+                catch (Exception ex)
+                {
+                    Log.Error($"CheckMemberShipOnlyVideoId-RemoveRange: {ex}");
+                    await (await Program.ApplicatonOwner.CreateDMChannelAsync()).SendErrorMessageAsync($"CheckMemberShipOnlyVideoId-RemoveRange: {ex}");
+                }
+
+                try
+                {
+                    db.SaveChanges();
+                }
+                catch (Exception ex)
+                {
+                    Log.Error($"CheckMemberShipOnlyVideoId-SaveChanges: {ex}");
+                    await (await Program.ApplicatonOwner.CreateDMChannelAsync()).SendErrorMessageAsync($"CheckMemberShipOnlyVideoId-SaveChanges: {ex}");
                 }
             }
 
@@ -620,6 +643,18 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                         Log.Warn($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {item2.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 的會限資格取得失敗");
                                         Log.Warn($"{guildYoutubeMemberConfig.MemberCheckChannelTitle} ({guildYoutubeMemberConfig.MemberCheckChannelId}): {guildYoutubeMemberConfig.MemberCheckVideoId}已關閉留言");
                                         await (await Program.ApplicatonOwner.CreateDMChannelAsync()).SendErrorMessageAsync($"{guildYoutubeMemberConfig.GuildId} - {item2.UserId} 會限資格取得失敗: {guildYoutubeMemberConfig.MemberCheckVideoId}已關閉留言", item2.UserId, logChannel);
+
+                                        guildYoutubeMemberConfig.MemberCheckVideoId = "-";
+                                        db.GuildYoutubeMemberConfig.Update(guildYoutubeMemberConfig);
+                                        db.SaveChanges();
+
+                                        break;
+                                    }
+                                    else if (ex.Message.ToLower().Contains("notfound"))
+                                    {
+                                        Log.Warn($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {item2.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 的會限資格取得失敗");
+                                        Log.Warn($"{guildYoutubeMemberConfig.MemberCheckChannelTitle} ({guildYoutubeMemberConfig.MemberCheckChannelId}): {guildYoutubeMemberConfig.MemberCheckVideoId}已刪除影片");
+                                        await (await Program.ApplicatonOwner.CreateDMChannelAsync()).SendErrorMessageAsync($"{guildYoutubeMemberConfig.GuildId} - {item2.UserId} 會限資格取得失敗: {guildYoutubeMemberConfig.MemberCheckVideoId}已刪除影片", item2.UserId, logChannel);
 
                                         guildYoutubeMemberConfig.MemberCheckVideoId = "-";
                                         db.GuildYoutubeMemberConfig.Update(guildYoutubeMemberConfig);
