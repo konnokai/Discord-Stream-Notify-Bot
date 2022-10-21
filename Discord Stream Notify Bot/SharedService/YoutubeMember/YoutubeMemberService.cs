@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.WebSocket;
+using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.Interaction;
 using Discord_Stream_Notify_Bot.SharedService.Youtube;
 using Google.Apis.Auth.OAuth2;
@@ -483,6 +484,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                 Log.Info((isOldCheck ? "舊" : "新") + $"會限檢查開始: {needCheckList.Count()}個頻道");
 
                 HashSet<string> checkedMemberSet = new();
+                List<YoutubeMemberCheck> needRemoveList = new();
                 foreach (var guildYoutubeMemberConfig in needCheckList)
                 {
                     var list = db.YoutubeMemberCheck
@@ -629,7 +631,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                     {
                                         Log.Warn($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {item2.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 的會限資格取得失敗: 無會員");
 
-                                        db.YoutubeMemberCheck.Remove(item2);
+                                        needRemoveList.Add(item2);
 
                                         try
                                         {
@@ -741,7 +743,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                             {
                                 await logChannel.SendErrorMessageAsync(user, guildYoutubeMemberConfig.MemberCheckChannelTitle, "未知的使用者");
                                 Log.Warn($"用戶已離開伺服器: {guild.Id} / {user.Id}");
-                                db.YoutubeMemberCheck.Remove(item2);
+                                needRemoveList.Add(item2);
                             }
                             else
                             {
@@ -800,12 +802,25 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
 
                 try
                 {
+                    db.YoutubeMemberCheck.RemoveRange(needRemoveList);
+                }
+                catch (Exception ex)
+                {                    
+                    Log.Error($"CheckMemberShip-RemoveRange: {ex}");
+                    await (await Program.ApplicatonOwner.CreateDMChannelAsync()).SendErrorMessageAsync($"CheckMemberShip-RemoveRange: {ex}");
+                }
+
+                try
+                {
                     db.SaveChanges();
                 }
                 catch (Exception ex)
                 {
                     Log.Error($"CheckMemberShip-SaveChanges: {ex}");
+                    await (await Program.ApplicatonOwner.CreateDMChannelAsync()).SendErrorMessageAsync($"CheckMemberShip-SaveChanges: {ex}");
                 }
+
+                needRemoveList.Clear();
             }
 
             //Log.Info("會限檢查完畢");
@@ -901,6 +916,29 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                 {
                     Log.Warn($"無法傳送訊息至: {dc.Name} ({userId})");
                     await tc.SendMessageAsync($"無法傳送訊息至: <@{userId}>\n請向該用戶提醒開啟 `允許來自伺服器成員的私人訊息`");
+                }
+                else
+                    Log.Error(ex.ToString());
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.ToString());
+            }
+        }
+
+        public static async Task SendErrorMessageAsync(this IDMChannel dc, string text)
+        {
+            if (dc == null) return;
+
+            try
+            {
+                await dc.SendMessageAsync(embed: new EmbedBuilder().WithErrorColor().WithDescription(text).Build());
+            }
+            catch (Discord.Net.HttpException ex)
+            {
+                if (ex.DiscordCode == DiscordErrorCode.CannotSendMessageToUser)
+                {
+                    Log.Warn($"無法傳送訊息至: {dc.Name}");
                 }
                 else
                     Log.Error(ex.ToString());
