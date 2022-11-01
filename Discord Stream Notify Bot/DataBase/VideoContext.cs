@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using System;
 
 namespace Discord_Stream_Notify_Bot.DataBase
 {
@@ -8,18 +9,44 @@ namespace Discord_Stream_Notify_Bot.DataBase
 
         public bool UpdateAndSave(Table.Video video)
         {
-            try
+            Video.Update(video);
+            var saveTime = DateTime.Now;
+            bool saveFailed;
+
+            do
             {
-                Video.Update(video);
-                SaveChanges();
-                Dispose();
-                return true;
-            }
-            catch (System.Exception ex)
-            {
-                Log.Error(ex.ToString());
-                return false;
-            }
+                saveFailed = false;
+                try
+                {
+                    SaveChanges();
+                }
+                catch (DbUpdateConcurrencyException ex)
+                {
+                    saveFailed = true;
+                    foreach (var item in ex.Entries)
+                    {
+                        try
+                        {
+                            item.Reload();
+                        }
+                        catch (Exception ex2)
+                        {
+                            Log.Error($"VideoContext-SaveChanges-Reload");
+                            Log.Error(item.DebugView.ToString());
+                            Log.Error(ex2.ToString());
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Error($"VideoContext-SaveChanges: {ex}");
+                    Log.Error(ChangeTracker.DebugView.LongView);
+                }
+            } while (saveFailed && DateTime.Now.Subtract(saveTime) <= TimeSpan.FromMinutes(1));
+
+            Dispose();
+
+            return DateTime.Now.Subtract(saveTime) >= TimeSpan.FromMinutes(1);
         }
     }
 }

@@ -310,6 +310,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
         {
             if (Program.isOtherChannelSpider) return;
 
+#if RELEASE
             try
             {
                 if (Program.RedisDb.KeyExists("youtube.otherStart"))
@@ -324,6 +325,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             {
                 Log.Error("Redis又死了zzz");
             }
+#endif
 
             await Program.RedisDb.StringSetAsync("youtube.otherStart", "0", TimeSpan.FromMinutes(4));
             Program.isOtherChannelSpider = true;
@@ -358,45 +360,51 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     string videoId = "";
                     try
                     {
-                        List<JToken> videoList = new List<JToken>();
                         using var httpClient = _httpClientFactory.CreateClient();
 
-                        httpClient.DefaultRequestHeaders.Add("User-Agent","Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36");
+                        httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36");
                         httpClient.DefaultRequestHeaders.Add("AcceptLanguage", "zh-TW");
 
-                        Regex regex;
-                        var response = await httpClient.GetStringAsync($"https://www.youtube.com/channel/{item.ChannelId}/videos?view=57&flow=grid");
-
-                        if (response.Contains("window[\"ytInitialData\"]"))
-                            regex = new Regex("window\\[\"ytInitialData\"\\] = (.*);");
-                        else
-                            regex = new Regex(">var ytInitialData = (.*?);</script>");
-
-                        var group = regex.Match(response).Groups[1];
-                        var jObject = JObject.Parse(group.Value);
-
-                        videoList.AddRange(jObject.Descendants().Where((x) => x.ToString().StartsWith("\"gridVideoRenderer")));
-                        videoList.AddRange(jObject.Descendants().Where((x) => x.ToString().StartsWith("\"videoRenderer")));
-
-                        if (!otherVideoDic.ContainsKey(item.ChannelId)) otherVideoDic.Add(item.ChannelId, new List<string>());
-
-                        foreach (var item2 in videoList)
+                        for (int i = 0; i <= 1; i++)
                         {
-                            try
-                            {
-                                videoId = JObject.Parse(item2.ToString().Substring(item2.ToString().IndexOf("{")))["videoId"].ToString();
+                            var response = await httpClient.GetStringAsync($"https://www.youtube.com/channel/{item.ChannelId}/" + (i == 0 ? "videos" : "streams"));
 
-                                if (!otherVideoDic[item.ChannelId].Contains(videoId))
+                            Regex regex;
+                            if (response.Contains("window[\"ytInitialData\"]"))
+                                regex = new Regex("window\\[\"ytInitialData\"\\] = (.*);");
+                            else
+                                regex = new Regex(">var ytInitialData = (.*?);</script>");
+
+                            var group = regex.Match(response).Groups[1];
+                            var jObject = JObject.Parse(group.Value);
+
+                            List<JToken> videoList = new List<JToken>();
+                            videoList.AddRange(jObject.Descendants().Where((x) => x.ToString().StartsWith("\"gridVideoRenderer")));
+                            videoList.AddRange(jObject.Descendants().Where((x) => x.ToString().StartsWith("\"videoRenderer")));
+
+                            if (!otherVideoDic.ContainsKey(item.ChannelId)) otherVideoDic.Add(item.ChannelId, new List<string>());
+
+                            foreach (var item2 in videoList)
+                            {
+                                try
                                 {
-                                    otherVideoDic[item.ChannelId].Add(videoId);
-                                    if (!Extensions.HasStreamVideoByVideoId(videoId) && !newStreamList.Contains(videoId) && !addNewStreamVideo.ContainsKey(videoId)) addVideoIdList.Add(videoId);
-                                    newStreamList.Add(videoId);
+                                    videoId = JObject.Parse(item2.ToString().Substring(item2.ToString().IndexOf("{")))["videoId"].ToString();
+
+                                    if (!otherVideoDic[item.ChannelId].Contains(videoId))
+                                    {
+                                        otherVideoDic[item.ChannelId].Add(videoId);
+                                        if (!Extensions.HasStreamVideoByVideoId(videoId) && !newStreamList.Contains(videoId) && !addNewStreamVideo.ContainsKey(videoId)) addVideoIdList.Add(videoId);
+                                        newStreamList.Add(videoId);
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    Log.Error(ex.ToString());
                                 }
                             }
-                            catch (Exception ex)
-                            {
-                                Log.Error(ex.ToString());
-                            }
+
+                            if (!response.Contains($"/channel/{item.ChannelId}/streams"))
+                                break;
                         }
                     }
                     catch (Exception ex)

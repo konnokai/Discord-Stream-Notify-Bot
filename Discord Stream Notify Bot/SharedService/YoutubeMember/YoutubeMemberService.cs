@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.WebSocket;
+using Discord_Stream_Notify_Bot.DataBase;
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.Interaction;
 using Discord_Stream_Notify_Bot.SharedService.Youtube;
@@ -8,6 +9,7 @@ using Google.Apis.Auth.OAuth2.Flows;
 using Google.Apis.Auth.OAuth2.Responses;
 using Google.Apis.Services;
 using Google.Apis.YouTube.v3;
+using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -845,15 +847,39 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                     await (await Program.ApplicatonOwner.CreateDMChannelAsync()).SendErrorMessageAsync($"CheckMemberShip-RemoveRange: {ex}");
                 }
 
-                try
+                var saveTime = DateTime.Now;
+                bool saveFailed;
+                do
                 {
-                    db.SaveChanges();
-                }
-                catch (Exception ex)
-                {
-                    Log.Error($"CheckMemberShip-SaveChanges: {ex}");
-                    await (await Program.ApplicatonOwner.CreateDMChannelAsync()).SendErrorMessageAsync($"CheckMemberShip-SaveChanges: {ex}");
-                }
+                    saveFailed = false;
+                    try
+                    {
+                        db.SaveChanges();
+                    }
+                    catch (DbUpdateConcurrencyException ex)
+                    {
+                        saveFailed = true;
+                        foreach (var item in ex.Entries)
+                        {
+                            try
+                            {
+                                item.Reload();
+                            }
+                            catch (Exception ex2)
+                            {
+                                Log.Error($"CheckMemberShip-SaveChanges-Reload");
+                                Log.Error(item.DebugView.ToString());
+                                Log.Error(ex2.ToString());
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error($"CheckMemberShip-SaveChanges: {ex}");
+                        Log.Error(db.ChangeTracker.DebugView.LongView);
+                        await (await Program.ApplicatonOwner.CreateDMChannelAsync()).SendErrorMessageAsync($"CheckMemberShip-SaveChanges: {ex}");
+                    }
+                } while (saveFailed && DateTime.Now.Subtract(saveTime) <= TimeSpan.FromMinutes(1));
 
                 needRemoveList.Clear();
             }
