@@ -8,6 +8,8 @@ using Discord_Stream_Notify_Bot.Command;
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.Interaction;
 using Microsoft.Extensions.DependencyInjection;
+using Polly;
+using Polly.Extensions.Http;
 using StackExchange.Redis;
 using System;
 using System.Collections.Generic;
@@ -50,7 +52,8 @@ namespace Discord_Stream_Notify_Bot
 
             AppDomain.CurrentDomain.UnhandledException += (sender, e) =>
             {
-                Log.Error(e.ToString());
+                Log.Error("UnhandledException!");
+                Log.Error(((Exception)(e.ExceptionObject)).ToString());
                 Environment.Exit(20);
             };
 
@@ -128,8 +131,13 @@ namespace Discord_Stream_Notify_Bot
                     ExitOnMissingModalField = true,
                 }));
 
+            //https://blog.darkthread.net/blog/polly/
+            //HandleTransientHttpError 包含 5xx 及 408 錯誤
             interactionServices.AddHttpClient<HttpClients.DiscordWebhookClient>();
-            interactionServices.AddHttpClient<HttpClients.TwitterClient>();
+            interactionServices.AddHttpClient<HttpClients.TwitterClient>()
+                .AddPolicyHandler(HttpPolicyExtensions
+                    .HandleTransientHttpError()
+                    .RetryAsync(3));
 
             interactionServices.LoadInteractionFrom(Assembly.GetAssembly(typeof(InteractionHandler)));
             IServiceProvider iService = interactionServices.BuildServiceProvider();
@@ -151,7 +159,10 @@ namespace Discord_Stream_Notify_Bot
                 }));
 
             commandServices.AddHttpClient<HttpClients.DiscordWebhookClient>();
-            commandServices.AddHttpClient<HttpClients.TwitterClient>();
+            commandServices.AddHttpClient<HttpClients.TwitterClient>()
+                .AddPolicyHandler(HttpPolicyExtensions
+                    .HandleTransientHttpError()
+                    .RetryAsync(3));
 
             commandServices.LoadCommandFrom(Assembly.GetAssembly(typeof(CommandHandler)));
             IServiceProvider service = commandServices.BuildServiceProvider();

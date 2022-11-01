@@ -7,6 +7,7 @@ using Google.Apis.Services;
 using Google.Apis.YouTube.v3;
 using HtmlAgilityPack;
 using Newtonsoft.Json;
+using Polly;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -47,6 +48,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
         private DiscordSocketClient _client;
         private readonly IHttpClientFactory _httpClientFactory;
         private string callbackUrl;
+        private Polly.Retry.RetryPolicy<Task> pBreaker;
 
         public YoutubeStreamService(DiscordSocketClient client, IHttpClientFactory httpClientFactory, BotConfig botConfig)
         {
@@ -59,6 +61,16 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             });
 
             callbackUrl = botConfig.PubSubCallbackUrl;
+
+            //https://blog.darkthread.net/blog/polly/
+            //https://blog.darkthread.net/blog/polly-circuitbreakerpolicy/
+            pBreaker = Policy<Task>
+               .Handle<Exception>()
+               .WaitAndRetry(new TimeSpan[]
+               {
+                    TimeSpan.FromSeconds(1),
+                    TimeSpan.FromSeconds(2)
+               });
 
             if (Program.Redis != null)
             {
@@ -456,9 +468,9 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 }
             }
 
-            //holoSchedule = new Timer(async (objState) => await HoloScheduleAsync(), null, TimeSpan.FromSeconds(15), TimeSpan.FromMinutes(5));
+            holoSchedule = new Timer(async (objState) => await HoloScheduleAsync(), null, TimeSpan.FromSeconds(15), TimeSpan.FromMinutes(5));
 
-            //nijisanjiSchedule = new Timer(async (objState) => await NijisanjiScheduleAsync(), null, TimeSpan.FromSeconds(10), TimeSpan.FromMinutes(5));
+            nijisanjiSchedule = new Timer(async (objState) => await NijisanjiScheduleAsync(), null, TimeSpan.FromSeconds(10), TimeSpan.FromMinutes(5));
 
             otherSchedule = new Timer(async (onjState) => await OtherScheduleAsync(), null, TimeSpan.FromSeconds(20), TimeSpan.FromMinutes(5));
 

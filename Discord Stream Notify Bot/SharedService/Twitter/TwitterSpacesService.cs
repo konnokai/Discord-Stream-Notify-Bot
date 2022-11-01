@@ -1,18 +1,18 @@
 ﻿using Discord;
 using Discord.WebSocket;
+using Discord_Stream_Notify_Bot.Interaction;
+using Polly;
 using SocialOpinionAPI.Core;
 using SocialOpinionAPI.Models.Users;
 using SocialOpinionAPI.Services.Spaces;
 using SocialOpinionAPI.Services.Users;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using Discord_Stream_Notify_Bot.Interaction;
-using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
 
 namespace Discord_Stream_Notify_Bot.SharedService.Twitter
 {
@@ -52,6 +52,16 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
             if (string.IsNullOrEmpty(twitterSpaceRecordPath)) twitterSpaceRecordPath = Program.GetDataFilePath("");
             if (!twitterSpaceRecordPath.EndsWith(Program.GetPlatformSlash())) twitterSpaceRecordPath += Program.GetPlatformSlash();
 
+            //https://blog.darkthread.net/blog/polly/
+            //https://blog.darkthread.net/blog/polly-circuitbreakerpolicy/
+            var pBreaker = Policy<SocialOpinionAPI.Models.Spaces.SpacesModel>
+                .Handle<Exception>()
+                .WaitAndRetry(new TimeSpan[] 
+                { 
+                    TimeSpan.FromSeconds(1), 
+                    TimeSpan.FromSeconds(2)
+                });
+
             timer = new(async (stats) =>
             {
                 if (isRuning) return; isRuning = true;
@@ -64,8 +74,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                         for (int i = 0; i < userList.Length; i += 100)
                         {
                             try
-                            {
-                                var spaces = SpacesService.LookupByCreatorId(userList.Skip(i).Take(100).ToList()); i += 100;
+                            {                               
+                                SocialOpinionAPI.Models.Spaces.SpacesModel spaces = pBreaker.Execute(() => SpacesService.LookupByCreatorId(userList.Skip(i).Take(100).ToList())); i += 100;
                                 if (spaces.data.Count <= 0) continue;
 
                                 foreach (var item in spaces.data)

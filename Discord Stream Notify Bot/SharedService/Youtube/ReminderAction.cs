@@ -408,7 +408,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         var channel = guild.GetTextChannel(item.DiscordChannelId);
                         if (channel == null) continue;
 
-                        await channel.SendMessageAsync(sendMessage, false, embedBuilder.Build());
+                        await pBreaker.Execute(() => channel.SendMessageAsync(sendMessage, false, embedBuilder.Build()));
                     }
                     catch (Discord.Net.HttpException httpEx)
                     {
