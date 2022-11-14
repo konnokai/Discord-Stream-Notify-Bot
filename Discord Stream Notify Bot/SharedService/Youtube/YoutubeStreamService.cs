@@ -297,7 +297,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                         ChannelType = DataBase.Table.Video.YTChannelType.NotVTuber
                                     };
 
-                                    Log.NewStream($"(非已認可的新影片) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
+                                    Log.Stream($"(非已認可的新影片) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
 
                                     EmbedBuilder embedBuilder = new EmbedBuilder();
                                     embedBuilder.WithOkColor()

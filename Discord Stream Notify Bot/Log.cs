@@ -5,8 +5,9 @@ using System.Threading.Tasks;
 
 public static class Log
 {
-    enum LogType { Verb, NewS, Info, Warn, Error }
+    enum LogType { Verb, Stream, Info, Warn, Error }
     static string logPath = DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss") + "_log.txt";
+    static string errorLogPath = DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss") + "_err.txt";
     private static object lockObj = new object();
 
     private static void WriteLogToFile(LogType type, string text)
@@ -14,14 +15,22 @@ public static class Log
         lock (lockObj)
         {
             text = $"[{DateTime.Now}] [{type.ToString().ToUpper()}] | {text}\r\n";
-            File.AppendAllText(logPath, text);
+            switch (type)
+            {
+                case LogType.Error:
+                    File.AppendAllText(errorLogPath, text);
+                    break;
+                default:
+                    File.AppendAllText(logPath, text);
+                    break;
+            }
         }
     }
 
-    public static void NewStream(string text, bool newLine = true)
+    public static void Stream(string text, bool newLine = true)
     {
         FormatColorWrite(text, ConsoleColor.Green, newLine);
-        WriteLogToFile(LogType.NewS, text);
+        WriteLogToFile(LogType.Stream, text);
     }
 
     public static void Info(string text, bool newLine = true)

@@ -357,7 +357,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     Log.Error($"SendStreamMessageAsyncOtherChannel: {streamVideo.VideoId}\n{ex}");
                 }
 
-                Log.NewStream($"發送直播通知 ({noticeGuildList.Count} / {noticeType}): {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
+                Log.Stream($"發送直播通知 ({noticeGuildList.Count} / {noticeType}): {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
 
                 if (noticeType == NoticeType.Start)
                 {
