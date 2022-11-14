@@ -2,8 +2,6 @@
 using Discord.WebSocket;
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.Interaction;
-using Google.Apis.Services;
-using Google.Apis.YouTube.v3;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
@@ -27,9 +25,6 @@ namespace Discord_Stream_Notify_Bot.Interaction
            eb.WithColor(40, 40, 40);
         public static EmbedBuilder WithRecordColor(this EmbedBuilder eb) =>
            eb.WithColor(255, 0, 0);
-
-        public static DateTime ConvertToDateTime(this string str) =>
-           DateTime.Parse(str);
 
         public static string ConvertDateTimeToDiscordMarkdown(this DateTime dateTime)
         {

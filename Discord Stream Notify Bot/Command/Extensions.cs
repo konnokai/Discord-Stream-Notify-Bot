@@ -22,59 +22,8 @@ namespace Discord_Stream_Notify_Bot.Command
            eb.WithColor(00, 229, 132);
         public static EmbedBuilder WithErrorColor(this EmbedBuilder eb) =>
            eb.WithColor(40, 40, 40);
-        public static EmbedBuilder WithRecordColor(this EmbedBuilder eb) =>
-           eb.WithColor(255, 0, 0);
-
-        public static DateTime ConvertToDateTime(this string str) =>
-           DateTime.Parse(str);
-
-        public static string ConvertDateTimeToDiscordMarkdown(this DateTime dateTime)
-        {
-            long UTCTime = ((DateTimeOffset)dateTime).ToUnixTimeSeconds();
-            return $"<t:{UTCTime}:F> (<t:{UTCTime}:R>)";
-        }
-
-        public static DataBase.Table.Video.YTChannelType GetProductionType(this DataBase.Table.Video streamVideo)
-        {
-            using (var db = DataBase.DBContext.GetDbContext())
-            {
-                DataBase.Table.Video.YTChannelType type;
-                var channel = db.YoutubeChannelOwnedType.FirstOrDefault((x) => x.ChannelId == streamVideo.ChannelId);
-
-                if (channel != null)
-                    type = channel.ChannelType;
-                else
-                    type = streamVideo.ChannelType;
-
-                return type;
-            }
-        }
-
         public static string GetProductionName(this DataBase.Table.Video.YTChannelType channelType) =>        
                 channelType == DataBase.Table.Video.YTChannelType.Holo ? "Hololive" : channelType == DataBase.Table.Video.YTChannelType.Nijisanji ? "彩虹社" : "其他";
-
-        public static string GetCommandLine(this Process process)
-        {
-            if (!OperatingSystem.IsWindows()) return "";
-
-            try
-            {
-                using (ManagementObjectSearcher searcher = new ManagementObjectSearcher("SELECT CommandLine FROM Win32_Process WHERE ProcessId = " + process.Id))
-                using (ManagementObjectCollection objects = searcher.Get())
-                {
-                    return objects.Cast<ManagementBaseObject>().SingleOrDefault()?["CommandLine"]?.ToString();
-                }
-            }
-            catch
-            {
-                return "";
-            }
-        }
-
-        public static IEnumerable<T> Distinct<T, V>(this IEnumerable<T> source, Func<T, V> keySelector)
-        {
-            return source.Distinct(new CommonEqualityComparer<T, V>(keySelector));
-        }
 
         public static bool HasStreamVideoByVideoId(this DataBase.DBContext dBContext, string videoId)
         {
@@ -103,38 +52,6 @@ namespace Discord_Stream_Notify_Bot.Command
 
             return null;
         }
-
-        public static DataBase.Table.Video GetLastStreamVideoByChannelId(string channelId)
-        {
-            channelId = channelId.Trim();
-
-            using (var db = DataBase.HoloVideoContext.GetDbContext())
-                if (db.Video.Any((x) => x.ChannelId == channelId)) return db.Video.Last((x) => x.ChannelId == channelId);
-            using (var db = DataBase.NijisanjiVideoContext.GetDbContext())
-                if (db.Video.Any((x) => x.ChannelId == channelId)) return db.Video.Last((x) => x.ChannelId == channelId);
-            using (var db = DataBase.OtherVideoContext.GetDbContext())
-                if (db.Video.Any((x) => x.ChannelId == channelId)) return db.Video.Last((x) => x.ChannelId == channelId);
-
-            return null;
-        }
-
-        public static bool IsChannelInDb(string channelId)
-        {
-
-            channelId = channelId.Trim();
-
-            using (var db = DataBase.HoloVideoContext.GetDbContext())
-                if (db.Video.Any((x) => x.ChannelId == channelId)) return true;
-            using (var db = DataBase.NijisanjiVideoContext.GetDbContext())
-                if (db.Video.Any((x) => x.ChannelId == channelId)) return true;
-            using (var db = DataBase.OtherVideoContext.GetDbContext())
-                if (db.Video.Any((x) => x.ChannelId == channelId)) return true;
-
-            return false;
-        }
-
-        public static bool IsTwitterUserInDb(this DataBase.DBContext dBContext, string userId)
-            => dBContext.TwitterSpaecSpider.Any((x) => x.UserId == userId);
 
         public static Task<IUserMessage> SendConfirmAsync(this IMessageChannel ch, string des)
              => ch.SendMessageAsync("", embed: new EmbedBuilder().WithOkColor().WithDescription(des).Build());
@@ -282,7 +199,7 @@ namespace Discord_Stream_Notify_Bot.Command
             => ctx.SendPaginatedConfirmAsync(currentPage, (x) => Task.FromResult(pageFunc(x)), totalElements, itemsPerPage, addPaginatedFooter);
 
         public static async Task SendPaginatedConfirmAsync(this ICommandContext ctx, int currentPage,
-    Func<int, Task<EmbedBuilder>> pageFunc, int totalElements, int itemsPerPage, bool addPaginatedFooter = true)
+            Func<int, Task<EmbedBuilder>> pageFunc, int totalElements, int itemsPerPage, bool addPaginatedFooter = true)
         {
             var embed = await pageFunc(currentPage).ConfigureAwait(false);
 
