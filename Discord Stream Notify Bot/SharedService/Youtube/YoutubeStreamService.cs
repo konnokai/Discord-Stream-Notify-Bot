@@ -157,6 +157,35 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     }
                 });
 
+                Program.RedisSub.Subscribe("youtube.memberonly", async (channel, videoId) =>
+                {
+                    Log.Info($"{channel} - {videoId}");
+
+                    using (var db = DataBase.DBContext.GetDbContext())
+                    {
+                        try
+                        {
+                            if (Extensions.HasStreamVideoByVideoId(videoId))
+                            {
+                                var streamVideo = Extensions.GetStreamVideoByVideoId(videoId);
+
+                                EmbedBuilder embedBuilder = new EmbedBuilder();
+                                embedBuilder.WithErrorColor()
+                                .WithTitle(streamVideo.VideoTitle)
+                                .WithDescription(Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}"))
+                                .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
+                                .AddField("直播狀態", "已轉為會限影片", true);
+
+                                await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.Delete).ConfigureAwait(false);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Error($"Record-DeleteStream {ex}");
+                        }
+                    }
+                });
+
                 Program.RedisSub.Subscribe("youtube.deletestream", async (channel, videoId) =>
                 {
                     Log.Info($"{channel} - {videoId}");
@@ -179,7 +208,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                                 await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.Delete).ConfigureAwait(false);
                             }
-
                         }
                         catch (Exception ex)
                         {
@@ -188,6 +216,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     }
                 });
 
+               
                 Program.RedisSub.Subscribe("youtube.429error", async (channel, videoId) =>
                 {
                     Log.Info($"{channel} - {videoId}");
