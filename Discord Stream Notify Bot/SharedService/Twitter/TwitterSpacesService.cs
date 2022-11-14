@@ -1,4 +1,5 @@
-﻿using Discord.WebSocket;
+﻿using Discord;
+using Discord.WebSocket;
 using Discord_Stream_Notify_Bot.Interaction;
 using Polly;
 using SocialOpinionAPI.Core;
@@ -15,7 +16,7 @@ using System.Threading.Tasks;
 
 namespace Discord_Stream_Notify_Bot.SharedService.Twitter
 {
-    public partial class TwitterSpacesService : IInteractionService
+    public class TwitterSpacesService : IInteractionService
     {
         public bool IsEnbale { get; private set; } = true;
         public UserService UserService { get; private set; }
@@ -74,7 +75,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                         {
                             try
                             {                               
-                                SocialOpinionAPI.Models.Spaces.SpacesModel spaces = pBreaker.Execute(() => SpacesService.LookupByCreatorId(userList.Skip(i).Take(100).ToList())); i += 100;
+                                SocialOpinionAPI.Models.Spaces.SpacesModel spaces = pBreaker.Execute(() => SpacesService.LookupByCreatorId(userList.Skip(i).Take(100).ToList()));
                                 if (spaces.data.Count <= 0) continue;
 
                                 foreach (var item in spaces.data)
@@ -111,7 +112,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                                         var spaceData = new DataBase.Table.TwitterSpace() { UserId = item.creator_id, UserName = user.UserName, UserScreenName = user.UserScreenName, SpaecId = item.id, SpaecTitle = item.title, SpaecActualStartTime = (item?.started_at).GetValueOrDefault(), SpaecMasterPlaylistUrl = masterUrl.Replace("dynamic_playlist.m3u8?type=live", "master_playlist.m3u8") };
 
                                         if (string.IsNullOrEmpty(spaceData.SpaecTitle))
-                                            spaceData.SpaecTitle = $"語音空間 ({spaceData.SpaecActualStartTime.ToString("yyyy/MM/dd")})";
+                                            spaceData.SpaecTitle = $"語音空間 ({spaceData.SpaecActualStartTime:yyyy/MM/dd})";
 
                                         db.TwitterSpace.Add(spaceData);
                                         hashSet.Add(item.id);
@@ -154,10 +155,9 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                 return null;
 
             try
-            {
-                return UserService.GetUser(userScreenName);
-            }
-            catch (Exception) { return null; }
+            { return UserService.GetUser(userScreenName); }
+            catch (Exception)
+            { return null; }
         }
 
         private bool IsRecordSpace(DataBase.Table.TwitterSpace twitterSpace)
@@ -178,12 +178,14 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
 
         private async Task SendSpaceMessageAsync(UserModel userModel, DataBase.Table.TwitterSpace twitterSpace, bool isRecord = false)
         {
+#if DEBUG
+            Log.Stream($"推特空間開台通知: {twitterSpace.UserScreenName} - {twitterSpace.SpaecTitle}");
+#else
             using (var db = DataBase.DBContext.GetDbContext())
             {
                 var noticeGuildList = db.NoticeTwitterSpaceChannel.ToList().Where((x) => x.NoticeTwitterSpaceUserId == twitterSpace.UserId).ToList();
                 Log.Stream($"發送推特空間開台通知 ({noticeGuildList.Count}): {twitterSpace.UserScreenName} - {twitterSpace.SpaecTitle}");
 
-#if RELEASE
                 EmbedBuilder embedBuilder = new EmbedBuilder()
                     .WithTitle(twitterSpace.SpaecTitle)
                     .WithDescription(Format.Url($"{twitterSpace.UserName}", $"https://twitter.com/{twitterSpace.UserScreenName}"))
@@ -215,8 +217,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                         db.SaveChanges();
                     }
                 }
-#endif
             }
+#endif
         }
 
         private void RecordSpace(DataBase.Table.TwitterSpace twitterSpace, string masterUrl)
@@ -236,11 +238,12 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                 twitterSpaceRecordPath = Program.GetDataFilePath("");
             }
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) Process.Start("tmux", $"new-window -d -n \"Twitter Space @{twitterSpace.UserScreenName}\" ffmpeg -i \"{masterUrl}\" \"{twitterSpaceRecordPath}[{twitterSpace.UserScreenName}]{twitterSpace.SpaecActualStartTime:yyyyMMdd} - {twitterSpace.SpaecId}.m4a\"");
+            string procArgs = $"ffmpeg -i \"{masterUrl}\" \"{twitterSpaceRecordPath}[{twitterSpace.UserScreenName}]{twitterSpace.SpaecActualStartTime:yyyyMMdd} - {twitterSpace.SpaecId}.m4a\"";
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) Process.Start("tmux", $"new-window -d -n \"Twitter Space @{twitterSpace.UserScreenName}\" {procArgs}");
             else Process.Start(new ProcessStartInfo()
             {
                 FileName = "ffmpeg",
-                Arguments = $"-i \"{masterUrl}\" \"{Program.GetDataFilePath($"twitter_{twitterSpace.UserId}_{twitterSpace.SpaecId}.m4a")}\"",
+                Arguments = procArgs.Replace("ffmpeg", ""),
                 CreateNoWindow = false,
                 UseShellExecute = true
             });
