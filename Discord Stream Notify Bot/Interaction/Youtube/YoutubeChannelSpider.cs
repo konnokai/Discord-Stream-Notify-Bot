@@ -351,7 +351,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
 
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                var list = db.YoutubeChannelSpider.ToList().Where((x) => !x.IsTrustedChannel).Select((x) => Format.Url(x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}") +
+                var list = db.YoutubeChannelSpider.ToList().Where((x) => x.IsTrustedChannel).Select((x) => Format.Url(x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}") +
                     $" 由 `" + (x.GuildId == 0 ? "Bot擁有者" : (_client.GetGuild(x.GuildId) != null ? _client.GetGuild(x.GuildId).Name : "已退出的伺服器")) + "` 新增");
                 int warningChannelNum = db.YoutubeChannelSpider.Count((x) => !x.IsTrustedChannel);
 
@@ -361,14 +361,14 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                         .WithOkColor()
                         .WithTitle("直播爬蟲清單")
                         .WithDescription(string.Join('\n', list.Skip(page * 20).Take(20)))
-                        .WithFooter($"{Math.Min(list.Count(), (page + 1) * 20)} / {list.Count()}個頻道 ({warningChannelNum}個非VTuber的爬蟲)");
+                        .WithFooter($"{Math.Min(list.Count(), (page + 1) * 20)} / {list.Count()}個頻道 ({warningChannelNum}個非認可的爬蟲)");
                 }, list.Count(), 10, false).ConfigureAwait(false);
             }
         }
 
         [RequireContext(ContextType.Guild)]
-        [SlashCommand("list-not-vtuber", "顯示已加入爬蟲檢測的頻道 (本清單可能內含中之人或前世的頻道)")]
-        public async Task ListNotVTuberChannelSpider([Summary("頁數")] int page = 0)
+        [SlashCommand("list-not-trusted", "顯示已加入但非認可的爬蟲檢測頻道 (本清單可能內含中之人或前世的頻道)")]
+        public async Task ListNotTrustedChannelSpider([Summary("頁數")] int page = 0)
         {
             if (page < 0) page = 0;
 
@@ -381,7 +381,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                 {
                     return new EmbedBuilder()
                         .WithOkColor()
-                        .WithTitle("非VTuber爬蟲清單")
+                        .WithTitle("非認可的爬蟲清單")
                         .WithDescription(string.Join('\n', list.Skip(page * 20).Take(20)))
                         .WithFooter($"{Math.Min(list.Count(), (page + 1) * 20)} / {list.Count()}個頻道");
                 }, list.Count(), 10, false, true).ConfigureAwait(false);
