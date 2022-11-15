@@ -56,7 +56,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
         private readonly IHttpClientFactory _httpClientFactory;
         private string callbackUrl;
         private Polly.Retry.RetryPolicy<Task> pBreaker;
-        private Emote youTubeEmote, payPalEmote;
+        private Emote patreonEmote, payPalEmote;
 
         public YoutubeStreamService(DiscordSocketClient client, IHttpClientFactory httpClientFactory, BotConfig botConfig)
         {

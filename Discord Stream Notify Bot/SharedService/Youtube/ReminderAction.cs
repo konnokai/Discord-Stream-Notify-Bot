@@ -1,6 +1,7 @@
 ﻿using Discord;
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.Interaction;
+using Polly;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -190,7 +191,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                             .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
                             .AddField("排定開台時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown(), true)
                             .AddField("直播狀態", "開台中", true);
-                            //.AddField("是否記錄直播", "否", true);
 
                             await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.Start).ConfigureAwait(false);
                         }
@@ -405,18 +405,19 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         MessageComponent comp = null;
                         if (noticeType == NoticeType.Start)
                         {
-                            if (youTubeEmote == null)
+                            if (patreonEmote == null)
                             {
                                 try
                                 {
-                                    youTubeEmote = _client.Guilds.FirstOrDefault((x) => x.Id == 1040482713213345872).Emotes.FirstOrDefault((x) => x.Id == 1041913109926903878);
+                                    patreonEmote = _client.Guilds.FirstOrDefault((x) => x.Id == 1040482713213345872).Emotes.FirstOrDefault((x) => x.Id == 1041988445830119464);
                                 }
                                 catch (Exception ex)
                                 {
-                                    Log.Error($"無法取得YouTube Emote: {ex}");
-                                    youTubeEmote = null;
+                                    Log.Error($"無法取得Patreon Emote: {ex}");
+                                    patreonEmote = null;
                                 }
                             }
+
                             if (payPalEmote == null)
                             {
                                 try
@@ -431,8 +432,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                             }
 
                             comp = new ComponentBuilder()
-                             .WithButton("點我觀看直播", style: ButtonStyle.Link, emote: youTubeEmote, url: $"https://www.youtube.com/watch?v={streamVideo.VideoId}")
-                             .WithButton("覺得小幫手有用的話歡迎贊助 #ad", style: ButtonStyle.Link, emote: payPalEmote, url: Utility.PaypalUrl).Build();
+                             .WithButton("贊助小幫手 (Patreon) #ad", style: ButtonStyle.Link, emote: payPalEmote, url: Utility.PatreonUrl)
+                             .WithButton("贊助小幫手 (Paypal) #ad", style: ButtonStyle.Link, emote: payPalEmote, url: Utility.PaypalUrl).Build();
                         }
 
                         await pBreaker.Execute(() => channel.SendMessageAsync(sendMessage, false, embedBuilder.Build(), components: comp));
@@ -464,47 +465,46 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             }
         }
 
-        public async Task<Google.Apis.YouTube.v3.Data.Video> GetVideoAsync(string videoId, int retryCount = 0)
+        public async Task<Google.Apis.YouTube.v3.Data.Video> GetVideoAsync(string videoId)
         {
-            try
-            {
-                var video = yt.Videos.List("snippet,liveStreamingDetails");
-                video.Id = videoId;
-                var videoResult = await video.ExecuteAsync().ConfigureAwait(false);
-                if (videoResult.Items.Count == 0) return null;
-                return videoResult.Items[0];
-            }
-            catch (Exception ex)
-            {
-                if (ex.Message.Contains("Timeout") && retryCount <= 3)
+            var pBreaker = Policy<Google.Apis.YouTube.v3.Data.Video>
+                .Handle<Exception>()
+                .WaitAndRetryAsync(new TimeSpan[]
                 {
-                    Log.Error($"ㄐㄐ，{videoId} Timeout了，嘗試重新執行第 {++retryCount} 次");
-                    return await GetVideoAsync(videoId, retryCount);
-                }
+                    TimeSpan.FromSeconds(1),
+                    TimeSpan.FromSeconds(2),
+                    TimeSpan.FromSeconds(4)
+                });
 
-                throw;
-            }
+            return await pBreaker.ExecuteAsync(async () =>
+             {
+                 var video = yt.Videos.List("snippet,liveStreamingDetails");
+                 video.Id = videoId;
+                 var videoResult = await video.ExecuteAsync().ConfigureAwait(false);
+                 if (videoResult.Items.Count == 0) return null;
+                 return videoResult.Items[0];
+             });
         }
 
         private async Task<IEnumerable<Google.Apis.YouTube.v3.Data.Video>> GetVideosAsync(IEnumerable<string> videoIds, int retryCount = 0)
         {
-            try
+            var pBreaker = Policy<IEnumerable<Google.Apis.YouTube.v3.Data.Video>>
+                .Handle<Exception>()
+                .WaitAndRetryAsync(new TimeSpan[]
+                {
+                    TimeSpan.FromSeconds(1),
+                    TimeSpan.FromSeconds(2),
+                    TimeSpan.FromSeconds(4)
+                });
+
+            return await pBreaker.ExecuteAsync(async () =>
             {
                 var video = yt.Videos.List("snippet,liveStreamingDetails");
                 video.Id = string.Join(',', videoIds);
                 var videoResult = await video.ExecuteAsync().ConfigureAwait(false);
+                if (videoResult.Items.Count == 0) return null;
                 return videoResult.Items;
-            }
-            catch (Exception ex)
-            {
-                if (ex.Message.Contains("Timeout"))
-                {
-                    Log.Error($"ㄐㄐ，Videos: `{string.Join(',', videoIds)}` Timeout了，嘗試重新執行第 {++retryCount} 次");
-                    return await GetVideosAsync(videoIds, retryCount);
-                }
-
-                throw;
-            }
+            });
         }
     }
 }

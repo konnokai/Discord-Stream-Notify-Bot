@@ -59,7 +59,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                 .WaitAndRetry(new TimeSpan[] 
                 { 
                     TimeSpan.FromSeconds(1), 
-                    TimeSpan.FromSeconds(2)
+                    TimeSpan.FromSeconds(2),
+                    TimeSpan.FromSeconds(4)
                 });
 
             timer = new(async (stats) =>

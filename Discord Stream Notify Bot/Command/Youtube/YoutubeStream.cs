@@ -94,7 +94,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
             Google.Apis.YouTube.v3.Data.Video video;
             try
             {
-                video = await _service.GetVideoAsync(videoId, 3);
+                video = await _service.GetVideoAsync(videoId);
             }
             catch (Exception ex)
             {
