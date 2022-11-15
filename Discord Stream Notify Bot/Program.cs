@@ -222,7 +222,7 @@ namespace Discord_Stream_Notify_Bot
                     }
                     catch (Exception ex)
                     {
-                        Log.Error("設定指令數量失敗，請確認Redis伺服器是否可以存取");
+                        Log.Error("取得指令數量失敗，請確認Redis伺服器是否可以存取");
                         Log.Error(ex.Message);
                         isDisconnect = true;
                         return;
@@ -230,12 +230,9 @@ namespace Discord_Stream_Notify_Bot
 
                     try
                     {
-                        List<ulong> addedGuildList = new List<ulong>();
                         foreach (var item in interactionService.Modules.Where((x) => x.Preconditions.Any((x) => x is Interaction.Attribute.RequireGuildAttribute)))
                         {
-                            var guildId = ((Interaction.Attribute.RequireGuildAttribute)item.Preconditions.FirstOrDefault((x) => x is Interaction.Attribute.RequireGuildAttribute)).GuildId;
-                            if (addedGuildList.Contains(guildId.Value)) continue;
-
+                            var guildId = ((Interaction.Attribute.RequireGuildAttribute)item.Preconditions.FirstOrDefault((x) => x is Interaction.Attribute.RequireGuildAttribute)).GuildId;                          
                             var guild = _client.GetGuild(guildId.Value);
 
                             if (guild == null)
@@ -245,9 +242,7 @@ namespace Discord_Stream_Notify_Bot
                             }
 
                             var result = await interactionService.AddModulesToGuildAsync(guild, false, item);
-                            Log.Info($"已在 {guild.Name}({guild.Id}) 註冊指令: {string.Join(", ", result.Select((x) => x.Name))}");
-                            addedGuildList.Add(guildId.Value);
-
+                            Log.Info($"已在 {guild.Name}({guild.Id}) 註冊指令: {string.Join(", ", item.SlashCommands.Select((x) => x.Name))}");
                         }
                     }
                     catch (Exception ex)
