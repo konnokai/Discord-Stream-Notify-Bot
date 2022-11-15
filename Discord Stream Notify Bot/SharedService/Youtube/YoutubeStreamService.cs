@@ -164,36 +164,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         Log.Error($"Record-EndStream {ex}");
                     }
                 });
-
-                Program.RedisSub.Subscribe("youtube.memberonly", async (channel, videoId) =>
-                {
-                    Log.Info($"{channel} - {videoId}");
-
-                    using (var db = DataBase.DBContext.GetDbContext())
-                    {
-                        try
-                        {
-                            if (Extensions.HasStreamVideoByVideoId(videoId))
-                            {
-                                var streamVideo = Extensions.GetStreamVideoByVideoId(videoId);
-
-                                EmbedBuilder embedBuilder = new EmbedBuilder();
-                                embedBuilder.WithErrorColor()
-                                .WithTitle(streamVideo.VideoTitle)
-                                .WithDescription(Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}"))
-                                .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
-                                .AddField("直播狀態", "已轉為會限影片", true);
-
-                                await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.Delete).ConfigureAwait(false);
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            Log.Error($"Record-DeleteStream {ex}");
-                        }
-                    }
-                });
-
+                              
                 Program.RedisSub.Subscribe("youtube.deletestream", async (channel, videoId) =>
                 {
                     Log.Info($"{channel} - {videoId}");
@@ -224,11 +195,9 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     }
                 });
 
-               
-                Program.RedisSub.Subscribe("youtube.429error", async (channel, videoId) =>
+                Program.RedisSub.Subscribe("youtube.memberonly", async (channel, videoId) =>
                 {
                     Log.Info($"{channel} - {videoId}");
-                    IsRecord = false;
 
                     using (var db = DataBase.DBContext.GetDbContext())
                     {
@@ -237,22 +206,41 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                             if (Extensions.HasStreamVideoByVideoId(videoId))
                             {
                                 var streamVideo = Extensions.GetStreamVideoByVideoId(videoId);
+                                var item = await GetVideoAsync(videoId).ConfigureAwait(false);
+
+                                if (item == null)
+                                {
+                                    Log.Warn($"{videoId} Delete");
+                                    await Program.RedisSub.PublishAsync("youtube.deletestream", videoId);
+                                    return;
+                                }
+
+                                if (!item.LiveStreamingDetails.ActualEndTime.HasValue)
+                                {
+                                    Log.Warn("還沒關台");
+                                    return;
+                                }
+
+                                var startTime = item.LiveStreamingDetails.ActualStartTime.Value;
+                                var endTime = item.LiveStreamingDetails.ActualEndTime.Value;
+
                                 EmbedBuilder embedBuilder = new EmbedBuilder();
-                                embedBuilder.WithTitle(streamVideo.VideoTitle)
-                                .WithOkColor()
+                                embedBuilder.WithErrorColor()
+                                .WithTitle(streamVideo.VideoTitle)
                                 .WithDescription(Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}"))
                                 .WithImageUrl($"https://i.ytimg.com/vi/{streamVideo.VideoId}/maxresdefault.jpg")
                                 .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
-                                .AddField("直播狀態", "開台中", true)
-                                .AddField("排定開台時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
+                                .AddField("直播狀態", "已關台並變更為會限影片", true)
+                                .AddField("直播時間", $"{endTime.Subtract(startTime):hh'時'mm'分'ss'秒'}", true)
+                                .AddField("關台時間", endTime.ConvertDateTimeToDiscordMarkdown());
 
-                                if (Program.ApplicatonOwner != null) await Program.ApplicatonOwner.SendMessageAsync("429錯誤", false, embedBuilder.Build()).ConfigureAwait(false);
-                                await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.Start).ConfigureAwait(false);
+                                if (Program.ApplicatonOwner != null) await Program.ApplicatonOwner.SendMessageAsync("已關台並變更為會限影片", false, embedBuilder.Build()).ConfigureAwait(false);
+                                await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.End).ConfigureAwait(false);
                             }
                         }
                         catch (Exception ex)
                         {
-                            Log.Error($"Record-429Error {ex}");
+                            Log.Error($"Record-MemberOnly {ex}");
                         }
                     }
                 });
@@ -284,6 +272,38 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         catch (Exception ex)
                         {
                             Log.Error($"Record-UnArchived {ex}");
+                        }
+                    }
+                });
+
+                Program.RedisSub.Subscribe("youtube.429error", async (channel, videoId) =>
+                {
+                    Log.Info($"{channel} - {videoId}");
+                    IsRecord = false;
+
+                    using (var db = DataBase.DBContext.GetDbContext())
+                    {
+                        try
+                        {
+                            if (Extensions.HasStreamVideoByVideoId(videoId))
+                            {
+                                var streamVideo = Extensions.GetStreamVideoByVideoId(videoId);
+                                EmbedBuilder embedBuilder = new EmbedBuilder();
+                                embedBuilder.WithTitle(streamVideo.VideoTitle)
+                                .WithOkColor()
+                                .WithDescription(Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}"))
+                                .WithImageUrl($"https://i.ytimg.com/vi/{streamVideo.VideoId}/maxresdefault.jpg")
+                                .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
+                                .AddField("直播狀態", "開台中", true)
+                                .AddField("排定開台時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
+
+                                if (Program.ApplicatonOwner != null) await Program.ApplicatonOwner.SendMessageAsync("429錯誤", false, embedBuilder.Build()).ConfigureAwait(false);
+                                await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.Start).ConfigureAwait(false);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Error($"Record-429Error {ex}");
                         }
                     }
                 });

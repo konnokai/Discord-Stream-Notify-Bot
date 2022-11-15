@@ -403,7 +403,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         if (channel == null) continue;
 
                         MessageComponent comp = null;
-                        if (noticeType == NoticeType.Start) 
+                        if (noticeType == NoticeType.Start)
                         {
                             if (youTubeEmote == null)
                             {
@@ -431,8 +431,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                             }
 
                             comp = new ComponentBuilder()
-                             .WithButton("點我觀看直播", style: ButtonStyle.Primary, emote: youTubeEmote, url: embedBuilder.Url)
-                             .WithButton("覺得小幫手有用的話歡迎贊助 #ad", style: ButtonStyle.Primary, emote: payPalEmote, url: Utility.PaypalUrl).Build();
+                             .WithButton("點我觀看直播", "watch", ButtonStyle.Primary, youTubeEmote, embedBuilder.Url)
+                             .WithButton("覺得小幫手有用的話歡迎贊助 #ad", "donate", ButtonStyle.Primary, payPalEmote, Utility.PaypalUrl).Build();
                         }
 
                         await pBreaker.Execute(() => channel.SendMessageAsync(sendMessage, false, embedBuilder.Build(), components: comp));
