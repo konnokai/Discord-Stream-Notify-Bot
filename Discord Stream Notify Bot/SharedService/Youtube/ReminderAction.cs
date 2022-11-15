@@ -321,7 +321,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                 await SendStreamMessageAsync(streamVideo, embedBuilder, noticeType).ConfigureAwait(false);
             }
-        }        
+        }
 
         private async Task SendStreamMessageAsync(DataBase.Table.Video streamVideo, EmbedBuilder embedBuilder, NoticeType noticeType)
         {
@@ -405,35 +405,25 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         MessageComponent comp = null;
                         if (noticeType == NoticeType.Start)
                         {
-                            if (patreonEmote == null)
+                            List<string> randomVideoUrlList = new List<string>
                             {
-                                try
-                                {
-                                    patreonEmote = _client.Guilds.FirstOrDefault((x) => x.Id == 1040482713213345872).Emotes.FirstOrDefault((x) => x.Id == 1041988445830119464);
-                                }
-                                catch (Exception ex)
-                                {
-                                    Log.Error($"無法取得Patreon Emote: {ex}");
-                                    patreonEmote = null;
-                                }
-                            }
+                                "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+                                "https://www.youtube.com/watch?v=ST-Q-hX9Yzo",
+                                "https://www.youtube.com/watch?v=h-mUGj41hWA",
+                                "https://www.youtube.com/watch?v=BMvqvnyGtGo",
+                                "https://www.youtube.com/watch?v=0rLGxUxucdE",
+                                "https://www.youtube.com/watch?v=Z_VNp7VUtqA",
+                                "https://www.youtube.com/watch?v=uSvGR5H7lUk"
+                            };
 
-                            if (payPalEmote == null)
-                            {
-                                try
-                                {
-                                    payPalEmote = _client.Guilds.FirstOrDefault((x) => x.Id == 1040482713213345872).Emotes.FirstOrDefault((x) => x.Id == 1041917958345199617);
-                                }
-                                catch (Exception ex)
-                                {
-                                    Log.Error($"無法取得PayPal Emote: {ex}");
-                                    payPalEmote = null;
-                                }
-                            }
+                            var nowRecordList = Utility.GetNowRecordStreamList();
+                            if (nowRecordList.Any())
+                                randomVideoUrlList.AddRange(nowRecordList.Select((x) => $"https://www.youtube.com/watch?v={x}"));
 
                             comp = new ComponentBuilder()
-                             .WithButton("贊助小幫手 (Patreon) #ad", style: ButtonStyle.Link, emote: payPalEmote, url: Utility.PatreonUrl)
-                             .WithButton("贊助小幫手 (Paypal) #ad", style: ButtonStyle.Link, emote: payPalEmote, url: Utility.PaypalUrl).Build();
+                                .WithButton("好手氣，隨機帶你到一個影片或直播", style: ButtonStyle.Link, emote: YouTubeEmote, url: randomVideoUrlList[new Random().Next(0, randomVideoUrlList.Count)])
+                                .WithButton("贊助小幫手 (Patreon) #ad", style: ButtonStyle.Link, emote: PatreonEmote, url: Utility.PatreonUrl, row: 1)
+                                .WithButton("贊助小幫手 (Paypal) #ad", style: ButtonStyle.Link, emote: PayPalEmote, url: Utility.PaypalUrl, row: 1).Build();
                         }
 
                         await pBreaker.Execute(() => channel.SendMessageAsync(sendMessage, false, embedBuilder.Build(), components: comp));

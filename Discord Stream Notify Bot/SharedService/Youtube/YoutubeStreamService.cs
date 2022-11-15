@@ -50,13 +50,73 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
         public bool IsRecord { get; set; } = true;
         public YouTubeService yt;
 
+        public Emote YouTubeEmote
+        {
+            get
+            {
+                if (youTubeEmote == null)
+                {
+                    try
+                    {
+                        youTubeEmote = _client.Guilds.FirstOrDefault((x) => x.Id == 1040482713213345872).Emotes.FirstOrDefault((x) => x.Id == 1041913109926903878);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error($"無法取得YouTube Emote: {ex}");
+                        youTubeEmote = null;
+                    }
+                }
+                return youTubeEmote;
+            }
+        }
+
+        public Emote PatreonEmote
+        {
+            get
+            {
+                if (patreonEmote == null)
+                {
+                    try
+                    {
+                        patreonEmote = _client.Guilds.FirstOrDefault((x) => x.Id == 1040482713213345872).Emotes.FirstOrDefault((x) => x.Id == 1041988445830119464);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error($"無法取得Patreon Emote: {ex}");
+                        patreonEmote = null;
+                    }
+                }
+                return patreonEmote;
+            }
+        }
+
+        public Emote PayPalEmote
+        {
+            get
+            {
+                if (payPalEmote == null)
+                {
+                    try
+                    {
+                        payPalEmote = _client.Guilds.FirstOrDefault((x) => x.Id == 1040482713213345872).Emotes.FirstOrDefault((x) => x.Id == 1042004146208899102);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error($"無法取得PayPal Emote: {ex}");
+                        payPalEmote = null;
+                    }
+                }
+                return payPalEmote;
+            }
+        }
+
         private Timer holoSchedule, nijisanjiSchedule, otherSchedule, checkScheduleTime, saveDateBase, subscribePubSub/*, checkHoloNowStream, holoScheduleEmoji*/;
         private SocketTextChannel noticeRecordChannel;
         private DiscordSocketClient _client;
         private readonly IHttpClientFactory _httpClientFactory;
         private string callbackUrl;
         private Polly.Retry.RetryPolicy<Task> pBreaker;
-        private Emote patreonEmote, payPalEmote;
+        private Emote youTubeEmote, patreonEmote, payPalEmote;
 
         public YoutubeStreamService(DiscordSocketClient client, IHttpClientFactory httpClientFactory, BotConfig botConfig)
         {
@@ -122,19 +182,17 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     }
                 });
 
-                Program.RedisSub.Subscribe("youtube.endstream", async (channel, json) =>
+                Program.RedisSub.Subscribe("youtube.endstream", async (channel, videoId) =>
                 {
                     try
                     {
-                        StreamRecordJson streamRecordJson = JsonConvert.DeserializeObject<StreamRecordJson>(json.ToString());
+                        Log.Info($"{channel} - {videoId}");
 
-                        Log.Info($"{channel} - {streamRecordJson.VideoId}");
-
-                        var item = await GetVideoAsync(streamRecordJson.VideoId).ConfigureAwait(false);
+                        var item = await GetVideoAsync(videoId.ToString()).ConfigureAwait(false);
                         if (item == null)
                         {
-                            Log.Warn($"{streamRecordJson.VideoId} Delete");
-                            await Program.RedisSub.PublishAsync("youtube.deletestream", streamRecordJson.VideoId);
+                            Log.Warn($"{videoId} Delete");
+                            await Program.RedisSub.PublishAsync("youtube.deletestream", videoId);
                             return;
                         }
 
