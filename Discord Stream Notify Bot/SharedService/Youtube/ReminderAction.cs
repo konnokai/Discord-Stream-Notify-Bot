@@ -359,12 +359,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                 Log.Stream($"發送直播通知 ({noticeGuildList.Count} / {noticeType}): {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
 
-                if (noticeType == NoticeType.Start)
-                {
-                    string description = embedBuilder.Description;
-                    embedBuilder.WithDescription(description + $"\n\n您可以透過 {Format.Url("Patreon", Utility.PatreonUrl)} 或 {Format.Url("Paypal", Utility.PaypalUrl)} 來贊助直播小幫手");
-                }
-
 #if DEBUG
                 return;
 #endif
@@ -408,7 +402,40 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         var channel = guild.GetTextChannel(item.DiscordChannelId);
                         if (channel == null) continue;
 
-                        await pBreaker.Execute(() => channel.SendMessageAsync(sendMessage, false, embedBuilder.Build()));
+                        MessageComponent comp = null;
+                        if (noticeType == NoticeType.Start) 
+                        {
+                            if (youTubeEmote == null)
+                            {
+                                try
+                                {
+                                    youTubeEmote = _client.Guilds.FirstOrDefault((x) => x.Id == 1040482713213345872).Emotes.FirstOrDefault((x) => x.Id == 1041913109926903878);
+                                }
+                                catch (Exception ex)
+                                {
+                                    Log.Error($"無法取得YouTube Emote: {ex}");
+                                    youTubeEmote = null;
+                                }
+                            }
+                            if (payPalEmote == null)
+                            {
+                                try
+                                {
+                                    payPalEmote = _client.Guilds.FirstOrDefault((x) => x.Id == 1040482713213345872).Emotes.FirstOrDefault((x) => x.Id == 1041917958345199617);
+                                }
+                                catch (Exception ex)
+                                {
+                                    Log.Error($"無法取得PayPal Emote: {ex}");
+                                    payPalEmote = null;
+                                }
+                            }
+
+                            comp = new ComponentBuilder()
+                             .WithButton("點我觀看直播", style: ButtonStyle.Primary, emote: youTubeEmote, url: embedBuilder.Url)
+                             .WithButton("覺得小幫手有用的話歡迎贊助 #ad", style: ButtonStyle.Primary, emote: payPalEmote, url: Utility.PaypalUrl).Build();
+                        }
+
+                        await pBreaker.Execute(() => channel.SendMessageAsync(sendMessage, false, embedBuilder.Build(), components: comp));
                     }
                     catch (Discord.Net.HttpException httpEx)
                     {

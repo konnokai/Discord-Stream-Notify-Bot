@@ -247,59 +247,6 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
             }
         }
 
-        [Command("NowRecordChannel")]
-        [Summary("取得現在記錄直播的清單")]
-        [Alias("NRC")]
-        public async Task NowRecordChannel()
-        {
-            await Context.Channel.TriggerTypingAsync().ConfigureAwait(false);
-
-            var newRecordStreamList = Utility.GetNowRecordStreamList();
-
-            if (newRecordStreamList.Count == 0)
-            {
-                await Context.Channel.SendErrorAsync("現在沒有直播記錄").ConfigureAwait(false);
-                return;
-            }
-
-            try
-            {
-                var yt = _service.yt.Videos.List("Snippet");
-                yt.Id = string.Join(',', newRecordStreamList);
-                var result = (await yt.ExecuteAsync().ConfigureAwait(false)).Items.ToList();
-
-                var endStreamList = result.Where((x) => x.Snippet.LiveBroadcastContent == "none").ToList();
-                foreach (var item in endStreamList)
-                {
-                    try
-                    {
-                        result.Remove(item);
-                        await Program.RedisDb.SetRemoveAsync("youtube.nowRecord", item.Id);
-                    }
-                    catch (Exception ex)
-                    {
-                        await Context.Channel.SendErrorAsync(ex.Message).ConfigureAwait(false);
-                    }
-                }
-
-                await Context.SendPaginatedConfirmAsync(0, (page) =>
-                {
-                    return new EmbedBuilder()
-                        .WithOkColor()
-                        .WithTitle("正在錄影的直播")
-                        .WithDescription(string.Join("\n\n",
-                            result.Skip(page * 9).Take(9)
-                            .Select((x) => $"{Format.Url(x.Snippet.Title, $"https://www.youtube.com/watch?v={x.Id}")}\n" +
-                                $"{x.Snippet.ChannelTitle}")))
-                        .WithFooter($"{result.Count}個頻道");
-                }, result.Count, 9, false).ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                await Context.Channel.SendErrorAsync(ex.Message).ConfigureAwait(false);
-            }
-        }
-
         //[RequireContext(ContextType.DM)]
         //[Command("KillFFMPEGProcess")]
         //[Summary("停止指定FFMPEG ProcessId的直播記錄")]
@@ -364,58 +311,6 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
             _service.IsRecord = !_service.IsRecord;
 
             await Context.Channel.SendConfirmAsync("直播錄影已" + (_service.IsRecord ? "開啟" : "關閉")).ConfigureAwait(false);
-        }
-
-        [Command("NowStreaming")]
-        [Summary("取得現在直播的Holo成員")]
-        [Alias("NS")]
-        public async Task NowStreaming() //Todo: 加入2434
-        {
-            await Context.Channel.TriggerTypingAsync().ConfigureAwait(false);
-
-            var embed = await _service.GetNowStreamingChannel().ConfigureAwait(false);
-
-            if (embed == null) await Context.Channel.SendMessageAsync("無法取得直播清單").ConfigureAwait(false);
-            else await Context.Channel.SendMessageAsync(null, false, embed).ConfigureAwait(false);
-        }
-
-        [Command("ComingSoonStream")]
-        [Summary("顯示接下來直播的清單")]
-        [Alias("CSS")]
-        public async Task ComingSoonStream()
-        {
-            await Context.Channel.TriggerTypingAsync().ConfigureAwait(false);
-
-            try
-            {
-                List<Google.Apis.YouTube.v3.Data.Video> result = new List<Google.Apis.YouTube.v3.Data.Video>();
-
-                for (int i = 0; i < _service.Reminders.Values.Count; i += 50)
-                {
-                    var yt = _service.yt.Videos.List("snippet,liveStreamingDetails");
-                    yt.Id = string.Join(',', _service.Reminders.Values.Select((x) => x.StreamVideo.VideoId).Skip(i).Take(50));
-                    result.AddRange((await yt.ExecuteAsync().ConfigureAwait(false)).Items);
-                }
-                using (var db = DataBase.DBContext.GetDbContext())
-                {
-                    result = result.OrderBy((x) => x.LiveStreamingDetails.ScheduledStartTime.Value).ToList();
-                    await Context.SendPaginatedConfirmAsync(0, (act) =>
-                    {
-                        return new EmbedBuilder().WithOkColor()
-                        .WithTitle("接下來開台的清單")
-                        .WithDescription(string.Join("\n\n",
-                           result.Skip(act * 7).Take(7)
-                           .Select((x) => $"{Format.Url(x.Snippet.Title, $"https://www.youtube.com/watch?v={x.Id}")}" +
-                           $"\n{Format.Url(x.Snippet.ChannelTitle, $"https://www.youtube.com/channel/{x.Snippet.ChannelId}")}" +
-                           $"\n直播時間: {x.LiveStreamingDetails.ScheduledStartTime.Value}" +
-                           "\n是否在直播錄影清單內: " + (db.RecordYoutubeChannel.Any((x2) => x2.YoutubeChannelId.Trim() == x.Snippet.ChannelId) ? "是" : "否"))));
-                    }, result.Count, 7).ConfigureAwait(false);
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex.Message + "r\n" + ex.StackTrace);
-            }
         }
 
         [RequireContext(ContextType.DM)]

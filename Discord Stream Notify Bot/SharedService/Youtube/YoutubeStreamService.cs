@@ -1,7 +1,6 @@
 ﻿using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
-using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.Interaction;
 using Google.Apis.Services;
 using Google.Apis.YouTube.v3;
@@ -39,6 +38,14 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             Delete
         }
 
+        public enum NowStreamingHost
+        {
+            [ChoiceDisplay("Holo")]
+            Holo,
+            [ChoiceDisplay("彩虹社")]
+            Niji
+        }
+
         public ConcurrentDictionary<DataBase.Table.Video, ReminderItem> Reminders { get; } = new ConcurrentDictionary<DataBase.Table.Video, ReminderItem>();
         public bool IsRecord { get; set; } = true;
         public YouTubeService yt;
@@ -49,6 +56,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
         private readonly IHttpClientFactory _httpClientFactory;
         private string callbackUrl;
         private Polly.Retry.RetryPolicy<Task> pBreaker;
+        private Emote youTubeEmote, payPalEmote;
 
         public YoutubeStreamService(DiscordSocketClient client, IHttpClientFactory httpClientFactory, BotConfig botConfig)
         {
@@ -623,17 +631,36 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             subscribePubSub = new Timer((onjState) => SubscribePubSub(), null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(30));
         }
 
-        public async Task<Embed> GetNowStreamingChannel()
+        public async Task<Embed> GetNowStreamingChannel(NowStreamingHost host)
         {
             try
             {
-                HtmlWeb htmlWeb = new HtmlWeb();
-                HtmlDocument htmlDocument = htmlWeb.Load("https://schedule.hololive.tv/lives/all");
-                List<string> idList = new List<string>(htmlDocument.DocumentNode.Descendants()
-                    .Where((x) => x.Name == "a" &&
-                        x.Attributes["href"].Value.StartsWith("https://www.youtube.com/watch") &&
-                        x.Attributes["style"].Value.Contains("border: 3px"))
-                    .Select((x) => x.Attributes["href"].Value.Split("?v=")[1]));
+                List<string> idList = new List<string>();
+                switch (host)
+                {
+                    case NowStreamingHost.Holo:
+                        {
+                            HtmlWeb htmlWeb = new HtmlWeb();
+                            HtmlDocument htmlDocument = htmlWeb.Load("https://schedule.hololive.tv/lives/all");
+                            idList.AddRange(htmlDocument.DocumentNode.Descendants()
+                                .Where((x) => x.Name == "a" &&
+                                    x.Attributes["href"].Value.StartsWith("https://www.youtube.com/watch") &&
+                                    x.Attributes["style"].Value.Contains("border: 3px"))
+                                .Select((x) => x.Attributes["href"].Value.Split("?v=")[1]));
+                        }
+                        break;
+                    case NowStreamingHost.Niji:
+                        // Todo: 實作2434現在直播的成員
+                        // 2434官網直播表: https://www.nijisanji.jp/streams
+                        // 2434新直播資料路徑(不確定路徑會不會有變動): https://www.nijisanji.jp/_next/data/GBFnxldmHEqKIM1q5W-3V/ja/streams.json
+                        // 2434成員資料
+                        // JP: https://www.nijisanji.jp/api/livers?limit=300&offset=0&orderKey=subscriber_count&order=desc&affiliation=nijisanji&locale=ja&includeHidden=true
+                        // EN: https://www.nijisanji.jp/api/livers?limit=300&offset=0&orderKey=subscriber_count&order=desc&affiliation=nijisanjien&locale=ja&includeHidden=true
+                        // VR: https://www.nijisanji.jp/api/livers?limit=300&offset=0&orderKey=subscriber_count&order=desc&affiliation=virtuareal&locale=ja&includeHidden=true
+                        // KR跟ID沒看到網站有請求
+                        return null;
+                        break;
+                }
 
                 var video = yt.Videos.List("snippet");
                 video.Id = string.Join(",", idList);

@@ -146,13 +146,14 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                         var guild = button.Message.Embeds.First().Fields.FirstOrDefault((x) => x.Name == "伺服器").Value;
                         var user = button.Message.Embeds.First().Fields.FirstOrDefault((x) => x.Name == "執行者").Value;
                         var embed = new EmbedBuilder()
-                                        .WithOkColor()
-                                        .WithTitle("已新增爬蟲頻道")
-                                        .AddField("頻道", Format.Url(youtubeChannelSpider.ChannelTitle, $"https://www.youtube.com/channel/{youtubeChannelSpider.ChannelId}"), false)
-                                        .AddField("伺服器", guild, false)
-                                        .AddField("執行者", user, false)
-                                        .AddField("認可頻道", youtubeChannelSpider.IsTrustedChannel ? "是" : "否", true)
-                                        .AddField("錄影頻道", db.RecordYoutubeChannel.Any((x) => x.YoutubeChannelId == buttonData[2]) ? "是" : "否", true).Build();
+                            .WithOkColor()
+                            .WithTitle("已新增爬蟲頻道")
+                            .AddField("頻道", Format.Url(youtubeChannelSpider.ChannelTitle, $"https://www.youtube.com/channel/{youtubeChannelSpider.ChannelId}"), false)
+                            .AddField("伺服器", guild, false)
+                            .AddField("執行者", user, false)
+                            .AddField("認可頻道", youtubeChannelSpider.IsTrustedChannel ? "是" : "否", true)
+                            .AddField("錄影頻道", db.RecordYoutubeChannel.Any((x) => x.YoutubeChannelId == buttonData[2]) ? "是" : "否", true).Build();
+
                         try
                         {
                             await button.UpdateAsync((func) =>
@@ -170,7 +171,6 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                     }
                     catch (Exception)
                     {
-
                         throw;
                     }
                 }

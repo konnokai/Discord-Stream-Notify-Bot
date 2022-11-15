@@ -150,10 +150,10 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             }
         }
 
-        [SlashCommand("now-streaming", "取得現在直播的Holo成員")]
-        public async Task NowStreaming() //Todo: 加入2434
+        [SlashCommand("now-streaming", "取得現在直播的成員")]
+        public async Task NowStreaming(SharedService.Youtube.YoutubeStreamService.NowStreamingHost host)
         {
-            var embed = await _service.GetNowStreamingChannel().ConfigureAwait(false);
+            var embed = await _service.GetNowStreamingChannel(host).ConfigureAwait(false);
 
             if (embed == null) await Context.Interaction.SendErrorAsync("無法取得直播清單").ConfigureAwait(false);
             else await Context.Interaction.RespondAsync(embed: embed).ConfigureAwait(false);
