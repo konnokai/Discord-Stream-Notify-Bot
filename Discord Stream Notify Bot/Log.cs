@@ -8,6 +8,7 @@ public static class Log
     enum LogType { Verb, Stream, Info, Warn, Error }
     static string logPath = DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss") + "_log.txt";
     static string errorLogPath = DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss") + "_err.txt";
+    static string streamLogPath = DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss") + "_stream.txt";
     private static object lockObj = new object();
 
     private static void WriteLogToFile(LogType type, string text)
@@ -19,6 +20,9 @@ public static class Log
             {
                 case LogType.Error:
                     File.AppendAllText(errorLogPath, text);
+                    break;
+                case LogType.Stream:
+                    File.AppendAllText(streamLogPath, text);
                     break;
                 default:
                     File.AppendAllText(logPath, text);
