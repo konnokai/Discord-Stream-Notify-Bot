@@ -112,10 +112,8 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                     $"{Format.Url(video.Snippet.ChannelTitle, $"https://www.youtube.com/channel/{video.Snippet.ChannelId}")}";
             if (await PromptUserConfirmAsync(new EmbedBuilder().WithTitle("現在錄影?").WithDescription(description)))
             {
-                if (await Program.RedisSub.PublishAsync("youtube.record", videoId).ConfigureAwait(false) != 0)
-                    await Context.Channel.SendConfirmAsync("已開始錄影", description).ConfigureAwait(false);
-                else
-                    await Context.Channel.SendConfirmAsync($"Redis錯誤，請確認後端狀態").ConfigureAwait(false);
+                await Context.Channel.SendConfirmAsync("已開始錄影", description).ConfigureAwait(false);
+                await _service.AddOtherDataAsync(video);
             }
         }
 
