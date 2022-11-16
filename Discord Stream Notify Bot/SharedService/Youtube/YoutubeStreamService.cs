@@ -110,7 +110,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             }
         }
 
-        private Timer holoSchedule, nijisanjiSchedule, otherSchedule, checkScheduleTime, saveDateBase, subscribePubSub/*, checkHoloNowStream, holoScheduleEmoji*/;
+        private Timer holoSchedule, nijisanjiSchedule, otherSchedule, checkScheduleTime, saveDateBase, subscribePubSub, refreshNowRecordList/*, checkHoloNowStream, holoScheduleEmoji*/;
         private SocketTextChannel noticeRecordChannel;
         private DiscordSocketClient _client;
         private readonly IHttpClientFactory _httpClientFactory;
@@ -587,7 +587,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
             nijisanjiSchedule = new Timer(async (objState) => await NijisanjiScheduleAsync(), null, TimeSpan.FromSeconds(10), TimeSpan.FromMinutes(5));
 
-            otherSchedule = new Timer(async (onjState) => await OtherScheduleAsync(), null, TimeSpan.FromSeconds(20), TimeSpan.FromMinutes(5));
+            otherSchedule = new Timer(async (objState) => await OtherScheduleAsync(), null, TimeSpan.FromSeconds(20), TimeSpan.FromMinutes(5));
 
 #if DEBUG
             return;
@@ -704,9 +704,11 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 }
             }, null, TimeSpan.FromMinutes(15), TimeSpan.FromMinutes(15));
 
-            saveDateBase = new Timer((onjState) => SaveDateBase(), null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(3));
+            saveDateBase = new Timer((objState) => SaveDateBase(), null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(3));
 
-            subscribePubSub = new Timer((onjState) => SubscribePubSub(), null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(30));
+            subscribePubSub = new Timer((objState) => SubscribePubSub(), null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(30));
+
+            refreshNowRecordList = new Timer((obj) => RefreshNowRecordList(), null, TimeSpan.FromSeconds(20), TimeSpan.FromMinutes(20));
         }
 
         public async Task<Embed> GetNowStreamingChannel(NowStreamingHost host)
@@ -786,18 +788,18 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             Regex regex = new Regex(@"(http[s]{0,1}://){0,1}(www\.){0,1}(?'Host'[^/]+)/(?'Type'[^/]+)/(?'ChannelName'[\w%\-]+)");
             Match match = regex.Match(channelUrl);
             if (!match.Success)
-                throw new UriFormatException("錯誤，請確認是否輸入YouTube影片網址");
+                throw new UriFormatException("錯誤，請確認是否輸入YouTube頻道網址");
 
             string host = match.Groups["Host"].Value.ToLower();
             if (host != "youtube.com")
-                throw new UriFormatException("錯誤，請確認是否輸入YouTube影片網址");
+                throw new UriFormatException("錯誤，請確認是否輸入YouTube頻道網址");
 
             string type = match.Groups["Type"].Value.ToLower();
             if (type == "channel")
             {
                 channelId = match.Groups["ChannelName"].Value;
-                if (!channelId.StartsWith("UC")) throw new UriFormatException("錯誤，影片Id格式不正確");
-                if (channelId.Length != 24) throw new UriFormatException("錯誤，影片Id字元數不正確");
+                if (!channelId.StartsWith("UC")) throw new UriFormatException("錯誤，頻道Id格式不正確");
+                if (channelId.Length != 24) throw new UriFormatException("錯誤，頻道Id字元數不正確");
             }
             else if (type == "c" || type == "user")
             {
@@ -816,13 +818,13 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         var htmlDocument = await htmlWeb.LoadFromWebAsync($"https://www.youtube.com/{type}/{channelName}");
                         var node = htmlDocument.DocumentNode.Descendants().FirstOrDefault((x) => x.Name == "meta" && x.Attributes.Any((x2) => x2.Name == "itemprop" && x2.Value == "channelId"));
                         if (node == null)
-                            throw new UriFormatException("錯誤，請確認是否輸入正確的YouTube影片網址\n" +
-                                "或確認該影片是否存在");
+                            throw new UriFormatException("錯誤，請確認是否輸入正確的YouTube頻道網址\n" +
+                                "或確認該頻道是否存在");
 
                         channelId = node.Attributes.FirstOrDefault((x) => x.Name == "content").Value;
                         if (string.IsNullOrEmpty(channelId))
-                            throw new UriFormatException("錯誤，請確認是否輸入正確的YouTube影片網址\n" +
-                                "或確認該影片是否存在");
+                            throw new UriFormatException("錯誤，請確認是否輸入正確的YouTube頻道網址\n" +
+                                "或確認該頻道是否存在");
 
                         await Program.RedisDb.StringSetAsync($"discord_stream_bot:ChannelNameToId:{channelName}", channelId);
                     }

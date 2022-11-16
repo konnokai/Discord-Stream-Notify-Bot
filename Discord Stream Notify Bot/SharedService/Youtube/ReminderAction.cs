@@ -12,6 +12,17 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 {
     public partial class YoutubeStreamService
     {
+        List<string> nowRecordList = new List<string>();
+        private void RefreshNowRecordList()
+        {
+            var newNowRecordList = Utility.GetNowRecordStreamList();
+            if (newNowRecordList.Any())
+            {
+                nowRecordList.Clear();
+                nowRecordList.AddRange(newNowRecordList);
+            }
+        }
+
         private void StartReminder(DataBase.Table.Video streamVideo, DataBase.Table.Video.YTChannelType channelType)
         {
             if (streamVideo.ScheduledStartTime > DateTime.Now.AddDays(7)) return;
@@ -416,7 +427,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                 "https://www.youtube.com/watch?v=uSvGR5H7lUk"
                             };
 
-                            var nowRecordList = Utility.GetNowRecordStreamList();
                             if (nowRecordList.Any())
                                 randomVideoUrlList.AddRange(nowRecordList.Select((x) => $"https://www.youtube.com/watch?v={x}"));
 
