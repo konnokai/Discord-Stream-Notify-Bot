@@ -707,8 +707,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             saveDateBase = new Timer((objState) => SaveDateBase(), null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(3));
 
             subscribePubSub = new Timer((objState) => SubscribePubSub(), null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(30));
-
-            refreshNowRecordList = new Timer((obj) => RefreshNowRecordList(), null, TimeSpan.FromSeconds(20), TimeSpan.FromMinutes(20));
         }
 
         public async Task<Embed> GetNowStreamingChannel(NowStreamingHost host)

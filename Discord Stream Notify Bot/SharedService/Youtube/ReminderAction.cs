@@ -12,17 +12,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 {
     public partial class YoutubeStreamService
     {
-        List<string> nowRecordList = new List<string>();
-        private void RefreshNowRecordList()
-        {
-            var newNowRecordList = Utility.GetNowRecordStreamList();
-            if (newNowRecordList.Any())
-            {
-                nowRecordList.Clear();
-                nowRecordList.AddRange(newNowRecordList);
-            }
-        }
-
         private void StartReminder(DataBase.Table.Video streamVideo, DataBase.Table.Video.YTChannelType channelType)
         {
             if (streamVideo.ScheduledStartTime > DateTime.Now.AddDays(7)) return;
@@ -416,22 +405,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         MessageComponent comp = null;
                         if (noticeType == NoticeType.Start)
                         {
-                            List<string> randomVideoUrlList = new List<string>
-                            {
-                                "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-                                "https://www.youtube.com/watch?v=ST-Q-hX9Yzo",
-                                "https://www.youtube.com/watch?v=h-mUGj41hWA",
-                                "https://www.youtube.com/watch?v=BMvqvnyGtGo",
-                                "https://www.youtube.com/watch?v=0rLGxUxucdE",
-                                "https://www.youtube.com/watch?v=Z_VNp7VUtqA",
-                                "https://www.youtube.com/watch?v=uSvGR5H7lUk"
-                            };
-
-                            if (nowRecordList.Any())
-                                randomVideoUrlList.AddRange(nowRecordList.Select((x) => $"https://www.youtube.com/watch?v={x}"));
-
                             comp = new ComponentBuilder()
-                                .WithButton("好手氣，隨機帶你到一個影片或直播", style: ButtonStyle.Link, emote: YouTubeEmote, url: randomVideoUrlList[new Random().Next(0, randomVideoUrlList.Count)])
+                                .WithButton("好手氣，隨機帶你到一個影片或直播", style: ButtonStyle.Link, emote: YouTubeEmote, url: "https://api.konnokai.me/randomvideo")
                                 .WithButton("贊助小幫手 (Patreon) #ad", style: ButtonStyle.Link, emote: PatreonEmote, url: Utility.PatreonUrl, row: 1)
                                 .WithButton("贊助小幫手 (Paypal) #ad", style: ButtonStyle.Link, emote: PayPalEmote, url: Utility.PaypalUrl, row: 1).Build();
                         }
