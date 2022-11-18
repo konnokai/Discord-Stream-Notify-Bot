@@ -202,6 +202,8 @@ namespace Discord_Stream_Notify_Bot.Interaction
 
         public static Task SendErrorAsync(this IDiscordInteraction di, string des, bool isFollowerup = false, bool ephemeral = true)
         {
+            Log.Warn($"回傳錯誤給 [{di.User.Username}]: {des}");
+
             if (isFollowerup)
                 return di.FollowupAsync(embed: new EmbedBuilder().WithErrorColor().WithDescription(des).Build(), ephemeral: ephemeral);
             else
