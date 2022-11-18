@@ -138,6 +138,12 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
                 return;
             }
 
+            if (role == Context.Guild.EveryoneRole)
+            {
+                await Context.Interaction.SendErrorAsync("不可設定everyone用戶組，這用戶組每個人都有了你怎麼還會想設定?");
+                return;
+            }
+
             using (var db = DataBase.DBContext.GetDbContext())
             {
                 try

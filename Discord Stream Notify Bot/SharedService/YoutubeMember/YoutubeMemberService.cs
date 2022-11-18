@@ -82,7 +82,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                     if (customId.Length <= 2 || customId[0] != "member")
                         await component.RespondAsync("選單錯誤");
 
-                    using DataBase.DBContext db = DataBase.DBContext.GetDbContext();
+                    using DBContext db = DBContext.GetDbContext();
                     if (customId[1] == "check" && customId.Length == 4)
                     {
                         await component.DeferAsync(true);
@@ -187,7 +187,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
         {
             try
             {
-                using var db = DataBase.DBContext.GetDbContext();
+                using var db = DBContext.GetDbContext();
 
                 if (!db.YoutubeMemberCheck.Any((x) => x.UserId == userId))
                 {
@@ -446,7 +446,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                     if (guildConfig == null)
                     {
                         Log.Warn($"SendMsgToLogChannelAsync: {item.GuildId} 無GuildConfig");
-                        db.GuildConfig.Add(new DataBase.Table.GuildConfig { GuildId = guild.Id });
+                        db.GuildConfig.Add(new GuildConfig { GuildId = guild.Id });
                         db.GuildYoutubeMemberConfig.Remove(item);
 
                         msg += $"\n另外: `{guild.Name}` 無會限紀錄頻道，請新增頻道並給予小幫手 `讀取、發送及嵌入連結` 權限後使用 `/member-set set-notice-member-status-channel` 設定";
@@ -563,6 +563,14 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                     {
                         await logChannel.SendMessageAsync("我沒有權限可以編輯用戶組，請幫我開啟伺服器的 `管理身分組` 權限");
                         Log.Warn($"{guildYoutubeMemberConfig.GuildId} 無權限可給予用戶組");
+                        continue;
+                    }
+
+                    if (role == guild.EveryoneRole)
+                    {
+                        Log.Warn($"{guildYoutubeMemberConfig.GuildId} / {guildYoutubeMemberConfig.MemberCheckChannelId} 設定成everoyne用戶組=="); 
+                        await logChannel.SendMessageAsync("不可新增使用者everyone用戶組，請重新設定會限驗證");
+                        db.GuildYoutubeMemberConfig.Remove(guildYoutubeMemberConfig);
                         continue;
                     }
 
