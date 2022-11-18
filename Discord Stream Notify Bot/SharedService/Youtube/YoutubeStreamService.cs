@@ -781,27 +781,53 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             if (channelUrl.StartsWith("UC") && channelUrl.Length == 24)
                 return channelUrl;
 
-            string channelId = "";
+            string channelId;
 
-            Regex regex = new Regex(@"(http[s]{0,1}://){0,1}(www\.){0,1}(?'Host'[^/]+)/(?'Type'[^/]+)/(?'ChannelName'[\w%\-]+)");
-            Match match = regex.Match(channelUrl);
-            if (!match.Success)
-                throw new UriFormatException("錯誤，請確認是否輸入YouTube頻道網址");
-
-            string host = match.Groups["Host"].Value.ToLower();
-            if (host != "youtube.com")
-                throw new UriFormatException("錯誤，請確認是否輸入YouTube頻道網址");
-
-            string type = match.Groups["Type"].Value.ToLower();
-            if (type == "channel")
+            Regex regexOldFormat = new Regex(@"(http[s]{0,1}://){0,1}(www\.){0,1}(?'Host'[^/]+)/(?'Type'[^/]+)/(?'ChannelName'[\w%\-]+)");
+            Regex regexNewFormat = new Regex(@"(http[s]{0,1}://){0,1}(www\.){0,1}(?'Host'[^/]+)/@(?'CustomId'[^/]+)");
+            Match matchOldFormat = regexOldFormat.Match(channelUrl);
+            Match matchNewFormat = regexNewFormat.Match(channelUrl);
+            if (matchOldFormat.Success)
             {
-                channelId = match.Groups["ChannelName"].Value;
-                if (!channelId.StartsWith("UC")) throw new UriFormatException("錯誤，頻道Id格式不正確");
-                if (channelId.Length != 24) throw new UriFormatException("錯誤，頻道Id字元數不正確");
+                string host = matchOldFormat.Groups["Host"].Value.ToLower();
+                if (host != "youtube.com")
+                    throw new UriFormatException("錯誤，請確認是否輸入YouTube頻道網址");
+
+                string type = matchOldFormat.Groups["Type"].Value.ToLower();
+                if (type == "channel")
+                {
+                    channelId = matchOldFormat.Groups["ChannelName"].Value;
+                    if (!channelId.StartsWith("UC")) throw new UriFormatException("錯誤，頻道Id格式不正確");
+                    if (channelId.Length != 24) throw new UriFormatException("錯誤，頻道Id字元數不正確");
+                }
+                else if (type == "c" || type == "user")
+                {
+                    string channelName = WebUtility.UrlDecode(matchOldFormat.Groups["ChannelName"].Value);
+
+                    if (await Program.RedisDb.KeyExistsAsync($"discord_stream_bot:ChannelNameToId:{channelName}"))
+                    {
+                        channelId = await Program.RedisDb.StringGetAsync($"discord_stream_bot:ChannelNameToId:{channelName}");
+                    }
+                    else
+                    {
+                        try
+                        {
+                            channelId = await GetChannelIdByUrlAsync($"https://www.youtube.com/{type}/{channelName}");
+                            await Program.RedisDb.StringSetAsync($"discord_stream_bot:ChannelNameToId:{channelName}", channelId);
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Error(channelUrl);
+                            Log.Error(ex.ToString());
+                            throw;
+                        }
+                    }
+                }
+                else throw new UriFormatException("錯誤，網址格式不正確");
             }
-            else if (type == "c" || type == "user")
+            else if (matchNewFormat.Success)
             {
-                string channelName = WebUtility.UrlDecode(match.Groups["ChannelName"].Value);
+                string channelName = matchNewFormat.Groups["CustomId"].Value;
 
                 if (await Program.RedisDb.KeyExistsAsync($"discord_stream_bot:ChannelNameToId:{channelName}"))
                 {
@@ -811,19 +837,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 {
                     try
                     {
-                        //https://stackoverflow.com/a/36559834
-                        HtmlWeb htmlWeb = new HtmlWeb();
-                        var htmlDocument = await htmlWeb.LoadFromWebAsync($"https://www.youtube.com/{type}/{channelName}");
-                        var node = htmlDocument.DocumentNode.Descendants().FirstOrDefault((x) => x.Name == "meta" && x.Attributes.Any((x2) => x2.Name == "itemprop" && x2.Value == "channelId"));
-                        if (node == null)
-                            throw new UriFormatException("錯誤，請確認是否輸入正確的YouTube頻道網址\n" +
-                                "或確認該頻道是否存在");
-
-                        channelId = node.Attributes.FirstOrDefault((x) => x.Name == "content").Value;
-                        if (string.IsNullOrEmpty(channelId))
-                            throw new UriFormatException("錯誤，請確認是否輸入正確的YouTube頻道網址\n" +
-                                "或確認該頻道是否存在");
-
+                        channelId = await GetChannelIdByUrlAsync($"https://www.youtube.com/@{channelName}");
                         await Program.RedisDb.StringSetAsync($"discord_stream_bot:ChannelNameToId:{channelName}", channelId);
                     }
                     catch (Exception ex)
@@ -834,9 +848,35 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     }
                 }
             }
-            else throw new UriFormatException("錯誤，網址格式不正確");
+            else throw new UriFormatException("錯誤，請確認是否輸入YouTube頻道網址");
 
             return channelId;
+        }
+
+        private async Task<string> GetChannelIdByUrlAsync(string channelUrl)
+        {
+            try
+            {
+                string channelId = "";
+
+                //https://stackoverflow.com/a/36559834
+                HtmlWeb htmlWeb = new HtmlWeb();
+                var htmlDocument = await htmlWeb.LoadFromWebAsync(channelUrl);
+                var node = htmlDocument.DocumentNode.Descendants().FirstOrDefault((x) => x.Name == "meta" && x.Attributes.Any((x2) => x2.Name == "itemprop" && x2.Value == "channelId"));
+                if (node == null)
+                    throw new UriFormatException("錯誤，找不到節點\n" +
+                        "請確認是否輸入正確的YouTube頻道網址\n" +
+                        "或確認該頻道是否存在");
+
+                channelId = node.Attributes.FirstOrDefault((x) => x.Name == "content").Value;
+                if (string.IsNullOrEmpty(channelId))
+                    throw new UriFormatException("錯誤，找不到頻道Id\n" +
+                        "請確認是否輸入正確的YouTube頻道網址\n" +
+                        "或確認該頻道是否存在");
+
+                return channelId;
+            }
+            catch{ throw; }
         }
 
         public string GetVideoId(string videoUrl)
