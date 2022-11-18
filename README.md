@@ -1,5 +1,10 @@
 # Discord Stream Notify Bot
 
+[![Website dcbot.konnokai.me](https://img.shields.io/website-up-down-green-red/http/dcbot.konnokai.me/stream.svg)](http://dcbot.konnokai.me/stream)
+[![GitHub commits](https://badgen.net/github/commits/konnokai/Discord-Stream-Notify-Bot)](https://GitHub.com/konnokai/Discord-Stream-Notify-Bot/commit/)
+[![GitHub latest commit](https://badgen.net/github/last-commit/konnokai/Discord-Stream-Notify-Bot)](https://GitHub.com/konnokai/Discord-Stream-Notify-Bot/commit/)
+[![GitHub stars](https://badgen.net/github/stars/konnokai/Discord-Stream-Notify-Bot)](https://GitHub.com/Naereen/konnokai/Discord-Stream-Notify-Bot/)
+
 一個可以讓你在Discord上通知Vtuber直播的小幫手
 
 自行運行所需環境與參數
