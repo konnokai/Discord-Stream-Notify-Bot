@@ -80,6 +80,45 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
             }
         }
 
+        [SlashCommand("cancel-member-check", "取消本伺服器的會限驗證，會一併移除會限驗證用戶組")]
+        public async Task CancelMemberCheckAsync()
+        {
+            await DeferAsync(true);
+
+            using (var db = DataBase.DBContext.GetDbContext())
+            {
+                try
+                {
+                    var youtubeMemberChecks = db.YoutubeMemberCheck.Where((x) => x.UserId == Context.User.Id && x.GuildId == Context.Guild.Id);
+                    if (!youtubeMemberChecks.Any())
+                    {
+                        await Context.Interaction.SendErrorAsync("你尚未在本伺服器上運行會限驗證", true);
+                        return;
+                    }
+
+                    var guildYoutubeMemberConfigs = db.GuildYoutubeMemberConfig.Where((x) => x.GuildId == Context.Guild.Id);
+                    foreach (var item in guildYoutubeMemberConfigs)
+                    {
+                        try
+                        {
+                            await Context.Client.Rest.RemoveRoleAsync(Context.Guild.Id, Context.User.Id, item.MemberCheckGrantRoleId);
+                        }
+                        catch { }                      
+                    }
+
+                    db.YoutubeMemberCheck.RemoveRange(youtubeMemberChecks);
+                    db.SaveChanges();
+
+                    await Context.Interaction.SendConfirmAsync($"已移除你在本伺服器上 {youtubeMemberChecks.Count()} 個會限驗證", true);
+                }
+                catch (Exception ex)
+                {
+                    await Context.Interaction.SendErrorAsync($"資料庫儲存失敗，請向 {Program.ApplicatonOwner} 確認", true);
+                    Log.Error(ex.ToString());
+                }
+            }
+        }
+
         [SlashCommand("unlink", "解除Discord與Google綁定並移除授權")]
         public async Task UnlinkAsync()
         {
