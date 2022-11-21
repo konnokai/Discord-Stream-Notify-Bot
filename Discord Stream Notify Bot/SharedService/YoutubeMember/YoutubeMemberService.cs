@@ -501,6 +501,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
         public async Task CheckMemberShip(object stats)
         {
             bool isOldCheck = (bool)stats;
+            int totalCheckMemberCount = 0, totalIsMemberCount = 0;
 
             using (var db = DBContext.GetDbContext())
             {
@@ -568,7 +569,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
 
                     if (role == guild.EveryoneRole)
                     {
-                        Log.Warn($"{guildYoutubeMemberConfig.GuildId} / {guildYoutubeMemberConfig.MemberCheckChannelId} 設定成everoyne用戶組=="); 
+                        Log.Warn($"{guildYoutubeMemberConfig.GuildId} / {guildYoutubeMemberConfig.MemberCheckChannelId} 設定成everoyne用戶組==");
                         await logChannel.SendMessageAsync("不可新增使用者everyone用戶組，請重新設定會限驗證");
                         db.GuildYoutubeMemberConfig.Remove(guildYoutubeMemberConfig);
                         continue;
@@ -577,6 +578,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                     int checkedMemberCount = 0;
                     foreach (var member in list)
                     {
+                        totalCheckMemberCount++;
                         if (!checkedMemberSet.Contains($"{member.UserId}-{member.CheckYTChannelId}"))
                         {
                             var token = await flow.LoadTokenAsync(member.UserId.ToString(), CancellationToken.None);
@@ -585,7 +587,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                 await RemoveMemberCheckFromDbAsync(member.UserId);
 
                                 await logChannel.SendErrorMessageAsync(member.UserId, guildYoutubeMemberConfig.MemberCheckChannelTitle, "未登入");
-                                await member.UserId.SendErrorMessageAsync($"未登入，請至 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 登入並再次於伺服器執行 `/member check`",logChannel);
+                                await member.UserId.SendErrorMessageAsync($"未登入，請至 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 登入並再次於伺服器執行 `/member check`", logChannel);
 
                                 continue;
                             }
@@ -604,7 +606,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                     await logChannel.SendErrorMessageAsync(member.UserId, guildYoutubeMemberConfig.MemberCheckChannelTitle, "無法重複驗證");
                                     await member.UserId.SendErrorMessageAsync($"無法重新刷新您的授權\n" +
                                         $"請到 {Format.Url("Google安全性", "https://myaccount.google.com/permissions")} 移除 `直播小幫手會限確認` 的應用程式存取權後\n" +
-                                        $"至 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 重新登入並再次於伺服器執行 `/member check`",logChannel);
+                                        $"至 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 重新登入並再次於伺服器執行 `/member check`", logChannel);
 
                                     continue;
                                 }
@@ -620,7 +622,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                 await logChannel.SendErrorMessageAsync(member.UserId, guildYoutubeMemberConfig.MemberCheckChannelTitle, "認證過期");
                                 await member.UserId.SendErrorMessageAsync($"您的Google認證已失效\n" +
                                     $"請到 {Format.Url("Google安全性", "https://myaccount.google.com/permissions")} 移除 `直播小幫手會限確認` 的應用程式存取權後\n" +
-                                    $"至 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 重新登入並再次於伺服器執行 `/member check`",  logChannel);
+                                    $"至 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 重新登入並再次於伺服器執行 `/member check`", logChannel);
 
                                 continue;
                             }
@@ -642,7 +644,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                             {
                                 try
                                 {
-                                    if (ex.Message.ToLower().Contains("parameter has disabled comments"))
+                                    if (ex.Message.ToLower().Contains("parameter has disabled comments")) // Todo: 這邊可能需要在抓取新影片後重新驗證會限
                                     {
                                         Log.Warn($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {member.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 的會限資格取得失敗");
                                         Log.Warn($"{guildYoutubeMemberConfig.MemberCheckChannelTitle} ({guildYoutubeMemberConfig.MemberCheckChannelId}): {guildYoutubeMemberConfig.MemberCheckVideoId}已關閉留言");
@@ -760,6 +762,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                         }
 
                         checkedMemberCount++;
+                        totalIsMemberCount++;
                         try
                         {
                             await _client.Rest.AddRoleAsync(guild.Id, member.UserId, role.Id).ConfigureAwait(false);
@@ -844,7 +847,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                     db.YoutubeMemberCheck.RemoveRange(needRemoveList);
                 }
                 catch (Exception ex)
-                {                    
+                {
                     Log.Error($"CheckMemberShip-RemoveRange: {ex}");
                     await (await Program.ApplicatonOwner.CreateDMChannelAsync()).SendErrorMessageAsync($"CheckMemberShip-RemoveRange: {ex}");
                 }
@@ -886,7 +889,11 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                 needRemoveList.Clear();
             }
 
-            //Log.Info("會限檢查完畢");
+            if (totalCheckMemberCount > 0)
+            {
+                Log.Info((isOldCheck ? "舊" : "新") + $"會限檢查完畢");
+                Log.Info($"總驗證: {totalCheckMemberCount} 位，成功驗證: {totalIsMemberCount} 位，驗證失敗: {totalCheckMemberCount - totalIsMemberCount} 位");
+            }
         }
 
         private async Task<UserCredential> GetUserCredentialAsync(string discordUserId, TokenResponse token)
