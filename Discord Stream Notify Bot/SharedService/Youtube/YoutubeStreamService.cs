@@ -2,6 +2,7 @@
 using Discord.Interactions;
 using Discord.WebSocket;
 using Discord_Stream_Notify_Bot.Interaction;
+using Discord_Stream_Notify_Bot.SharedService.Youtube.Json;
 using Google.Apis.Services;
 using Google.Apis.YouTube.v3;
 using HtmlAgilityPack;
@@ -46,6 +47,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             Niji
         }
 
+        public List<Content> NijisanjiLiverContents { get; } = new List<Content>();
         public ConcurrentDictionary<DataBase.Table.Video, ReminderItem> Reminders { get; } = new ConcurrentDictionary<DataBase.Table.Video, ReminderItem>();
         public bool IsRecord { get; set; } = true;
         public YouTubeService yt;
@@ -110,7 +112,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             }
         }
 
-        private Timer holoSchedule, nijisanjiSchedule, otherSchedule, checkScheduleTime, saveDateBase, subscribePubSub, refreshNowRecordList/*, checkHoloNowStream, holoScheduleEmoji*/;
+        private Timer holoSchedule, nijisanjiSchedule, otherSchedule, checkScheduleTime, saveDateBase, subscribePubSub/*, checkHoloNowStream, holoScheduleEmoji*/;
         private SocketTextChannel noticeRecordChannel;
         private DiscordSocketClient _client;
         private readonly IHttpClientFactory _httpClientFactory;
@@ -583,6 +585,11 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 }
             }
 
+            foreach (var item in new string[] { "nijisanji", "nijisanjien", "virtuareal" })
+            {
+                Task.Run(async () => await GetOrCreateNijisanjiLiverListAsync(item));
+            }
+
             holoSchedule = new Timer(async (objState) => await HoloScheduleAsync(), null, TimeSpan.FromSeconds(15), TimeSpan.FromMinutes(5));
 
             nijisanjiSchedule = new Timer(async (objState) => await NijisanjiScheduleAsync(), null, TimeSpan.FromSeconds(10), TimeSpan.FromMinutes(5));
@@ -709,6 +716,37 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             subscribePubSub = new Timer((objState) => SubscribePubSub(), null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(30));
         }
 
+        private async Task GetOrCreateNijisanjiLiverListAsync(string affiliation)
+        {
+            try
+            {
+                if (await Program.RedisDb.KeyExistsAsync($"youtube.nijisanji.liver.{affiliation}"))
+                {
+                    var liver = JsonConvert.DeserializeObject<List<Content>>(await Program.RedisDb.StringGetAsync($"youtube.nijisanji.liver.{affiliation}"));
+                    NijisanjiLiverContents.AddRange(liver);
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"GetOrCreateNijisanjiLiverListAsync-GetRedisData: {ex}");
+            }
+
+            try
+            {
+                var httpClient = _httpClientFactory.CreateClient();
+                var json = await httpClient.GetStringAsync($"https://www.nijisanji.jp/api/livers?limit=300&offset=0&orderKey=subscriber_count&order=desc&affiliation={affiliation}&locale=ja&includeHidden=true");
+                var liver = JsonConvert.DeserializeObject<NijisanjiLiverJson>(json).contents;
+                await Program.RedisDb.StringSetAsync($"youtube.nijisanji.liver.{affiliation}", JsonConvert.SerializeObject(liver), TimeSpan.FromDays(1));
+                NijisanjiLiverContents.AddRange(liver);
+                Log.Stream($"GetOrCreateNijisanjiLiverListAsync: {affiliation}已刷新");
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"GetOrCreateNijisanjiLiverListAsync-GetLiver: {ex}");
+            }            
+        }
+
         public async Task<Embed> GetNowStreamingChannel(NowStreamingHost host)
         {
             try
@@ -727,15 +765,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                 .Select((x) => x.Attributes["href"].Value.Split("?v=")[1]));
                         }
                         break;
-                    case NowStreamingHost.Niji:
-                        // Todo: 實作2434現在直播的成員
-                        // 2434官網直播表: https://www.nijisanji.jp/streams
-                        // 2434新直播資料路徑(不確定路徑會不會有變動): https://www.nijisanji.jp/_next/data/GBFnxldmHEqKIM1q5W-3V/ja/streams.json
-                        // 2434成員資料
-                        // JP: https://www.nijisanji.jp/api/livers?limit=300&offset=0&orderKey=subscriber_count&order=desc&affiliation=nijisanji&locale=ja&includeHidden=true
-                        // EN: https://www.nijisanji.jp/api/livers?limit=300&offset=0&orderKey=subscriber_count&order=desc&affiliation=nijisanjien&locale=ja&includeHidden=true
-                        // VR: https://www.nijisanji.jp/api/livers?limit=300&offset=0&orderKey=subscriber_count&order=desc&affiliation=virtuareal&locale=ja&includeHidden=true
-                        // KR跟ID沒看到網站有請求
+                    case NowStreamingHost.Niji: //Todo: 實作2434現正直播查詢
                         return null;
                         break;
                 }
