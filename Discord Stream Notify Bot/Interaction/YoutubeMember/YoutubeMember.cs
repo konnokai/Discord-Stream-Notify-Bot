@@ -109,7 +109,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
                     db.YoutubeMemberCheck.RemoveRange(youtubeMemberChecks);
                     db.SaveChanges();
 
-                    await Context.Interaction.SendConfirmAsync($"已移除你在本伺服器上 {youtubeMemberChecks.Count()} 個會限驗證", true);
+                    await Context.Interaction.SendConfirmAsync($"已移除你在本伺服器上會限驗證", true);
                 }
                 catch (Exception ex)
                 {
