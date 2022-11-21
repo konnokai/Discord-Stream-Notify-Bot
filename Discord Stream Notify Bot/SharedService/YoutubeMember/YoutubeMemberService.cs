@@ -219,7 +219,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
             }
         }
 
-        public async Task<string> GetYoutubeDataAsync(string discordUserId = "")
+        public async Task<string> GetYoutubeDataAsync(string discordUserId)
         {
             try
             {
