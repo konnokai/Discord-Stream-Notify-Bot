@@ -293,7 +293,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                         totalIsMemberCount++;
                         try
                         {
-                            await _client.Rest.AddRoleAsync(guild.Id, member.UserId, role.Id).ConfigureAwait(false);
+                            if (!isOldCheck)
+                                await _client.Rest.AddRoleAsync(guild.Id, member.UserId, role.Id).ConfigureAwait(false);
                         }
                         catch (Discord.Net.HttpException httpEx)
                         {
@@ -370,17 +371,17 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                         $"本次驗證 {totalCheckCount} 位成員，共 {checkedMemberCount} 位驗證成功");
                 }
 
-                try
+                foreach (var item in needRemoveList)
                 {
-                    foreach (var item in needRemoveList)
+                    try
                     {
                         db.YoutubeMemberCheck.Remove(item);
                     }
-                }
-                catch (Exception ex)
-                {
-                    Log.Error($"CheckMemberShip-RemoveRange: {ex}");
-                    await (await Program.ApplicatonOwner.CreateDMChannelAsync()).SendErrorMessageAsync($"CheckMemberShip-RemoveRange: {ex}");
+                    catch (Exception ex)
+                    {
+                        Log.Error($"CheckMemberShip-Remove: {ex}");
+                        //await (await Program.ApplicatonOwner.CreateDMChannelAsync()).SendErrorMessageAsync($"CheckMemberShip-RemoveRange: {ex}");
+                    }
                 }
 
                 var saveTime = DateTime.Now;
