@@ -17,6 +17,7 @@ public class BotConfig
     public string WebHookUrl { get; set; } = "";
     public string RedisTokenKey { get; set; } = "";
     public string PubSubCallbackUrl { get; set; } = "";
+    public string ImgurClientId { get; set; } = "";
 
     public void InitBotConfig()
     {
@@ -77,6 +78,7 @@ public class BotConfig
             RedisOption = config.RedisOption;
             TestSlashCommandGuildId = config.TestSlashCommandGuildId;
             RedisTokenKey = config.RedisTokenKey;
+            ImgurClientId = config.ImgurClientId;
 
             if (string.IsNullOrWhiteSpace(config.RedisTokenKey) || string.IsNullOrWhiteSpace(RedisTokenKey))
             {
