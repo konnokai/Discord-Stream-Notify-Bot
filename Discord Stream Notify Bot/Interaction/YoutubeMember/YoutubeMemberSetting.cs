@@ -79,7 +79,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
         public async Task SetNoticeMemberStatusChannel([Summary("紀錄頻道")] ITextChannel textChannel)
         {
             await DeferAsync(true);
-
+            
             if (!_service.Enable)
             {
                 await Context.Interaction.SendErrorAsync($"該Bot未啟用會限驗證系統，請向 {Program.ApplicatonOwner} 確認", true);

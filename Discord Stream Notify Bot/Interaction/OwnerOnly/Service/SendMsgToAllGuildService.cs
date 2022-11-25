@@ -8,6 +8,8 @@ namespace Discord_Stream_Notify_Bot.Interaction.OwnerOnly.Service
 {
     public class SendMsgToAllGuildService : IInteractionService
     {
+        public string ImgurClientId { get; set; } = "";
+
         private class ButtonCheckData
         {
             public ulong UserId { get; set; }
@@ -28,8 +30,10 @@ namespace Discord_Stream_Notify_Bot.Interaction.OwnerOnly.Service
         private ButtonCheckData checkData;
         private bool isSending = false;
 
-        public SendMsgToAllGuildService(DiscordSocketClient discordSocketClient)
+        public SendMsgToAllGuildService(DiscordSocketClient discordSocketClient, BotConfig botConfig)
         {
+            ImgurClientId = botConfig.ImgurClientId;
+
             _client = discordSocketClient;
             _client.ModalSubmitted += async modal =>
             {

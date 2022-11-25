@@ -383,7 +383,9 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                 DataBase.Table.Video streamVideo;
                                 var youtubeChannelSpider = db.YoutubeChannelSpider.FirstOrDefault((x) => x.ChannelId == youtubePubSubNotification.ChannelId);
 
-                                if ((db.RecordYoutubeChannel.Any((x) => x.YoutubeChannelId == youtubePubSubNotification.ChannelId)) || (youtubeChannelSpider != null && youtubeChannelSpider.IsTrustedChannel))
+                                using var db2 = DataBase.NijisanjiVideoContext.GetDbContext();
+
+                                if (db.RecordYoutubeChannel.Any((x) => x.YoutubeChannelId == youtubePubSubNotification.ChannelId) || db2.Video.Any((x) => x.ChannelId == youtubePubSubNotification.ChannelId) || (youtubeChannelSpider != null && youtubeChannelSpider.IsTrustedChannel))
                                 {
                                     var item = await GetVideoAsync(youtubePubSubNotification.VideoId).ConfigureAwait(false);
                                     if (item == null)

@@ -27,9 +27,10 @@
   </ItemGroup>  
 
   <ItemGroup>
-    <PackageReference Include="Discord.Net" Version="3.7.2" />
-    <PackageReference Include="Google.Apis.YouTube.v3" Version="1.57.0.2693" />
-    <PackageReference Include="HtmlAgilityPack" Version="1.11.43" />
+    <PackageReference Include="Discord.Net" Version="3.8.1" />
+    <PackageReference Include="Google.Apis.YouTube.v3" Version="1.57.0.2827" />
+    <PackageReference Include="HtmlAgilityPack" Version="1.11.46" />
+    <PackageReference Include="Imgur.API" Version="5.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="6.0.5" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="6.0.5">
       <PrivateAssets>all</PrivateAssets>
@@ -46,8 +47,8 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="Polly" Version="7.2.3" />
     <PackageReference Include="SocialOpinionAPI" Version="2.0.13.1" />
-    <PackageReference Include="SQLitePCLRaw.bundle_green" Version="2.1.0" />
-    <PackageReference Include="StackExchange.Redis" Version="2.5.61" />
+    <PackageReference Include="SQLitePCLRaw.bundle_green" Version="2.1.2" />
+    <PackageReference Include="StackExchange.Redis" Version="2.6.70" />
     <PackageReference Include="System.Management" Version="6.0.0" />
   </ItemGroup>  
 
