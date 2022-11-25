@@ -198,18 +198,42 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         if (Extensions.HasStreamVideoByVideoId(videoId) || newStreamList.Contains(videoId) || addNewStreamVideo.ContainsKey(videoId)) continue;
 
                         newStreamList.Add(videoId);
-
+                        DataBase.Table.Video streamVideo;
                         var channelData = NijisanjiLiverContents.FirstOrDefault((x) => x.id == item.youtubechannel.liver.externalid);
-
-                        var streamVideo = new DataBase.Table.Video()
+                        if (channelData == null)
                         {
-                            ChannelId = channelData.socialLinks.youtube.Replace("https://www.youtube.com/channel/", ""),
-                            ChannelTitle = $"{channelData.name} / {channelData.enName}",
-                            VideoId = videoId,
-                            VideoTitle = item.title,
-                            ScheduledStartTime = item.startat.Value,
-                            ChannelType = DataBase.Table.Video.YTChannelType.Nijisanji
-                        };
+                            var video = await GetVideoAsync(videoId);
+                            streamVideo = new DataBase.Table.Video()
+                            {
+                                ChannelId = channelData.socialLinks.youtube.Replace("https://www.youtube.com/channel/", ""),
+                                ChannelTitle = video.Snippet.ChannelTitle,
+                                VideoId = videoId,
+                                VideoTitle = item.title,
+                                ScheduledStartTime = item.startat.Value,
+                                ChannelType = DataBase.Table.Video.YTChannelType.Nijisanji
+                            };
+
+                            Log.Warn($"檢測到無Liver資料的頻道({videoId}): `{video.Snippet.ChannelTitle}` / {item.title}");
+                            Log.Warn("重新刷新Liver資料清單");
+
+                            NijisanjiLiverContents.Clear();
+                            foreach (var affiliation in new string[] { "nijisanji", "nijisanjien", "virtuareal" })
+                            {
+                                await Task.Run(async () => await GetOrCreateNijisanjiLiverListAsync(affiliation));
+                            }
+                        }
+                        else
+                        {
+                            streamVideo = new DataBase.Table.Video()
+                            {
+                                ChannelId = channelData.socialLinks.youtube.Replace("https://www.youtube.com/channel/", ""),
+                                ChannelTitle = $"{channelData.name} / {channelData.enName}",
+                                VideoId = videoId,
+                                VideoTitle = item.title,
+                                ScheduledStartTime = item.startat.Value,
+                                ChannelType = DataBase.Table.Video.YTChannelType.Nijisanji
+                            };
+                        }
 
                         Log.Stream($"(排程) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
 
@@ -367,7 +391,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 {
                     if (Program.isDisconnect) break;
 
-                    IEnumerable<Google.Apis.YouTube.v3.Data.Video> videos;
+                    IEnumerable<Video> videos;
                     try
                     {
                         videos = await GetVideosAsync(addVideoIdList.Skip(i).Take(50));
