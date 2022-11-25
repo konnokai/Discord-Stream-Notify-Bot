@@ -153,12 +153,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                                 if (Program.Redis != null)
                                 {
-                                    if (Utility.GetNowRecordStreamList().Contains(streamVideo.VideoId))
-                                    {
-                                        Log.Warn($"{streamVideo.VideoId} 已經在錄影了");
-                                        return;
-                                    }
-
                                     if (await Program.RedisSub.PublishAsync("youtube.record", streamVideo.VideoId) != 0)
                                     {
                                         Log.Info($"已發送錄影請求: {streamVideo.VideoId}");

@@ -85,11 +85,9 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
 
             var nowRecordStreamList = Utility.GetNowRecordStreamList();
 
-            if (nowRecordStreamList.Contains(videoId))
-            {
-                await Context.Channel.SendConfirmAsync($"{videoId} 已經在錄影了").ConfigureAwait(false);
-                return;
-            }
+            if (nowRecordStreamList.Contains(videoId) && 
+                !await PromptUserConfirmAsync(new EmbedBuilder().WithErrorColor().WithDescription("已經在錄影了，確定繼續?")))            
+                    return;
 
             Google.Apis.YouTube.v3.Data.Video video;
             try
@@ -110,11 +108,9 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
 
             var description = $"{Format.Url(video.Snippet.Title, $"https://www.youtube.com/watch?v={videoId}")}\n" +
                     $"{Format.Url(video.Snippet.ChannelTitle, $"https://www.youtube.com/channel/{video.Snippet.ChannelId}")}";
-            if (await PromptUserConfirmAsync(new EmbedBuilder().WithTitle("現在錄影?").WithDescription(description)))
-            {
-                await Context.Channel.SendConfirmAsync("已開始錄影", description).ConfigureAwait(false);
-                await _service.AddOtherDataAsync(video);
-            }
+
+            await Context.Channel.SendConfirmAsync("已開始錄影", description).ConfigureAwait(false);
+            await _service.AddOtherDataAsync(video);
         }
 
         [RequireContext(ContextType.DM)]
