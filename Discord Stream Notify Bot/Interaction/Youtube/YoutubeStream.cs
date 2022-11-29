@@ -325,7 +325,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
         {
             await DeferAsync(true).ConfigureAwait(false);
 
-            var permissions = (Context.Guild.GetUser(_client.CurrentUser.Id)).GetPermissions(textChannel);
+            var permissions = Context.Guild.GetUser(_client.CurrentUser.Id).GetPermissions(textChannel);
             if (!permissions.ViewChannel || !permissions.SendMessages)
             {
                 await Context.Interaction.SendErrorAsync($"我在 `{textChannel}` 沒有 `讀取&編輯頻道` 的權限，請給予權限後再次執行本指令", true);
