@@ -154,7 +154,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
 
                 if (await PromptUserConfirmAsync(new EmbedBuilder().WithTitle("新增頻道至直播記錄清單?").WithDescription(channelTitle)))
                 {
-                    db.RecordYoutubeChannel.Add(new DataBase.Table.RecordYoutubeChannel() { YoutubeChannelId = channelId });
+                    db.RecordYoutubeChannel.Add(new RecordYoutubeChannel() { YoutubeChannelId = channelId });
                     db.SaveChanges();
                     await Context.Channel.SendConfirmAsync($"已新增 {channelTitle} 至直播記錄清單").ConfigureAwait(false);
                 }
@@ -322,23 +322,23 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                 await ReplyAsync("VideoId空白").ConfigureAwait(false);
                 return;
             }
-            using (var db = DataBase.DBContext.GetDbContext())
+
+            videoId = _service.GetVideoId(videoId);
+
+            var video = Extensions.GetStreamVideoByVideoId(videoId);
+            if (video == null)
             {
-                if (!db.HasStreamVideoByVideoId(videoId))
-                {
-                    await ReplyAsync($"不存在 {videoId} 的影片").ConfigureAwait(false);
-                    return;
-                }
-
-                var video = Extensions.GetStreamVideoByVideoId(videoId);
-                EmbedBuilder embedBuilder = new EmbedBuilder().WithOkColor()
-                    .WithTitle(video.VideoTitle)
-                    .WithUrl($"https://www.youtube.com/watch?v={videoId}")
-                    .WithDescription(Format.Url(video.ChannelTitle, $"https://www.youtube.com/channel/{video.ChannelId}"))
-                    .AddField("排定開台時間", video.ScheduledStartTime, true);
-
-                await ReplyAsync(embed: embedBuilder.Build()).ConfigureAwait(false);
+                await ReplyAsync($"不存在 {videoId} 的影片").ConfigureAwait(false);
+                return;
             }
+
+            EmbedBuilder embedBuilder = new EmbedBuilder().WithOkColor()
+                .WithTitle(video.VideoTitle)
+                .WithUrl($"https://www.youtube.com/watch?v={videoId}")
+                .WithDescription(Format.Url(video.ChannelTitle, $"https://www.youtube.com/channel/{video.ChannelId}"))
+                .AddField("排定開台時間", video.ScheduledStartTime, true);
+
+            await ReplyAsync(embed: embedBuilder.Build()).ConfigureAwait(false);
         }
 
         [RequireContext(ContextType.DM)]
