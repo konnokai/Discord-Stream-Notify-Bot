@@ -70,25 +70,36 @@ namespace Discord_Stream_Notify_Bot.Interaction.Help
         }
 
         [SlashCommand("get-command-help", "顯示指令的詳細說明")]
-        public async Task H([Summary("指令名稱")] string command = "")
+        public async Task H([Summary("模組名稱")] string module = "", [Summary("指令名稱")] string command = "")
         {
             command = command?.Trim();
 
-            if (string.IsNullOrWhiteSpace(command))
+            if (string.IsNullOrWhiteSpace(module))
             {
                 EmbedBuilder embed = new EmbedBuilder().WithOkColor().WithFooter("輸入 `/help get-all-modules` 取得所有的模組");
                 embed.Title = "直播小幫手 建置版本" + Program.VERSION;
 #if DEBUG
                 embed.Title += " (測試版)";
 #endif
-                embed.WithDescription(System.IO.File.ReadAllText(Program.GetDataFilePath("HelpDescription.txt")).Replace("\\n", "\n") + 
+                embed.WithDescription(System.IO.File.ReadAllText(Program.GetDataFilePath("HelpDescription.txt")).Replace("\\n", "\n") +
                     $"\n\n您可以透過 {Format.Url("Patreon", Discord_Stream_Notify_Bot.Utility.PatreonUrl)} 或 {Format.Url("Paypal", Discord_Stream_Notify_Bot.Utility.PaypalUrl)} 來贊助直播小幫手");
                 await RespondAsync(embed: embed.Build());
                 return;
             }
 
-            SlashCommandInfo commandInfo = _interaction.SlashCommands.FirstOrDefault((x) => x.Name == command.ToLowerInvariant());
-            if (commandInfo == null) { await Context.Interaction.SendErrorAsync($"找不到 {command} 指令"); return; }
+            var cmds = _interaction.SlashCommands.Where(c => c.Module.Name.ToUpperInvariant().StartsWith(module.ToUpperInvariant(), StringComparison.InvariantCulture)).OrderBy(c => c.Name).Distinct(new CommandTextEqualityComparer());
+            if (cmds.Count() == 0)
+            { 
+                await Context.Interaction.SendErrorAsync($"找不到 {module} 模組\n輸入 `/help get-all-modules` 取得所有的模組", ephemeral: true);
+                return;
+            }           
+
+            SlashCommandInfo commandInfo = cmds.FirstOrDefault((x) => x.Name == command.ToLowerInvariant());
+            if (commandInfo == null)
+            { 
+                await Context.Interaction.SendErrorAsync($"找不到 {command} 指令");
+                return;
+            }
 
             await RespondAsync(embed: _service.GetCommandHelp(commandInfo).Build());
         }
