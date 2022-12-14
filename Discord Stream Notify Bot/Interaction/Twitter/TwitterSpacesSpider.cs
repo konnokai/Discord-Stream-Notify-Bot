@@ -12,7 +12,7 @@ using static Discord_Stream_Notify_Bot.Interaction.Twitter.TwitterSpaces;
 namespace Discord_Stream_Notify_Bot.Interaction.Twitter
 {
     [EnabledInDm(false)]
-    [Group("twitter-spider", "推特語音空間")]
+    [Group("twitter-spider", "推特語音空間爬蟲設定")]
     [DefaultMemberPermissions(GuildPermission.Administrator)]
     public class TwitterSpacesSpider : TopLevelModule<SharedService.Twitter.TwitterSpacesService>
     {

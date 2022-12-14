@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.Interactions;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Discord_Stream_Notify_Bot.Interaction.Help
 {
-    [Group("help", "說明")]
+    [Group("help", "說明指令")]
     public class Help : TopLevelModule<Service.HelpService>
     {
         private readonly InteractionService _interaction;
@@ -19,17 +20,56 @@ namespace Discord_Stream_Notify_Bot.Interaction.Help
             _services = service;
         }
 
+        public class HelpGetModulesAutocompleteHandler : AutocompleteHandler
+        {
+            public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+            {
+                List<AutocompleteResult> results = new();
+                var succ = new HashSet<SlashCommandInfo>((await Task.WhenAll(services.GetService<InteractionService>().SlashCommands.Select(async x =>
+                {
+                    var pre = await x.CheckPreconditionsAsync(context, services).ConfigureAwait(false);
+                    return (Cmd: x, Succ: pre.IsSuccess);
+                })).ConfigureAwait(false))
+                   .Where(x => x.Succ)
+                   .Select(x => x.Cmd));
+
+                try
+                {
+                    foreach (var item in succ.GroupBy((x) => x.Module.Name))
+                    {
+                        var module = item.First().Module;
+                        results.Add(new AutocompleteResult((string.IsNullOrWhiteSpace(module.Description) ? "" : module.Description + " ") + $"({module.Name})", module.Name));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Error("HelpGetModulesAutocompleteHandler");
+                    Log.Error(ex.ToString());
+                }
+
+                return AutocompletionResult.FromSuccess(results.Take(25));
+            }
+        }
+
         [SlashCommand("get-all-modules", "顯示全部模組")]
         public async Task Modules()
         {
+            var succ = new HashSet<SlashCommandInfo>((await Task.WhenAll(_interaction.SlashCommands.Select(async x =>
+            {
+                var pre = await x.CheckPreconditionsAsync(Context, _services).ConfigureAwait(false);
+                return (Cmd: x, Succ: pre.IsSuccess);
+            })).ConfigureAwait(false))
+               .Where(x => x.Succ)
+               .Select(x => x.Cmd));
+
             await RespondAsync(embed: new EmbedBuilder().WithOkColor().WithTitle("模組清單")
-                .WithDescription(string.Join("\n", _interaction.Modules.Select((x) => "。" + x.Name)))
+                .WithDescription(string.Join("\n", succ.GroupBy((x) => x.Module.Name).Select((x) => "。" + x.Key)))
                 .WithFooter("輸入 `/help getallcommands 模組名稱` 以顯示模組內全部的指令，例 `/help get-all-commands help`")
                 .Build());
         }
 
         [SlashCommand("get-all-commands", "顯示模組內包含的指令")]
-        public async Task Commands([Summary("模組名稱")]string module)
+        public async Task Commands([Summary("模組名稱"), Autocomplete(typeof(HelpGetModulesAutocompleteHandler))] string module)
         {
             module = module?.Trim();
             if (string.IsNullOrWhiteSpace(module))
@@ -38,7 +78,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Help
                 return;
             }
 
-            var cmds = _interaction.SlashCommands.Where(c => c.Module.Name.ToUpperInvariant().StartsWith(module.ToUpperInvariant(), StringComparison.InvariantCulture)).OrderBy(c => c.Name).Distinct(new CommandTextEqualityComparer());
+            var cmds = _interaction.SlashCommands.Where(c => c.Module.Name.ToUpperInvariant() == module.ToUpperInvariant()).OrderBy(c => c.Name).Distinct(new CommandTextEqualityComparer());
             if (cmds.Count() == 0) { await Context.Interaction.SendErrorAsync($"找不到 {module} 模組",ephemeral: true); return; }
 
             var succ = new HashSet<SlashCommandInfo>((await Task.WhenAll(cmds.Select(async x =>
@@ -70,7 +110,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Help
         }
 
         [SlashCommand("get-command-help", "顯示指令的詳細說明")]
-        public async Task H([Summary("模組名稱")] string module = "", [Summary("指令名稱")] string command = "")
+        public async Task H([Summary("模組名稱"), Autocomplete(typeof(HelpGetModulesAutocompleteHandler))] string module = "", [Summary("指令名稱")] string command = "")
         {
             command = command?.Trim();
 
@@ -87,7 +127,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Help
                 return;
             }
 
-            var cmds = _interaction.SlashCommands.Where(c => c.Module.Name.ToUpperInvariant().StartsWith(module.ToUpperInvariant(), StringComparison.InvariantCulture)).OrderBy(c => c.Name).Distinct(new CommandTextEqualityComparer());
+            var cmds = _interaction.SlashCommands.Where(c => c.Module.Name.ToUpperInvariant() == module.ToUpperInvariant()).OrderBy(c => c.Name).Distinct(new CommandTextEqualityComparer());
             if (cmds.Count() == 0)
             { 
                 await Context.Interaction.SendErrorAsync($"找不到 {module} 模組\n輸入 `/help get-all-modules` 取得所有的模組", ephemeral: true);
