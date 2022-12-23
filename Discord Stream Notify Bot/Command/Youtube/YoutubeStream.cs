@@ -1,14 +1,14 @@
 ﻿using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
+using Discord_Stream_Notify_Bot.Command.Attribute;
+using Discord_Stream_Notify_Bot.DataBase;
+using Discord_Stream_Notify_Bot.DataBase.Table;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Threading.Tasks;
-using Discord_Stream_Notify_Bot.Command.Attribute;
-using Discord_Stream_Notify_Bot.DataBase.Table;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 
 namespace Discord_Stream_Notify_Bot.Command.Youtube
 {
@@ -85,9 +85,9 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
 
             var nowRecordStreamList = Utility.GetNowRecordStreamList();
 
-            if (nowRecordStreamList.Contains(videoId) && 
-                !await PromptUserConfirmAsync(new EmbedBuilder().WithErrorColor().WithDescription("已經在錄影了，確定繼續?")))            
-                    return;
+            if (nowRecordStreamList.Contains(videoId) &&
+                !await PromptUserConfirmAsync(new EmbedBuilder().WithErrorColor().WithDescription("已經在錄影了，確定繼續?")))
+                return;
 
             Google.Apis.YouTube.v3.Data.Video video;
             try
@@ -109,8 +109,31 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
             var description = $"{Format.Url(video.Snippet.Title, $"https://www.youtube.com/watch?v={videoId}")}\n" +
                     $"{Format.Url(video.Snippet.ChannelTitle, $"https://www.youtube.com/channel/{video.Snippet.ChannelId}")}";
 
-            await Context.Channel.SendConfirmAsync("已開始錄影", description).ConfigureAwait(false);
-            await _service.AddOtherDataAsync(video);
+            using var db = DBContext.GetDbContext();
+            if (!db.HasStreamVideoByVideoId(videoId))
+                await _service.AddOtherDataAsync(video);
+
+            try
+            {
+                if (Program.Redis != null)
+                {
+                    if (await Program.RedisSub.PublishAsync("youtube.record", videoId) != 0)
+                    {
+                        Log.Info($"已發送錄影請求: {videoId}");
+                        await Context.Channel.SendConfirmAsync("已開始錄影", description).ConfigureAwait(false);
+                    }
+                    else 
+                    { 
+                        Log.Warn($"Redis Sub頻道不存在，請開啟錄影工具: {videoId}");
+                        await Context.Channel.SendErrorAsync("Redis Sub頻道不存在，請開啟錄影工具", description).ConfigureAwait(false);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"RightNowRecordStream-Record: {videoId}\n{ex}");
+                await Context.Channel.SendErrorAsync(ex.ToString()).ConfigureAwait(false);
+            }
         }
 
         [RequireContext(ContextType.DM)]

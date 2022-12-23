@@ -396,7 +396,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                                     try
                                     {
-                                        await AddOtherDataAsync(item, true);
+                                        await AddOtherDataAsync(item);
                                     }
                                     catch (Exception ex)
                                     {

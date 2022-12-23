@@ -422,7 +422,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             //Log.Info("其他勢影片清單整理完成");
         }
 
-        public async Task AddOtherDataAsync(Video item, bool isFromPubSub = false)
+        public async Task AddOtherDataAsync(Video item)
         {
             if (item.LiveStreamingDetails == null)
             {
