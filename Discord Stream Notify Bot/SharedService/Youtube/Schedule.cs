@@ -179,13 +179,19 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 {
                     HtmlWeb htmlWeb = new HtmlWeb();
                     HtmlDocument htmlDocument = htmlWeb.Load("https://www.nijisanji.jp/streams");
+                    if (htmlDocument.DocumentNode.InnerHtml.Contains("ERROR</h1>"))
+                    {
+                        Log.Warn("NijisanjiScheduleAsync: CloudFront回傳錯誤，略過");
+                        Program.isNijisanjiChannelSpider = false;
+                        return;
+                    }
                     var streamJsonText = htmlDocument.DocumentNode.Descendants().FirstOrDefault((x) => x.Name == "script" && x.GetAttributeValue("id", "") == "__NEXT_DATA__" && x.GetAttributeValue("type", "") == "application/json").InnerText;
                     nijisanjiStreamJson = JsonConvert.DeserializeObject<NijisanjiStreamJson>(streamJsonText);
                 }
                 catch (Exception ex)
                 {
                     if (!ex.Message.Contains("EOF or 0 bytes") && !ex.Message.Contains("504") && !ex.Message.Contains("500"))
-                        Log.Error($"NijisanjiStream: {ex}");
+                        Log.Error($"NijisanjiScheduleAsync: {ex}");
                     Program.isNijisanjiChannelSpider = false;
                     return;
                 }
@@ -267,7 +273,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             }
             catch (Exception ex)
             {
-                Log.Error($"NijisanjiStream: {ex}");
+                Log.Error($"NijisanjiScheduleAsync: {ex}");
             }
 
             Program.isNijisanjiChannelSpider = false; isFirst2434 = false;
