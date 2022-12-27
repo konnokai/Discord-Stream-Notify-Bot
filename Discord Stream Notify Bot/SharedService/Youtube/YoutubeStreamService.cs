@@ -144,19 +144,17 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
             if (Program.Redis != null)
             {
-                Program.RedisSub.Subscribe("youtube.startstream", async (channel, json) =>
+                Program.RedisSub.Subscribe("youtube.startstream", async (channel, videoId) =>
                 {
-                    StreamRecordJson streamRecordJson = JsonConvert.DeserializeObject<StreamRecordJson>(json.ToString());
-
                     try
                     {
-                        Log.Info($"{channel} - {streamRecordJson.VideoId}");
+                        Log.Info($"{channel} - {videoId}");
 
-                        var item = await GetVideoAsync(streamRecordJson.VideoId).ConfigureAwait(false);
+                        var item = await GetVideoAsync(videoId).ConfigureAwait(false);
                         if (item == null)
                         {
-                            Log.Warn($"{streamRecordJson.VideoId} Delete");
-                            await Program.RedisSub.PublishAsync("youtube.deletestream", streamRecordJson.VideoId);
+                            Log.Warn($"{videoId} Delete");
+                            await Program.RedisSub.PublishAsync("youtube.deletestream", videoId);
                             return;
                         }
 
@@ -1163,12 +1161,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
         //    }
         //}
         #endregion
-    }
-
-    class StreamRecordJson
-    {
-        public string VideoId { get; set; }
-        public string RecordFileName { get; set; }
     }
 
     public class ReminderItem
