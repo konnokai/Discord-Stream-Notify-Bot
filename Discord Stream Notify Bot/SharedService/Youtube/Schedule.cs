@@ -428,7 +428,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             //Log.Info("其他勢影片清單整理完成");
         }
 
-        public async Task AddOtherDataAsync(Video item)
+        public async Task AddOtherDataAsync(Video item, bool isFromRNRS = false)
         {
             if (item.LiveStreamingDetails == null)
             {
@@ -454,7 +454,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 .AddField("所屬", streamVideo.GetProductionType().GetProductionName(), true)
                 .AddField("上傳時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
 
-                if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo) && !isFirstOther)
+                if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo) && !isFirstOther && !isFromRNRS)
                     await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.NewVideo).ConfigureAwait(false);
             }
             else if (item.LiveStreamingDetails.ScheduledStartTime != null)
@@ -486,7 +486,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     .AddField("排定開台時間", startTime.ConvertDateTimeToDiscordMarkdown());
                     //.AddField("是否記錄直播", (CanRecord(db, streamVideo) ? "是" : "否"), true);
 
-                    if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo))
+                    if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo) && !isFromRNRS)
                     {
                         if (!isFirstOther) await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.NewStream).ConfigureAwait(false);
                         StartReminder(streamVideo, streamVideo.ChannelType);
@@ -494,7 +494,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 }
                 else if (item.Snippet.LiveBroadcastContent == "live")
                 {
-                    if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo))
+                    if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo) && !isFromRNRS)
                         StartReminder(streamVideo, streamVideo.ChannelType);
                 }
                 else addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo);
@@ -515,7 +515,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 streamVideo.ChannelType = streamVideo.GetProductionType();
                 Log.Stream($"(未排程) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
 
-                if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo) && item.Snippet.LiveBroadcastContent == "live")
+                if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo) && item.Snippet.LiveBroadcastContent == "live" && !isFromRNRS)
                     ReminderTimerAction(streamVideo);
             }
             else if (item.LiveStreamingDetails.ActualStartTime == null && item.LiveStreamingDetails.ActiveLiveChatId != null)

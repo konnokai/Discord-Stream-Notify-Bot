@@ -81,6 +81,8 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
         }
 
         [SlashCommand("cancel-member-check", "取消本伺服器的會限驗證，會一併移除會限驗證用戶組")]
+        [RequireContext(ContextType.Guild)]
+        [EnabledInDm(false)]
         public async Task CancelMemberCheckAsync()
         {
             await DeferAsync(true);

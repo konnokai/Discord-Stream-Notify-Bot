@@ -111,7 +111,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
 
             using var db = DBContext.GetDbContext();
             if (!db.HasStreamVideoByVideoId(videoId))
-                await _service.AddOtherDataAsync(video);
+                await _service.AddOtherDataAsync(video, true);
 
             try
             {
