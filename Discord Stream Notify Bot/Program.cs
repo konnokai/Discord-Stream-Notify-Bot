@@ -50,13 +50,6 @@ namespace Discord_Stream_Notify_Bot
             Console.OutputEncoding = System.Text.Encoding.UTF8;
             Console.CancelKeyPress += Console_CancelKeyPress;
 
-            AppDomain.CurrentDomain.UnhandledException += (sender, e) =>
-            {
-                Log.Error("UnhandledException!");
-                Log.Error(((Exception)(e.ExceptionObject)).ToString());
-                Environment.Exit(20);
-            };
-
             botConfig.InitBotConfig();
             timerUpdateStatus = new Timer(TimerHandler);
 
@@ -282,7 +275,7 @@ namespace Discord_Stream_Notify_Bot
             AppDomain.CurrentDomain.UnhandledException += (sender, args) =>
             {
                 Exception e = (Exception)args.ExceptionObject;
-                iService.GetService<HttpClients.DiscordWebhookClient>().SendMessageToDiscord($"{ApplicatonOwner.Mention} {e}");
+                iService.GetService<HttpClients.DiscordWebhookClient>().SendMessageToDiscord($"{ApplicatonOwner.Mention} {e}");                
             };
 
             await _client.LoginAsync(TokenType.Bot, botConfig.DiscordToken);
