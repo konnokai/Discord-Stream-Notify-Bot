@@ -1,6 +1,7 @@
 ﻿using Discord;
 using Discord_Stream_Notify_Bot.DataBase;
 using Discord_Stream_Notify_Bot.DataBase.Table;
+using Discord_Stream_Notify_Bot.SharedService.Youtube;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
 using Google.Apis.YouTube.v3;
@@ -203,7 +204,16 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                         {
                                             await _client.Rest.RemoveRoleAsync(guild.Id, member.UserId, role.Id).ConfigureAwait(false);
                                         }
-                                        catch (Exception ex2) { Log.Error(ex2.ToString()); }
+                                        catch (Discord.Net.HttpException discordEx) when (discordEx.DiscordCode == DiscordErrorCode.UnknownMember)
+                                        {
+                                            Log.Warn($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {member.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 該會員已離開伺服器");
+                                            continue;
+                                        }
+                                        catch (Exception ex2)
+                                        {
+                                            Log.Error($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {member.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 無法移除用戶組");
+                                            Log.Error(ex2.ToString());
+                                        }
 
                                         if (isOldCheck)
                                         {
