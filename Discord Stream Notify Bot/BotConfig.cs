@@ -18,6 +18,7 @@ public class BotConfig
     public string RedisTokenKey { get; set; } = "";
     public string PubSubCallbackUrl { get; set; } = "";
     public string ImgurClientId { get; set; } = "";
+    public string UptimeKumaPushUrl { get; set; } = "";
 
     public void InitBotConfig()
     {
@@ -79,6 +80,7 @@ public class BotConfig
             TestSlashCommandGuildId = config.TestSlashCommandGuildId;
             RedisTokenKey = config.RedisTokenKey;
             ImgurClientId = config.ImgurClientId;
+            UptimeKumaPushUrl = config.UptimeKumaPushUrl;
 
             if (string.IsNullOrWhiteSpace(config.RedisTokenKey) || string.IsNullOrWhiteSpace(RedisTokenKey))
             {

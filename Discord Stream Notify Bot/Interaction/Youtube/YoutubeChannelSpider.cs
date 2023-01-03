@@ -15,7 +15,6 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
     public class YoutubeChannelSpider : TopLevelModule<SharedService.Youtube.YoutubeStreamService>
     {
         private readonly DiscordSocketClient _client;
-        private readonly HttpClients.DiscordWebhookClient _discordWebhookClient;
         public class GuildYoutubeChannelSpiderAutocompleteHandler : AutocompleteHandler
         {
             public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
@@ -69,10 +68,9 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             }
         }
 
-        public YoutubeChannelSpider(DiscordSocketClient client, HttpClients.DiscordWebhookClient discordWebhookClient)
+        public YoutubeChannelSpider(DiscordSocketClient client)
         {
             _client = client;
-            _discordWebhookClient = discordWebhookClient;
 
             _client.ButtonExecuted += async (button) =>
             {

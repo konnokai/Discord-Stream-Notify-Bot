@@ -6,6 +6,7 @@ using Discord.Interactions;
 using Discord.WebSocket;
 using Discord_Stream_Notify_Bot.Command;
 using Discord_Stream_Notify_Bot.DataBase.Table;
+using Discord_Stream_Notify_Bot.HttpClients;
 using Discord_Stream_Notify_Bot.Interaction;
 using Microsoft.Extensions.DependencyInjection;
 using Polly;
@@ -30,7 +31,6 @@ namespace Discord_Stream_Notify_Bot
         public static ISubscriber RedisSub { get; set; }
         public static IDatabase RedisDb { get; set; }
         
-
         public static IUser ApplicatonOwner { get; private set; } = null;
         public static DiscordSocketClient _client;
         public static BotPlayingStatus Status = BotPlayingStatus.Guild;
@@ -131,6 +131,7 @@ namespace Discord_Stream_Notify_Bot
                 .AddPolicyHandler(HttpPolicyExtensions
                     .HandleTransientHttpError()
                     .RetryAsync(3));
+            interactionServices.AddHttpClient<HttpClients.UptimeKumaClient>();
 
             interactionServices.LoadInteractionFrom(Assembly.GetAssembly(typeof(InteractionHandler)));
             IServiceProvider iService = interactionServices.BuildServiceProvider();
@@ -170,6 +171,8 @@ namespace Discord_Stream_Notify_Bot
                 stopWatch.Start();
                 timerUpdateStatus.Change(0, 15 * 60 * 1000);
 
+                iService.GetService<UptimeKumaClient>().Init(); // 呼叫一次讓Service載入
+
                 ApplicatonOwner = (await _client.GetApplicationInfoAsync()).Owner;
                 isConnect = true;
 
@@ -185,6 +188,7 @@ namespace Discord_Stream_Notify_Bot
                     }
                 }
 
+                #region 註冊互動指令
                 try
                 {
                     InteractionService interactionService = iService.GetService<InteractionService>();
@@ -254,6 +258,7 @@ namespace Discord_Stream_Notify_Bot
                     Log.Error(ex.ToString());
                     isDisconnect = true;
                 }
+                #endregion
             };
 
             _client.JoinedGuild += (guild) =>
