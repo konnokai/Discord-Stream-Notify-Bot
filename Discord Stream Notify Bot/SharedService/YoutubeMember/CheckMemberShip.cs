@@ -313,7 +313,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                             {
                                 Log.Error($"無法新增用戶組至用戶，非Discord錯誤: {guild.Id} / {member.UserId}");
                                 Log.Error($"{httpEx}");
-                                continue;
                             }
 
                             if (httpEx.DiscordCode.Value == DiscordErrorCode.MissingPermissions || httpEx.DiscordCode.Value == DiscordErrorCode.InsufficientPermissions)
@@ -335,7 +334,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                 await logChannel.SendErrorMessageAsync(member.UserId, guildYoutubeMemberConfig.MemberCheckChannelTitle, "已驗證但遇到未知的錯誤");
                                 await member.UserId.SendConfirmMessageAsync($"你在 `{guild}` 的 `{guildYoutubeMemberConfig.MemberCheckChannelTitle}` 會限已通過驗證，但無法新增用戶組，請告知管理員協助新增", logChannel);
                             }
-                            continue;
                         }
 
                         try
