@@ -8,6 +8,8 @@ using Discord_Stream_Notify_Bot.Command;
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.HttpClients;
 using Discord_Stream_Notify_Bot.Interaction;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Polly;
 using Polly.Extensions.Http;
@@ -272,7 +274,75 @@ namespace Discord_Stream_Notify_Bot
                     }
                 }
 
-                iService.GetService<HttpClients.DiscordWebhookClient>().SendMessageToDiscord($"加入 {guild.Name}({guild.Id})\n擁有者: {guild.OwnerId}");
+                iService.GetService<DiscordWebhookClient>().SendMessageToDiscord($"加入 {guild.Name}({guild.Id})\n擁有者: {guild.OwnerId}");
+                return Task.CompletedTask;
+            };
+
+            _client.LeftGuild += (guild) =>
+            {
+                try
+                {
+                    using (var db = DataBase.DBContext.GetDbContext())
+                    {
+                        GuildConfig guildConfig;
+                        if (( guildConfig = db.GuildConfig.FirstOrDefault(x => x.GuildId == guild.Id)) != null)
+                            db.GuildConfig.Remove(guildConfig);
+
+                        GuildYoutubeMemberConfig guildYoutubeMemberConfig;
+                        if ((guildYoutubeMemberConfig = db.GuildYoutubeMemberConfig.FirstOrDefault(x => x.GuildId == guild.Id)) != null)                        
+                            db.GuildYoutubeMemberConfig.Remove(guildYoutubeMemberConfig);
+
+                        IEnumerable<NoticeTwitterSpaceChannel> noticeTwitterSpaceChannels;
+                        if ((noticeTwitterSpaceChannels = db.NoticeTwitterSpaceChannel.Where(x => x.GuildId == guild.Id)).Any())                        
+                            db.NoticeTwitterSpaceChannel.RemoveRange(noticeTwitterSpaceChannels);
+
+                        IEnumerable<NoticeYoutubeStreamChannel> noticeYoutubeStreamChannels;
+                        if ((noticeYoutubeStreamChannels = db.NoticeYoutubeStreamChannel.Where(x => x.GuildId == guild.Id)).Any())
+                            db.NoticeYoutubeStreamChannel.RemoveRange(noticeYoutubeStreamChannels);
+
+                        IEnumerable<YoutubeMemberCheck> youtubeMemberChecks;
+                        if ((youtubeMemberChecks = db.YoutubeMemberCheck.Where(x => x.GuildId == guild.Id)).Any())
+                            db.YoutubeMemberCheck.RemoveRange(youtubeMemberChecks);
+
+                        var saveTime = DateTime.Now;
+                        bool saveFailed;
+
+                        do
+                        {
+                            saveFailed = false;
+                            try
+                            {
+                                db.SaveChanges();
+                            }
+                            catch (DbUpdateConcurrencyException ex)
+                            {
+                                saveFailed = true;
+                                foreach (var item in ex.Entries)
+                                {
+                                    try
+                                    {
+                                        item.Reload();
+                                    }
+                                    catch (Exception ex2)
+                                    {
+                                        Log.Error($"LeftGuild-SaveChanges-Reload-{guild}");
+                                        Log.Error(item.DebugView.ToString());
+                                        Log.Error(ex2.ToString());
+                                    }
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                Log.Error($"LeftGuild-SaveChanges-{guild}: {ex}");
+                                Log.Error(db.ChangeTracker.DebugView.LongView);
+                            }
+                        } while (saveFailed && DateTime.Now.Subtract(saveTime) <= TimeSpan.FromMinutes(1));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Error($"LeftGuild-{guild}: {ex}");
+                }
                 return Task.CompletedTask;
             };
             #endregion
