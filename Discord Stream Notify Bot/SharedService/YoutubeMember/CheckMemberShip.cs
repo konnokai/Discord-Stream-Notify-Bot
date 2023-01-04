@@ -1,7 +1,6 @@
 ﻿using Discord;
 using Discord_Stream_Notify_Bot.DataBase;
 using Discord_Stream_Notify_Bot.DataBase.Table;
-using Discord_Stream_Notify_Bot.SharedService.Youtube;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
 using Google.Apis.YouTube.v3;
@@ -204,7 +203,9 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                         {
                                             await _client.Rest.RemoveRoleAsync(guild.Id, member.UserId, role.Id).ConfigureAwait(false);
                                         }
-                                        catch (Discord.Net.HttpException discordEx) when (discordEx.DiscordCode == DiscordErrorCode.UnknownMember)
+                                        catch (Discord.Net.HttpException discordEx) when (discordEx.DiscordCode.Value == DiscordErrorCode.UnknownAccount ||
+                                            discordEx.DiscordCode.Value == DiscordErrorCode.UnknownMember ||
+                                            discordEx.DiscordCode.Value == DiscordErrorCode.UnknownUser)
                                         {
                                             Log.Warn($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {member.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 該會員已離開伺服器");
                                             continue;
@@ -295,7 +296,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                 }
                             }
 
-                            if (!isMember) return;
+                            if (!isMember) continue;
                             checkedMemberSet.Add($"{member.UserId}-{member.CheckYTChannelId}");
                         }
 
@@ -341,33 +342,29 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                         {
                             member.IsChecked = true;
                             member.LastCheckTime = DateTime.Now;
-
                             db.YoutubeMemberCheck.Update(member);
 
-                            try
+                            if (!isOldCheck)
                             {
-                                if (!isOldCheck)
+                                try
                                 {
                                     await logChannel.SendConfirmMessageAsync(member.UserId, new EmbedBuilder().AddField("檢查頻道", guildYoutubeMemberConfig.MemberCheckChannelTitle).AddField("狀態", "已驗證"));
                                 }
-                            }
-                            catch (Exception ex)
-                            {
-                                Log.Warn($"無法傳送紀錄訊息: {guild.Id} / {logChannel.Id}");
-                                Log.Error($"{ex}");
-                            }
+                                catch (Exception ex)
+                                {
+                                    Log.Warn($"無法傳送紀錄訊息: {guild.Id} / {logChannel.Id}");
+                                    Log.Error($"{ex}");
+                                }
 
-                            try
-                            {
-                                if (!isOldCheck)
+                                try
                                 {
                                     await member.UserId.SendConfirmMessageAsync($"你在 `{guild}`  的 `{guildYoutubeMemberConfig.MemberCheckChannelTitle}` 會限已通過驗證，現在你可至該伺服器上觀看會限頻道了", logChannel);
                                 }
-                            }
-                            catch (Exception ex)
-                            {
-                                Log.Warn($"無法傳送私訊: {guild.Id} / {member.UserId}");
-                                Log.Error($"{ex}");
+                                catch (Exception ex)
+                                {
+                                    Log.Warn($"無法傳送私訊: {guild.Id} / {member.UserId}");
+                                    Log.Error($"{ex}");
+                                }
                             }
                         }
                         catch (Exception ex)

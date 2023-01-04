@@ -729,7 +729,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             }
             catch (Exception ex)
             {
-                Log.Error($"GetOrCreateNijisanjiLiverListAsync-GetRedisData: {ex}");
+                Log.Error($"GetOrCreateNijisanjiLiverListAsync-GetRedisData-{affiliation}: {ex}");
             }
 
             try
@@ -743,7 +743,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             }
             catch (Exception ex)
             {
-                Log.Error($"GetOrCreateNijisanjiLiverListAsync-GetLiver: {ex}");
+                Log.Error($"GetOrCreateNijisanjiLiverListAsync-GetLiver-{affiliation}: {ex}");
             }            
         }
 
