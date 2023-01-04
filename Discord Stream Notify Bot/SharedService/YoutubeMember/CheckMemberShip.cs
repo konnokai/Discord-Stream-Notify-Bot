@@ -302,25 +302,21 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
 
                         checkedMemberCount++;
                         totalIsMemberCount++;
+                        bool isCantAddRold = true;
                         try
                         {
                             if (!isOldCheck)
                                 await _client.Rest.AddRoleAsync(guild.Id, member.UserId, role.Id).ConfigureAwait(false);
+                            isCantAddRold = false;
                         }
                         catch (Discord.Net.HttpException httpEx)
                         {
-                            if (!httpEx.DiscordCode.HasValue)
+                            if (httpEx.DiscordCode.HasValue && (httpEx.DiscordCode.Value == DiscordErrorCode.MissingPermissions || httpEx.DiscordCode.Value == DiscordErrorCode.InsufficientPermissions))
                             {
-                                Log.Error($"無法新增用戶組至用戶，非Discord錯誤: {guild.Id} / {member.UserId}");
-                                Log.Error($"{httpEx}");
-                            }
-
-                            if (httpEx.DiscordCode.Value == DiscordErrorCode.MissingPermissions || httpEx.DiscordCode.Value == DiscordErrorCode.InsufficientPermissions)
-                            {
-                                await logChannel.SendErrorMessageAsync(member.UserId, guildYoutubeMemberConfig.MemberCheckChannelTitle, "已驗證但無法給予用戶組");
+                                await logChannel.SendErrorMessageAsync(member.UserId, guildYoutubeMemberConfig.MemberCheckChannelTitle, "已驗證但因權限問題無法給予用戶組");
                                 await member.UserId.SendConfirmMessageAsync($"你在 `{guild}` 的 `{guildYoutubeMemberConfig.MemberCheckChannelTitle}` 會限已通過驗證，但無法新增用戶組，請告知管理員協助新增", logChannel);
                             }
-                            else if (httpEx.DiscordCode.Value == DiscordErrorCode.UnknownAccount || httpEx.DiscordCode.Value == DiscordErrorCode.UnknownMember || httpEx.DiscordCode.Value == DiscordErrorCode.UnknownUser)
+                            else if (httpEx.DiscordCode.HasValue && (httpEx.DiscordCode.Value == DiscordErrorCode.UnknownAccount || httpEx.DiscordCode.Value == DiscordErrorCode.UnknownMember || httpEx.DiscordCode.Value == DiscordErrorCode.UnknownUser))
                             {
                                 await logChannel.SendErrorMessageAsync(member.UserId, guildYoutubeMemberConfig.MemberCheckChannelTitle, "未知的使用者");
                                 Log.Warn($"用戶已離開伺服器: {guild.Id} / {member.UserId}");
@@ -342,7 +338,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                             member.LastCheckTime = DateTime.Now;
                             db.YoutubeMemberCheck.Update(member);
 
-                            if (!isOldCheck)
+                            if (!isOldCheck && !isCantAddRold)
                             {
                                 try
                                 {
