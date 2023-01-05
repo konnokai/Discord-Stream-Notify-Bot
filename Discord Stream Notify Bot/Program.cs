@@ -133,7 +133,6 @@ namespace Discord_Stream_Notify_Bot
                 .AddPolicyHandler(HttpPolicyExtensions
                     .HandleTransientHttpError()
                     .RetryAsync(3));
-            interactionServices.AddHttpClient<HttpClients.UptimeKumaClient>();
 
             interactionServices.LoadInteractionFrom(Assembly.GetAssembly(typeof(InteractionHandler)));
             IServiceProvider iService = interactionServices.BuildServiceProvider();
@@ -173,7 +172,7 @@ namespace Discord_Stream_Notify_Bot
                 stopWatch.Start();
                 timerUpdateStatus.Change(0, 15 * 60 * 1000);
 
-                iService.GetService<UptimeKumaClient>().Init(); // 呼叫一次讓Service載入
+                UptimeKumaClient.Init(botConfig.UptimeKumaPushUrl, _client);
 
                 ApplicatonOwner = (await _client.GetApplicationInfoAsync()).Owner;
                 isConnect = true;
