@@ -31,7 +31,7 @@ public static class UptimeKumaClient
         try
         {
             timerUptimeKumaPush = new Timer(async (state) => { await UptimeKumaTimerHandler(state); });
-            timerUptimeKumaPush.Change(0, 5 * 1000);
+            timerUptimeKumaPush.Change(0, 30 * 1000);
 
             Log.Info("已註冊Uptime Kuma狀態檢測");
         }
@@ -54,6 +54,14 @@ public static class UptimeKumaClient
                 Log.Error("Uptime Kuma回傳錯誤");
                 Log.Error(result);
             }
+        }
+        catch (TaskCanceledException timeout)
+        {
+            Log.Error($"UptimeKumaTimerHandler-Timeout: {timeout.Message}");
+        }
+        catch (HttpRequestException requestEx)
+        {
+            Log.Error($"UptimeKumaTimerHandler-RequestError: {requestEx.Message}");
         }
         catch (Exception ex)
         {
