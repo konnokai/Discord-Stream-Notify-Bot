@@ -1,4 +1,4 @@
-# Discord Stream Notify Bot
+# Discord Stream Notify Bot [點我邀請到你的Discord內](https://discordapp.com/api/oauth2/authorize?client_id=758222559392432160&permissions=2416143425&scope=bot%20applications.commands)
 
 [![Website dcbot.konnokai.me](https://img.shields.io/website-up-down-green-red/http/dcbot.konnokai.me/stream.svg)](http://dcbot.konnokai.me/stream)
 [![GitHub commits](https://badgen.net/github/commits/konnokai/Discord-Stream-Notify-Bot)](https://GitHub.com/konnokai/Discord-Stream-Notify-Bot/commit/)
