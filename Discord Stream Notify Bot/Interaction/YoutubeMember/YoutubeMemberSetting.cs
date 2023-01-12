@@ -30,7 +30,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
             public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
             {
                 using var db = DataBase.DBContext.GetDbContext();
-                if (!db.NoticeYoutubeStreamChannel.Any((x) => x.GuildId == context.Guild.Id))
+                if (!db.GuildYoutubeMemberConfig.Any((x) => x.GuildId == context.Guild.Id))
                     return AutocompletionResult.FromSuccess();
 
                 var channelIdList = db.GuildYoutubeMemberConfig.Where((x) => x.GuildId == context.Guild.Id).Select((x) => new KeyValuePair<string, string>(x.MemberCheckChannelTitle, x.MemberCheckChannelId));

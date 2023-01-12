@@ -266,15 +266,14 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                     {
                                         Log.Error($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {member.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 的會限資格取得失敗: 500內部錯誤");
 
-                                        await logChannel.SendErrorMessageAsync(member.UserId, guildYoutubeMemberConfig.MemberCheckChannelTitle, "Google內部錯誤");
+                                        await logChannel.SendErrorMessageAsync(member.UserId, guildYoutubeMemberConfig.MemberCheckChannelTitle, "Google內部錯誤，等待下次重新檢查");
                                         continue;
                                     }
-                                    else if (ex.Message.ToLower().Contains("bad req"))
+                                    else if (ex.Message.ToLower().Contains("bad req") || ex.Message.ToLower().Contains("badrequest"))
                                     {
                                         Log.Error($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {member.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 的會限資格取得失敗: 400錯誤");
-                                        Log.Error(ex.ToString());
 
-                                        await logChannel.SendErrorMessageAsync(member.UserId, guildYoutubeMemberConfig.MemberCheckChannelTitle, "400錯誤");
+                                        await logChannel.SendErrorMessageAsync(member.UserId, guildYoutubeMemberConfig.MemberCheckChannelTitle, "400錯誤，等待下次重新檢查");
                                         continue;
                                     }
                                     else
