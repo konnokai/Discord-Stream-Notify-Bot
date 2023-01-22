@@ -28,7 +28,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 {
                     var remT = new Timer(ReminderTimerAction, streamVideo, Math.Max(1000, (long)ts.TotalMilliseconds), Timeout.Infinite); 
 
-                    if (!Reminders.TryAdd(streamVideo, new ReminderItem() { StreamVideo = streamVideo, Timer = remT, ChannelType = channelType }))
+                    if (!Reminders.TryAdd(streamVideo.VideoId, new ReminderItem() { StreamVideo = streamVideo, Timer = remT, ChannelType = channelType }))
                     {
                         remT.Change(Timeout.Infinite, Timeout.Infinite);
                     }
@@ -189,7 +189,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                             await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.Start).ConfigureAwait(false);
                         }
 
-                        if (Reminders.TryRemove(streamVideo, out var t))
+                        if (Reminders.TryRemove(streamVideo.VideoId, out var t))
                             t.Timer.Change(Timeout.Infinite, Timeout.Infinite);
                     }
                     else
@@ -261,7 +261,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                         await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.ChangeTime).ConfigureAwait(false);
 
-                        if (Reminders.TryRemove(streamVideo, out var t))
+                        if (Reminders.TryRemove(streamVideo.VideoId, out var t))
                             t.Timer.Change(Timeout.Infinite, Timeout.Infinite);
 
                         StartReminder(streamVideo, streamVideo.ChannelType);

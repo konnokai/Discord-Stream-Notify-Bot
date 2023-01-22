@@ -166,12 +166,13 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             {
                 List<Video> result = new List<Video>();
 
-                for (int i = 0; i < _service.Reminders.Values.Count; i += 50)
+                for (int i = 0; i < _service.Reminders.Count; i += 50)
                 {
                     var yt = _service.yt.Videos.List("snippet,liveStreamingDetails");
-                    yt.Id = string.Join(',', _service.Reminders.Values.Select((x) => x.StreamVideo.VideoId).Skip(i).Take(50));
+                    yt.Id = string.Join(',', _service.Reminders.Keys.Skip(i).Take(50));
                     result.AddRange((await yt.ExecuteAsync().ConfigureAwait(false)).Items);
                 }
+
                 using (var db = DataBase.DBContext.GetDbContext())
                 {
                     result = result.OrderBy((x) => x.LiveStreamingDetails.ScheduledStartTime.Value).ToList();
