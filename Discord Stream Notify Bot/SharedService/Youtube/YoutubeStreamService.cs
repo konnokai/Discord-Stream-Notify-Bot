@@ -651,6 +651,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                     .AddField("排定開台時間", reminder.Value.StreamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown(), true);
 
                                     await SendStreamMessageAsync(reminder.Value.StreamVideo, embedBuilder, NoticeType.Delete).ConfigureAwait(false);
+                                    Reminders.TryRemove(reminder.Key, out var reminderItem);
+
                                     continue;
                                 }
 
