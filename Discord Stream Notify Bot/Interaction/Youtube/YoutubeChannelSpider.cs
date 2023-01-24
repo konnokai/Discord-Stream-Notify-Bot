@@ -229,19 +229,37 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                 if (db.YoutubeChannelSpider.Any((x) => x.ChannelId == channelId))
                 {
                     var item = db.YoutubeChannelSpider.FirstOrDefault((x) => x.ChannelId == channelId);
+                    bool isGuildExist = true;
                     string guild = "";
+
                     try
                     {
                         guild = item.GuildId == 0 ? "Bot擁有者" : $"{_client.GetGuild(item.GuildId).Name}";
                     }
                     catch (Exception)
                     {
-                        guild = "已退出的伺服器";
+                        isGuildExist = false;
+
+                        try
+                        {
+                            await (await Program.ApplicatonOwner.CreateDMChannelAsync())
+                                .SendMessageAsync(embed: new EmbedBuilder()
+                                    .WithOkColor()
+                                    .WithTitle("已更新爬蟲的持有伺服器")
+                                    .AddField("頻道", Format.Url(item.ChannelTitle, $"https://www.youtube.com/channel/{channelId}"), false)
+                                    .AddField("原伺服器", Context.Guild.Id, false)
+                                    .AddField("新伺服器", $"{Context.Guild.Name} ({Context.Guild.Id})", false).Build());
+                        }
+                        catch (Exception ex) { Log.Error(ex.ToString()); }
+
+                        item.GuildId = Context.Guild.Id;
+                        db.YoutubeChannelSpider.Update(item);
+                        db.SaveChanges();
                     }
 
                     await Context.Interaction.SendConfirmAsync($"{channelId} 已在爬蟲清單內\n" +
-                        $"可直接到通知頻道內使用 `/youtube add-youtube-notice {channelId}` 開啟通知\n" +
-                        $"(由 `{guild}` 設定)", true).ConfigureAwait(false);
+                        $"可直接到通知頻道內使用 `/youtube add-youtube-notice {channelId}` 開啟通知" +
+                        (isGuildExist ? $"\n(由 `{guild}` 設定)" : ""), true).ConfigureAwait(false);
                     return;
                 }
 

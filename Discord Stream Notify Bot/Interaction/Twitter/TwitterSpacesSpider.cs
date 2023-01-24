@@ -60,19 +60,37 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                 if (db.TwitterSpaecSpider.Any((x) => x.UserId == user.data.id))
                 {
                     var item = db.TwitterSpaecSpider.FirstOrDefault((x) => x.UserId == user.data.id);
+                    bool isGuildExist = true;
                     string guild = "";
+
                     try
                     {
                         guild = item.GuildId == 0 ? "Bot擁有者" : $"{_client.GetGuild(item.GuildId).Name}";
                     }
                     catch (Exception)
                     {
-                        guild = "已退出的伺服器";
+                        isGuildExist = false;
+
+                        try
+                        {
+                            await (await Program.ApplicatonOwner.CreateDMChannelAsync())
+                                .SendMessageAsync(embed: new EmbedBuilder()
+                                    .WithOkColor()
+                                    .WithTitle("已更新推特語音爬蟲的持有伺服器")
+                                    .AddField("推主", Format.Url(userScreenName, $"https://twitter.com/{userScreenName}"), false)
+                                    .AddField("原伺服器", Context.Guild.Id, false)
+                                    .AddField("新伺服器", $"{Context.Guild.Name} ({Context.Guild.Id})", false).Build());
+                        }
+                        catch (Exception ex) { Log.Error(ex.ToString()); }
+
+                        item.GuildId = Context.Guild.Id;
+                        db.TwitterSpaecSpider.Update(item);
+                        db.SaveChanges();
                     }
 
                     await Context.Interaction.SendConfirmAsync($"{userScreenName} 已在爬蟲清單內\n" +
                         $"可直接到通知頻道內使用 `/twitter-space add-space-notice {userScreenName}` 開啟通知\n" +
-                        $"(由 `{guild}` 設定)", true).ConfigureAwait(false);
+                        (isGuildExist ? $"\n(由 `{guild}` 設定)" : ""), true).ConfigureAwait(false);
                     return;
                 }
 
