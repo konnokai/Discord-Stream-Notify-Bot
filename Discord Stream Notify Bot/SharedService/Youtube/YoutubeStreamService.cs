@@ -565,21 +565,21 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
             using (var db = DataBase.HoloVideoContext.GetDbContext())
             {
-                foreach (var streamVideo in db.Video.Where((x) => x.ScheduledStartTime > DateTime.Now))
+                foreach (var streamVideo in db.Video.Where((x) => x.ScheduledStartTime > DateTime.Now && !x.IsPrivate))
                 {
                     StartReminder(streamVideo, DataBase.Table.Video.YTChannelType.Holo);
                 }
             }
             using (var db = DataBase.NijisanjiVideoContext.GetDbContext())
             {
-                foreach (var streamVideo in db.Video.Where((x) => x.ScheduledStartTime > DateTime.Now))
+                foreach (var streamVideo in db.Video.Where((x) => x.ScheduledStartTime > DateTime.Now && !x.IsPrivate))
                 {
                     StartReminder(streamVideo, DataBase.Table.Video.YTChannelType.Nijisanji);
                 }
             }
             using (var db = DataBase.OtherVideoContext.GetDbContext())
             {
-                foreach (var streamVideo in db.Video.Where((x) => x.ScheduledStartTime > DateTime.Now))
+                foreach (var streamVideo in db.Video.Where((x) => x.ScheduledStartTime > DateTime.Now && !x.IsPrivate))
                 {
                     StartReminder(streamVideo, DataBase.Table.Video.YTChannelType.Other);
                 }
@@ -652,6 +652,21 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                                     await SendStreamMessageAsync(reminder.Value.StreamVideo, embedBuilder, NoticeType.Delete).ConfigureAwait(false);
                                     Reminders.TryRemove(reminder.Key, out var reminderItem);
+
+                                    reminder.Value.StreamVideo.IsPrivate = true;
+
+                                    switch (reminder.Value.ChannelType)
+                                    {
+                                        case DataBase.Table.Video.YTChannelType.Holo:
+                                            DataBase.HoloVideoContext.GetDbContext().UpdateAndSave(reminder.Value.StreamVideo);
+                                            break;
+                                        case DataBase.Table.Video.YTChannelType.Nijisanji:
+                                            DataBase.NijisanjiVideoContext.GetDbContext().UpdateAndSave(reminder.Value.StreamVideo);
+                                            break;
+                                        default:
+                                            DataBase.OtherVideoContext.GetDbContext().UpdateAndSave(reminder.Value.StreamVideo);
+                                            break;
+                                    }
 
                                     continue;
                                 }

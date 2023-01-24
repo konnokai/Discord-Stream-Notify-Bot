@@ -18,6 +18,7 @@ namespace Discord_Stream_Notify_Bot.DataBase.Table
         public string VideoTitle { get; set; }
         public DateTime ScheduledStartTime { get; set; }
         public YTChannelType ChannelType { get; set; }
+        public bool IsPrivate { get; set; } = false;
 
         public override int GetHashCode()
         {

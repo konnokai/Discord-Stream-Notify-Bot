@@ -3,16 +3,18 @@ using System;
 using Discord_Stream_Notify_Bot.DataBase;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace Discord_Stream_Notify_Bot.Migrations.HoloVideo
+namespace Discord_Stream_Notify_Bot.Migrations.OtherVideo
 {
-    [DbContext(typeof(HoloVideoContext))]
-    partial class HoloVideoContextModelSnapshot : ModelSnapshot
+    [DbContext(typeof(OtherVideoContext))]
+    [Migration("20230124060342_AddIsPrivate")]
+    partial class AddIsPrivate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "6.0.5");

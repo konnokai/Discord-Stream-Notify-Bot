@@ -31,6 +31,9 @@ namespace Discord_Stream_Notify_Bot.Migrations.OtherVideo
                     b.Property<int>("ChannelType")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("IsPrivate")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime>("ScheduledStartTime")
                         .HasColumnType("TEXT");
 
