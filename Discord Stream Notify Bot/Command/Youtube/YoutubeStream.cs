@@ -159,7 +159,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                 return;
             }
 
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DBContext.GetDbContext())
             {
                 if (db.RecordYoutubeChannel.Any((x) => x.YoutubeChannelId == channelId))
                 {
@@ -207,7 +207,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                 return;
             }
 
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DBContext.GetDbContext())
             {
                 if (!db.RecordYoutubeChannel.Any((x) => x.YoutubeChannelId == channelId))
                 {
@@ -234,7 +234,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
         public async Task ListRecordChannel()
         {
             await Context.Channel.TriggerTypingAsync().ConfigureAwait(false);
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DBContext.GetDbContext())
             {
                 var nowRecordList = db.RecordYoutubeChannel.ToList().Select((x) => x.YoutubeChannelId).ToList();
 
@@ -403,7 +403,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                 await Context.Channel.SendErrorAsync($"{channelId} 不存在頻道").ConfigureAwait(false);
                 return;
             }
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DBContext.GetDbContext())
             {
                 var channel = db.YoutubeChannelOwnedType.FirstOrDefault((x) => x.ChannelId == channelId);
                 if (channel == null)

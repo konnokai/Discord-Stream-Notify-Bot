@@ -315,11 +315,11 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
         [CommandSummary("新增直播開台通知的頻道\n" +
             "輸入 `holo` 通知全部 `Holo成員` 的直播\n" +
             "輸入 `2434` 通知全部 `彩虹社成員` 的直播\n" +
-            "(海外勢僅部分成員歸類在此選項內，建議改用 `/youtube add-spider` 設定)\n" +
+            "(僅JP、EN跟VR的成員歸類在此選項內，如需其他成員建議先用 `/youtube add-spider` 設定)\n" +
             "輸入 `other` 通知部分 `非兩大箱` 的直播\n" +
             "(可以使用 `/youtube list-youtube-spider` 查詢有哪些頻道)\n" +
             "輸入 `all` 通知全部 `Holo + 2434 + 非兩大箱` 的直播\n" +
-            "(此選項會覆蓋所有的通知設定)")]
+            "(all選項會覆蓋所有的通知設定，請注意)")]
         [CommandExample("https://www.youtube.com/channel/UCdn5BQ06XqgXoAxIhbqw5Rg", "all", "2434")]
         [SlashCommand("add-youtube-notice", "新增直播開台通知的頻道")]
         public async Task AddChannel([Summary("頻道網址")] string channelUrl, [Summary("發送通知的頻道")] ITextChannel textChannel)
@@ -426,7 +426,8 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                     else
                     {
                         string addString = "";
-                        if (!Extensions.IsChannelInDb(channelId)) addString += $"\n\n(注意: 該頻道未加入爬蟲清單\n如長時間無通知請使用 `/help get-command-help add-youtube-spider` 查看說明並加入爬蟲)";
+                        if (!db.YoutubeChannelSpider.Any((x) => x.ChannelId == channelId) && !Extensions.IsChannelInDb(channelId)) 
+                            addString += $"\n\n(注意: 該頻道未加入爬蟲清單\n如長時間無通知請使用 `/help get-command-help add-youtube-spider` 查看說明並加入爬蟲)";
                         db.NoticeYoutubeStreamChannel.Add(new NoticeYoutubeStreamChannel() { GuildId = Context.Guild.Id, DiscordChannelId = textChannel.Id, NoticeStreamChannelId = channelId });
                         await Context.Interaction.SendConfirmAsync($"已將 {channelTitle} 加入到通知頻道清單內{addString}", true).ConfigureAwait(false);
                     }
