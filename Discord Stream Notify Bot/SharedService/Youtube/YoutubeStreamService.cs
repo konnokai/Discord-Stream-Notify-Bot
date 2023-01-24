@@ -864,14 +864,14 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             {
                 string host = matchOldFormat.Groups["Host"].Value.ToLower();
                 if (host != "youtube.com")
-                    throw new UriFormatException("錯誤，請確認是否輸入YouTube頻道網址");
+                    throw new FormatException("錯誤，請確認是否輸入YouTube頻道網址");
 
                 string type = matchOldFormat.Groups["Type"].Value.ToLower();
                 if (type == "channel")
                 {
                     channelId = matchOldFormat.Groups["ChannelName"].Value;
-                    if (!channelId.StartsWith("UC")) throw new UriFormatException("錯誤，頻道Id格式不正確");
-                    if (channelId.Length != 24) throw new UriFormatException("錯誤，頻道Id字元數不正確");
+                    if (!channelId.StartsWith("UC")) throw new FormatException("錯誤，頻道Id格式不正確");
+                    if (channelId.Length != 24) throw new FormatException("錯誤，頻道Id字元數不正確");
                 }
                 else if (type == "c" || type == "user")
                 {
@@ -896,7 +896,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         }
                     }
                 }
-                else throw new UriFormatException("錯誤，網址格式不正確");
+                else throw new FormatException("錯誤，網址格式不正確");
             }
             else if (matchNewFormat.Success)
             {
@@ -921,7 +921,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     }
                 }
             }
-            else throw new UriFormatException("錯誤，請確認是否輸入YouTube頻道網址");
+            else throw new FormatException("錯誤，請確認是否輸入YouTube頻道網址");
 
             return channelId;
         }
