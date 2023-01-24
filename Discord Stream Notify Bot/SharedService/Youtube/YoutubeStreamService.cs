@@ -472,6 +472,29 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     }
                 });
 
+                Program.RedisSub.Subscribe("youtube.pubsub.NeedRegister", async (channel, channelId) =>
+                {
+                    using (var db = DataBase.DBContext.GetDbContext())
+                    {
+                        if (db.YoutubeChannelSpider.Any((x) => x.ChannelId == channelId.ToString()))
+                        {
+                            var youtubeChannelSpider = db.YoutubeChannelSpider.Single((x) => x.ChannelId == channelId.ToString());
+
+                            if (await PostSubscribeRequestAsync(channelId.ToString()))
+                            {
+                                Log.Info($"已重新註冊YT PubSub: {youtubeChannelSpider.ChannelTitle} ({channelId})");
+                                youtubeChannelSpider.LastSubscribeTime = DateTime.Now;
+                                db.Update(youtubeChannelSpider);
+                                db.SaveChanges();
+                            }
+                        }
+                        else
+                        {
+                            Log.Error($"後端通知須重新註冊但資料庫無該ChannelId的資料: {channelId}");
+                        }
+                    }
+                });
+
                 #region Nope
                 //Program.redisSub.Subscribe("youtube.changestreamtime", async (channel, videoId) =>
                 //{
