@@ -663,7 +663,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                 // 如果viderResult內沒有該VideoId直播的話，則判定該直播已刪除
                                 if (!videoResult.Items.Any((x) => x.Id == reminder.Key))
                                 {
-                                    Log.Error($"CheckScheduleTime-VideoResult-Any: {reminder.Key}");
+                                    Log.Warn($"CheckScheduleTime-VideoResult-{reminder.Key}: 已刪除直播");
 
                                     EmbedBuilder embedBuilder = new EmbedBuilder();
                                     embedBuilder.WithErrorColor()

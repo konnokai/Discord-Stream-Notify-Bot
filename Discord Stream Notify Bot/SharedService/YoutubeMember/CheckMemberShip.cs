@@ -147,6 +147,9 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                 continue;
                             }
 
+                            if (guildYoutubeMemberConfig.MemberCheckVideoId == "-")
+                                break;
+
                             var service = new YouTubeService(new BaseClientService.Initializer()
                             {
                                 HttpClientInitializer = userCredential,
