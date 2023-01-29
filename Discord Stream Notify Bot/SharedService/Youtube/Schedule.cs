@@ -109,7 +109,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                         .AddField("所屬", streamVideo.GetProductionType().GetProductionName(), true)
                                         .AddField("直播狀態", "尚未開台", true)
                                         .AddField("排定開台時間", startTime.ConvertDateTimeToDiscordMarkdown());
-                                        //.AddField("是否記錄直播", (CanRecord(db, streamVideo) ? "是" : "否"), true);
 
                                         if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo))
                                         {
@@ -157,7 +156,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             //Log.Info("Holo影片清單整理完成");
         }
 
-        // Todo: 更新2434直播清單撈取方式
         // 2434官網直播表: https://www.nijisanji.jp/streams
         // 直播資料路徑會變動，必須要從上面的網址直接解析Json
         // 2434成員資料
@@ -254,7 +252,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                             .AddField("所屬", streamVideo.GetProductionType().GetProductionName(), true)
                             .AddField("直播狀態", "尚未開台", true)
                             .AddField("排定開台時間", item.startat.Value.ConvertDateTimeToDiscordMarkdown());
-                            //.AddField("是否記錄直播", (CanRecord(db, streamVideo) ? "是" : "否"), true);
 
                             if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo))
                             {
@@ -280,9 +277,10 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             //Log.Info("彩虹社影片清單整理完成");
         }
 
-        //Todo: BlockingCollection應用 (但還不知道要用甚麼)
-        //https://blog.darkthread.net/blog/blockingcollection/
-        //https://docs.microsoft.com/en-us/dotnet/standard/collections/thread-safe/blockingcollection-overview
+        // Todo: BlockingCollection應用 (但還不知道要用甚麼)
+        // 應該是不能用，為了降低API配額消耗，所以必須取得全部的VideoId後再一次性的跟API要資料
+        // https://blog.darkthread.net/blog/blockingcollection/
+        // https://docs.microsoft.com/en-us/dotnet/standard/collections/thread-safe/blockingcollection-overview
         private async Task OtherScheduleAsync()
         {
             if (Program.isOtherChannelSpider) return;
@@ -339,12 +337,12 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     {
                         using var httpClient = _httpClientFactory.CreateClient();
 
-                        httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36");
+                        httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36");
                         httpClient.DefaultRequestHeaders.Add("AcceptLanguage", "zh-TW");
 
-                        for (int i = 0; i <= 1; i++)
+                        foreach (var type in new string[] { "videos", "streams" })
                         {
-                            var response = await httpClient.GetStringAsync($"https://www.youtube.com/channel/{item.ChannelId}/" + (i == 0 ? "videos" : "streams"));
+                            var response = await httpClient.GetStringAsync($"https://www.youtube.com/channel/{item.ChannelId}/{type}");
 
                             Regex regex;
                             if (response.Contains("window[\"ytInitialData\"]"))
@@ -454,7 +452,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 .AddField("所屬", streamVideo.GetProductionType().GetProductionName(), true)
                 .AddField("上傳時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
 
-                if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo) && !isFirstOther && !isFromRNRS)
+                if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo) && !isFirstOther && !isFromRNRS && streamVideo.ScheduledStartTime > DateTime.Now.AddDays(-2))
                     await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.NewVideo).ConfigureAwait(false);
             }
             else if (item.LiveStreamingDetails.ScheduledStartTime != null)
@@ -484,7 +482,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     .AddField("所屬", streamVideo.GetProductionType().GetProductionName(), true)
                     .AddField("直播狀態", "尚未開台", true)
                     .AddField("排定開台時間", startTime.ConvertDateTimeToDiscordMarkdown());
-                    //.AddField("是否記錄直播", (CanRecord(db, streamVideo) ? "是" : "否"), true);
 
                     if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo) && !isFromRNRS)
                     {
