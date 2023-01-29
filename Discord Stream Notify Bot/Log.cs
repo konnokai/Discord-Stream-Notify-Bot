@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 public static class Log
 {
     enum LogType { Verb, Stream, Info, Warn, Error }
-    static string logPath = DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss") + "_log.txt";
-    static string errorLogPath = DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss") + "_err.txt";
-    static string streamLogPath = DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss") + "_stream.txt";
+    static string logPath = DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss") + ".log";
+    static string errorLogPath = DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss") + "_err.log";
+    static string streamLogPath = DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss") + "_stream.log";
     private static object lockObj = new object();
 
     private static void WriteLogToFile(LogType type, string text)
