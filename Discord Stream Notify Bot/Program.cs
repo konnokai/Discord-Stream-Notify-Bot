@@ -106,8 +106,10 @@ namespace Discord_Stream_Notify_Bot
                 LogLevel = LogSeverity.Verbose,
                 ConnectionTimeout = int.MaxValue,
                 MessageCacheSize = 50,
-                GatewayIntents = GatewayIntents.AllUnprivileged
-            }); ;
+                // 因為沒有註冊事件，Discord .NET建議可移除這兩個沒用到的特權
+                // https://dotblogs.com.tw/yc421206/2015/10/20/c_scharp_enum_of_flags
+                GatewayIntents = GatewayIntents.AllUnprivileged & ~GatewayIntents.GuildInvites & ~GatewayIntents.GuildScheduledEvents
+            });
 
             #region 初始化互動指令系統
             var interactionServices = new ServiceCollection()
