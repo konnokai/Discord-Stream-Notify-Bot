@@ -60,8 +60,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         .WithTitle(streamVideo.VideoTitle)
                         .WithDescription(Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}"))
                         .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
-                        .AddField("直播狀態", "已刪除直播", true)
-                        .AddField("排定開台時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown(), true);
+                        .AddField("直播狀態", "已刪除直播")
+                        .AddField("排定開台時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
 
                         await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.Delete).ConfigureAwait(false);
                         return;
@@ -183,8 +183,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                             .WithDescription(Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}"))
                             .WithImageUrl($"https://i.ytimg.com/vi/{streamVideo.VideoId}/maxresdefault.jpg")
                             .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
-                            .AddField("排定開台時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown(), true)
-                            .AddField("直播狀態", "開台中", true);
+                            .AddField("直播狀態", "開台中")
+                            .AddField("排定開台時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
 
                             await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.Start).ConfigureAwait(false);
                         }
@@ -202,9 +202,9 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         .WithDescription(Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}"))
                         .WithImageUrl($"https://i.ytimg.com/vi/{streamVideo.VideoId}/maxresdefault.jpg")
                         .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
-                        .AddField("直播狀態", "尚未開台(已更改時間)", true)
-                        .AddField("排定開台時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown(), true)
-                        .AddField("更改開台時間", startTime.ConvertDateTimeToDiscordMarkdown(), true);
+                        .AddField("直播狀態", "尚未開台(已更改時間)")
+                        .AddField("排定開台時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown())
+                        .AddField("更改開台時間", startTime.ConvertDateTimeToDiscordMarkdown());
 
                         streamVideo.ScheduledStartTime = startTime;
                         switch (streamVideo.ChannelType)

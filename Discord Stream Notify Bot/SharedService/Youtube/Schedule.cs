@@ -77,7 +77,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                     .WithDescription(Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}"))
                                     .WithImageUrl($"https://i.ytimg.com/vi/{streamVideo.VideoId}/maxresdefault.jpg")
                                     .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
-                                    .AddField("所屬", streamVideo.GetProductionType().GetProductionName(), true)
                                     .AddField("上傳時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
 
                                     if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo) && !isFirstHolo)
@@ -106,8 +105,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                         .WithDescription(Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}"))
                                         .WithImageUrl($"https://i.ytimg.com/vi/{streamVideo.VideoId}/maxresdefault.jpg")
                                         .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
-                                        .AddField("所屬", streamVideo.GetProductionType().GetProductionName(), true)
-                                        .AddField("直播狀態", "尚未開台", true)
+                                        .AddField("直播狀態", "尚未開台")
                                         .AddField("排定開台時間", startTime.ConvertDateTimeToDiscordMarkdown());
 
                                         if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo))
@@ -249,8 +247,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                             .WithDescription(Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}"))
                             .WithImageUrl($"https://i.ytimg.com/vi/{streamVideo.VideoId}/maxresdefault.jpg")
                             .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
-                            .AddField("所屬", streamVideo.GetProductionType().GetProductionName(), true)
-                            .AddField("直播狀態", "尚未開台", true)
+                            .AddField("直播狀態", "尚未開台")
                             .AddField("排定開台時間", item.startat.Value.ConvertDateTimeToDiscordMarkdown());
 
                             if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo))
@@ -449,7 +446,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 .WithDescription(Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}"))
                 .WithImageUrl($"https://i.ytimg.com/vi/{streamVideo.VideoId}/maxresdefault.jpg")
                 .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
-                .AddField("所屬", streamVideo.GetProductionType().GetProductionName(), true)
                 .AddField("上傳時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
 
                 if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo) && !isFirstOther && !isFromRNRS && streamVideo.ScheduledStartTime > DateTime.Now.AddDays(-2))
@@ -479,7 +475,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     .WithDescription(Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}"))
                     .WithImageUrl($"https://i.ytimg.com/vi/{streamVideo.VideoId}/maxresdefault.jpg")
                     .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
-                    .AddField("所屬", streamVideo.GetProductionType().GetProductionName(), true)
                     .AddField("直播狀態", "尚未開台", true)
                     .AddField("排定開台時間", startTime.ConvertDateTimeToDiscordMarkdown());
 
