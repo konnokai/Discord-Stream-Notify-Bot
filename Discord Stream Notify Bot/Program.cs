@@ -349,7 +349,8 @@ namespace Discord_Stream_Notify_Bot
             AppDomain.CurrentDomain.UnhandledException += (sender, args) =>
             {
                 Exception e = (Exception)args.ExceptionObject;
-                iService.GetService<HttpClients.DiscordWebhookClient>().SendMessageToDiscord($"{ApplicatonOwner.Mention} {e}");                
+                Log.Error(e.ToString());
+                iService.GetService<DiscordWebhookClient>().SendMessageToDiscord($"{ApplicatonOwner.Mention} {e}");
             };
 
             await _client.LoginAsync(TokenType.Bot, botConfig.DiscordToken);
