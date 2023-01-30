@@ -349,7 +349,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                 catch (Exception ex)
                                 {
                                     Log.Warn($"無法傳送紀錄訊息: {guild.Id} / {logChannel.Id}");
-                                    Log.Error($"{ex}");
+                                    Log.Error($"無法傳送紀錄訊息: {ex}");
                                 }
 
                                 try
@@ -359,7 +359,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                 catch (Exception ex)
                                 {
                                     Log.Warn($"無法傳送私訊: {guild.Id} / {member.UserId}");
-                                    Log.Error($"{ex}");
+                                    Log.Error($"無法傳送私訊: {ex}");
                                 }
                             }
                         }
