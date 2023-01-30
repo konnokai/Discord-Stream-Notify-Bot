@@ -10,8 +10,10 @@ using Google.Apis.Auth.OAuth2.Responses;
 using Google.Apis.Services;
 using Google.Apis.YouTube.v3;
 using Newtonsoft.Json;
+using Polly;
 using System;
 using System.Linq;
+using System.Reflection.PortableExecutable;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -239,8 +241,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                 }).Channels.List("id,snippet");
                 service.Mine = true;
 
-                try 
-                { 
+                try
+                {
                     var result = await service.ExecuteAsync();
                     var channel = result.Items.FirstOrDefault();
                     if (channel == null)
@@ -355,7 +357,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                 }
             }
         }
-        
+
         private async Task<UserCredential> GetUserCredentialAsync(string discordUserId, TokenResponse token)
         {
             if (string.IsNullOrEmpty(token.RefreshToken))
@@ -399,6 +401,14 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
 
     static class Ext
     {
+        static Polly.Retry.RetryPolicy<Task<IUserMessage>> pBreaker = Policy<Task<IUserMessage>>
+                  .Handle<Exception>()
+                  .WaitAndRetry(new TimeSpan[]
+                  {
+                    TimeSpan.FromSeconds(1),
+                    TimeSpan.FromSeconds(2),
+                    TimeSpan.FromSeconds(4)
+                  });
         // RestUser無法被序列化，暫時放棄Cache
         //private static async Task<RestUser> GetRestUserFromCatchOrCreate(ulong userId)
         //{
@@ -431,9 +441,9 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
         {
             var user = await Program._client.Rest.GetUserAsync(userId);
             if (user == null)
-                await tc.SendMessageAsync(embed: embedBuilder.WithOkColor().Build());
+                await pBreaker.Execute(() => tc.SendMessageAsync(embed: embedBuilder.WithOkColor().Build()));
             else
-                await tc.SendMessageAsync(embed: embedBuilder.WithOkColor().WithAuthor(user).WithThumbnailUrl(user.GetAvatarUrl()).Build());
+                await pBreaker.Execute(() => tc.SendMessageAsync(embed: embedBuilder.WithOkColor().WithAuthor(user).WithThumbnailUrl(user.GetAvatarUrl()).Build()));
         }
 
         public static async Task SendConfirmMessageAsync(this ITextChannel tc, string title, string dec)
@@ -443,9 +453,9 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
         {
             var user = await Program._client.Rest.GetUserAsync(userId);
             if (user == null)
-                await tc.SendMessageAsync(embed: new EmbedBuilder().WithErrorColor().AddField("檢查頻道", channelTitle).AddField("狀態", status).Build());
+                await pBreaker.Execute(() => tc.SendMessageAsync(embed: new EmbedBuilder().WithErrorColor().AddField("檢查頻道", channelTitle).AddField("狀態", status).Build()));
             else
-                await tc.SendMessageAsync(embed: new EmbedBuilder().WithErrorColor().WithAuthor(user).WithThumbnailUrl(user.GetAvatarUrl()).AddField("檢查頻道", channelTitle).AddField("狀態", status).Build());
+                await pBreaker.Execute(() => tc.SendMessageAsync(embed: new EmbedBuilder().WithErrorColor().WithAuthor(user).WithThumbnailUrl(user.GetAvatarUrl()).AddField("檢查頻道", channelTitle).AddField("狀態", status).Build()));
         }
 
         public static async Task SendConfirmMessageAsync(this ulong userId, string text, ITextChannel tc)
