@@ -1,4 +1,5 @@
 ﻿using Discord;
+using Google.Apis.Util;
 using System;
 using System.IO;
 using System.Threading.Tasks;
@@ -87,7 +88,7 @@ public static class Log
         WriteLogToFile(LogType.Verb, message.Message);
 #endif
 
-        if (message.Exception != null)
+        if (message.Exception != null && message.Exception is not Discord.WebSocket.GatewayReconnectException)
         {
             consoleColor = ConsoleColor.DarkRed;
             FormatColorWrite(message.Exception.GetType().FullName, consoleColor);
