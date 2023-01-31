@@ -23,7 +23,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
         private async Task HoloScheduleAsync()
         {
-            if (Program.isHoloChannelSpider) return;
+            if (Program.isHoloChannelSpider || Program.isDisconnect) return;
             //Log.Info("Holo影片清單整理開始");
             Program.isHoloChannelSpider = true;
 
@@ -163,7 +163,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
         // KR跟ID沒看到網站有請求
         private async Task NijisanjiScheduleAsync()
         {
-            if (Program.isNijisanjiChannelSpider) return;
+            if (Program.isNijisanjiChannelSpider || Program.isDisconnect) return;
             //Log.Info("彩虹社影片清單整理開始");
             Program.isNijisanjiChannelSpider = true;
             using var httpClient = _httpClientFactory.CreateClient();
@@ -280,7 +280,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
         // https://docs.microsoft.com/en-us/dotnet/standard/collections/thread-safe/blockingcollection-overview
         private async Task OtherScheduleAsync()
         {
-            if (Program.isOtherChannelSpider) return;
+            if (Program.isOtherChannelSpider || Program.isDisconnect) return;
 
 #if RELEASE
             try
@@ -307,6 +307,10 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             using (var db = DataBase.DBContext.GetDbContext())
             {
                 var channelList = db.YoutubeChannelSpider.Where((x) => db.RecordYoutubeChannel.Any((x2) => x.ChannelId == x2.YoutubeChannelId));
+                using var httpClient = _httpClientFactory.CreateClient();
+                httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36");
+                httpClient.DefaultRequestHeaders.Add("AcceptLanguage", "zh-TW");
+
                 Log.Info($"突襲開台檢測開始: {channelList.Count()}頻道");
                 foreach (var item in channelList)
                 {
@@ -330,14 +334,10 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     }
 
                     string videoId = "";
-                    try
+
+                    foreach (var type in new string[] { "videos", "streams" })
                     {
-                        using var httpClient = _httpClientFactory.CreateClient();
-
-                        httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36");
-                        httpClient.DefaultRequestHeaders.Add("AcceptLanguage", "zh-TW");
-
-                        foreach (var type in new string[] { "videos", "streams" })
+                        try
                         {
                             var response = await httpClient.GetStringAsync($"https://www.youtube.com/channel/{item.ChannelId}/{type}");
 
@@ -371,20 +371,21 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                 }
                                 catch (Exception ex)
                                 {
+                                    Log.Error($"OtherSchedule {item.ChannelId} - {type}: GetVideoId");
                                     Log.Error(ex.ToString());
                                 }
                             }
 
-                            if (!response.Contains($"/channel/{item.ChannelId}/streams"))
+                            if (!response.Contains($"/channel/{item.ChannelId}/streams")) // 這行應該是判定如果沒有直播頁籤的話就直接跳出迴圈?
                                 break;
                         }
-                    }
-                    catch (Exception ex)
-                    {
-                        try { otherVideoDic[item.ChannelId].Remove(videoId); }
-                        catch (Exception) { }
-                        Log.Error($"OtherSchedule {item.ChannelId}");
-                        Log.Error($"{ex}");
+                        catch (Exception ex)
+                        {
+                            try { otherVideoDic[item.ChannelId].Remove(videoId); }
+                            catch (Exception) { }
+                            Log.Error($"OtherSchedule {item.ChannelId} - {type}: GetVideoList");
+                            Log.Error($"{ex}");
+                        }
                     }
                 }
 
