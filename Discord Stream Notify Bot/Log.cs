@@ -1,5 +1,4 @@
 ﻿using Discord;
-using Google.Apis.Util;
 using System;
 using System.IO;
 using System.Threading.Tasks;
@@ -10,11 +9,12 @@ public static class Log
     static string logPath = DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss") + ".log";
     static string errorLogPath = DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss") + "_err.log";
     static string streamLogPath = DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss") + "_stream.log";
-    private static object lockObj = new object();
+    private static object writeLockObj = new object();
+    private static object logLockObj = new object();
 
     private static void WriteLogToFile(LogType type, string text)
     {
-        lock (lockObj)
+        lock (writeLockObj)
         {
             text = $"[{DateTime.Now}] [{type.ToString().ToUpper()}] | {text}\r\n";
             switch (type)
@@ -34,26 +34,38 @@ public static class Log
 
     public static void Stream(string text, bool newLine = true)
     {
-        FormatColorWrite(text, ConsoleColor.Green, newLine);
-        WriteLogToFile(LogType.Stream, text);
+        lock (logLockObj)
+        {
+            FormatColorWrite(text, ConsoleColor.Green, newLine);
+            WriteLogToFile(LogType.Stream, text);
+        }
     }
 
     public static void Info(string text, bool newLine = true)
     {
-        FormatColorWrite(text, ConsoleColor.DarkYellow, newLine);
-        WriteLogToFile(LogType.Info, text);
+        lock (logLockObj)
+        {
+            FormatColorWrite(text, ConsoleColor.DarkYellow, newLine);
+            WriteLogToFile(LogType.Info, text);
+        }
     }
 
     public static void Warn(string text, bool newLine = true)
     {
-        FormatColorWrite(text, ConsoleColor.DarkMagenta, newLine);
-        WriteLogToFile(LogType.Warn, text);
+        lock (logLockObj)
+        {
+            FormatColorWrite(text, ConsoleColor.DarkMagenta, newLine);
+            WriteLogToFile(LogType.Warn, text);
+        }
     }
 
     public static void Error(string text, bool newLine = true)
     {
-        FormatColorWrite(text, ConsoleColor.DarkRed, newLine);
-        WriteLogToFile(LogType.Error, text);
+        lock (logLockObj)
+        {
+            FormatColorWrite(text, ConsoleColor.DarkRed, newLine);
+            WriteLogToFile(LogType.Error, text);
+        }
     }
 
     public static void FormatColorWrite(string text, ConsoleColor consoleColor = ConsoleColor.Gray, bool newLine = true)
