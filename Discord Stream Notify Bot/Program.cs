@@ -68,6 +68,8 @@ namespace Discord_Stream_Notify_Bot
                 db.Database.EnsureCreated();
             using (var db = DataBase.NotVTuberVideoContext.GetDbContext())
                 db.Database.EnsureCreated();
+            using (var db = DataBase.TwitcastingStreamContext.GetDbContext())
+                db.Database.EnsureCreated();
 
             try
             {

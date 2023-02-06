@@ -5,12 +5,14 @@ namespace Discord_Stream_Notify_Bot.DataBase
 {
     public class DBContext : DbContext
     {
+        public DbSet<BannerChange> BannerChange { get; set; }
         public DbSet<GuildConfig> GuildConfig { get; set; }
         public DbSet<GuildYoutubeMemberConfig> GuildYoutubeMemberConfig { get; set; }
-        public DbSet<BannerChange> BannerChange { get; set; }
+        public DbSet<NoticeTwitcastingStreamChannel> NoticeTwitcastingStreamChannels { get; set; }
         public DbSet<NoticeTwitterSpaceChannel> NoticeTwitterSpaceChannel { get; set; }
         public DbSet<NoticeYoutubeStreamChannel> NoticeYoutubeStreamChannel { get; set; }
         public DbSet<RecordYoutubeChannel> RecordYoutubeChannel { get; set; }
+        public DbSet<TwitcastingSpider> TwitcastingSpider { get; set; }
         public DbSet<TwitterSpace> TwitterSpace { get; set; }
         public DbSet<TwitterSpaecSpider> TwitterSpaecSpider { get; set; }
         public DbSet<YoutubeChannelOwnedType> YoutubeChannelOwnedType { get; set; }
