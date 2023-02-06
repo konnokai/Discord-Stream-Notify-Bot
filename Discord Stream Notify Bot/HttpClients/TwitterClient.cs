@@ -14,7 +14,7 @@ namespace Discord_Stream_Notify_Bot.HttpClients
     {
         private string queryId = "";
         private string featureSwitches = "";
-        public HttpClient Client { get; private set; }
+        private readonly HttpClient _httpClient;
 
         public TwitterClient(HttpClient httpClient)
         {
@@ -26,7 +26,7 @@ namespace Discord_Stream_Notify_Bot.HttpClients
             httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", "AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs=1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA");
             httpClient.DefaultRequestHeaders.Add("ContentType", "application/json");
 
-            Client = httpClient;
+            _httpClient = httpClient;
         }
 
         public async Task GetQueryIdAndFeatureSwitchesAsync()
@@ -40,7 +40,7 @@ namespace Discord_Stream_Notify_Bot.HttpClients
 
             if (mainJsUrl != "")
             {
-                string mainJsText = await Client.GetStringAsync(mainJsUrl);
+                string mainJsText = await _httpClient.GetStringAsync(mainJsUrl);
 
                 regex = new Regex("{queryId:\"([^\"]+)\",operationName:\"([^\"]+)\",operationType:\"([^\"]+)\",metadata:{featureSwitches:\\[([^\\]]+)", RegexOptions.None);
                 var queryList = regex.Matches(mainJsText);
@@ -50,10 +50,10 @@ namespace Discord_Stream_Notify_Bot.HttpClients
                 featureSwitches = "{" + string.Join(',', exports.Groups[4].Value.Split(new char[] { ','}, StringSplitOptions.RemoveEmptyEntries).Select((x) => $"{x}:false")) + "}";
                 featureSwitches = WebUtility.UrlEncode(featureSwitches);
 
-                Client.DefaultRequestHeaders.Remove("x-guest-token");
+                _httpClient.DefaultRequestHeaders.Remove("x-guest-token");
                 regex = new Regex(@"gt=(\d{19});");
                 var guestToken = regex.Match(web.Text).Groups[1].Value;
-                Client.DefaultRequestHeaders.Add("x-guest-token", guestToken);
+                _httpClient.DefaultRequestHeaders.Add("x-guest-token", guestToken);
 
                 Log.Info("NewTwitterMetadata Found!");
                 Log.Info($"QueryId: {queryId}");
@@ -82,7 +82,7 @@ namespace Discord_Stream_Notify_Bot.HttpClients
             try
             {
                 string url = $"https://twitter.com/i/api/graphql/{queryId}/AudioSpaceById?variables={variables}&features={featureSwitches}";
-                return JObject.Parse(await Client.GetStringAsync(url))["data"]["audioSpace"]["metadata"];
+                return JObject.Parse(await _httpClient.GetStringAsync(url))["data"]["audioSpace"]["metadata"];
             }
             catch (Exception ex)
             {
@@ -100,7 +100,7 @@ namespace Discord_Stream_Notify_Bot.HttpClients
             try
             {
                 string url = $"https://twitter.com/i/api/1.1/live_video_stream/status/{mediaKey}";
-                return JObject.Parse(await Client.GetStringAsync(url))["source"]["location"].ToString();
+                return JObject.Parse(await _httpClient.GetStringAsync(url))["source"]["location"].ToString();
             }
             catch (Exception)
             {

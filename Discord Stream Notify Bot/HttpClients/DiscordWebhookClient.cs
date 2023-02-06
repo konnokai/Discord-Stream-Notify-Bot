@@ -7,7 +7,7 @@ namespace Discord_Stream_Notify_Bot.HttpClients
 {
     public class DiscordWebhookClient
     {
-        public HttpClient Client { get; private set; }
+        private readonly HttpClient _httpClient;
 
         DiscordSocketClient _client;
         BotConfig _botConfig;
@@ -22,7 +22,7 @@ namespace Discord_Stream_Notify_Bot.HttpClients
         public DiscordWebhookClient(HttpClient httpClient, DiscordSocketClient client, BotConfig botConfig)
         {
             httpClient.DefaultRequestHeaders.Add("UserAgent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.45 Safari/537.36");
-            Client = httpClient;
+            _httpClient = httpClient;
             _client = client;
             _botConfig = botConfig;
         }
@@ -44,7 +44,7 @@ namespace Discord_Stream_Notify_Bot.HttpClients
 
             message.content = content;
             var httpContent = new StringContent(JsonConvert.SerializeObject(message), Encoding.UTF8, "application/json");
-            Client.PostAsync(_botConfig.WebHookUrl, httpContent);
+            _httpClient.PostAsync(_botConfig.WebHookUrl, httpContent);
         }
     }
 }
