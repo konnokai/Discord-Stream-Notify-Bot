@@ -8,16 +8,8 @@ namespace Discord_Stream_Notify_Bot.HttpClients
     public class DiscordWebhookClient
     {
         private readonly HttpClient _httpClient;
-
-        DiscordSocketClient _client;
-        BotConfig _botConfig;
-
-        class Message
-        {
-            public string username { get; set; }
-            public string content { get; set; }
-            public string avatar_url { get; set; }
-        }
+        private readonly DiscordSocketClient _client;
+        private readonly BotConfig _botConfig;
 
         public DiscordWebhookClient(HttpClient httpClient, DiscordSocketClient client, BotConfig botConfig)
         {
@@ -45,6 +37,13 @@ namespace Discord_Stream_Notify_Bot.HttpClients
             message.content = content;
             var httpContent = new StringContent(JsonConvert.SerializeObject(message), Encoding.UTF8, "application/json");
             _httpClient.PostAsync(_botConfig.WebHookUrl, httpContent);
+        }
+
+        class Message
+        {
+            public string username { get; set; }
+            public string content { get; set; }
+            public string avatar_url { get; set; }
         }
     }
 }
