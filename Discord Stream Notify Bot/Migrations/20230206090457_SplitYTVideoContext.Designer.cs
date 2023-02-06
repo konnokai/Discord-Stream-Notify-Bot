@@ -3,6 +3,7 @@ using System;
 using Discord_Stream_Notify_Bot.DataBase;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,10 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Discord_Stream_Notify_Bot.Migrations
 {
     [DbContext(typeof(DBContext))]
-    partial class DBContextModelSnapshot : ModelSnapshot
+    [Migration("20230206090457_SplitYTVideoContext")]
+    partial class SplitYTVideoContext
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "6.0.5");
@@ -78,29 +80,6 @@ namespace Discord_Stream_Notify_Bot.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("GuildYoutubeMemberConfig");
-                });
-
-            modelBuilder.Entity("Discord_Stream_Notify_Bot.DataBase.Table.NoticeTwitcastingStreamChannel", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("ChannelId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<ulong>("DiscordChannelId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<ulong>("GuildId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("StartStreamMessage")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("NoticeTwitcastingStreamChannels");
                 });
 
             modelBuilder.Entity("Discord_Stream_Notify_Bot.DataBase.Table.NoticeTwitterSpaceChannel", b =>
@@ -175,32 +154,6 @@ namespace Discord_Stream_Notify_Bot.Migrations
                     b.HasKey("YoutubeChannelId");
 
                     b.ToTable("RecordYoutubeChannel");
-                });
-
-            modelBuilder.Entity("Discord_Stream_Notify_Bot.DataBase.Table.TwitcastingSpider", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("ChannelId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("ChannelTitle")
-                        .HasColumnType("TEXT");
-
-                    b.Property<ulong>("GuildId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("IsRecord")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("IsWarningUser")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("TwitcastingSpider");
                 });
 
             modelBuilder.Entity("Discord_Stream_Notify_Bot.DataBase.Table.TwitterSpace", b =>
