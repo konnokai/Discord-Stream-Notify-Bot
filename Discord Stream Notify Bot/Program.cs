@@ -135,7 +135,7 @@ namespace Discord_Stream_Notify_Bot
                 .AddPolicyHandler(HttpPolicyExtensions
                     .HandleTransientHttpError()
                     .RetryAsync(3));
-            interactionServices.AddHttpClient<TwitCastingClient>()
+            interactionServices.AddHttpClient<TwitcastingClient>()
                 .AddPolicyHandler(HttpPolicyExtensions
                     .HandleTransientHttpError()
                     .RetryAsync(3));
