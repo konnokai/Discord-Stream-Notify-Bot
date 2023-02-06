@@ -1,10 +1,4 @@
-﻿using Discord;
-using Discord.WebSocket;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
-namespace Discord_Stream_Notify_Bot.Interaction.OwnerOnly.Service
+﻿namespace Discord_Stream_Notify_Bot.Interaction.OwnerOnly.Service
 {
     public class SendMsgToAllGuildService : IInteractionService
     {

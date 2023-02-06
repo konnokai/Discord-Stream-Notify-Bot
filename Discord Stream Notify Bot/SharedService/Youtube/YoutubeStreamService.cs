@@ -1,23 +1,16 @@
-﻿using Discord;
-using Discord.Interactions;
-using Discord.WebSocket;
+﻿using Discord.Interactions;
 using Discord_Stream_Notify_Bot.Interaction;
 using Discord_Stream_Notify_Bot.SharedService.Youtube.Json;
 using Google.Apis.Services;
 using Google.Apis.YouTube.v3;
 using HtmlAgilityPack;
-using Newtonsoft.Json;
 using Polly;
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Data;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 {
@@ -222,7 +215,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         Log.Error($"Record-EndStream {ex}");
                     }
                 });
-                              
+
                 Program.RedisSub.Subscribe("youtube.deletestream", async (channel, videoId) =>
                 {
                     Log.Info($"{channel} - {videoId}");
@@ -825,7 +818,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             catch (Exception ex)
             {
                 Log.Error($"GetOrCreateNijisanjiLiverListAsync-GetLiver-{affiliation}: {ex}");
-            }            
+            }
         }
 
         public async Task<Embed> GetNowStreamingChannel(NowStreamingHost host)
@@ -870,7 +863,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             }
         }
 
-        private bool CanRecord(DataBase.DBContext db , DataBase.Table.Video streamVideo) =>
+        private bool CanRecord(DataBase.DBContext db, DataBase.Table.Video streamVideo) =>
              IsRecord && db.RecordYoutubeChannel.Any((x) => x.YoutubeChannelId.Trim() == streamVideo.ChannelId.Trim());
 
         public async Task<string> GetChannelIdAsync(string channelUrl)
@@ -987,7 +980,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                 return channelId;
             }
-            catch{ throw; }
+            catch { throw; }
         }
 
         public string GetVideoId(string videoUrl)
@@ -999,7 +992,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
             if (videoUrl.Length == 11)
                 return videoUrl;
-                       
+
             Regex regex = new Regex(@"(?:https?:)?(?:\/\/)?(?:[0-9A-Z-]+\.)?(?:youtu\.be\/|youtube(?:-nocookie)?\.com\S*?[^\w\s-])(?'VideoId'[\w-]{11})(?=[^\w-]|$)(?![?=&+%\w.-]*(?:['""][^<>]*>|<\/a>))[?=&+%\w.-]*"); //https://regex101.com/r/OY96XI/1
             Match match = regex.Match(videoUrl);
             if (!match.Success)
@@ -1045,7 +1038,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
         {
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                foreach (var item in db.YoutubeChannelSpider.Where((x) => x.LastSubscribeTime < DateTime.Now.AddDays(-7))) 
+                foreach (var item in db.YoutubeChannelSpider.Where((x) => x.LastSubscribeTime < DateTime.Now.AddDays(-7)))
                 {
                     if (await PostSubscribeRequestAsync(item.ChannelId))
                     {

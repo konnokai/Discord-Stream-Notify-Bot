@@ -1,10 +1,6 @@
-﻿using Discord;
-using Discord_Stream_Notify_Bot.DataBase;
+﻿using Discord_Stream_Notify_Bot.DataBase;
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.Interaction;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
 {

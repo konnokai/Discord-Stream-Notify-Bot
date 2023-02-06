@@ -1,7 +1,4 @@
-﻿using Discord;
-using Discord.Interactions;
-using System;
-using System.Threading.Tasks;
+﻿using Discord.Interactions;
 
 namespace Discord_Stream_Notify_Bot.Interaction.Attribute
 {
@@ -13,7 +10,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Attribute
         }
 
         public ulong? GuildId { get; }
-        
+
         public override Task<PreconditionResult> CheckRequirementsAsync(IInteractionContext context, ICommandInfo commandInfo, IServiceProvider services)
         {
             if (context.Guild.Id == GuildId) return Task.FromResult(PreconditionResult.FromSuccess());

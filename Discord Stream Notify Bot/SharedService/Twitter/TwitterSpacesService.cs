@@ -1,18 +1,12 @@
-﻿using Discord;
-using Discord.WebSocket;
-using Discord_Stream_Notify_Bot.Interaction;
+﻿using Discord_Stream_Notify_Bot.Interaction;
 using Polly;
 using SocialOpinionAPI.Core;
 using SocialOpinionAPI.Models.Users;
 using SocialOpinionAPI.Services.Spaces;
 using SocialOpinionAPI.Services.Users;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace Discord_Stream_Notify_Bot.SharedService.Twitter
 {
@@ -56,9 +50,9 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
             //https://blog.darkthread.net/blog/polly-circuitbreakerpolicy/
             var pBreaker = Policy<SocialOpinionAPI.Models.Spaces.SpacesModel>
                 .Handle<Exception>()
-                .WaitAndRetry(new TimeSpan[] 
-                { 
-                    TimeSpan.FromSeconds(1), 
+                .WaitAndRetry(new TimeSpan[]
+                {
+                    TimeSpan.FromSeconds(1),
                     TimeSpan.FromSeconds(2),
                     TimeSpan.FromSeconds(4)
                 });
@@ -75,7 +69,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                         for (int i = 0; i < userList.Length; i += 100)
                         {
                             try
-                            {                               
+                            {
                                 SocialOpinionAPI.Models.Spaces.SpacesModel spaces = pBreaker.Execute(() => SpacesService.LookupByCreatorId(userList.Skip(i).Take(100).ToList()));
                                 if (spaces.data.Count <= 0) continue;
 
@@ -101,12 +95,12 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                                         try
                                         {
                                             var metadataJson = await _twitterClient.GetTwitterSpaceMetadataAsync(item.id);
-                                            masterUrl = (await _twitterClient.GetTwitterSpaceMasterUrlAsync(metadataJson["media_key"].ToString())).Replace(" ","");
+                                            masterUrl = (await _twitterClient.GetTwitterSpaceMasterUrlAsync(metadataJson["media_key"].ToString())).Replace(" ", "");
                                         }
                                         catch (Exception ex)
                                         {
-                                            Log.Error($"GetTwitterSpaceMasterUrl: {item.id}\n{ex}"); 
-                                            hashSet.Add(item.id); 
+                                            Log.Error($"GetTwitterSpaceMasterUrl: {item.id}\n{ex}");
+                                            hashSet.Add(item.id);
                                             continue;
                                         }
 
@@ -137,8 +131,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                                 }
                                 db.SaveChanges();
                             }
-                            catch (Exception ex) 
-                            { 
+                            catch (Exception ex)
+                            {
                                 if (!ex.Message.Contains("503") && !ex.Message.Contains("temporarily unavailable"))
                                     Log.Error($"Prepare-Spaces {ex.Message}\n{ex.StackTrace}");
                             }

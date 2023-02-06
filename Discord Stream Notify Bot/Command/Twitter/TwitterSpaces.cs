@@ -1,13 +1,7 @@
-﻿using Discord;
-using Discord.Commands;
-using Discord.WebSocket;
+﻿using Discord.Commands;
 using Discord_Stream_Notify_Bot.Command.Attribute;
-using System.Threading.Tasks;
-using System.Linq;
-using System;
-using SocialOpinionAPI.Models.Users;
 using Discord_Stream_Notify_Bot.DataBase.Table;
-using System.Collections.Generic;
+using SocialOpinionAPI.Models.Users;
 
 namespace Discord_Stream_Notify_Bot.Command.Twitter
 {
@@ -176,7 +170,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
             {
                 if (db.TwitterSpaecSpider.Any((x) => x.UserScreenName == userScreenName))
                 {
-                    var twitterSpaec  = db.TwitterSpaecSpider.First((x) => x.UserScreenName == userScreenName);
+                    var twitterSpaec = db.TwitterSpaecSpider.First((x) => x.UserScreenName == userScreenName);
                     twitterSpaec.IsWarningUser = !twitterSpaec.IsWarningUser;
                     db.TwitterSpaecSpider.Update(twitterSpaec);
                     db.SaveChanges();

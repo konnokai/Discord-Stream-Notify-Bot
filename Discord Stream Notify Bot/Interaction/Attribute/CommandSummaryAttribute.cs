@@ -1,7 +1,4 @@
-﻿using System;
-
-
-namespace Discord_Stream_Notify_Bot.Interaction.Attribute
+﻿namespace Discord_Stream_Notify_Bot.Interaction.Attribute
 {
     [AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
     sealed class CommandSummaryAttribute : System.Attribute

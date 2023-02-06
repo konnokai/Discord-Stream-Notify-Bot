@@ -1,7 +1,4 @@
-﻿using System;
-
-
-namespace Discord_Stream_Notify_Bot.Command.Attribute
+﻿namespace Discord_Stream_Notify_Bot.Command.Attribute
 {
     [AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
     sealed class CommandExampleAttribute : System.Attribute

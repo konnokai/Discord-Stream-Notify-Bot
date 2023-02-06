@@ -1,9 +1,4 @@
-﻿using Discord;
-using Discord.WebSocket;
-using System;
-using System.Threading.Tasks;
-
-namespace Discord_Stream_Notify_Bot.Interaction
+﻿namespace Discord_Stream_Notify_Bot.Interaction
 {
     public sealed class ReactionEventWrapper : IDisposable
     {

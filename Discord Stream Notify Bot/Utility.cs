@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-
-namespace Discord_Stream_Notify_Bot
+﻿namespace Discord_Stream_Notify_Bot
 {
     public static class Utility
     {

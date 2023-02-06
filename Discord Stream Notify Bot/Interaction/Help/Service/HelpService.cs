@@ -1,8 +1,5 @@
-﻿using Discord;
-using Discord.Interactions;
+﻿using Discord.Interactions;
 using Discord_Stream_Notify_Bot.Interaction.Attribute;
-using System;
-using System.Linq;
 
 namespace Discord_Stream_Notify_Bot.Interaction.Help.Service
 {

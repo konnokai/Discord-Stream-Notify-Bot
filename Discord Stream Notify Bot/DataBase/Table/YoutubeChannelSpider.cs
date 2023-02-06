@@ -1,5 +1,4 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System;
 
 namespace Discord_Stream_Notify_Bot.DataBase.Table
 {

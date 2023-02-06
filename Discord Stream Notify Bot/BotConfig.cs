@@ -1,6 +1,4 @@
 ﻿using Discord_Stream_Notify_Bot;
-using Newtonsoft.Json;
-using System;
 using System.IO;
 
 public class BotConfig
@@ -103,7 +101,7 @@ public class BotConfig
         {
             Log.Error($"設定檔讀取失敗: {ex}");
             throw;
-        }       
+        }
     }
 
     private static string GenRandomKey()

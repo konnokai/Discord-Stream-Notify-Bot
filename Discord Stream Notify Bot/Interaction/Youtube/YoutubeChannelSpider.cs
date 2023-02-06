@@ -1,11 +1,5 @@
-﻿using Discord;
-using Discord.Interactions;
-using Discord.WebSocket;
+﻿using Discord.Interactions;
 using Discord_Stream_Notify_Bot.Interaction.Attribute;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Discord_Stream_Notify_Bot.Interaction.Youtube
 {
@@ -40,7 +34,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                     string value = autocompleteInteraction.Data.Current.Value.ToString();
                     if (!string.IsNullOrEmpty(value))
                     {
-                        foreach (var item in channelList)   
+                        foreach (var item in channelList)
                         {
                             if (item.ChannelTitle.Contains(value, StringComparison.CurrentCultureIgnoreCase) || item.ChannelId.Contains(value, StringComparison.CurrentCultureIgnoreCase))
                             {
@@ -176,7 +170,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                 {
                     await button.SendErrorAsync(ex.Message, true);
                     Log.Error(ex.ToString());
-                }                
+                }
             };
         }
 
@@ -216,7 +210,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             {
                 bool isTwoBox = false;
                 using (var Holodb = DataBase.HoloVideoContext.GetDbContext())
-                    if (Holodb.Video.Any((x) => x.ChannelId == channelId)) isTwoBox =  true;
+                    if (Holodb.Video.Any((x) => x.ChannelId == channelId)) isTwoBox = true;
                 using (var Nijidb = DataBase.NijisanjiVideoContext.GetDbContext())
                     if (Nijidb.Video.Any((x) => x.ChannelId == channelId)) isTwoBox = true;
 
@@ -278,7 +272,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                 db.SaveChanges();
 
                 await Context.Interaction.SendConfirmAsync($"已將 {channelTitle} 加入到爬蟲清單內\n" +
-                    $"請到通知頻道內使用 `/youtube add-youtube-notice https://www.youtube.com/channel/{channelId}` 來開啟通知", true,true).ConfigureAwait(false);
+                    $"請到通知頻道內使用 `/youtube add-youtube-notice https://www.youtube.com/channel/{channelId}` 來開啟通知", true, true).ConfigureAwait(false);
 
                 try
                 {

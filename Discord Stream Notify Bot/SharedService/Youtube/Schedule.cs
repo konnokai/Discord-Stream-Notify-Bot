@@ -1,16 +1,10 @@
-﻿using Discord;
-using Discord_Stream_Notify_Bot.Interaction;
+﻿using Discord_Stream_Notify_Bot.Interaction;
 using Discord_Stream_Notify_Bot.SharedService.Youtube.Json;
 using HtmlAgilityPack;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
 using System.Data;
-using System.Linq;
 using System.Net.Http;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using Extensions = Discord_Stream_Notify_Bot.Interaction.Extensions;
 
 namespace Discord_Stream_Notify_Bot.SharedService.Youtube
@@ -293,7 +287,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     return;
                 }
             }
-            catch 
+            catch
             {
                 Log.Error("Redis又死了zzz");
             }

@@ -1,10 +1,5 @@
-﻿using Discord;
-using Discord.Interactions;
-using Discord.WebSocket;
-using System;
-using System.Linq;
+﻿using Discord.Interactions;
 using System.Reflection;
-using System.Threading.Tasks;
 
 #if DEBUG
 using System.Text.RegularExpressions;

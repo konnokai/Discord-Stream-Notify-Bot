@@ -1,16 +1,10 @@
-﻿using Discord;
-using Discord_Stream_Notify_Bot.DataBase;
+﻿using Discord_Stream_Notify_Bot.DataBase;
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
 using Google.Apis.YouTube.v3;
 using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
 {

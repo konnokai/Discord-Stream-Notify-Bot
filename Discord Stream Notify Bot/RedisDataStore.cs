@@ -1,9 +1,6 @@
-﻿using Google.Apis.Util.Store;
-using Newtonsoft.Json;
+﻿using Discord_Stream_Notify_Bot.Auth;
+using Google.Apis.Util.Store;
 using StackExchange.Redis;
-using System;
-using System.Threading.Tasks;
-using Discord_Stream_Notify_Bot.Auth;
 
 namespace Discord_Stream_Notify_Bot
 {

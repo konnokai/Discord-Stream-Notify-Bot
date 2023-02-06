@@ -1,10 +1,4 @@
-﻿using Discord;
-using Discord.WebSocket;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
-namespace Discord_Stream_Notify_Bot.Command.Admin
+﻿namespace Discord_Stream_Notify_Bot.Command.Admin
 {
     public class AdministrationService : ICommandService
     {

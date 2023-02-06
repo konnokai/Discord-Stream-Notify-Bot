@@ -1,16 +1,10 @@
-﻿using Discord;
-using Discord.WebSocket;
-using Discord_Stream_Notify_Bot.DataBase.Table;
+﻿using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.Interaction;
 using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
-using System.Linq;
 using System.Management;
 using System.Reflection;
-using System.Threading.Tasks;
 
 namespace Discord_Stream_Notify_Bot.Interaction
 {

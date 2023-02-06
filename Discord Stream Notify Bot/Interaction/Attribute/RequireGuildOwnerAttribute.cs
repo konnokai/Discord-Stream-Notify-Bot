@@ -1,7 +1,4 @@
-﻿using Discord;
-using Discord.Interactions;
-using System;
-using System.Threading.Tasks;
+﻿using Discord.Interactions;
 
 namespace Discord_Stream_Notify_Bot.Interaction.Attribute
 {

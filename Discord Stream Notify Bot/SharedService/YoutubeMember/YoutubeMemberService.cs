@@ -1,6 +1,4 @@
-﻿using Discord;
-using Discord.WebSocket;
-using Discord_Stream_Notify_Bot.DataBase;
+﻿using Discord_Stream_Notify_Bot.DataBase;
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.Interaction;
 using Discord_Stream_Notify_Bot.SharedService.Youtube;
@@ -9,13 +7,8 @@ using Google.Apis.Auth.OAuth2.Flows;
 using Google.Apis.Auth.OAuth2.Responses;
 using Google.Apis.Services;
 using Google.Apis.YouTube.v3;
-using Newtonsoft.Json;
 using Polly;
-using System;
-using System.Linq;
-using System.Reflection.PortableExecutable;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
 {

@@ -1,8 +1,4 @@
-﻿using Discord;
-using System;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.IO;
 
 namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 {

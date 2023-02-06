@@ -1,10 +1,8 @@
-﻿using Discord;
-using Discord.Interactions;
+﻿using Discord.Interactions;
 using Discord_Stream_Notify_Bot.Interaction.Attribute;
 using Imgur.API.Authentication;
 using Imgur.API.Endpoints;
 using System.Net.Http;
-using System.Threading.Tasks;
 
 namespace Discord_Stream_Notify_Bot.Interaction.OwnerOnly
 {

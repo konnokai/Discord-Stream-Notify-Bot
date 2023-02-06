@@ -1,8 +1,4 @@
-﻿using Discord;
-using Discord.Interactions;
-using Discord.WebSocket;
-using System;
-using System.Threading.Tasks;
+﻿using Discord.Interactions;
 
 namespace Discord_Stream_Notify_Bot.Interaction.Attribute
 {
@@ -14,7 +10,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Attribute
         }
 
         public uint? GuildMemberCount { get; }
-        public override string ErrorMessage { get;  } = "此伺服器不可使用本指令";
+        public override string ErrorMessage { get; } = "此伺服器不可使用本指令";
 
         public override Task<PreconditionResult> CheckRequirementsAsync(IInteractionContext context, ICommandInfo commandInfo, IServiceProvider services)
         {

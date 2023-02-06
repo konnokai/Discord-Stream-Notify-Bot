@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Discord_Stream_Notify_Bot.Interaction
+﻿namespace Discord_Stream_Notify_Bot.Interaction
 {
     public class CommonEqualityComparer<T, V> : IEqualityComparer<T>
     {

@@ -1,6 +1,4 @@
-﻿using Newtonsoft.Json;
-using System;
-using System.Text;
+﻿using System.Text;
 
 namespace Discord_Stream_Notify_Bot.Auth
 {

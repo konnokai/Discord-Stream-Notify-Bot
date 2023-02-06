@@ -1,11 +1,7 @@
-﻿using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using System;
+﻿using Newtonsoft.Json.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using System.Linq;
 
 namespace Discord_Stream_Notify_Bot.HttpClients
 {
@@ -47,7 +43,7 @@ namespace Discord_Stream_Notify_Bot.HttpClients
 
                 var exports = queryList.FirstOrDefault((x) => x.Groups[2].Value == "AudioSpaceById");
                 queryId = exports.Groups[1].Value;
-                featureSwitches = "{" + string.Join(',', exports.Groups[4].Value.Split(new char[] { ','}, StringSplitOptions.RemoveEmptyEntries).Select((x) => $"{x}:false")) + "}";
+                featureSwitches = "{" + string.Join(',', exports.Groups[4].Value.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select((x) => $"{x}:false")) + "}";
                 featureSwitches = WebUtility.UrlEncode(featureSwitches);
 
                 _httpClient.DefaultRequestHeaders.Remove("x-guest-token");

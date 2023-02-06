@@ -1,14 +1,8 @@
-﻿using Discord;
-using Discord.Commands;
-using Discord.WebSocket;
+﻿using Discord.Commands;
 using Discord_Stream_Notify_Bot.Command.Attribute;
 using Discord_Stream_Notify_Bot.DataBase;
 using Discord_Stream_Notify_Bot.DataBase.Table;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
 
 namespace Discord_Stream_Notify_Bot.Command.Youtube
 {
@@ -122,8 +116,8 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                         Log.Info($"已發送錄影請求: {videoId}");
                         await Context.Channel.SendConfirmAsync("已開始錄影", description).ConfigureAwait(false);
                     }
-                    else 
-                    { 
+                    else
+                    {
                         Log.Warn($"Redis Sub頻道不存在，請開啟錄影工具: {videoId}");
                         await Context.Channel.SendErrorAsync("Redis Sub頻道不存在，請開啟錄影工具", description).ConfigureAwait(false);
                     }
@@ -189,7 +183,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
         [Summary("移除直播記錄頻道")]
         [Alias("RRC")]
         [RequireOwner]
-        public async Task RemoveRecordChannel([Summary("頻道網址")]string channelUrl)
+        public async Task RemoveRecordChannel([Summary("頻道網址")] string channelUrl)
         {
             string channelId = "";
             try

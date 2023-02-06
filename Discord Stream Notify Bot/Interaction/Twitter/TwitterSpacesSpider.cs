@@ -1,12 +1,7 @@
-﻿using Discord;
-using Discord.Interactions;
-using Discord.WebSocket;
+﻿using Discord.Interactions;
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.Interaction.Attribute;
 using SocialOpinionAPI.Models.Users;
-using System;
-using System.Linq;
-using System.Threading.Tasks;
 using static Discord_Stream_Notify_Bot.Interaction.Twitter.TwitterSpaces;
 
 namespace Discord_Stream_Notify_Bot.Interaction.Twitter

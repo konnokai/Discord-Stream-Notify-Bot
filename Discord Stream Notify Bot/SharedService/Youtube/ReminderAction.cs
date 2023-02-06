@@ -1,12 +1,7 @@
-﻿using Discord;
-using Discord_Stream_Notify_Bot.DataBase.Table;
+﻿using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.Interaction;
 using Polly;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 {
@@ -26,7 +21,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 }
                 else
                 {
-                    var remT = new Timer(ReminderTimerAction, streamVideo, Math.Max(1000, (long)ts.TotalMilliseconds), Timeout.Infinite); 
+                    var remT = new Timer(ReminderTimerAction, streamVideo, Math.Max(1000, (long)ts.TotalMilliseconds), Timeout.Infinite);
 
                     if (!Reminders.TryAdd(streamVideo.VideoId, new ReminderItem() { StreamVideo = streamVideo, Timer = remT, ChannelType = channelType }))
                     {
@@ -75,7 +70,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                 DateTime startTime;
                 if (videoResult.LiveStreamingDetails.ScheduledStartTime.HasValue) startTime = videoResult.LiveStreamingDetails.ScheduledStartTime.Value;
-                else startTime = videoResult.LiveStreamingDetails.ActualStartTime.Value;                
+                else startTime = videoResult.LiveStreamingDetails.ActualStartTime.Value;
 
                 using (var db = DataBase.DBContext.GetDbContext())
                 {

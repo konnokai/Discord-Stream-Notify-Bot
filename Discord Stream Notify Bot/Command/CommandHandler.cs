@@ -1,8 +1,5 @@
 ﻿using Discord.Commands;
-using Discord.WebSocket;
-using System;
 using System.Reflection;
-using System.Threading.Tasks;
 
 namespace Discord_Stream_Notify_Bot.Command
 {

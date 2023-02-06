@@ -1,10 +1,5 @@
-﻿using Discord;
-using Discord.Interactions;
+﻿using Discord.Interactions;
 using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Discord_Stream_Notify_Bot.Interaction.Help
 {
@@ -79,7 +74,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Help
             }
 
             var cmds = _interaction.SlashCommands.Where(c => c.Module.Name.ToUpperInvariant() == module.ToUpperInvariant()).OrderBy(c => c.Name).Distinct(new CommandTextEqualityComparer());
-            if (cmds.Count() == 0) { await Context.Interaction.SendErrorAsync($"找不到 {module} 模組",ephemeral: true); return; }
+            if (cmds.Count() == 0) { await Context.Interaction.SendErrorAsync($"找不到 {module} 模組", ephemeral: true); return; }
 
             var succ = new HashSet<SlashCommandInfo>((await Task.WhenAll(cmds.Select(async x =>
             {
@@ -129,14 +124,14 @@ namespace Discord_Stream_Notify_Bot.Interaction.Help
 
             var cmds = _interaction.SlashCommands.Where(c => c.Module.Name.ToUpperInvariant() == module.ToUpperInvariant()).OrderBy(c => c.Name).Distinct(new CommandTextEqualityComparer());
             if (cmds.Count() == 0)
-            { 
+            {
                 await Context.Interaction.SendErrorAsync($"找不到 {module} 模組\n輸入 `/help get-all-modules` 取得所有的模組", ephemeral: true);
                 return;
-            }           
+            }
 
             SlashCommandInfo commandInfo = cmds.FirstOrDefault((x) => x.Name == command.ToLowerInvariant());
             if (commandInfo == null)
-            { 
+            {
                 await Context.Interaction.SendErrorAsync($"找不到 {command} 指令");
                 return;
             }

@@ -1,13 +1,7 @@
-﻿using Discord;
-using Discord.Interactions;
-using Discord.WebSocket;
+﻿using Discord.Interactions;
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.Interaction.Attribute;
 using SocialOpinionAPI.Models.Users;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Discord_Stream_Notify_Bot.Interaction.Twitter
 {
@@ -117,7 +111,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
             }
         }
 
-        public TwitterSpaces(DiscordSocketClient client,HttpClients.DiscordWebhookClient discordWebhookClient)
+        public TwitterSpaces(DiscordSocketClient client, HttpClients.DiscordWebhookClient discordWebhookClient)
         {
             _client = client;
             _discordWebhookClient = discordWebhookClient;
@@ -132,7 +126,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
             "可以使用`/twitter-space list-space-notice`查詢有哪些頻道\n")]
         [CommandExample("LaplusDarknesss", "@inui_toko")]
         [SlashCommand("add-space-notice", "新增推特語音空間開台通知的頻道")]
-        public async Task AddChannel([Summary("推特使用者名稱")]string userScreenName, [Summary("發送通知的頻道")] ITextChannel textChannel)
+        public async Task AddChannel([Summary("推特使用者名稱")] string userScreenName, [Summary("發送通知的頻道")] ITextChannel textChannel)
         {
             if (string.IsNullOrWhiteSpace(userScreenName))
             {
@@ -308,11 +302,11 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
         [EnabledInDm(false)]
         [RequireContext(ContextType.Guild)]
         [SlashCommand("list-notice-message", "列出已設定的推特語音空間通知訊息")]
-        public async Task ListMessage([Summary("頁數")]int page = 0)
+        public async Task ListMessage([Summary("頁數")] int page = 0)
         {
             using (var db = DataBase.DBContext.GetDbContext())
             {
-               if (db.NoticeTwitterSpaceChannel.Any((x) => x.GuildId == Context.Guild.Id))
+                if (db.NoticeTwitterSpaceChannel.Any((x) => x.GuildId == Context.Guild.Id))
                 {
                     var noticeTwitterSpaces = db.NoticeTwitterSpaceChannel.ToList().Where((x) => x.GuildId == Context.Guild.Id);
                     Dictionary<string, string> dic = new Dictionary<string, string>();
@@ -352,7 +346,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
         }
 
         [SlashCommand("list-record-user", "顯示推特語音空間錄影清單")]
-        public async Task ListRecord([Summary("頁數")]int page = 0)
+        public async Task ListRecord([Summary("頁數")] int page = 0)
         {
             if (page < 0) page = 0;
 

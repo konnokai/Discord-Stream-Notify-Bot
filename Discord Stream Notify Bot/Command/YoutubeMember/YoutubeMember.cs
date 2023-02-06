@@ -1,9 +1,4 @@
-﻿using Discord;
-using Discord.Commands;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using Discord.Commands;
 
 namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
 {
@@ -107,7 +102,7 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
             {
                 Log.Error(ex.ToString());
                 await Context.Channel.SendErrorAsync(ex.Message);
-            }           
+            }
         }
     }
 }

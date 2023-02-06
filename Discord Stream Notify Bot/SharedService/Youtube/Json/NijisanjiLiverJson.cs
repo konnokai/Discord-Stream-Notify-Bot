@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace Discord_Stream_Notify_Bot.SharedService.Youtube.Json
+﻿namespace Discord_Stream_Notify_Bot.SharedService.Youtube.Json
 {
     public class NijisanjiLiverJson
     {

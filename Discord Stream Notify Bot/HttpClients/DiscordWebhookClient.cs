@@ -1,6 +1,4 @@
-﻿using Discord.WebSocket;
-using Newtonsoft.Json;
-using System.Net.Http;
+﻿using System.Net.Http;
 using System.Text;
 
 namespace Discord_Stream_Notify_Bot.HttpClients

@@ -1,28 +1,28 @@
-﻿global using Google.Apis.YouTube.v3.Data;
+﻿global using Discord;
+global using Discord.WebSocket;
+global using Google.Apis.YouTube.v3.Data;
+global using Newtonsoft.Json;
+global using System;
+global using System.Collections.Generic;
+global using System.Linq;
+global using System.Threading.Tasks;
 
-using Discord;
 using Discord.Commands;
 using Discord.Interactions;
-using Discord.WebSocket;
 using Discord_Stream_Notify_Bot.Command;
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.HttpClients;
 using Discord_Stream_Notify_Bot.Interaction;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Polly;
 using Polly.Extensions.Http;
 using StackExchange.Redis;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace Discord_Stream_Notify_Bot
 {
@@ -32,7 +32,7 @@ namespace Discord_Stream_Notify_Bot
         public static ConnectionMultiplexer Redis { get; set; }
         public static ISubscriber RedisSub { get; set; }
         public static IDatabase RedisDb { get; set; }
-        
+
         public static IUser ApplicatonOwner { get; private set; } = null;
         public static DiscordSocketClient _client;
         public static BotPlayingStatus Status = BotPlayingStatus.Guild;
@@ -130,8 +130,12 @@ namespace Discord_Stream_Notify_Bot
 
             //https://blog.darkthread.net/blog/polly/
             //HandleTransientHttpError 包含 5xx 及 408 錯誤
-            interactionServices.AddHttpClient<HttpClients.DiscordWebhookClient>();
-            interactionServices.AddHttpClient<HttpClients.TwitterClient>()
+            interactionServices.AddHttpClient<DiscordWebhookClient>();
+            interactionServices.AddHttpClient<TwitterClient>()
+                .AddPolicyHandler(HttpPolicyExtensions
+                    .HandleTransientHttpError()
+                    .RetryAsync(3));
+            interactionServices.AddHttpClient<TwitCastingClient>()
                 .AddPolicyHandler(HttpPolicyExtensions
                     .HandleTransientHttpError()
                     .RetryAsync(3));
@@ -155,8 +159,8 @@ namespace Discord_Stream_Notify_Bot
                     DefaultRunMode = Discord.Commands.RunMode.Async
                 }));
 
-            commandServices.AddHttpClient<HttpClients.DiscordWebhookClient>();
-            commandServices.AddHttpClient<HttpClients.TwitterClient>()
+            commandServices.AddHttpClient<DiscordWebhookClient>();
+            commandServices.AddHttpClient<TwitterClient>()
                 .AddPolicyHandler(HttpPolicyExtensions
                     .HandleTransientHttpError()
                     .RetryAsync(3));
@@ -232,7 +236,7 @@ namespace Discord_Stream_Notify_Bot
                     {
                         foreach (var item in interactionService.Modules.Where((x) => x.Preconditions.Any((x) => x is Interaction.Attribute.RequireGuildAttribute)))
                         {
-                            var guildId = ((Interaction.Attribute.RequireGuildAttribute)item.Preconditions.FirstOrDefault((x) => x is Interaction.Attribute.RequireGuildAttribute)).GuildId;                          
+                            var guildId = ((Interaction.Attribute.RequireGuildAttribute)item.Preconditions.FirstOrDefault((x) => x is Interaction.Attribute.RequireGuildAttribute)).GuildId;
                             var guild = _client.GetGuild(guildId.Value);
 
                             if (guild == null)
@@ -286,15 +290,15 @@ namespace Discord_Stream_Notify_Bot
                     using (var db = DataBase.DBContext.GetDbContext())
                     {
                         GuildConfig guildConfig;
-                        if (( guildConfig = db.GuildConfig.FirstOrDefault(x => x.GuildId == guild.Id)) != null)
+                        if ((guildConfig = db.GuildConfig.FirstOrDefault(x => x.GuildId == guild.Id)) != null)
                             db.GuildConfig.Remove(guildConfig);
 
                         GuildYoutubeMemberConfig guildYoutubeMemberConfig;
-                        if ((guildYoutubeMemberConfig = db.GuildYoutubeMemberConfig.FirstOrDefault(x => x.GuildId == guild.Id)) != null)                        
+                        if ((guildYoutubeMemberConfig = db.GuildYoutubeMemberConfig.FirstOrDefault(x => x.GuildId == guild.Id)) != null)
                             db.GuildYoutubeMemberConfig.Remove(guildYoutubeMemberConfig);
 
                         IEnumerable<NoticeTwitterSpaceChannel> noticeTwitterSpaceChannels;
-                        if ((noticeTwitterSpaceChannels = db.NoticeTwitterSpaceChannel.Where(x => x.GuildId == guild.Id)).Any())                        
+                        if ((noticeTwitterSpaceChannels = db.NoticeTwitterSpaceChannel.Where(x => x.GuildId == guild.Id)).Any())
                             db.NoticeTwitterSpaceChannel.RemoveRange(noticeTwitterSpaceChannels);
 
                         IEnumerable<NoticeYoutubeStreamChannel> noticeYoutubeStreamChannels;
@@ -453,7 +457,7 @@ namespace Discord_Stream_Notify_Bot
         }
 
         public static string GetDataFilePath(string fileName)
-            => $"{AppDomain.CurrentDomain.BaseDirectory}Data{GetPlatformSlash()}{fileName}";        
+            => $"{AppDomain.CurrentDomain.BaseDirectory}Data{GetPlatformSlash()}{fileName}";
 
         public static string GetPlatformSlash()
             => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "\\" : "/";

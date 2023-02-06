@@ -1,9 +1,4 @@
-﻿using Discord;
-using Discord.Commands;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using Discord.Commands;
 
 namespace Discord_Stream_Notify_Bot.Command.Help
 {
@@ -33,7 +28,7 @@ namespace Discord_Stream_Notify_Bot.Command.Help
         [Command("Commands")]
         [Summary("顯示模組內包含的指令")]
         [Alias("Cmds")]
-        public async Task Commands([Summary("模組名稱")]string module = null)
+        public async Task Commands([Summary("模組名稱")] string module = null)
         {
             module = module?.Trim();
             if (string.IsNullOrWhiteSpace(module)) return;
@@ -78,7 +73,7 @@ namespace Discord_Stream_Notify_Bot.Command.Help
         [Command("Help")]
         [Summary("顯示指令的詳細說明")]
         [Alias("H")]
-        public async Task H([Summary("指令名稱")]string command = null)
+        public async Task H([Summary("指令名稱")] string command = null)
         {
             command = command?.Trim();
 
@@ -89,14 +84,14 @@ namespace Discord_Stream_Notify_Bot.Command.Help
 #if DEBUG
                 embed.Title += " (測試版)";
 #endif
-                embed.WithDescription(System.IO.File.ReadAllText(Program.GetDataFilePath("HelpDescription.txt")).Replace("\\n","\n") + $"\n\n您可以透過：\nPatreon <{PatreonUrl}> \nPaypal <{PaypalUrl}>\n來贊助直播小幫手");
+                embed.WithDescription(System.IO.File.ReadAllText(Program.GetDataFilePath("HelpDescription.txt")).Replace("\\n", "\n") + $"\n\n您可以透過：\nPatreon <{PatreonUrl}> \nPaypal <{PaypalUrl}>\n來贊助直播小幫手");
                 await ReplyAsync("", false, embed.Build());
                 return;
             }
 
             CommandInfo commandInfo = _cmds.Commands.FirstOrDefault((x) => x.Aliases.Any((x2) => x2.ToLowerInvariant() == command.ToLowerInvariant()));
             if (commandInfo == null) { await Context.Channel.SendConfirmAsync($"找不到 {command} 指令"); return; }
-             
+
             await ReplyAsync("", false, _service.GetCommandHelp(commandInfo).Build());
         }
     }

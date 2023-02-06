@@ -1,9 +1,5 @@
-﻿using Discord;
-using Discord.Commands;
-using System;
+﻿using Discord.Commands;
 using Discord_Stream_Notify_Bot.Command.Attribute;
-using System.Linq;
-using System.Reflection;
 
 namespace Discord_Stream_Notify_Bot.Command.Help
 {

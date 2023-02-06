@@ -1,9 +1,5 @@
-﻿using Discord;
-using Discord.Interactions;
+﻿using Discord.Interactions;
 using Discord_Stream_Notify_Bot.SharedService.YoutubeMember;
-using System;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
 {
@@ -105,7 +101,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
                         {
                             await Context.Client.Rest.RemoveRoleAsync(Context.Guild.Id, Context.User.Id, item.MemberCheckGrantRoleId);
                         }
-                        catch { }                      
+                        catch { }
                     }
 
                     db.YoutubeMemberCheck.RemoveRange(youtubeMemberChecks);

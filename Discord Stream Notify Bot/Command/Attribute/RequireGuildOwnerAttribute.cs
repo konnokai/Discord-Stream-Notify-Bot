@@ -1,6 +1,4 @@
 ﻿using Discord.Commands;
-using System;
-using System.Threading.Tasks;
 
 namespace Discord_Stream_Notify_Bot.Command.Attribute
 {

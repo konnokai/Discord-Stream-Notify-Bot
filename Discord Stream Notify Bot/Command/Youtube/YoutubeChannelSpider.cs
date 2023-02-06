@@ -1,8 +1,4 @@
-﻿using Discord;
-using Discord.Commands;
-using System;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using Discord.Commands;
 using Discord_Stream_Notify_Bot.Command.Attribute;
 
 namespace Discord_Stream_Notify_Bot.Command.Youtube

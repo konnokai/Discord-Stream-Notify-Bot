@@ -1,15 +1,7 @@
-﻿using Discord;
-using Discord.Commands;
-using Discord.WebSocket;
+﻿using Discord.Commands;
 using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
 using System.Data;
-using System.Diagnostics;
-using System.Linq;
-using System.Management;
 using System.Reflection;
-using System.Threading.Tasks;
 
 namespace Discord_Stream_Notify_Bot.Command
 {
@@ -22,7 +14,7 @@ namespace Discord_Stream_Notify_Bot.Command
            eb.WithColor(00, 229, 132);
         public static EmbedBuilder WithErrorColor(this EmbedBuilder eb) =>
            eb.WithColor(40, 40, 40);
-        public static string GetProductionName(this DataBase.Table.Video.YTChannelType channelType) =>        
+        public static string GetProductionName(this DataBase.Table.Video.YTChannelType channelType) =>
                 channelType == DataBase.Table.Video.YTChannelType.Holo ? "Hololive" : channelType == DataBase.Table.Video.YTChannelType.Nijisanji ? "彩虹社" : "其他";
 
         public static bool HasStreamVideoByVideoId(this DataBase.DBContext dBContext, string videoId)
@@ -170,7 +162,7 @@ namespace Discord_Stream_Notify_Bot.Command
 
                 if (collection.FirstOrDefault(x => x.ServiceType == serviceType) != null)
                     continue;
-                                
+
                 var interfaceType = interfaces.FirstOrDefault(x => serviceType.GetInterfaces().Contains(x));
                 if (interfaceType != null)
                 {
