@@ -70,7 +70,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             {
                 try
                 {
-                    if (button.HasResponded || !button.Data.CustomId.StartsWith("spider:"))
+                    if (button.HasResponded || !button.Data.CustomId.StartsWith("spider_youtube:"))
                         return;
 
                     Log.Info($"\"{button.User}\" Click Button: {button.Data.CustomId}");
@@ -179,7 +179,6 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
         [RequireOwner(Group = "bot_owner")]
         [RequireGuildMemberCount(300)]
         [CommandSummary("新增非兩大箱的頻道檢測爬蟲\n" +
-           "**禁止新增非VTuber的頻道**\n" +
            "伺服器需大於300人才可使用\n" +
            "未來會根據情況增減可新增的頻道數量\n" +
            "如有任何需要請向擁有者詢問")]
@@ -285,10 +284,10 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                             .AddField("認可頻道", "否", true)
                             .AddField("錄影頻道", "否", true).Build(),
                         components: new ComponentBuilder()
-                            .WithButton("加入認可頻道", $"spider:trusted:{channelId}", ButtonStyle.Success)
-                            .WithButton("移除認可頻道", $"spider:untrusted:{channelId}", ButtonStyle.Danger)
-                            .WithButton("加入錄影頻道", $"spider:record:{channelId}", ButtonStyle.Success, row: 1)
-                            .WithButton("移除錄影頻道", $"spider:unrecord:{channelId}", ButtonStyle.Danger, row: 1).Build());
+                            .WithButton("加入認可頻道", $"spider_youtube:trusted:{channelId}", ButtonStyle.Success)
+                            .WithButton("移除認可頻道", $"spider_youtube:untrusted:{channelId}", ButtonStyle.Danger)
+                            .WithButton("加入錄影頻道", $"spider_youtube:record:{channelId}", ButtonStyle.Success, row: 1)
+                            .WithButton("移除錄影頻道", $"spider_youtube:unrecord:{channelId}", ButtonStyle.Danger, row: 1).Build());
                 }
                 catch (Exception ex) { Log.Error(ex.ToString()); }
             }
