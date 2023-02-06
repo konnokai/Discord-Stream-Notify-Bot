@@ -1,14 +1,17 @@
-﻿using Discord_Stream_Notify_Bot.Interaction;
+﻿using Discord_Stream_Notify_Bot.HttpClients;
+using Discord_Stream_Notify_Bot.Interaction;
 
-namespace Discord_Stream_Notify_Bot.SharedService.TwitCasting
+namespace Discord_Stream_Notify_Bot.SharedService.Twitcasting
 {
-    public class TwitCastingService : IInteractionService
+    public class TwitcastingService : IInteractionService
     {
         private readonly DiscordSocketClient _client;
+        private readonly TwitcastingClient _twitcastingClient;
 
-        public TwitCastingService(DiscordSocketClient client)
+        public TwitcastingService(DiscordSocketClient client, TwitcastingClient twitcastingClient)
         {
             _client = client;
+            _twitcastingClient = twitcastingClient;
         }
     }
 }
