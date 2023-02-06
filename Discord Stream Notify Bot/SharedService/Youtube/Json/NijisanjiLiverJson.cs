@@ -2,14 +2,6 @@
 {
     public class NijisanjiLiverJson
     {
-        public List<Content> contents { get; set; }
-        public int? totalCount { get; set; }
-        public int? offset { get; set; }
-        public int? limit { get; set; }
-    }
-
-    public class Content
-    {
         public string slug { get; set; }
         public bool? hidden { get; set; }
         public string name { get; set; }
