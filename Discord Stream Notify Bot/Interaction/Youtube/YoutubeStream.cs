@@ -309,13 +309,13 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
         [CommandSummary("新增直播開台通知的頻道\n" +
             "輸入 `holo` 通知全部 `Holo成員` 的直播\n" +
             "輸入 `2434` 通知全部 `彩虹社成員` 的直播\n" +
-            "(僅JP、EN跟VR的成員歸類在此選項內，如需其他成員建議先用 `/youtube add-spider` 設定)\n" +
+            "(僅JP、EN跟VR的成員歸類在此選項內，如需其他成員建議先用 `/youtube-spider add` 設定)\n" +
             "輸入 `other` 通知部分 `非兩大箱` 的直播\n" +
-            "(可以使用 `/youtube list-youtube-spider` 查詢有哪些頻道)\n" +
+            "(可以使用 `/youtube-spider list` 查詢有哪些頻道)\n" +
             "輸入 `all` 通知全部 `Holo + 2434 + 非兩大箱` 的直播\n" +
             "(all選項會覆蓋所有的通知設定，請注意)")]
         [CommandExample("https://www.youtube.com/channel/UCdn5BQ06XqgXoAxIhbqw5Rg", "all", "2434")]
-        [SlashCommand("add-youtube-notice", "新增直播開台通知的頻道")]
+        [SlashCommand("add", "新增直播開台通知的頻道")]
         public async Task AddChannel([Summary("頻道網址")] string channelUrl, [Summary("發送通知的頻道")] ITextChannel textChannel)
         {
             await DeferAsync(true).ConfigureAwait(false);
@@ -421,7 +421,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                     {
                         string addString = "";
                         if (!db.YoutubeChannelSpider.Any((x) => x.ChannelId == channelId) && !Extensions.IsChannelInDb(channelId))
-                            addString += $"\n\n(注意: 該頻道未加入爬蟲清單\n如長時間無通知請使用 `/help get-command-help add-youtube-spider` 查看說明並加入爬蟲)";
+                            addString += $"\n\n(注意: 該頻道未加入爬蟲清單\n如長時間無通知請使用 `/help get-command-help youtube-spider add` 查看說明並加入爬蟲)";
                         db.NoticeYoutubeStreamChannel.Add(new NoticeYoutubeStreamChannel() { GuildId = Context.Guild.Id, DiscordChannelId = textChannel.Id, NoticeStreamChannelId = channelId });
                         await Context.Interaction.SendConfirmAsync($"已將 {channelTitle} 加入到通知頻道清單內{addString}", true).ConfigureAwait(false);
                     }
@@ -441,7 +441,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             "輸入other移除部分 `非兩大箱` 的直播通知\n" +
             "輸入all移除全部 `Holo + 2434 + 非兩大箱` 的直播通知")]
         [CommandExample("https://www.youtube.com/channel/UCdn5BQ06XqgXoAxIhbqw5Rg", "all", "2434")]
-        [SlashCommand("remove-youtube-notice", "移除直播開台通知的頻道")]
+        [SlashCommand("remove", "移除直播開台通知的頻道")]
         public async Task RemoveChannel([Summary("頻道網址"), Autocomplete(typeof(GuildNoticeYoutubeChannelIdAutocompleteHandler))] string channelUrl)
         {
             await DeferAsync(true).ConfigureAwait(false);
@@ -514,7 +514,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
 
         [EnabledInDm(false)]
         [RequireContext(ContextType.Guild)]
-        [SlashCommand("list-youtube-notice", "顯示現在已加入通知清單的直播頻道")]
+        [SlashCommand("list", "顯示現在已加入通知清單的直播頻道")]
         public async Task ListChannel([Summary("頁數")] int page = 0)
         {
             using (var db = DataBase.DBContext.GetDbContext())
@@ -563,7 +563,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
         [CommandSummary("設定通知訊息\n" +
             "不輸入通知訊息的話則會關閉該類型的通知\n" +
             "若輸入`-`則可以關閉該通知類型\n" +
-            "需先新增直播通知後才可設定通知訊息 (`/help get-command-help add-youtube-notice`)\n\n" +
+            "需先新增直播通知後才可設定通知訊息 (`/help get-command-help youtube add`)\n\n" +
             "NoticeType(通知類型)說明:\n" +
             "NewStream: 新待機所\n" +
             "NewVideo: 新影片\n" +
@@ -571,13 +571,12 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             "End: 結束直播\n" +
             "ChangeTime: 變更直播時間\n" +
             "Delete: 刪除直播\n\n" +
-            "(考慮到有伺服器需Ping特定用戶組的情況，故Bot需提及所有身分組權限)\n" +
-            "(建議在私人頻道中設定以免Ping到用戶組造成不必要的誤會)")]
+            "(考慮到有伺服器需Ping特定用戶組的情況，故Bot需提及所有身分組權限)")]
         [CommandExample("UCXRlIK3Cw_TJIQC5kSJJQMg start @通知用的用戶組 阿床開台了",
             "holo newstream @某人 新待機所建立",
             "UCUKD-uaobj9jiqB-VXt71mA newstream -",
             "UCXRlIK3Cw_TJIQC5kSJJQMg end")]
-        [SlashCommand("set-youtube-notice-message", "設定通知訊息")]
+        [SlashCommand("set-message", "設定通知訊息")]
         public async Task SetMessage([Summary("頻道網址"), Autocomplete(typeof(GuildNoticeYoutubeChannelIdAutocompleteHandler))] string channelUrl, [Summary("通知類型")] SharedService.Youtube.YoutubeStreamService.NoticeType noticeType, [Summary("通知訊息")] string message = "")
         {
             await DeferAsync(true).ConfigureAwait(false);
@@ -643,7 +642,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                 }
                 else
                 {
-                    await Context.Interaction.SendErrorAsync($"並未設定 {channelId} 的直播通知\n請先使用 `/youtube add-youtube-notice {channelId}` 新增直播後再設定通知訊息", true).ConfigureAwait(false);
+                    await Context.Interaction.SendErrorAsync($"並未設定 {channelId} 的直播通知\n請先使用 `/youtube add {channelId}` 新增直播後再設定通知訊息", true).ConfigureAwait(false);
                 }
             }
         }
@@ -653,7 +652,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
 
         [EnabledInDm(false)]
         [RequireContext(ContextType.Guild)]
-        [SlashCommand("list-youtube-notice-message", "列出已設定的通知訊息")]
+        [SlashCommand("list-message", "列出已設定的通知訊息")]
         public async Task ListMessage([Summary("頁數")] int page = 0)
         {
             using (var db = DataBase.DBContext.GetDbContext())
@@ -692,7 +691,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                 }
                 else
                 {
-                    await Context.Interaction.SendErrorAsync($"並未設定直播通知\n請先使用 `/help get-command-help add-youtube-notice` 查看說明並新增直播通知").ConfigureAwait(false);
+                    await Context.Interaction.SendErrorAsync($"並未設定直播通知\n請先使用 `/help get-command-help youtube add` 查看說明並新增直播通知").ConfigureAwait(false);
                 }
             }
         }
