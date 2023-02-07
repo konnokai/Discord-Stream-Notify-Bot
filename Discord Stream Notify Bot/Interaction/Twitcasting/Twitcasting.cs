@@ -167,7 +167,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitcasting
             using (var db = DataBase.DBContext.GetDbContext())
             {
                 var list = Queryable.Where(db.NoticeTwitcastingStreamChannels, (x) => x.GuildId == Context.Guild.Id)
-                .Select((x) => new KeyValuePair<string, ulong>(x.ChannelId, x.DiscordChannelId)).ToList();
+                .Select((x) => $"`{db.GetTwitcastingChannelTitleByChannelId(x.ChannelId)}` => <#{x.DiscordChannelId}>").ToList();
                 if (list.Count() == 0) { await Context.Interaction.SendErrorAsync("Twitcasting直播通知清單為空").ConfigureAwait(false); return; }
 
                 await Context.SendPaginatedConfirmAsync(page, page =>
