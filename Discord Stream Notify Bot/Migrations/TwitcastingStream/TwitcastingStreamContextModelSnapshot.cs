@@ -23,17 +23,23 @@ namespace Discord_Stream_Notify_Bot.Migrations.TwitcastingStream
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("Category")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("ChannelId")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("ChannelName")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("StreamDateTime")
+                    b.Property<string>("ChannelTitle")
                         .HasColumnType("TEXT");
 
                     b.Property<int>("StreamId")
                         .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("StreamStartAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("StreamSubTitle")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("StreamTitle")
                         .HasColumnType("TEXT");

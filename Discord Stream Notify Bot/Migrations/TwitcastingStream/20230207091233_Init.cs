@@ -16,10 +16,12 @@ namespace Discord_Stream_Notify_Bot.Migrations.TwitcastingStream
                     Id = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
                     ChannelId = table.Column<string>(type: "TEXT", nullable: true),
-                    ChannelName = table.Column<string>(type: "TEXT", nullable: true),
+                    ChannelTitle = table.Column<string>(type: "TEXT", nullable: true),
                     StreamId = table.Column<int>(type: "INTEGER", nullable: false),
                     StreamTitle = table.Column<string>(type: "TEXT", nullable: true),
-                    StreamDateTime = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    StreamSubTitle = table.Column<string>(type: "TEXT", nullable: true),
+                    Category = table.Column<string>(type: "TEXT", nullable: true),
+                    StreamStartAt = table.Column<DateTime>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
