@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using Google.Apis.Util;
+using System.IO;
 
 public static class Log
 {
@@ -13,7 +14,7 @@ public static class Log
     {
         lock (writeLockObj)
         {
-            text = $"[{DateTime.Now}] [{type.ToString().ToUpper()}] | {text}\r\n";
+            text = $"[{DateTime.Now:yyyy/MM/dd HH:mm:ss}] [{type.ToString().ToUpper()}] | {text}\r\n";
             switch (type)
             {
                 case LogType.Error:
@@ -65,9 +66,18 @@ public static class Log
         }
     }
 
+    public static void Error(Exception ex, string text, bool newLine = true)
+    {
+        lock (logLockObj)
+        {
+            FormatColorWrite(text, ConsoleColor.DarkRed, newLine);
+            FormatColorWrite(ex.ToString(), ConsoleColor.DarkRed, newLine);
+        }
+    }
+
     public static void FormatColorWrite(string text, ConsoleColor consoleColor = ConsoleColor.Gray, bool newLine = true)
     {
-        text = $"[{DateTime.Now}] {text}";
+        text = $"[{DateTime.Now:yyyy/MM/dd HH:mm:ss}] {text}";
         Console.ForegroundColor = consoleColor;
         if (newLine) Console.WriteLine(text);
         else Console.Write(text);
