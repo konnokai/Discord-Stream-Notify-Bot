@@ -230,7 +230,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
             await Context.Channel.TriggerTypingAsync().ConfigureAwait(false);
             using (var db = DBContext.GetDbContext())
             {
-                var nowRecordList = db.RecordYoutubeChannel.ToList().Select((x) => x.YoutubeChannelId).ToList();
+                var nowRecordList = db.RecordYoutubeChannel.Select((x) => x.YoutubeChannelId).ToList();
 
                 db.YoutubeChannelSpider.ToList().ForEach((item) => { if (!item.IsTrustedChannel && nowRecordList.Contains(item.ChannelId)) nowRecordList.Remove(item.ChannelId); });
                 int warningChannelNum = db.YoutubeChannelSpider.Count((x) => x.IsTrustedChannel);

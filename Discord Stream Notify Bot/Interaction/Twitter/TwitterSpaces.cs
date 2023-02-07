@@ -229,7 +229,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
         {
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                var list = db.NoticeTwitterSpaceChannel.ToList().Where((x) => x.GuildId == Context.Guild.Id)
+                var list = db.NoticeTwitterSpaceChannel.Where((x) => x.GuildId == Context.Guild.Id)
                 .Select((x) => new KeyValuePair<string, ulong>(x.NoticeTwitterSpaceUserScreenName, x.DiscordChannelId)).ToList();
 
                 if (list.Count() == 0) { await Context.Interaction.SendErrorAsync("推特語音空間通知清單為空").ConfigureAwait(false); return; }
@@ -305,7 +305,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
             {
                 if (db.NoticeTwitterSpaceChannel.Any((x) => x.GuildId == Context.Guild.Id))
                 {
-                    var noticeTwitterSpaces = db.NoticeTwitterSpaceChannel.ToList().Where((x) => x.GuildId == Context.Guild.Id);
+                    var noticeTwitterSpaces = db.NoticeTwitterSpaceChannel.Where((x) => x.GuildId == Context.Guild.Id);
                     Dictionary<string, string> dic = new Dictionary<string, string>();
 
                     foreach (var item in noticeTwitterSpaces)
@@ -349,7 +349,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
 
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                var nowRecordList = db.TwitterSpaecSpider.ToList().Where((x) => x.IsRecord && !x.IsWarningUser).Select((x) => $"{x.UserName} ({Format.Url($"{x.UserScreenName}", $"https://twitter.com/{x.UserScreenName}")})").ToList();
+                var nowRecordList = db.TwitterSpaecSpider.Where((x) => x.IsRecord && !x.IsWarningUser).Select((x) => $"{x.UserName} ({Format.Url($"{x.UserScreenName}", $"https://twitter.com/{x.UserScreenName}")})").ToList();
                 int warningUserNum = db.TwitterSpaecSpider.Count((x) => x.IsWarningUser);
 
                 if (nowRecordList.Count > 0)

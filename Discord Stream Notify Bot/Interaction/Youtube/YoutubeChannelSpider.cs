@@ -360,7 +360,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
 
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                var list = db.YoutubeChannelSpider.ToList().Where((x) => x.IsTrustedChannel).Select((x) => Format.Url(x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}") +
+                var list = db.YoutubeChannelSpider.Where((x) => x.IsTrustedChannel).Select((x) => Format.Url(x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}") +
                     $" 由 `" + (x.GuildId == 0 ? "Bot擁有者" : (_client.GetGuild(x.GuildId) != null ? _client.GetGuild(x.GuildId).Name : "已退出的伺服器")) + "` 新增");
                 int warningChannelNum = db.YoutubeChannelSpider.Count((x) => !x.IsTrustedChannel);
 
@@ -383,7 +383,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
 
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                var list = db.YoutubeChannelSpider.ToList().Where((x) => !x.IsTrustedChannel).Select((x) => Format.Url(x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}") +
+                var list = db.YoutubeChannelSpider.Where((x) => !x.IsTrustedChannel).Select((x) => Format.Url(x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}") +
                     $" 由 `" + (x.GuildId == 0 ? "Bot擁有者" : (_client.GetGuild(x.GuildId) != null ? _client.GetGuild(x.GuildId).Name : "已退出的伺服器")) + "` 新增");
 
                 await Context.SendPaginatedConfirmAsync(page, page =>

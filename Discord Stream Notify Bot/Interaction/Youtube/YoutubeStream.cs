@@ -67,7 +67,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
         {
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                var nowRecordList = db.RecordYoutubeChannel.ToList().Select((x) => x.YoutubeChannelId).ToList();
+                var nowRecordList = db.RecordYoutubeChannel.Select((x) => x.YoutubeChannelId).ToList();
 
                 db.YoutubeChannelSpider.ToList().ForEach((item) => { if (!item.IsTrustedChannel && nowRecordList.Contains(item.ChannelId)) nowRecordList.Remove(item.ChannelId); });
                 int warningChannelNum = db.YoutubeChannelSpider.Count((x) => x.IsTrustedChannel);
@@ -659,7 +659,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             {
                 if (db.NoticeYoutubeStreamChannel.Any((x) => x.GuildId == Context.Guild.Id))
                 {
-                    var noticeStreamChannels = db.NoticeYoutubeStreamChannel.ToList().Where((x) => x.GuildId == Context.Guild.Id);
+                    var noticeStreamChannels = db.NoticeYoutubeStreamChannel.Where((x) => x.GuildId == Context.Guild.Id);
                     Dictionary<string, string> dic = new Dictionary<string, string>();
 
                     foreach (var item in noticeStreamChannels)

@@ -16,7 +16,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
 
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                var list = db.YoutubeChannelSpider.ToList().Where((x) => x.GuildId != 0 && _client.GetGuild(x.GuildId) == null).Select((x) => Format.Url(x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}"));
+                var list = db.YoutubeChannelSpider.Where((x) => x.GuildId != 0 && _client.GetGuild(x.GuildId) == null).Select((x) => Format.Url(x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}"));
 
                 await Context.SendPaginatedConfirmAsync(page, page =>
                 {
@@ -39,7 +39,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
         {
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                var list = db.YoutubeChannelSpider.ToList().Where((x) => !x.IsTrustedChannel).Select((x) => Format.Url(x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}") +
+                var list = db.YoutubeChannelSpider.Where((x) => !x.IsTrustedChannel).Select((x) => Format.Url(x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}") +
                     $" 由 `" + (x.GuildId == 0 ? "Bot擁有者" : $"{_client.GetGuild(x.GuildId).Name}") + "` 新增");
 
                 await Context.SendPaginatedConfirmAsync(0, page =>

@@ -28,7 +28,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
 
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                var list = db.TwitterSpaecSpider.ToList().Where((x) => !x.IsWarningUser).Select((x) => Format.Url(x.UserScreenName, $"https://twitter.com/{x.UserScreenName}") +
+                var list = db.TwitterSpaecSpider.Where((x) => !x.IsWarningUser).Select((x) => Format.Url(x.UserScreenName, $"https://twitter.com/{x.UserScreenName}") +
                     $" 由 `" + (x.GuildId == 0 ? "Bot擁有者" : (_client.GetGuild(x.GuildId) != null ? _client.GetGuild(x.GuildId).Name : "已退出的伺服器")) + "` 新增");
                 int warningChannelNum = db.TwitterSpaecSpider.Count((x) => x.IsWarningUser);
 
@@ -55,7 +55,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
 
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                var list = db.TwitterSpaecSpider.ToList().Where((x) => x.IsWarningUser).Select((x) => Format.Url(x.UserScreenName, $"https://twitter.com/{x.UserScreenName}") +
+                var list = db.TwitterSpaecSpider.Where((x) => x.IsWarningUser).Select((x) => Format.Url(x.UserScreenName, $"https://twitter.com/{x.UserScreenName}") +
                     $" 由 `" + (x.GuildId == 0 ? "Bot擁有者" : (_client.GetGuild(x.GuildId) != null ? _client.GetGuild(x.GuildId).Name : "已退出的伺服器")) + "` 新增");
 
                 await Context.SendPaginatedConfirmAsync(page, page =>
@@ -81,7 +81,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
 
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                var nowRecordList = db.TwitterSpaecSpider.ToList().Where((x) => x.IsRecord && x.IsWarningUser).Select((x) => $"{x.UserName} ({Format.Url($"{x.UserScreenName}", $"https://twitter.com/{x.UserScreenName}")})").ToList();
+                var nowRecordList = db.TwitterSpaecSpider.Where((x) => x.IsRecord && x.IsWarningUser).Select((x) => $"{x.UserName} ({Format.Url($"{x.UserScreenName}", $"https://twitter.com/{x.UserScreenName}")})").ToList();
 
                 if (nowRecordList.Count > 0)
                 {
