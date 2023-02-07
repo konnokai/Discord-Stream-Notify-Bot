@@ -28,7 +28,7 @@
         public Viewers Viewers { get; set; }
     }
 
-    public class TcFrontendStreamData
+    public class TcFrontendStreamStatusData
     {
         [JsonProperty("update_interval_sec")]
         public int? UpdateIntervalSec { get; set; }

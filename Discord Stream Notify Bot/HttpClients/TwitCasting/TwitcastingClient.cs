@@ -23,18 +23,18 @@ namespace Discord_Stream_Notify_Bot.HttpClients
         /// </summary>
         /// <param name="channelId"></param>
         /// <returns>如果正在直播，則回傳 (<see langword="true"/>, <see cref="int">直播Id</see>)，否則為 (<see langword="false"/>, <see cref="int">0</see>)</returns>
-        public async Task<(bool? IsLive, int? StreamId)> GetBackendStreamDataAsync(string channelId)
+        public async Task<TcBackendStreamData> GetNewStreamDataAsync(string channelId)
         {
             try
             {
                 var json = await _httpClient.GetStringAsync($"{_streamServerUrl}?target={channelId}&mode=client");
                 var data = JsonConvert.DeserializeObject<TcBackendStreamData>(json);
-                return (data.Movie.Live, data.Movie.Id);
+                return data;
             }
             catch (Exception ex)
             {
-                Log.Error($"TwitcastingClient.GetStreamData: {ex}");
-                return (false, 0);
+                Log.Error($"TwitcastingClient.GetBackendStreamDataAsync: {ex}");
+                return null;
             }
         }
 
@@ -44,7 +44,7 @@ namespace Discord_Stream_Notify_Bot.HttpClients
         /// <param name="streamId">直播Id</param>
         /// <param name="cancellation"></param>
         /// <returns>回傳該直播的Token，如果直播為私人直播則回傳 <see cref="string.Empty"/></returns>
-        private async Task<string> GetHappyTokenAsync(int streamId, CancellationToken cancellation = default)
+        public async Task<string> GetHappyTokenAsync(int streamId, CancellationToken cancellation = default)
         {
             int epochTimeStamp = (int)DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1)).TotalSeconds;
             using var content = new MultipartFormDataContent("------WebKitFormBoundary")
@@ -62,17 +62,18 @@ namespace Discord_Stream_Notify_Bot.HttpClients
             }
             catch (Exception ex)
             {
-                Log.Error($"TwitcastingClient.GetTwitcastingTokenAsync: {ex}");
+                Log.Error($"TwitcastingClient.GetHappyTokenAsync: {ex}");
                 return null;
             }
         }
 
         /// <summary>
-        /// 取得直播前端相關資料
+        /// 取得直播前端狀態相關資料
         /// </summary>
-        /// <param name="channelId"></param>
-        /// <returns>(直播標題, 直播副標題, 分類)</returns>
-        public async Task<(string Title, string SubTitle, string Category)> GetFrontendStreamDataAsync(int streamId, string happyToken)
+        /// <param name="streamId"></param>
+        /// <param name="happyToken"></param>
+        /// <returns>(直播標題, 直播副標題, 分類)</returns>        
+        public async Task<TcFrontendStreamStatusData> GetStreamStatusDataAsync(int streamId, string happyToken)
         {
             if (streamId <= 0)
                 throw new FormatException(nameof(streamId));
@@ -82,15 +83,52 @@ namespace Discord_Stream_Notify_Bot.HttpClients
 
             try
             {
-                var json = await _httpClient.GetStringAsync($"{_frontendApiUrl}/movies/{streamId}/status/viewer?token={happyToken}");
-                var data = JsonConvert.DeserializeObject<TcFrontendStreamData>(json);
-                return (data.Movie.Title, data.Movie.Telop, data.Movie.Category.Name);
+                // 這裡應該是broadcaster但不知道為何設定成viewer
+                var json = await _httpClient.GetStringAsync($"{_frontendApiUrl}/movies/{streamId}/status/broadcaster?token={happyToken}");
+                var data = JsonConvert.DeserializeObject<TcFrontendStreamStatusData>(json);
+                return data;
             }
             catch (Exception ex)
             {
-                Log.Error($"TwitcastingClient.GetStreamData: {ex}");
-                return (string.Empty, string.Empty, string.Empty);
+                Log.Error($"TwitcastingClient.GetFrontendStreamStatusDataAsync: {ex}");
+                return null;
             }
+        }
+
+        /// <summary>
+        /// 取得直播開始時間
+        /// </summary>
+        /// <param name="streamId"></param>
+        /// <param name="happyToken"></param>
+        /// <returns>開始時間，如遇到錯誤則回傳現在時間</returns>
+        public async Task<DateTime> GetStreamStartAtAsync(int streamId, string happyToken)
+        {
+            if (streamId <= 0)
+                throw new FormatException(nameof(streamId));
+
+            if (string.IsNullOrEmpty(happyToken))
+                throw new ArgumentNullException(nameof(happyToken));
+
+            try
+            {
+                var json = await _httpClient.GetStringAsync($"{_frontendApiUrl}/movies/{streamId}/info?token={happyToken}");
+                var data = JsonConvert.DeserializeObject<TcFrontendStreamInfoData>(json);
+                return UnixTimeStampToDateTime((double)data.StartedAt);
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"TwitcastingClient.GetStreamStartAtAsync: {ex}");
+                return DateTime.Now;
+            }
+        }
+
+        // https://stackoverflow.com/questions/249760/how-can-i-convert-a-unix-timestamp-to-datetime-and-vice-versa
+        private static DateTime UnixTimeStampToDateTime(double unixTimeStamp)
+        {
+            // Unix timestamp is seconds past epoch
+            DateTime dateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+            dateTime = dateTime.AddSeconds(unixTimeStamp).ToLocalTime();
+            return dateTime;
         }
     }
 }

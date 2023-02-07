@@ -51,10 +51,10 @@
     public class BackendMovie
     {
         [JsonProperty("id")]
-        public int? Id { get; set; }
+        public int Id { get; set; }
 
         [JsonProperty("live")]
-        public bool? Live { get; set; }
+        public bool Live { get; set; }
     }
 
     public class Streams
