@@ -139,7 +139,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                         var user = button.Message.Embeds.First().Fields.FirstOrDefault((x) => x.Name == "執行者").Value;
                         var embed = new EmbedBuilder()
                             .WithOkColor()
-                            .WithTitle("已新增爬蟲頻道")
+                            .WithTitle("已新增YouTube頻道爬蟲")
                             .AddField("頻道", Format.Url(youtubeChannelSpider.ChannelTitle, $"https://www.youtube.com/channel/{youtubeChannelSpider.ChannelId}"), false)
                             .AddField("伺服器", guild, false)
                             .AddField("執行者", user, false)
@@ -238,7 +238,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                             await (await Program.ApplicatonOwner.CreateDMChannelAsync())
                                 .SendMessageAsync(embed: new EmbedBuilder()
                                     .WithOkColor()
-                                    .WithTitle("已更新爬蟲的持有伺服器")
+                                    .WithTitle("已更新Youtube爬蟲的持有伺服器")
                                     .AddField("頻道", Format.Url(item.ChannelTitle, $"https://www.youtube.com/channel/{channelId}"), false)
                                     .AddField("原伺服器", Context.Guild.Id, false)
                                     .AddField("新伺服器", $"{Context.Guild.Name} ({Context.Guild.Id})", false).Build());
@@ -277,7 +277,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                 {
                     await (await Program.ApplicatonOwner.CreateDMChannelAsync()).SendMessageAsync(embed: new EmbedBuilder()
                             .WithOkColor()
-                            .WithTitle("已新增爬蟲頻道")
+                            .WithTitle("已新增YouTube頻道爬蟲")
                             .AddField("頻道", Format.Url(channelTitle, $"https://www.youtube.com/channel/{channelId}"), false)
                             .AddField("伺服器", spider.GuildId != 0 ? $"{Context.Guild.Name} ({Context.Guild.Id})" : "擁有者", false)
                             .AddField("執行者", $"{Context.User.Username} ({Context.User.Id})", false)
@@ -344,7 +344,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             {
                 await (await Program.ApplicatonOwner.CreateDMChannelAsync()).SendMessageAsync(embed: new EmbedBuilder()
                     .WithErrorColor()
-                    .WithTitle("已移除檢測頻道")
+                    .WithTitle("已移除YouTube頻道爬蟲")
                     .AddField("頻道", $"https://www.youtube.com/channel/{channelId}", false)
                     .AddField("伺服器", $"{Context.Guild.Name} ({Context.Guild.Id})", false)
                     .AddField("執行者", $"{Context.User.Username} ({Context.User.Id})", false).Build());
@@ -353,7 +353,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
         }
 
         [RequireContext(ContextType.Guild)]
-        [SlashCommand("list", "顯示已加入爬蟲檢測的頻道")]
+        [SlashCommand("list", "顯示已加入的爬蟲頻道")]
         public async Task ListChannelSpider([Summary("頁數")] int page = 0)
         {
             if (page < 0) page = 0;
@@ -368,7 +368,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                 {
                     return new EmbedBuilder()
                         .WithOkColor()
-                        .WithTitle("直播爬蟲清單")
+                        .WithTitle("YouTube爬蟲清單")
                         .WithDescription(string.Join('\n', list.Skip(page * 20).Take(20)))
                         .WithFooter($"{Math.Min(list.Count(), (page + 1) * 20)} / {list.Count()}個頻道 ({warningChannelNum}個非認可的爬蟲)");
                 }, list.Count(), 10, false).ConfigureAwait(false);
@@ -390,7 +390,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                 {
                     return new EmbedBuilder()
                         .WithOkColor()
-                        .WithTitle("非認可的爬蟲清單")
+                        .WithTitle("非認可的YouTube爬蟲清單")
                         .WithDescription(string.Join('\n', list.Skip(page * 20).Take(20)))
                         .WithFooter($"{Math.Min(list.Count(), (page + 1) * 20)} / {list.Count()}個頻道");
                 }, list.Count(), 10, false, true).ConfigureAwait(false);

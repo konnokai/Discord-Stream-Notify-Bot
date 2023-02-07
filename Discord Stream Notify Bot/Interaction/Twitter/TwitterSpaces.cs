@@ -254,8 +254,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
         [CommandSummary("設定通知訊息\n" +
             "不輸入通知訊息的話則會關閉通知訊息\n" +
             "需先新增直播通知後才可設定通知訊息(`/help get-command-help twitter-space add`)\n\n" +
-            "(考慮到有伺服器需Ping特定用戶組的情況，故Bot需提及所有身分組權限)\n" +
-            "(建議在私人頻道中設定以免Ping到用戶組造成不必要的誤會)")]
+            "(考慮到有伺服器需Ping特定用戶組的情況，故Bot需提及所有身分組權限)")]
         [CommandExample("LaplusDarknesss", "LaplusDarknesss @直播通知 總帥突襲開語音啦")]
         [SlashCommand("set-message", "設定通知訊息")]
         public async Task SetMessage([Summary("推特使用者名稱"), Autocomplete(typeof(GuildNoticeTwitterSpaceIdAutocompleteHandler))] string userScreenName, [Summary("通知訊息")] string message = "")
