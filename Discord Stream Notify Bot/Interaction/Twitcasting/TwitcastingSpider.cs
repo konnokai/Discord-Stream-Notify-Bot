@@ -90,21 +90,21 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitcasting
                         return;
                     }
 
-                    if (buttonData[1].Contains("trusted"))
+                    if (buttonData[1].Contains("warning"))
                     {
-                        twitcastingSpider.IsWarningUser = buttonData[1] == "trusted";
+                        twitcastingSpider.IsWarningUser = !twitcastingSpider.IsWarningUser;
                         db.TwitcastingSpider.Update(twitcastingSpider);
                         db.SaveChanges();
 
-                        await button.SendConfirmAsync($"已設定 `{twitcastingSpider.ChannelTitle}` 為`" + (twitcastingSpider.IsWarningUser ? "警告" : "普通") + "`頻道", true);
+                        await button.SendConfirmAsync($"已切換 `{twitcastingSpider.ChannelTitle}` 為 `" + (twitcastingSpider.IsWarningUser ? "警告" : "普通") + "` 狀態", true, true);
                     }
                     else if (buttonData[1].Contains("record"))
                     {
-                        twitcastingSpider.IsRecord = buttonData[1] == "record";
+                        twitcastingSpider.IsRecord = !twitcastingSpider.IsRecord;
                         db.TwitcastingSpider.Update(twitcastingSpider);
                         db.SaveChanges();
 
-                        await button.SendConfirmAsync($"已設定 `{twitcastingSpider.IsRecord}` 的錄影狀態為`" + (twitcastingSpider.IsRecord ? "是" : "否"), true);
+                        await button.SendConfirmAsync($"已切換 `{twitcastingSpider.ChannelTitle}` 為 `" + (twitcastingSpider.IsRecord ? "開啟" : "關閉") + "` 錄影", true, true);
                     }
 
                     db.SaveChanges();
@@ -115,12 +115,12 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitcasting
                         var user = button.Message.Embeds.First().Fields.FirstOrDefault((x) => x.Name == "執行者").Value;
                         var embed = new EmbedBuilder()
                             .WithOkColor()
-                            .WithTitle("已新增爬蟲頻道")
-                            .AddField("頻道", Format.Url(twitcastingSpider.ChannelTitle, $"https://twitcasting.tv/{twitcastingSpider.GuildId}"), false)
+                            .WithTitle("已新增Twitcasting頻道爬蟲")
+                            .AddField("頻道", Format.Url(twitcastingSpider.ChannelTitle, $"https://twitcasting.tv/{twitcastingSpider.ChannelId}"), false)
                             .AddField("伺服器", guild, false)
                             .AddField("執行者", user, false)
-                            .AddField("警告頻道", twitcastingSpider.IsWarningUser ? "是" : "否", true)
-                            .AddField("錄影頻道", twitcastingSpider.IsRecord ? "是" : "否", true).Build();
+                            .AddField("頻道狀態", twitcastingSpider.IsWarningUser ? "警告" : "普通", true)
+                            .AddField("頻道錄影", twitcastingSpider.IsRecord ? "開啟" : "關閉", true).Build();
 
                         try
                         {
@@ -164,9 +164,8 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitcasting
         {
             await DeferAsync(true).ConfigureAwait(false);
 
-            string channelId = channelUrl.Split('?')[0].Replace("https://twitcasting.tv/", "");
-            string channelTitle = await _service.GetChannelTitleAsync(channelId).ConfigureAwait(false);
-            if (string.IsNullOrEmpty(channelTitle))
+            var channelData = await _service.GetChannelIdAndTitleAsync(channelUrl);
+            if (string.IsNullOrEmpty(channelData.ChannelTitle))
             {
                 await Context.Interaction.SendErrorAsync("錯誤，Twitcasting找不到該使用者的名稱\n" +
                     "請確認網址是否正確，若正確請向Bot擁有者回報", true);
@@ -175,9 +174,9 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitcasting
 
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                if (db.TwitcastingSpider.Any((x) => x.ChannelId == channelId))
+                if (db.TwitcastingSpider.Any((x) => x.ChannelId == channelData.ChannelId))
                 {
-                    var item = db.TwitcastingSpider.FirstOrDefault((x) => x.ChannelId == channelId);
+                    var item = db.TwitcastingSpider.FirstOrDefault((x) => x.ChannelId == channelData.ChannelId);
                     bool isGuildExist = true;
                     string guild = "";
 
@@ -195,7 +194,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitcasting
                                 .SendMessageAsync(embed: new EmbedBuilder()
                                     .WithOkColor()
                                     .WithTitle("已更新Twitcasting爬蟲的持有伺服器")
-                                    .AddField("頻道", Format.Url(item.ChannelTitle, $"https://www.youtube.com/channel/{channelTitle}"), false)
+                                    .AddField("頻道", Format.Url(item.ChannelTitle, $"https://www.youtube.com/channel/{channelData.ChannelId}"), false)
                                     .AddField("原伺服器", Context.Guild.Id, false)
                                     .AddField("新伺服器", $"{Context.Guild.Name} ({Context.Guild.Id})", false).Build());
                         }
@@ -206,8 +205,8 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitcasting
                         db.SaveChanges();
                     }
 
-                    await Context.Interaction.SendConfirmAsync($"`{channelTitle}` 已在爬蟲清單內\n" +
-                        $"可直接到通知頻道內使用 `/twitcasting add {channelTitle}` 開啟通知" +
+                    await Context.Interaction.SendConfirmAsync($"`{channelData.ChannelTitle}` 已在爬蟲清單內\n" +
+                        $"可直接到通知頻道內使用 `/twitcasting add {channelData.ChannelId}` 開啟通知" +
                         (isGuildExist ? $"\n(由 `{guild}` 設定)" : ""), true).ConfigureAwait(false);
                     return;
                 }
@@ -219,31 +218,29 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitcasting
                     return;
                 }
 
-                var spider = new DataBase.Table.TwitcastingSpider() { GuildId = Context.Guild.Id, ChannelId = channelId, ChannelTitle = channelTitle };
+                var spider = new DataBase.Table.TwitcastingSpider() { GuildId = Context.Guild.Id, ChannelId = channelData.ChannelId, ChannelTitle = channelData.ChannelTitle };
                 if (Context.User.Id == Program.ApplicatonOwner.Id && !await PromptUserConfirmAsync("設定該爬蟲為本伺服器使用?"))
                     spider.GuildId = 0;
 
                 db.TwitcastingSpider.Add(spider);
                 db.SaveChanges();
 
-                await Context.Interaction.SendConfirmAsync($"已將 `{channelTitle}` 加入到爬蟲清單內\n" +
-                    $"請到通知頻道內使用 `/twitcasting add {channelId}` 來開啟通知", true, true).ConfigureAwait(false);
+                await Context.Interaction.SendConfirmAsync($"已將 `{channelData.ChannelTitle}` 加入到爬蟲清單內\n" +
+                    $"請到通知頻道內使用 `/twitcasting add {channelData.ChannelId}` 來開啟通知", true, true).ConfigureAwait(false);
 
                 try
                 {
                     await (await Program.ApplicatonOwner.CreateDMChannelAsync()).SendMessageAsync(embed: new EmbedBuilder()
                             .WithOkColor()
                             .WithTitle("已新增Twitcasting頻道爬蟲")
-                            .AddField("頻道", Format.Url(channelTitle, $"https://twitcasting.tv/{channelId}"), false)
+                            .AddField("頻道", Format.Url(channelData.ChannelTitle, $"https://twitcasting.tv/{channelData.ChannelId}"), false)
                             .AddField("伺服器", spider.GuildId != 0 ? $"{Context.Guild.Name} ({Context.Guild.Id})" : "擁有者", false)
                             .AddField("執行者", $"{Context.User.Username} ({Context.User.Id})", false)
-                            .AddField("認可頻道", "否", true)
-                            .AddField("錄影頻道", "否", true).Build(),
+                            .AddField("頻道狀態", "普通", true)
+                            .AddField("頻道錄影", "關閉", true).Build(),
                         components: new ComponentBuilder()
-                            .WithButton("加入認可頻道", $"spider_tc:trusted:{channelId}", ButtonStyle.Success)
-                            .WithButton("移除認可頻道", $"spider_tc:untrusted:{channelId}", ButtonStyle.Danger)
-                            .WithButton("加入錄影頻道", $"spider_tc:record:{channelId}", ButtonStyle.Success, row: 1)
-                            .WithButton("移除錄影頻道", $"spider_tc:unrecord:{channelId}", ButtonStyle.Danger, row: 1).Build());
+                            .WithButton("切換頻道狀態", $"spider_tc:warning:{channelData.ChannelId}", ButtonStyle.Danger)
+                            .WithButton("切換頻道錄影", $"spider_tc:record:{channelData.ChannelId}", ButtonStyle.Success).Build());
                 }
                 catch (Exception ex) { Log.Error(ex.ToString()); }
             }
@@ -260,9 +257,8 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitcasting
         {
             await DeferAsync(true).ConfigureAwait(false);
 
-            string channelId = channelUrl.Split('?')[0].Replace("https://twitcasting.tv/", "");
-            string channelTitle = await _service.GetChannelTitleAsync(channelId).ConfigureAwait(false);
-            if (string.IsNullOrEmpty(channelTitle))
+            var channelData = await _service.GetChannelIdAndTitleAsync(channelUrl);
+            if (string.IsNullOrEmpty(channelData.ChannelTitle))
             {
                 await Context.Interaction.SendErrorAsync("錯誤，Twitcasting找不到該使用者的名稱\n" +
                     "請確認網址是否正確，若正確請向Bot擁有者回報", true);
@@ -271,29 +267,29 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitcasting
 
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                if (!db.TwitcastingSpider.Any((x) => x.ChannelId == channelId))
+                if (!db.TwitcastingSpider.Any((x) => x.ChannelId == channelData.ChannelId))
                 {
-                    await Context.Interaction.SendErrorAsync($"並未設定 `{channelId}` 頻道檢測爬蟲...", true).ConfigureAwait(false);
+                    await Context.Interaction.SendErrorAsync($"並未設定 `{channelData.ChannelId}` 頻道檢測爬蟲...", true).ConfigureAwait(false);
                     return;
                 }
 
-                if (Context.Interaction.User.Id != Program.ApplicatonOwner.Id && !db.TwitcastingSpider.Any((x) => x.ChannelId == channelId && x.GuildId == Context.Guild.Id))
+                if (Context.Interaction.User.Id != Program.ApplicatonOwner.Id && !db.TwitcastingSpider.Any((x) => x.ChannelId == channelData.ChannelId && x.GuildId == Context.Guild.Id))
                 {
                     await Context.Interaction.SendErrorAsync($"該頻道爬蟲並非本伺服器新增，無法移除", true).ConfigureAwait(false);
                     return;
                 }
 
-                db.TwitcastingSpider.Remove(db.TwitcastingSpider.First((x) => x.ChannelId == channelId));
+                db.TwitcastingSpider.Remove(db.TwitcastingSpider.First((x) => x.ChannelId == channelData.ChannelId));
                 db.SaveChanges();
             }
-            await Context.Interaction.SendConfirmAsync($"已移除 {channelId}", true).ConfigureAwait(false);
+            await Context.Interaction.SendConfirmAsync($"已移除 {channelData.ChannelTitle}", true).ConfigureAwait(false);
 
             try
             {
                 await (await Program.ApplicatonOwner.CreateDMChannelAsync()).SendMessageAsync(embed: new EmbedBuilder()
                     .WithErrorColor()
                     .WithTitle("已移除Twitcasting頻道爬蟲")
-                    .AddField("頻道", Format.Url(channelTitle, $"https://twitcasting.tv/{channelId}"), false)
+                    .AddField("頻道", Format.Url(channelData.ChannelTitle, $"https://twitcasting.tv/{channelData.ChannelId}"), false)
                     .AddField("伺服器", $"{Context.Guild.Name} ({Context.Guild.Id})", false)
                     .AddField("執行者", $"{Context.User.Username} ({Context.User.Id})", false).Build());
             }
