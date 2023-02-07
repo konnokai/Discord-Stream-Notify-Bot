@@ -259,7 +259,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                             $"至 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 重新登入並再次於伺服器執行 `/member check`", logChannel);
                                         continue;
                                     }
-                                    else if (ex.Message.ToLower().Contains("500"))
+                                    else if (ex.Message.ToLower().Contains("500") || ex.Message.ToLower().Contains("badgateway"))
                                     {
                                         Log.Error($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {member.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 的會限資格取得失敗: 500內部錯誤");
 
