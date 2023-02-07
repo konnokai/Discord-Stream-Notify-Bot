@@ -38,7 +38,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitcasting
 
                 if (htmlNode != null)
                 {
-                    return htmlNode.InnerText;
+                    return htmlNode.InnerText.Trim();
                 }
 
                 return null;
