@@ -152,7 +152,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
             UserModel user = _service.GetTwitterUser(userScreenName);
             if (user == null)
             {
-                await Context.Interaction.SendErrorAsync($"{userScreenName} 不存在此使用者", true).ConfigureAwait(false);
+                await Context.Interaction.SendErrorAsync($"`{userScreenName}` 不存在此使用者", true).ConfigureAwait(false);
                 return;
             }
 
@@ -162,12 +162,12 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
 
                 if (noticeTwitterSpaceChannel != null)
                 {
-                    if (await PromptUserConfirmAsync($"{user.data.name} 已在語音空間通知清單內，是否覆蓋設定?").ConfigureAwait(false))
+                    if (await PromptUserConfirmAsync($"`{user.data.name}` 已在語音空間通知清單內，是否覆蓋設定?").ConfigureAwait(false))
                     {
                         noticeTwitterSpaceChannel.DiscordChannelId = textChannel.Id;
                         db.NoticeTwitterSpaceChannel.Update(noticeTwitterSpaceChannel);
                         db.SaveChanges();
-                        await Context.Interaction.SendConfirmAsync($"已將 {user.data.name} 的語音空間通知頻道變更至: {textChannel}", true).ConfigureAwait(false);
+                        await Context.Interaction.SendConfirmAsync($"已將 `{user.data.name}` 的語音空間通知頻道變更至: {textChannel}", true).ConfigureAwait(false);
                     }
                     return;
                 }
@@ -175,7 +175,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                 string addString = "";
                 if (!db.IsTwitterUserInDb(user.data.id)) addString += $"\n\n(注意: 該使用者未加入爬蟲清單\n如長時間無通知請使用 `/help get-command-help twitter-spider add` 查看說明並加入爬蟲)";
                 db.NoticeTwitterSpaceChannel.Add(new NoticeTwitterSpaceChannel() { GuildId = Context.Guild.Id, DiscordChannelId = textChannel.Id, NoticeTwitterSpaceUserId = user.data.id, NoticeTwitterSpaceUserScreenName = user.data.username.ToLower() });
-                await Context.Interaction.SendConfirmAsync($"已將 {user.data.name} 加入到語音空間通知頻道清單內{addString}", true).ConfigureAwait(false);
+                await Context.Interaction.SendConfirmAsync($"已將 `{user.data.name}` 加入到語音空間通知頻道清單內{addString}", true).ConfigureAwait(false);
 
                 db.SaveChanges();
             }
@@ -215,7 +215,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                 else
                 {
                     db.NoticeTwitterSpaceChannel.Remove(db.NoticeTwitterSpaceChannel.First((x) => x.GuildId == Context.Guild.Id && x.NoticeTwitterSpaceUserScreenName == userScreenName));
-                    await Context.Interaction.SendConfirmAsync($"已移除 {userScreenName}").ConfigureAwait(false);
+                    await Context.Interaction.SendConfirmAsync($"已移除 `{userScreenName}`").ConfigureAwait(false);
 
                     db.SaveChanges();
                 }
@@ -270,7 +270,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
             UserModel user = _service.GetTwitterUser(userScreenName);
             if (user == null)
             {
-                await Context.Interaction.SendErrorAsync($"{userScreenName} 不存在此使用者").ConfigureAwait(false);
+                await Context.Interaction.SendErrorAsync($"`{userScreenName}` 不存在此使用者").ConfigureAwait(false);
                 return;
             }
 
@@ -285,8 +285,8 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                     db.NoticeTwitterSpaceChannel.Update(noticeTwitterSpace);
                     db.SaveChanges();
 
-                    if (message != "") await Context.Interaction.SendConfirmAsync($"已設定 {user.data.name} 的推特語音空間通知訊息為:\n{message}").ConfigureAwait(false);
-                    else await Context.Interaction.SendConfirmAsync($"已取消 {user.data.name} 的推特語音空間通知訊息").ConfigureAwait(false);
+                    if (message != "") await Context.Interaction.SendConfirmAsync($"已設定 `{user.data.name}` 的推特語音空間通知訊息為:\n{message}").ConfigureAwait(false);
+                    else await Context.Interaction.SendConfirmAsync($"已取消 `{user.data.name}` 的推特語音空間通知訊息").ConfigureAwait(false);
                 }
                 else
                 {

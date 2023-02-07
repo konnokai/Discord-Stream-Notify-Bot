@@ -48,7 +48,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
 
                 if (user == null)
                 {
-                    await Context.Interaction.SendErrorAsync($"@{userScreenName} 不存在此使用者", true).ConfigureAwait(false);
+                    await Context.Interaction.SendErrorAsync($"`{userScreenName}` 不存在此使用者", true).ConfigureAwait(false);
                     return;
                 }
 
@@ -83,7 +83,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                         db.SaveChanges();
                     }
 
-                    await Context.Interaction.SendConfirmAsync($"{userScreenName} 已在爬蟲清單內\n" +
+                    await Context.Interaction.SendConfirmAsync($"`{userScreenName}` 已在爬蟲清單內\n" +
                         $"可直接到通知頻道內使用 `/twitter-space add-space-notice {userScreenName}` 開啟通知\n" +
                         (isGuildExist ? $"\n(由 `{guild}` 設定)" : ""), true).ConfigureAwait(false);
                     return;
@@ -97,16 +97,20 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
 
                 if (db.TwitterSpaecSpider.Count((x) => x.GuildId == Context.Guild.Id) >= 5)
                 {
-                    await Context.Interaction.SendErrorAsync($"此伺服器已設定五個檢測頻道，請移除後再試\n" +
+                    await Context.Interaction.SendErrorAsync($"此伺服器已設定五個推特語音空間爬蟲，請移除後再試\n" +
                         $"如有特殊需求請向Bot擁有者詢問", true).ConfigureAwait(false);
                     return;
                 }
 
-                db.TwitterSpaecSpider.Add(new TwitterSpaecSpider() { GuildId = Context.User.Id == Program.ApplicatonOwner.Id ? 0 : Context.Guild.Id, UserId = user.data.id, UserName = user.data.name, UserScreenName = user.data.username.ToLower() });
+                var spider = new TwitterSpaecSpider() { GuildId = Context.User.Id == Program.ApplicatonOwner.Id ? 0 : Context.Guild.Id, UserId = user.data.id, UserName = user.data.name, UserScreenName = user.data.username.ToLower() };
+                if (Context.User.Id == Program.ApplicatonOwner.Id && !await PromptUserConfirmAsync("設定該爬蟲為本伺服器使用?"))
+                    spider.GuildId = 0;
+
+                db.TwitterSpaecSpider.Add(spider);
                 db.SaveChanges();
 
-                await Context.Interaction.SendConfirmAsync($"已將 {userScreenName} 加入到推特語音爬蟲清單內\n" +
-                    $"請到通知頻道內使用 `/twitter-space add-space-notice {userScreenName}` 來開啟通知", true).ConfigureAwait(false);
+                await Context.Interaction.SendConfirmAsync($"已將 `{userScreenName}` 加入到推特語音爬蟲清單內\n" +
+                    $"請到通知頻道內使用 `/twitter-space add {userScreenName}` 來開啟通知", true).ConfigureAwait(false);
 
                 try
                 {

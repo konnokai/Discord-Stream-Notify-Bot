@@ -133,7 +133,7 @@ namespace Discord_Stream_Notify_Bot.Interaction
             return false;
         }
 
-        public static string GetChannelTitleByChannelId(this DataBase.DBContext dBContext, string channelId)
+        public static string GetYoutubeChannelTitleByChannelId(this DataBase.DBContext dBContext, string channelId)
         {
             channelId = channelId.Trim();
 
@@ -161,6 +161,17 @@ namespace Discord_Stream_Notify_Bot.Interaction
 
             using (var db = DataBase.NotVTuberVideoContext.GetDbContext())
                 if (db.Video.Any((x) => x.ChannelId == channelId)) return db.Video.OrderByDescending((x) => x.ScheduledStartTime).First((x) => x.ChannelId == channelId).ChannelId;
+
+            return channelId;
+        }
+
+        public static string GetTwitcastingChannelTitleByChannelId(this DataBase.DBContext dBContext, string channelId)
+        {
+            channelId = channelId.Trim();
+
+            TwitcastingSpider twitcastingSpider;
+            if ((twitcastingSpider = dBContext.TwitcastingSpider.FirstOrDefault((x) => x.ChannelId == channelId)) != null)
+                return twitcastingSpider.ChannelTitle;
 
             return channelId;
         }

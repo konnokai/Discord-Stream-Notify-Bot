@@ -250,7 +250,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                         db.SaveChanges();
                     }
 
-                    await Context.Interaction.SendConfirmAsync($"{channelId} 已在爬蟲清單內\n" +
+                    await Context.Interaction.SendConfirmAsync($"`{channelId}` 已在爬蟲清單內\n" +
                         $"可直接到通知頻道內使用 `/youtube add-youtube-notice {channelId}` 開啟通知" +
                         (isGuildExist ? $"\n(由 `{guild}` 設定)" : ""), true).ConfigureAwait(false);
                     return;
@@ -259,7 +259,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                 string channelTitle = await _service.GetChannelTitle(channelId).ConfigureAwait(false);
                 if (channelTitle == "")
                 {
-                    await Context.Interaction.SendErrorAsync($"頻道 {channelId} 不存在", true).ConfigureAwait(false);
+                    await Context.Interaction.SendErrorAsync($"頻道 `{channelId}` 不存在", true).ConfigureAwait(false);
                     return;
                 }
 
@@ -270,8 +270,8 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                 db.YoutubeChannelSpider.Add(spider);
                 db.SaveChanges();
 
-                await Context.Interaction.SendConfirmAsync($"已將 {channelTitle} 加入到爬蟲清單內\n" +
-                    $"請到通知頻道內使用 `/youtube add-youtube-notice https://www.youtube.com/channel/{channelId}` 來開啟通知", true, true).ConfigureAwait(false);
+                await Context.Interaction.SendConfirmAsync($"已將 `{channelTitle}` 加入到爬蟲清單內\n" +
+                    $"請到通知頻道內使用 `/youtube add-youtube-notice {channelId}` 來開啟通知", true, true).ConfigureAwait(false);
 
                 try
                 {
@@ -325,7 +325,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             {
                 if (!db.YoutubeChannelSpider.Any((x) => x.ChannelId == channelId))
                 {
-                    await Context.Interaction.SendErrorAsync($"並未設定 {channelId} 頻道檢測爬蟲...", true).ConfigureAwait(false);
+                    await Context.Interaction.SendErrorAsync($"並未設定 `{channelId}` 頻道檢測爬蟲...", true).ConfigureAwait(false);
                     return;
                 }
 
@@ -338,7 +338,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                 db.YoutubeChannelSpider.Remove(db.YoutubeChannelSpider.First((x) => x.ChannelId == channelId));
                 db.SaveChanges();
             }
-            await Context.Interaction.SendConfirmAsync($"已移除 {channelId}", true).ConfigureAwait(false);
+            await Context.Interaction.SendConfirmAsync($"已移除 `{channelId}`", true).ConfigureAwait(false);
 
             try
             {

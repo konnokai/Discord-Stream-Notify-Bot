@@ -18,7 +18,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                 if (!db.NoticeYoutubeStreamChannel.Any((x) => x.GuildId == context.Guild.Id))
                     return AutocompletionResult.FromSuccess();
 
-                var channelIdList = db.NoticeYoutubeStreamChannel.Where((x) => x.GuildId == context.Guild.Id).Select((x) => new KeyValuePair<string, string>(db.GetChannelTitleByChannelId(x.NoticeStreamChannelId), x.NoticeStreamChannelId));
+                var channelIdList = db.NoticeYoutubeStreamChannel.Where((x) => x.GuildId == context.Guild.Id).Select((x) => new KeyValuePair<string, string>(db.GetYoutubeChannelTitleByChannelId(x.NoticeStreamChannelId), x.NoticeStreamChannelId));
 
                 var channelIdList2 = new Dictionary<string, string>();
                 try
@@ -281,7 +281,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
 
                     if (channelTitle == "")
                     {
-                        await Context.Interaction.SendErrorAsync($"頻道 {channelId} 不存在", true).ConfigureAwait(false);
+                        await Context.Interaction.SendErrorAsync($"頻道 `{channelId}` 不存在", true).ConfigureAwait(false);
                         return;
                     }
 
@@ -315,7 +315,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             "輸入 `all` 通知全部 `Holo + 2434 + 非兩大箱` 的直播\n" +
             "(all選項會覆蓋所有的通知設定，請注意)")]
         [CommandExample("https://www.youtube.com/channel/UCdn5BQ06XqgXoAxIhbqw5Rg", "all", "2434")]
-        [SlashCommand("add", "新增直播開台通知的頻道")]
+        [SlashCommand("add", "新增YouTube直播開台通知的頻道")]
         public async Task AddChannel([Summary("頻道網址")] string channelUrl, [Summary("發送通知的頻道")] ITextChannel textChannel)
         {
             await DeferAsync(true).ConfigureAwait(false);
@@ -355,12 +355,12 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
 
                 if (noticeYoutubeStreamChannel != null)
                 {
-                    if (await PromptUserConfirmAsync($"{channelId} 已在直播通知清單內，是否覆蓋設定?").ConfigureAwait(false))
+                    if (await PromptUserConfirmAsync($"`{channelId}` 已在直播通知清單內，是否覆蓋設定?").ConfigureAwait(false))
                     {
                         noticeYoutubeStreamChannel.DiscordChannelId = textChannel.Id;
                         db.NoticeYoutubeStreamChannel.Update(noticeYoutubeStreamChannel);
                         db.SaveChanges();
-                        await Context.Interaction.SendConfirmAsync($"已將 {channelId} 的通知頻道變更至: {textChannel}", true).ConfigureAwait(false);
+                        await Context.Interaction.SendConfirmAsync($"已將 `{channelId}` 的通知頻道變更至: {textChannel}", true).ConfigureAwait(false);
                     }
                     return;
                 }
@@ -389,13 +389,13 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                         {
                             db.NoticeYoutubeStreamChannel.Remove(db.NoticeYoutubeStreamChannel.First((x) => x.GuildId == Context.Guild.Id && x.NoticeStreamChannelId == "all"));
                             db.NoticeYoutubeStreamChannel.Add(new NoticeYoutubeStreamChannel() { GuildId = Context.Guild.Id, DiscordChannelId = textChannel.Id, NoticeStreamChannelId = channelId });
-                            await Context.Interaction.SendConfirmAsync($"已將 {channelId} 加入到通知頻道清單內", true).ConfigureAwait(false);
+                            await Context.Interaction.SendConfirmAsync($"已將 `{channelId}` 加入到通知頻道清單內", true).ConfigureAwait(false);
                         }
                     }
                     else
                     {
                         db.NoticeYoutubeStreamChannel.Add(new NoticeYoutubeStreamChannel() { GuildId = Context.Guild.Id, DiscordChannelId = textChannel.Id, NoticeStreamChannelId = channelId });
-                        await Context.Interaction.SendConfirmAsync($"已將 {channelId} 加入到通知頻道清單內", true).ConfigureAwait(false);
+                        await Context.Interaction.SendConfirmAsync($"已將 `{channelId}` 加入到通知頻道清單內", true).ConfigureAwait(false);
                     }
                 }
                 else
@@ -403,7 +403,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                     string channelTitle = await _service.GetChannelTitle(channelId).ConfigureAwait(false);
                     if (channelTitle == "")
                     {
-                        await Context.Interaction.SendErrorAsync($"頻道 {channelId} 不存在", true).ConfigureAwait(false);
+                        await Context.Interaction.SendErrorAsync($"頻道 `{channelId}` 不存在", true).ConfigureAwait(false);
                         return;
                     }
 
@@ -414,7 +414,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                         {
                             db.NoticeYoutubeStreamChannel.Remove(db.NoticeYoutubeStreamChannel.First((x) => x.GuildId == Context.Guild.Id && x.NoticeStreamChannelId == "all"));
                             db.NoticeYoutubeStreamChannel.Add(new NoticeYoutubeStreamChannel() { GuildId = Context.Guild.Id, DiscordChannelId = textChannel.Id, NoticeStreamChannelId = channelId });
-                            await Context.Interaction.SendConfirmAsync($"已將 {channelTitle} 加入到通知頻道清單內", true).ConfigureAwait(false);
+                            await Context.Interaction.SendConfirmAsync($"已將 `{channelTitle}` 加入到通知頻道清單內", true).ConfigureAwait(false);
                         }
                     }
                     else
@@ -423,7 +423,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                         if (!db.YoutubeChannelSpider.Any((x) => x.ChannelId == channelId) && !Extensions.IsChannelInDb(channelId))
                             addString += $"\n\n(注意: 該頻道未加入爬蟲清單\n如長時間無通知請使用 `/help get-command-help youtube-spider add` 查看說明並加入爬蟲)";
                         db.NoticeYoutubeStreamChannel.Add(new NoticeYoutubeStreamChannel() { GuildId = Context.Guild.Id, DiscordChannelId = textChannel.Id, NoticeStreamChannelId = channelId });
-                        await Context.Interaction.SendConfirmAsync($"已將 {channelTitle} 加入到通知頻道清單內{addString}", true).ConfigureAwait(false);
+                        await Context.Interaction.SendConfirmAsync($"已將 `{channelTitle}` 加入到通知頻道清單內{addString}", true).ConfigureAwait(false);
                     }
                 }
 
@@ -441,7 +441,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             "輸入other移除部分 `非兩大箱` 的直播通知\n" +
             "輸入all移除全部 `Holo + 2434 + 非兩大箱` 的直播通知")]
         [CommandExample("https://www.youtube.com/channel/UCdn5BQ06XqgXoAxIhbqw5Rg", "all", "2434")]
-        [SlashCommand("remove", "移除直播開台通知的頻道")]
+        [SlashCommand("remove", "移除YouTube直播開台通知的頻道")]
         public async Task RemoveChannel([Summary("頻道網址"), Autocomplete(typeof(GuildNoticeYoutubeChannelIdAutocompleteHandler))] string channelUrl)
         {
             await DeferAsync(true).ConfigureAwait(false);
@@ -484,7 +484,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
 
                 if (!db.NoticeYoutubeStreamChannel.Any((x) => x.GuildId == Context.Guild.Id && x.NoticeStreamChannelId == channelId))
                 {
-                    await Context.Interaction.SendErrorAsync($"並未設定`{channelId}`的直播通知...", true).ConfigureAwait(false);
+                    await Context.Interaction.SendErrorAsync($"並未設定 `{channelId}` 的直播通知...", true).ConfigureAwait(false);
                     return;
                 }
                 else
@@ -492,19 +492,19 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                     if (channelId == "holo" || channelId == "2434" || channelId == "other")
                     {
                         db.NoticeYoutubeStreamChannel.Remove(db.NoticeYoutubeStreamChannel.First((x) => x.GuildId == Context.Guild.Id && x.NoticeStreamChannelId == channelId));
-                        await Context.Interaction.SendConfirmAsync($"已移除 {channelId}", true).ConfigureAwait(false);
+                        await Context.Interaction.SendConfirmAsync($"已移除 `{channelId}`", true).ConfigureAwait(false);
                     }
                     else if (db.NoticeYoutubeStreamChannel.Any((x) => x.GuildId == Context.Guild.Id && x.NoticeStreamChannelId == channelId))
                     {
                         string channelTitle = await _service.GetChannelTitle(channelId).ConfigureAwait(false);
                         if (channelTitle == "")
                         {
-                            await Context.Interaction.SendErrorAsync($"頻道 {channelId} 不存在", true).ConfigureAwait(false);
+                            await Context.Interaction.SendErrorAsync($"頻道 `{channelId}` 不存在", true).ConfigureAwait(false);
                             return;
                         }
 
                         db.NoticeYoutubeStreamChannel.Remove(db.NoticeYoutubeStreamChannel.First((x) => x.GuildId == Context.Guild.Id && x.NoticeStreamChannelId == channelId));
-                        await Context.Interaction.SendConfirmAsync($"已移除 {channelTitle}", true).ConfigureAwait(false);
+                        await Context.Interaction.SendConfirmAsync($"已移除 `{channelTitle}`", true).ConfigureAwait(false);
                     }
 
                     db.SaveChanges();
@@ -514,14 +514,14 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
 
         [EnabledInDm(false)]
         [RequireContext(ContextType.Guild)]
-        [SlashCommand("list", "顯示現在已加入通知清單的直播頻道")]
+        [SlashCommand("list", "顯示現在已加入通知清單的YouTube直播頻道")]
         public async Task ListChannel([Summary("頁數")] int page = 0)
         {
             using (var db = DataBase.DBContext.GetDbContext())
             {
                 var list = Queryable.Where(db.NoticeYoutubeStreamChannel, (x) => x.GuildId == Context.Guild.Id)
                 .Select((x) => new KeyValuePair<string, ulong>(x.NoticeStreamChannelId, x.DiscordChannelId)).ToList();
-                if (list.Count() == 0) { await Context.Interaction.SendErrorAsync("直播通知清單為空").ConfigureAwait(false); return; }
+                if (list.Count() == 0) { await Context.Interaction.SendErrorAsync("YouTube直播通知清單為空").ConfigureAwait(false); return; }
 
                 var ytChannelList = list.Select(x => x.Key).Where((x) => x.StartsWith("UC")).ToList();
                 var channelTitleList = list.Where((x) => !x.Key.StartsWith("UC")).Select((x) => $"{x.Key} => <#{x.Value}>").ToList();
@@ -548,7 +548,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                 {
                     return new EmbedBuilder()
                         .WithOkColor()
-                        .WithTitle("直播通知清單")
+                        .WithTitle("YouTube直播通知清單")
                         .WithDescription(string.Join('\n', channelTitleList.Skip(page * 20).Take(20)))
                         .WithFooter($"{Math.Min(channelTitleList.Count, (page + 1) * 20)} / {channelTitleList.Count}個頻道");
                 }, channelTitleList.Count, 20, false);
@@ -576,7 +576,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             "holo newstream @某人 新待機所建立",
             "UCUKD-uaobj9jiqB-VXt71mA newstream -",
             "UCXRlIK3Cw_TJIQC5kSJJQMg end")]
-        [SlashCommand("set-message", "設定通知訊息")]
+        [SlashCommand("set-message", "設定YouTube通知訊息")]
         public async Task SetMessage([Summary("頻道網址"), Autocomplete(typeof(GuildNoticeYoutubeChannelIdAutocompleteHandler))] string channelUrl, [Summary("通知類型")] SharedService.Youtube.YoutubeStreamService.NoticeType noticeType, [Summary("通知訊息")] string message = "")
         {
             await DeferAsync(true).ConfigureAwait(false);
@@ -636,13 +636,13 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                     db.NoticeYoutubeStreamChannel.Update(noticeStreamChannel);
                     db.SaveChanges();
 
-                    if (message == "-") await Context.Interaction.SendConfirmAsync($"已關閉 {channelId} 的 {noticeTypeString} 通知", true).ConfigureAwait(false);
-                    else if (message != "") await Context.Interaction.SendConfirmAsync($"已設定 {channelId} 的 {noticeTypeString} 通知訊息為:\n{message}", true).ConfigureAwait(false);
-                    else await Context.Interaction.SendConfirmAsync($"已取消 {channelId} 的 {noticeTypeString} 通知訊息", true).ConfigureAwait(false);
+                    if (message == "-") await Context.Interaction.SendConfirmAsync($"已關閉 `{channelId} 的 `{noticeTypeString}` 通知", true).ConfigureAwait(false);
+                    else if (message != "") await Context.Interaction.SendConfirmAsync($"已設定 `{channelId} 的 `{noticeTypeString}` 通知訊息為:\n{message}", true).ConfigureAwait(false);
+                    else await Context.Interaction.SendConfirmAsync($"已取消 `{channelId}` 的 `{noticeTypeString}` 通知訊息", true).ConfigureAwait(false);
                 }
                 else
                 {
-                    await Context.Interaction.SendErrorAsync($"並未設定 {channelId} 的直播通知\n請先使用 `/youtube add {channelId}` 新增直播後再設定通知訊息", true).ConfigureAwait(false);
+                    await Context.Interaction.SendErrorAsync($"並未設定 `{channelId}` 的直播通知\n請先使用 `/youtube add {channelId}` 新增直播後再設定通知訊息", true).ConfigureAwait(false);
                 }
             }
         }
@@ -678,7 +678,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
 
                     await Context.SendPaginatedConfirmAsync(page, (page) =>
                     {
-                        EmbedBuilder embedBuilder = new EmbedBuilder().WithOkColor().WithTitle("通知訊息清單")
+                        EmbedBuilder embedBuilder = new EmbedBuilder().WithOkColor().WithTitle("YouTube通知訊息清單")
                             .WithDescription("如果沒訊息的話就代表沒設定\n不用擔心會Tag到用戶組，Embed不會有Ping的反應");
 
                         foreach (var item in dic.Skip(page * 4).Take(4))
