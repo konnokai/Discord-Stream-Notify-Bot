@@ -121,25 +121,25 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                                             }
                                             catch (Exception ex)
                                             {
-                                                Log.Error($"Spaces-Record {item.id} {ex.Message}\n{ex.StackTrace}");
+                                                Log.Error($"Spaces-Record {item.id}: {ex}");
                                                 await SendSpaceMessageAsync(userData, spaceData);
                                             }
                                         }
                                         else await SendSpaceMessageAsync(userData, spaceData);
                                     }
-                                    catch (Exception ex) { Log.Error($"Spaces-Data {item.id} {ex.Message}\n{ex.StackTrace}"); }
+                                    catch (Exception ex) { Log.Error($"Spaces-Data {item.id}: {ex}"); }
                                 }
                                 db.SaveChanges();
                             }
                             catch (Exception ex)
                             {
                                 if (!ex.Message.Contains("503") && !ex.Message.Contains("temporarily unavailable"))
-                                    Log.Error($"Prepare-Spaces {ex.Message}\n{ex.StackTrace}");
+                                    Log.Error($"Prepare-Spaces: {ex}");
                             }
                         }
                     }
                 }
-                catch (Exception ex) { Log.Error($"Spaces-Timer {ex.Message}\n{ex.StackTrace}"); }
+                catch (Exception ex) { Log.Error($"Spaces-Timer: {ex}"); }
                 finally { isRuning = false; }
             }, null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(20));
         }
