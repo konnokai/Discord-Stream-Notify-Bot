@@ -1,5 +1,4 @@
-﻿using Google.Apis.Util;
-using System.IO;
+﻿using System.IO;
 
 public static class Log
 {
@@ -7,8 +6,8 @@ public static class Log
     static string logPath = DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss") + ".log";
     static string errorLogPath = DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss") + "_err.log";
     static string streamLogPath = DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss") + "_stream.log";
-    private static object writeLockObj = new object();
-    private static object logLockObj = new object();
+    private static readonly object writeLockObj = new();
+    private static readonly object logLockObj = new();
 
     private static void WriteLogToFile(LogType type, string text)
     {
@@ -30,7 +29,7 @@ public static class Log
         }
     }
 
-    public static void Stream(string text, bool newLine = true)
+    public static void New(string text, bool newLine = true)
     {
         lock (logLockObj)
         {

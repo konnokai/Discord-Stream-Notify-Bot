@@ -40,7 +40,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             Niji
         }
 
-        public ConcurrentBag<NijisanjiLiverJson> NijisanjiLiverContents { get; } = new ConcurrentBag<NijisanjiLiverJson>();
+        public List<Content> NijisanjiLiverContents { get; } = new List<Content>();
         public ConcurrentDictionary<string, ReminderItem> Reminders { get; } = new ConcurrentDictionary<string, ReminderItem>();
         public bool IsRecord { get; set; } = true;
         public YouTubeService yt;
@@ -407,7 +407,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                         ChannelType = DataBase.Table.Video.YTChannelType.NotVTuber
                                     };
 
-                                    Log.Stream($"(非已認可的新影片) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
+                                    Log.New($"(非已認可的新影片) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
 
                                     EmbedBuilder embedBuilder = new EmbedBuilder();
                                     embedBuilder.WithOkColor()
@@ -796,11 +796,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             {
                 if (await Program.RedisDb.KeyExistsAsync($"youtube.nijisanji.liver.{affiliation}"))
                 {
-                    var liver = JsonConvert.DeserializeObject<List<NijisanjiLiverJson>>(await Program.RedisDb.StringGetAsync($"youtube.nijisanji.liver.{affiliation}"));
-                    foreach (var item in liver)
-                    {
-                        NijisanjiLiverContents.Add(item);
-                    }
+                    var liver = JsonConvert.DeserializeObject<List<Content>>(await Program.RedisDb.StringGetAsync($"youtube.nijisanji.liver.{affiliation}"));
+                    NijisanjiLiverContents.AddRange(liver);
                     return;
                 }
             }
@@ -813,13 +810,10 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             {
                 var httpClient = _httpClientFactory.CreateClient();
                 var json = await httpClient.GetStringAsync($"https://www.nijisanji.jp/api/livers?limit=300&offset=0&orderKey=subscriber_count&order=desc&affiliation={affiliation}&locale=ja&includeHidden=true");
-                var liver = JsonConvert.DeserializeObject<List<NijisanjiLiverJson>>(json);
+                var liver = JsonConvert.DeserializeObject<NijisanjiLiverJson>(json).contents;
                 await Program.RedisDb.StringSetAsync($"youtube.nijisanji.liver.{affiliation}", JsonConvert.SerializeObject(liver), TimeSpan.FromDays(1));
-                foreach (var item in liver)
-                {
-                    NijisanjiLiverContents.Add(item);
-                }
-                Log.Stream($"GetOrCreateNijisanjiLiverListAsync: {affiliation}已刷新");
+                NijisanjiLiverContents.AddRange(liver);
+                Log.New($"GetOrCreateNijisanjiLiverListAsync: {affiliation}已刷新");
             }
             catch (Exception ex)
             {

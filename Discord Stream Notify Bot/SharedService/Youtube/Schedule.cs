@@ -42,7 +42,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                     if (idList.Count > 0)
                     {
-                        Log.Stream($"Holo Id: {string.Join(", ", idList)}");
+                        Log.New($"Holo Id: {string.Join(", ", idList)}");
 
                         for (int i = 0; i < idList.Count; i += 50)
                         {
@@ -63,7 +63,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                         ChannelType = DataBase.Table.Video.YTChannelType.Holo
                                     };
 
-                                    Log.Stream($"(新影片) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
+                                    Log.New($"(新影片) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
 
                                     EmbedBuilder embedBuilder = new EmbedBuilder();
                                     embedBuilder.WithOkColor()
@@ -89,7 +89,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                         ChannelType = DataBase.Table.Video.YTChannelType.Holo
                                     };
 
-                                    Log.Stream($"(排程) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
+                                    Log.New($"(排程) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
 
                                     if (startTime > DateTime.Now && startTime < DateTime.Now.AddDays(7))
                                     {
@@ -128,7 +128,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                         ChannelType = DataBase.Table.Video.YTChannelType.Holo
                                     };
 
-                                    Log.Stream($"(未排程) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
+                                    Log.New($"(未排程) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
 
                                     if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo) && item.Snippet.LiveBroadcastContent == "live")
                                         ReminderTimerAction(streamVideo);
@@ -231,7 +231,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                             };
                         }
 
-                        Log.Stream($"(排程) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
+                        Log.New($"(排程) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
 
                         if (item.startat > DateTime.Now)
                         {
@@ -433,7 +433,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 };
 
                 streamVideo.ChannelType = streamVideo.GetProductionType();
-                Log.Stream($"(新影片) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
+                Log.New($"(新影片) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
 
                 EmbedBuilder embedBuilder = new EmbedBuilder();
                 embedBuilder.WithOkColor()
@@ -460,7 +460,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 };
 
                 streamVideo.ChannelType = streamVideo.GetProductionType();
-                Log.Stream($"(排程) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
+                Log.New($"(排程) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
 
                 if (startTime > DateTime.Now && startTime < DateTime.Now.AddDays(7))
                 {
@@ -500,7 +500,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 };
 
                 streamVideo.ChannelType = streamVideo.GetProductionType();
-                Log.Stream($"(未排程) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
+                Log.New($"(未排程) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
 
                 if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo) && item.Snippet.LiveBroadcastContent == "live" && !isFromRNRS)
                     ReminderTimerAction(streamVideo);
@@ -517,7 +517,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     ChannelType = DataBase.Table.Video.YTChannelType.Other
                 };
 
-                Log.Stream($"(一般路過的新直播室) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
+                Log.New($"(一般路過的新直播室) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
                 addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo);
             }
         }

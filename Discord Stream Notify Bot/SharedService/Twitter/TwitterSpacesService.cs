@@ -179,7 +179,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
             using (var db = DataBase.DBContext.GetDbContext())
             {
                 var noticeGuildList = db.NoticeTwitterSpaceChannel.ToList().Where((x) => x.NoticeTwitterSpaceUserId == twitterSpace.UserId).ToList();
-                Log.Stream($"發送推特空間開台通知 ({noticeGuildList.Count}): {twitterSpace.UserScreenName} - {twitterSpace.SpaecTitle}");
+                Log.New($"發送推特空間開台通知 ({noticeGuildList.Count}): {twitterSpace.UserScreenName} - {twitterSpace.SpaecTitle}");
 
                 EmbedBuilder embedBuilder = new EmbedBuilder()
                     .WithTitle(twitterSpace.SpaecTitle)
