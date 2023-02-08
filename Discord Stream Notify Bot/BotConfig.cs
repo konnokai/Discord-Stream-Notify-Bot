@@ -9,6 +9,7 @@ public class BotConfig
     public string GoogleClientSecret { get; set; } = "";
     public string RedisOption { get; set; } = "127.0.0.1,syncTimeout=3000";
     public ulong TestSlashCommandGuildId { get; set; } = 0;
+    public string TwitcastingRecordPath { get; set; } = ""; 
     public string TwitterApiKey { get; set; } = "";
     public string TwitterApiKeySecret { get; set; } = "";
     public string TwitterSpaceRecordPath { get; set; } = "";
@@ -17,7 +18,7 @@ public class BotConfig
     public string PubSubCallbackUrl { get; set; } = "";
     public string ImgurClientId { get; set; } = "";
     public string UptimeKumaPushUrl { get; set; } = "";
-
+    
     public void InitBotConfig()
     {
         try { File.WriteAllText("bot_config_example.json", JsonConvert.SerializeObject(new BotConfig(), Formatting.Indented)); } catch { }
@@ -69,13 +70,14 @@ public class BotConfig
             WebHookUrl = config.WebHookUrl;
             PubSubCallbackUrl = config.PubSubCallbackUrl;
             GoogleApiKey = config.GoogleApiKey;
+            TestSlashCommandGuildId = config.TestSlashCommandGuildId;
+            TwitcastingRecordPath = config.TwitcastingRecordPath;
             TwitterApiKey = config.TwitterApiKey;
             TwitterApiKeySecret = config.TwitterApiKeySecret;
             TwitterSpaceRecordPath = config.TwitterSpaceRecordPath;
             GoogleClientId = config.GoogleClientId;
             GoogleClientSecret = config.GoogleClientSecret;
             RedisOption = config.RedisOption;
-            TestSlashCommandGuildId = config.TestSlashCommandGuildId;
             RedisTokenKey = config.RedisTokenKey;
             ImgurClientId = config.ImgurClientId;
             UptimeKumaPushUrl = config.UptimeKumaPushUrl;

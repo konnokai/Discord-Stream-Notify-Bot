@@ -2,6 +2,8 @@
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.HttpClients;
 using Discord_Stream_Notify_Bot.Interaction;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace Discord_Stream_Notify_Bot.SharedService.Twitcasting
@@ -11,14 +13,17 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitcasting
         private readonly HashSet<int> hashSet = new HashSet<int>();
         private readonly DiscordSocketClient _client;
         private readonly TwitcastingClient _twitcastingClient;
+        private readonly Timer _timer;
 
+        private string twitcastingRecordPath = "";
         private bool isRuning = false;
 
-        public TwitcastingService(DiscordSocketClient client, TwitcastingClient twitcastingClient)
+        public TwitcastingService(DiscordSocketClient client, TwitcastingClient twitcastingClient, BotConfig botConfig)
         {
             _client = client;
             _twitcastingClient = twitcastingClient;
-            var _ = new Timer(async (obj) => { await TimerHandel(obj); },
+            twitcastingRecordPath = botConfig.TwitcastingRecordPath;
+            _timer = new Timer(async (obj) => { await TimerHandel(obj); },
                 null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(1));
         }
 
@@ -92,6 +97,18 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitcasting
                                 Log.Error($"TwitcastingService-GetHappyTokenError: {item.ChannelId} / {data.Movie.Id}");
                                 continue;
                             }
+                            else if (streamToken == "403") // 回傳403代表該直播有密碼，拿不到後續的資料所以僅需回傳有人開台就好
+                            {
+                                var needPasswordTwitcastingStream = new TwitcastingStream()
+                                {
+                                    ChannelId = item.ChannelId,
+                                    ChannelTitle = item.ChannelTitle,
+                                    StreamId = data.Movie.Id
+                                };
+                                twitcastingDb.TwitcastingStreams.Add(needPasswordTwitcastingStream);
+                                await SendStreamMessageAsync(needPasswordTwitcastingStream, true, false);
+                                continue;
+                            }
 
                             var streamData = await _twitcastingClient.GetStreamStatusDataAsync(data.Movie.Id, streamToken);
                             if (streamData == null)
@@ -123,16 +140,16 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitcasting
                                     else if (!string.IsNullOrEmpty(data.Llfmp4.Streams.Mobilesource)) url = data.Llfmp4.Streams.Mobilesource;
                                     else url = data.Llfmp4.Streams.Base;
 
-                                    RecordTwitcasting(twitcastingStream, url);
-                                    await SendStreamMessageAsync(twitcastingStream, true);
+                                    RecordTwitcasting(twitcastingStream);
+                                    await SendStreamMessageAsync(twitcastingStream, false, true);
                                 }
                                 catch (Exception ex)
                                 {
                                     Log.Error($"TwitcastingService-Record {item.ChannelId} - {data.Movie.Id}: {ex}");
-                                    await SendStreamMessageAsync(twitcastingStream, false);
+                                    await SendStreamMessageAsync(twitcastingStream, false, false);
                                 }
                             }
-                            else await SendStreamMessageAsync(twitcastingStream, false);
+                            else await SendStreamMessageAsync(twitcastingStream, false, false);
                         }
                         catch (Exception ex) { Log.Error($"TwitcastingService-GetData {item.ChannelId}: {ex}"); }
                     }
@@ -145,10 +162,10 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitcasting
             twitcastingDb.SaveChanges();
         }
 
-        private async Task SendStreamMessageAsync(TwitcastingStream twitcastingStream, bool isRecord = false)
+        private async Task SendStreamMessageAsync(TwitcastingStream twitcastingStream, bool isPrivate = false, bool isRecord = false)
         {
 #if DEBUG
-            Log.New($"Twitcasting開台通知: {twitcastingSpider.ChannelTitle} - {twitcastingStream.StreamTitle}");
+            Log.New($"Twitcasting開台通知: {twitcastingStream.ChannelTitle} - {twitcastingStream.StreamTitle} (isPrivate: {isPrivate})");
 #else
             using (var db = DBContext.GetDbContext())
             {
@@ -158,10 +175,12 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitcasting
                 EmbedBuilder embedBuilder = new EmbedBuilder()
                     .WithTitle(twitcastingStream.StreamTitle)
                     .WithDescription(Format.Url($"{twitcastingStream.ChannelTitle}", $"https://twitcasting.com/{twitcastingStream.ChannelId}"))
-                    .WithUrl($"https://twitcasting.com/{twitcastingStream.ChannelId}/movie/{twitcastingStream.StreamId}");
+                    .WithUrl($"https://twitcasting.com/{twitcastingStream.ChannelId}/movie/{twitcastingStream.StreamId}")
+                    .AddField("需要密碼的私人直播", isPrivate ? "是" : "否", true);
 
                 if (!string.IsNullOrEmpty(twitcastingStream.StreamSubTitle)) embedBuilder.AddField("副標題", twitcastingStream.StreamSubTitle, true);
                 if (!string.IsNullOrEmpty(twitcastingStream.Category)) embedBuilder.AddField("分類", twitcastingStream.Category, true);
+
                 embedBuilder.AddField("開始時間", twitcastingStream.StreamStartAt.ConvertDateTimeToDiscordMarkdown());
 
                 if (isRecord) embedBuilder.WithRecordColor();
@@ -192,33 +211,41 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitcasting
 #endif
         }
 
-        private void RecordTwitcasting(TwitcastingStream twitcastingStream, string webSocketUrl)
+        private void RecordTwitcasting(TwitcastingStream twitcastingStream)
         {
-            Log.Info($"{twitcastingStream.ChannelTitle} ({twitcastingStream.StreamTitle}): {webSocketUrl}");
-            // Todo: 實作錄影
+            Log.Info($"{twitcastingStream.ChannelTitle} ({twitcastingStream.StreamId}): {twitcastingStream.StreamTitle}");
 
-            //try
-            //{
-            //    if (!System.IO.Directory.Exists(twitterSpaceRecordPath)) System.IO.Directory.CreateDirectory(twitterSpaceRecordPath);
-            //}
-            //catch (Exception ex)
-            //{
-            //    Log.Error($"推特語音保存路徑不存在且不可建立: {twitterSpaceRecordPath}");
-            //    Log.Error($"更改保存路徑至Data資料夾: {Program.GetDataFilePath("")}");
-            //    Log.Error(ex.ToString());
+            try
+            {
+                if (!System.IO.Directory.Exists(twitcastingRecordPath))
+                    System.IO.Directory.CreateDirectory(twitcastingRecordPath);
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"Twitcasting保存路徑不存在且不可建立: {twitcastingRecordPath}");
+                Log.Error($"更改保存路徑至Data資料夾: {Program.GetDataFilePath("")}");
+                Log.Error(ex.ToString());
 
-            //    twitterSpaceRecordPath = Program.GetDataFilePath("");
-            //}
+                twitcastingRecordPath = Program.GetDataFilePath("");
+            }
 
-            //string procArgs = $"ffmpeg -i \"{masterUrl}\" \"{twitterSpaceRecordPath}[{twitterSpace.UserScreenName}]{twitterSpace.SpaecActualStartTime:yyyyMMdd} - {twitterSpace.SpaecId}.m4a\"";
-            //if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) Process.Start("tmux", $"new-window -d -n \"Twitter Space @{twitterSpace.UserScreenName}\" {procArgs}");
-            //else Process.Start(new ProcessStartInfo()
-            //{
-            //    FileName = "ffmpeg",
-            //    Arguments = procArgs.Replace("ffmpeg", ""),
-            //    CreateNoWindow = false,
-            //    UseShellExecute = true
-            //});
+            // 自幹Tc錄影能錄但時間會出問題，還是用StreamLink方案好了
+            string procArgs = $"streamlink \"https://twitcasting.tv/{twitcastingStream.ChannelId}\" best --output \"{twitcastingRecordPath}[{twitcastingStream.ChannelId}]{twitcastingStream.StreamStartAt:yyyyMMdd} - {twitcastingStream.StreamId}.ts\"";
+            try
+            {
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) Process.Start("tmux", $"new-window -d -n \"Twitcasring {twitcastingStream.ChannelId}\" {procArgs}");
+                else Process.Start(new ProcessStartInfo()
+                {
+                    FileName = "ffmpeg",
+                    Arguments = procArgs.Replace("ffmpeg", ""),
+                    CreateNoWindow = false,
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "RecordTwitcasting 失敗，請確認是否已安裝 StreamLink");
+            }
         }
     }
 }

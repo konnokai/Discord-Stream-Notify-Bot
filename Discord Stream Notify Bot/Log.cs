@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Diagnostics;
+using System.IO;
 
 public static class Log
 {
@@ -11,6 +12,9 @@ public static class Log
 
     private static void WriteLogToFile(LogType type, string text)
     {
+        if (Debugger.IsAttached)
+            return;
+
         lock (writeLockObj)
         {
             text = $"[{DateTime.Now:yyyy/MM/dd HH:mm:ss}] [{type.ToString().ToUpper()}] | {text}\r\n";
@@ -35,6 +39,17 @@ public static class Log
         {
             FormatColorWrite(text, ConsoleColor.Green, newLine);
             WriteLogToFile(LogType.Stream, text);
+        }
+    }
+
+    public static void Debug(string text, bool newLine = true)
+    {
+        if (!Debugger.IsAttached)
+            return;
+
+        lock (logLockObj)
+        {
+            FormatColorWrite(text, ConsoleColor.Cyan, newLine);
         }
     }
 

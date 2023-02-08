@@ -28,6 +28,9 @@ namespace Discord_Stream_Notify_Bot.HttpClients
             try
             {
                 var json = await _httpClient.GetStringAsync($"{_streamServerUrl}?target={channelId}&mode=client");
+                if (json == "{}")
+                    return null;
+
                 var data = JsonConvert.DeserializeObject<TcBackendStreamData>(json);
                 return data;
             }
@@ -59,6 +62,10 @@ namespace Discord_Stream_Notify_Bot.HttpClients
                 var data = await response.Content.ReadFromJsonAsync<TcHappyTokenData>();
 
                 return data != null && !string.IsNullOrEmpty(data.Token) ? data.Token : string.Empty;
+            }
+            catch (HttpRequestException httpEx) when (httpEx.Message.ToLower().Contains("forbidden"))
+            {
+                return "403";
             }
             catch (Exception ex)
             {
