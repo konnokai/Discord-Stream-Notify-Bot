@@ -212,11 +212,14 @@ namespace Discord_Stream_Notify_Bot
             };
             #endregion
 
+            Log.Info("登入中...");
             await _client.LoginAsync(TokenType.Bot, botConfig.DiscordToken);
             await _client.StartAsync();
 
             do { await Task.Delay(200); }
             while (!isConnect);
+
+            Log.Info("登入成功!");
 
             UptimeKumaClient.Init(botConfig.UptimeKumaPushUrl, _client);
 
@@ -306,41 +309,41 @@ namespace Discord_Stream_Notify_Bot
                 try
                 {
                     var commandCount = (await RedisDb.StringGetSetAsync("discord_stream_bot:command_count", iService.GetService<InteractionHandler>().CommandCount)).ToString();
-                    if (commandCount == iService.GetService<InteractionHandler>().CommandCount.ToString()) return;
+                    if (commandCount != iService.GetService<InteractionHandler>().CommandCount.ToString())
+                    {
+                        try
+                        {
+                            foreach (var item in interactionService.Modules.Where((x) => x.Preconditions.Any((x) => x is Interaction.Attribute.RequireGuildAttribute)))
+                            {
+                                var guildId = ((Interaction.Attribute.RequireGuildAttribute)item.Preconditions.FirstOrDefault((x) => x is Interaction.Attribute.RequireGuildAttribute)).GuildId;
+                                var guild = _client.GetGuild(guildId.Value);
+
+                                if (guild == null)
+                                {
+                                    Log.Warn($"{item.Name} 註冊失敗，伺服器 {guildId} 不存在");
+                                    continue;
+                                }
+
+                                var result = await interactionService.AddModulesToGuildAsync(guild, false, item);
+                                Log.Info($"已在 {guild.Name}({guild.Id}) 註冊指令: {string.Join(", ", item.SlashCommands.Select((x) => x.Name))}");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Error("註冊伺服器專用Slash指令失敗");
+                            Log.Error(ex.ToString());
+                        }
+
+                        await interactionService.RegisterCommandsGloballyAsync();
+                        Log.Info("已註冊全球指令");
+                    }
                 }
                 catch (Exception ex)
                 {
                     Log.Error("取得指令數量失敗，請確認Redis伺服器是否可以存取");
                     Log.Error(ex.Message);
                     isDisconnect = true;
-                    return;
                 }
-
-                try
-                {
-                    foreach (var item in interactionService.Modules.Where((x) => x.Preconditions.Any((x) => x is Interaction.Attribute.RequireGuildAttribute)))
-                    {
-                        var guildId = ((Interaction.Attribute.RequireGuildAttribute)item.Preconditions.FirstOrDefault((x) => x is Interaction.Attribute.RequireGuildAttribute)).GuildId;
-                        var guild = _client.GetGuild(guildId.Value);
-
-                        if (guild == null)
-                        {
-                            Log.Warn($"{item.Name} 註冊失敗，伺服器 {guildId} 不存在");
-                            continue;
-                        }
-
-                        var result = await interactionService.AddModulesToGuildAsync(guild, false, item);
-                        Log.Info($"已在 {guild.Name}({guild.Id}) 註冊指令: {string.Join(", ", item.SlashCommands.Select((x) => x.Name))}");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Log.Error("註冊伺服器專用Slash指令失敗");
-                    Log.Error(ex.ToString());
-                }
-
-                await interactionService.RegisterCommandsGloballyAsync();
-                Log.Info("已註冊全球指令");
 #endif
             }
             catch (Exception ex)
