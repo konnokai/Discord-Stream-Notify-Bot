@@ -13,16 +13,18 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitcasting
         private readonly HashSet<int> hashSet = new HashSet<int>();
         private readonly DiscordSocketClient _client;
         private readonly TwitcastingClient _twitcastingClient;
+        private readonly EmojiService _emojiService;
         private readonly Timer _timer;
 
         private string twitcastingRecordPath = "";
         private bool isRuning = false;
 
-        public TwitcastingService(DiscordSocketClient client, TwitcastingClient twitcastingClient, BotConfig botConfig)
+        public TwitcastingService(DiscordSocketClient client, TwitcastingClient twitcastingClient, BotConfig botConfig, EmojiService emojiService)
         {
             _client = client;
             _twitcastingClient = twitcastingClient;
             twitcastingRecordPath = botConfig.TwitcastingRecordPath;
+            _emojiService = emojiService;
             _timer = new Timer(async (obj) => { await TimerHandel(obj); },
                 null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(1));
         }
@@ -30,13 +32,13 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitcasting
         public async Task<(string ChannelId, string ChannelTitle)> GetChannelIdAndTitleAsync(string channelUrl)
         {
             string channelId = channelUrl.Split('?')[0].Replace("https://twitcasting.tv/", "");
-            if (string.IsNullOrEmpty(channelId))            
+            if (string.IsNullOrEmpty(channelId))
                 return (string.Empty, string.Empty);
 
             string channelTitle = await GetChannelTitleAsync(channelId).ConfigureAwait(false);
-            if (string.IsNullOrEmpty(channelTitle))            
+            if (string.IsNullOrEmpty(channelTitle))
                 return (string.Empty, string.Empty);
-            
+
             return (channelId, channelTitle);
         }
 
@@ -103,7 +105,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitcasting
                                 {
                                     ChannelId = item.ChannelId,
                                     ChannelTitle = item.ChannelTitle,
-                                    StreamId = data.Movie.Id
+                                    StreamId = data.Movie.Id,
+                                    StreamTitle = "(私人直播)"
                                 };
                                 twitcastingDb.TwitcastingStreams.Add(needPasswordTwitcastingStream);
                                 await SendStreamMessageAsync(needPasswordTwitcastingStream, true, false);
@@ -131,25 +134,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitcasting
 
                             twitcastingDb.TwitcastingStreams.Add(twitcastingStream);
 
-                            if (item.IsRecord)
-                            {
-                                try
-                                {
-                                    string url;
-                                    if (!string.IsNullOrEmpty(data.Llfmp4.Streams.Main)) url = data.Llfmp4.Streams.Main;
-                                    else if (!string.IsNullOrEmpty(data.Llfmp4.Streams.Mobilesource)) url = data.Llfmp4.Streams.Mobilesource;
-                                    else url = data.Llfmp4.Streams.Base;
-
-                                    RecordTwitcasting(twitcastingStream);
-                                    await SendStreamMessageAsync(twitcastingStream, false, true);
-                                }
-                                catch (Exception ex)
-                                {
-                                    Log.Error($"TwitcastingService-Record {item.ChannelId} - {data.Movie.Id}: {ex}");
-                                    await SendStreamMessageAsync(twitcastingStream, false, false);
-                                }
-                            }
-                            else await SendStreamMessageAsync(twitcastingStream, false, false);
+                            await SendStreamMessageAsync(twitcastingStream, false, item.IsRecord && RecordTwitcasting(twitcastingStream));
                         }
                         catch (Exception ex) { Log.Error($"TwitcastingService-GetData {item.ChannelId}: {ex}"); }
                     }
@@ -164,7 +149,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitcasting
 
         private async Task SendStreamMessageAsync(TwitcastingStream twitcastingStream, bool isPrivate = false, bool isRecord = false)
         {
-#if DEBUG
+#if RELEASE
             Log.New($"Twitcasting開台通知: {twitcastingStream.ChannelTitle} - {twitcastingStream.StreamTitle} (isPrivate: {isPrivate})");
 #else
             using (var db = DBContext.GetDbContext())
@@ -183,11 +168,13 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitcasting
 
                 embedBuilder.AddField("開始時間", twitcastingStream.StreamStartAt.ConvertDateTimeToDiscordMarkdown());
 
+                if (isPrivate) embedBuilder.WithErrorColor();
                 if (isRecord) embedBuilder.WithRecordColor();
                 else embedBuilder.WithOkColor();
 
-                string description = embedBuilder.Description;
-                embedBuilder.WithDescription(description + $"\n\n您可以透過 {Format.Url("Patreon", Utility.PatreonUrl)} 或 {Format.Url("Paypal", Utility.PaypalUrl)} 來贊助直播小幫手");
+                MessageComponent comp = new ComponentBuilder()
+                        .WithButton("贊助小幫手 (Patreon) #ad", style: ButtonStyle.Link, emote: _emojiService.PatreonEmote, url: Utility.PatreonUrl, row: 1)
+                        .WithButton("贊助小幫手 (Paypal) #ad", style: ButtonStyle.Link, emote: _emojiService.PayPalEmote, url: Utility.PaypalUrl, row: 1).Build();
 
                 foreach (var item in noticeGuildList)
                 {
@@ -198,7 +185,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitcasting
                         var channel = guild.GetTextChannel(item.DiscordChannelId);
                         if (channel == null) continue;
 
-                        await channel.SendMessageAsync(item.StartStreamMessage, false, embedBuilder.Build());
+                        await channel.SendMessageAsync(item.StartStreamMessage, false, embedBuilder.Build(), components: comp);
                     }
                     catch (Exception ex)
                     {
@@ -211,7 +198,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitcasting
 #endif
         }
 
-        private void RecordTwitcasting(TwitcastingStream twitcastingStream)
+        private bool RecordTwitcasting(TwitcastingStream twitcastingStream)
         {
             Log.Info($"{twitcastingStream.ChannelTitle} ({twitcastingStream.StreamId}): {twitcastingStream.StreamTitle}");
 
@@ -236,15 +223,18 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitcasting
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) Process.Start("tmux", $"new-window -d -n \"Twitcasring {twitcastingStream.ChannelId}\" {procArgs}");
                 else Process.Start(new ProcessStartInfo()
                 {
-                    FileName = "ffmpeg",
-                    Arguments = procArgs.Replace("ffmpeg", ""),
+                    FileName = "streamlink",
+                    Arguments = procArgs.Replace("streamlink", ""),
                     CreateNoWindow = false,
                     UseShellExecute = true
                 });
+
+                return true;
             }
             catch (Exception ex)
             {
                 Log.Error(ex, "RecordTwitcasting 失敗，請確認是否已安裝 StreamLink");
+                return false;
             }
         }
     }

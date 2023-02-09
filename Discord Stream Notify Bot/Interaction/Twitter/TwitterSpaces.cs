@@ -167,7 +167,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                         noticeTwitterSpaceChannel.DiscordChannelId = textChannel.Id;
                         db.NoticeTwitterSpaceChannel.Update(noticeTwitterSpaceChannel);
                         db.SaveChanges();
-                        await Context.Interaction.SendConfirmAsync($"已將 `{user.data.name}` 的語音空間通知頻道變更至: {textChannel}", true).ConfigureAwait(false);
+                        await Context.Interaction.SendConfirmAsync($"已將 `{user.data.name}` 的語音空間通知頻道變更至: {textChannel}", true, true).ConfigureAwait(false);
                     }
                     return;
                 }
@@ -175,7 +175,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                 string addString = "";
                 if (!db.IsTwitterUserInDb(user.data.id)) addString += $"\n\n(注意: 該使用者未加入爬蟲清單\n如長時間無通知請使用 `/help get-command-help twitter-spider add` 查看說明並加入爬蟲)";
                 db.NoticeTwitterSpaceChannel.Add(new NoticeTwitterSpaceChannel() { GuildId = Context.Guild.Id, DiscordChannelId = textChannel.Id, NoticeTwitterSpaceUserId = user.data.id, NoticeTwitterSpaceUserScreenName = user.data.username.ToLower() });
-                await Context.Interaction.SendConfirmAsync($"已將 `{user.data.name}` 加入到語音空間通知頻道清單內{addString}", true).ConfigureAwait(false);
+                await Context.Interaction.SendConfirmAsync($"已將 `{user.data.name}` 加入到語音空間通知頻道清單內{addString}", true, true).ConfigureAwait(false);
 
                 db.SaveChanges();
             }
@@ -215,7 +215,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                 else
                 {
                     db.NoticeTwitterSpaceChannel.Remove(db.NoticeTwitterSpaceChannel.First((x) => x.GuildId == Context.Guild.Id && x.NoticeTwitterSpaceUserScreenName == userScreenName));
-                    await Context.Interaction.SendConfirmAsync($"已移除 `{userScreenName}`").ConfigureAwait(false);
+                    await Context.Interaction.SendConfirmAsync($"已移除 `{userScreenName}`", false, true).ConfigureAwait(false);
 
                     db.SaveChanges();
                 }
@@ -285,13 +285,13 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                     db.NoticeTwitterSpaceChannel.Update(noticeTwitterSpace);
                     db.SaveChanges();
 
-                    if (message != "") await Context.Interaction.SendConfirmAsync($"已設定 `{user.data.name}` 的推特語音空間通知訊息為:\n{message}").ConfigureAwait(false);
-                    else await Context.Interaction.SendConfirmAsync($"已取消 `{user.data.name}` 的推特語音空間通知訊息").ConfigureAwait(false);
+                    if (message != "") await Context.Interaction.SendConfirmAsync($"已設定 `{user.data.name}` 的推特語音空間通知訊息為:\n{message}", false, true).ConfigureAwait(false);
+                    else await Context.Interaction.SendConfirmAsync($"已取消 `{user.data.name}` 的推特語音空間通知訊息", false, true).ConfigureAwait(false);
                 }
                 else
                 {
-                    await Context.Interaction.SendConfirmAsync($"並未設定推特語音空間通知\n" +
-                        $"請先使用 `/help get-command-help twitter-space add` 查看說明並新增語音空間通知").ConfigureAwait(false);
+                    await Context.Interaction.SendErrorAsync($"並未設定 `{user.data.name}` 的推特語音空間通知\n" +
+                        $"請先使用 `/twitter-space add {userScreenName}` 新增語音空間通知後再設定通知訊息").ConfigureAwait(false);
                 }
             }
         }
@@ -364,7 +364,11 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                             .WithFooter($"{Math.Min(nowRecordList.Count, (page + 1) * 20)} / {nowRecordList.Count}個使用者 ({warningUserNum}個隱藏的警告頻道)");
                     }, nowRecordList.Count, 20, false);
                 }
-                else await Context.Interaction.SendErrorAsync($"語音空間記錄清單中沒有任何使用者").ConfigureAwait(false);
+                else
+                {
+                    await Context.Interaction.SendErrorAsync($"並未設定語音空間通知\n" +
+                        $"請先使用 `/help get-command-help twitter-space add` 查看說明並新增語音空間通知").ConfigureAwait(false);
+                }
             }
         }
     }

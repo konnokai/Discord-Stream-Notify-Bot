@@ -395,9 +395,9 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         if (noticeType == NoticeType.Start)
                         {
                             comp = new ComponentBuilder()
-                                .WithButton("好手氣，隨機帶你到一個影片或直播", style: ButtonStyle.Link, emote: YouTubeEmote, url: "https://api.konnokai.me/randomvideo")
-                                .WithButton("贊助小幫手 (Patreon) #ad", style: ButtonStyle.Link, emote: PatreonEmote, url: Utility.PatreonUrl, row: 1)
-                                .WithButton("贊助小幫手 (Paypal) #ad", style: ButtonStyle.Link, emote: PayPalEmote, url: Utility.PaypalUrl, row: 1).Build();
+                                .WithButton("好手氣，隨機帶你到一個影片或直播", style: ButtonStyle.Link, emote: _emojiService.YouTubeEmote, url: "https://api.konnokai.me/randomvideo")
+                                .WithButton("贊助小幫手 (Patreon) #ad", style: ButtonStyle.Link, emote: _emojiService.PatreonEmote, url: Utility.PatreonUrl, row: 1)
+                                .WithButton("贊助小幫手 (Paypal) #ad", style: ButtonStyle.Link, emote: _emojiService.PayPalEmote, url: Utility.PaypalUrl, row: 1).Build();
                         }
 
                         await pBreaker.Execute(() => channel.SendMessageAsync(sendMessage, false, embedBuilder.Build(), components: comp));

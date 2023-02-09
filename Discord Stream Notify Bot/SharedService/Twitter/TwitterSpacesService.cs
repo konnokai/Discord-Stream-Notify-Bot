@@ -16,15 +16,17 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
         public UserService UserService { get; private set; }
         public SpacesService SpacesService { get; private set; }
 
-        string twitterSpaceRecordPath = "";
-        OAuthInfo oAuthInfo;
-        bool isRuning = false;
-        DiscordSocketClient _client;
-        HttpClients.TwitterClient _twitterClient;
-        Timer timer;
-        HashSet<string> hashSet = new HashSet<string>();
+        private readonly OAuthInfo oAuthInfo;
+        private readonly DiscordSocketClient _client;
+        private readonly EmojiService _emojiService;
+        private readonly HttpClients.TwitterClient _twitterClient;
+        private readonly Timer timer;
+        private readonly HashSet<string> hashSet = new HashSet<string>();
 
-        public TwitterSpacesService(DiscordSocketClient client, HttpClients.TwitterClient twitterClient, BotConfig botConfig)
+        private bool isRuning = false;
+        private string twitterSpaceRecordPath = "";
+
+        public TwitterSpacesService(DiscordSocketClient client, HttpClients.TwitterClient twitterClient, BotConfig botConfig, EmojiService emojiService)
         {
 #if DEBUG
             return;
@@ -39,6 +41,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
 
             _client = client;
             _twitterClient = twitterClient;
+            _emojiService = emojiService;
             oAuthInfo = new() { ConsumerKey = botConfig.TwitterApiKey, ConsumerSecret = botConfig.TwitterApiKeySecret };
             UserService = new(oAuthInfo);
             SpacesService = new(oAuthInfo);
@@ -190,9 +193,10 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
 
                 if (isRecord) embedBuilder.WithRecordColor();
                 else embedBuilder.WithOkColor();
-
-                string description = embedBuilder.Description;
-                embedBuilder.WithDescription(description + $"\n\n您可以透過 {Format.Url("Patreon", Utility.PatreonUrl)} 或 {Format.Url("Paypal", Utility.PaypalUrl)} 來贊助直播小幫手");
+                
+                MessageComponent comp = new ComponentBuilder()
+                        .WithButton("贊助小幫手 (Patreon) #ad", style: ButtonStyle.Link, emote: _emojiService.PatreonEmote, url: Utility.PatreonUrl, row: 1)
+                        .WithButton("贊助小幫手 (Paypal) #ad", style: ButtonStyle.Link, emote: _emojiService.PayPalEmote, url: Utility.PaypalUrl, row: 1).Build();
 
                 foreach (var item in noticeGuildList)
                 {
@@ -203,7 +207,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                         var channel = guild.GetTextChannel(item.DiscordChannelId);
                         if (channel == null) continue;
 
-                        await channel.SendMessageAsync(item.StratTwitterSpaceMessage, false, embedBuilder.Build());
+                        await channel.SendMessageAsync(item.StratTwitterSpaceMessage, false, embedBuilder.Build(), components: comp);
                     }
                     catch (Exception ex)
                     {

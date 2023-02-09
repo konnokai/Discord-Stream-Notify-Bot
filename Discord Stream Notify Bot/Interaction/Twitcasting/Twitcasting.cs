@@ -102,7 +102,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitcasting
                     {
                         noticeTwitcastingStreamChannel.DiscordChannelId = textChannel.Id;
                         db.NoticeTwitcastingStreamChannels.Update(noticeTwitcastingStreamChannel);
-                        await Context.Interaction.SendConfirmAsync($"已將 `{channelData.ChannelTitle}` 的通知頻道變更至: {textChannel}", true).ConfigureAwait(false);
+                        await Context.Interaction.SendConfirmAsync($"已將 `{channelData.ChannelTitle}` 的通知頻道變更至: {textChannel}", true, true).ConfigureAwait(false);
                     }
                     else return;
                 }
@@ -112,7 +112,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitcasting
                     if (!db.TwitcastingSpider.Any((x) => x.ChannelId == channelData.ChannelId))
                         addString += $"\n\n(注意: 該頻道未加入爬蟲清單\n如長時間無通知請使用 `/help get-command-help twitcasting-spider add` 查看說明並加入爬蟲)";
                     db.NoticeTwitcastingStreamChannels.Add(new NoticeTwitcastingStreamChannel() { GuildId = Context.Guild.Id, DiscordChannelId = textChannel.Id, ChannelId = channelData.ChannelId });
-                    await Context.Interaction.SendConfirmAsync($"已將 `{channelData.ChannelTitle}` 加入到Twitcasting通知頻道清單內{addString}", true).ConfigureAwait(false);
+                    await Context.Interaction.SendConfirmAsync($"已將 `{channelData.ChannelTitle}` 加入到Twitcasting通知頻道清單內{addString}", true, true).ConfigureAwait(false);
                 }
 
                 db.SaveChanges();
@@ -154,7 +154,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitcasting
                 {
                     db.NoticeTwitcastingStreamChannels.Remove(db.NoticeTwitcastingStreamChannels.First((x) => x.GuildId == Context.Guild.Id && x.ChannelId == channelData.ChannelId));
                     db.SaveChanges();
-                    await Context.Interaction.SendConfirmAsync($"已移除 `{channelData.ChannelTitle}`", true).ConfigureAwait(false);
+                    await Context.Interaction.SendConfirmAsync($"已移除 `{channelData.ChannelTitle}`", true, true).ConfigureAwait(false);
                 }
             }
         }
@@ -213,13 +213,14 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitcasting
                     noticeStreamChannel.StartStreamMessage = message.Trim();
                     db.NoticeTwitcastingStreamChannels.Update(noticeStreamChannel);
                     db.SaveChanges();
-                    
-                    if (message != "") await Context.Interaction.SendConfirmAsync($"已設定 `{channelData.ChannelTitle}` 的Twitcasting直播通知訊息為:\n{message}", true).ConfigureAwait(false);
-                    else await Context.Interaction.SendConfirmAsync($"已取消 `{channelData.ChannelTitle}` 的Twitcasting直播通知訊息", true).ConfigureAwait(false);
+
+                    if (message != "") await Context.Interaction.SendConfirmAsync($"已設定 `{channelData.ChannelTitle}` 的Twitcasting直播通知訊息為:\n{message}", true, true).ConfigureAwait(false);
+                    else await Context.Interaction.SendConfirmAsync($"已取消 `{channelData.ChannelTitle}` 的Twitcasting直播通知訊息", true, true).ConfigureAwait(false);
                 }
                 else
                 {
-                    await Context.Interaction.SendErrorAsync($"並未設定 `{channelData.ChannelTitle}` 的Twitcasting直播通知\n請先使用 `/twitcasting add {channelData.ChannelId}` 新增通知後再設定通知訊息", true).ConfigureAwait(false);
+                    await Context.Interaction.SendErrorAsync($"並未設定 `{channelData.ChannelTitle}` 的Twitcasting直播通知\n" +
+                        $"請先使用 `/twitcasting add {channelData.ChannelId}` 新增通知後再設定通知訊息", true).ConfigureAwait(false);
                 }
             }
         }
@@ -264,7 +265,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitcasting
                 }
                 else
                 {
-                    await Context.Interaction.SendConfirmAsync($"並未設定Twitcasting直播通知\n" +
+                    await Context.Interaction.SendErrorAsync($"並未設定Twitcasting直播通知\n" +
                         $"請先使用 `/help get-command-help twitcasting add` 查看說明並新增Twitcasting直播通知").ConfigureAwait(false);
                 }
             }
