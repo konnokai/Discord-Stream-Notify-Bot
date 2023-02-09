@@ -9,7 +9,7 @@ namespace Discord_Stream_Notify_Bot.HttpClients
     {
         private readonly HttpClient _httpClient;
 
-        private readonly string _frontendApiUrl = "https://frontendapi.twitcasting.tv/";
+        private readonly string _frontendApiUrl = "https://frontendapi.twitcasting.tv";
         private readonly string _streamServerUrl = "https://twitcasting.tv/streamserver.php";
         private readonly string _happyTokenUrl = "https://twitcasting.tv/happytoken.php";
 
@@ -79,7 +79,7 @@ namespace Discord_Stream_Notify_Bot.HttpClients
         /// </summary>
         /// <param name="streamId"></param>
         /// <param name="happyToken"></param>
-        /// <returns>(直播標題, 直播副標題, 分類)</returns>        
+        /// <returns>(直播標題, 直播副標題, 分類)</returns>
         public async Task<TcFrontendStreamStatusData> GetStreamStatusDataAsync(int streamId, string happyToken)
         {
             if (streamId <= 0)
@@ -90,8 +90,8 @@ namespace Discord_Stream_Notify_Bot.HttpClients
 
             try
             {
-                // 這裡應該是broadcaster但不知道為何設定成viewer
-                var json = await _httpClient.GetStringAsync($"{_frontendApiUrl}/movies/{streamId}/status/broadcaster?token={happyToken}");
+                int epochTimeStamp = (int)DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1)).TotalSeconds;
+                var json = await _httpClient.GetStringAsync($"{_frontendApiUrl}/movies/{streamId}/status/viewer?token={happyToken}&__n={epochTimeStamp}");
                 var data = JsonConvert.DeserializeObject<TcFrontendStreamStatusData>(json);
                 return data;
             }
@@ -118,7 +118,8 @@ namespace Discord_Stream_Notify_Bot.HttpClients
 
             try
             {
-                var json = await _httpClient.GetStringAsync($"{_frontendApiUrl}/movies/{streamId}/info?token={happyToken}");
+                int epochTimeStamp = (int)DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1)).TotalSeconds;
+                var json = await _httpClient.GetStringAsync($"{_frontendApiUrl}/movies/{streamId}/info?token={happyToken}&__n={epochTimeStamp}");
                 var data = JsonConvert.DeserializeObject<TcFrontendStreamInfoData>(json);
                 return UnixTimeStampToDateTime((double)data.StartedAt);
             }

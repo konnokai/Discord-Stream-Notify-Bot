@@ -24,9 +24,11 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitcasting
             _client = client;
             _twitcastingClient = twitcastingClient;
             twitcastingRecordPath = botConfig.TwitcastingRecordPath;
+            if (string.IsNullOrEmpty(twitcastingRecordPath)) twitcastingRecordPath = Program.GetDataFilePath("");
+            if (!twitcastingRecordPath.EndsWith(Program.GetPlatformSlash())) twitcastingRecordPath += Program.GetPlatformSlash();
             _emojiService = emojiService;
             _timer = new Timer(async (obj) => { await TimerHandel(obj); },
-                null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(1));
+                null, TimeSpan.FromSeconds(15), TimeSpan.FromMinutes(1));
         }
 
         public async Task<(string ChannelId, string ChannelTitle)> GetChannelIdAndTitleAsync(string channelUrl)
@@ -149,7 +151,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitcasting
 
         private async Task SendStreamMessageAsync(TwitcastingStream twitcastingStream, bool isPrivate = false, bool isRecord = false)
         {
-#if RELEASE
+#if DEBUG
             Log.New($"Twitcasting開台通知: {twitcastingStream.ChannelTitle} - {twitcastingStream.StreamTitle} (isPrivate: {isPrivate})");
 #else
             using (var db = DBContext.GetDbContext())
@@ -159,8 +161,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitcasting
 
                 EmbedBuilder embedBuilder = new EmbedBuilder()
                     .WithTitle(twitcastingStream.StreamTitle)
-                    .WithDescription(Format.Url($"{twitcastingStream.ChannelTitle}", $"https://twitcasting.com/{twitcastingStream.ChannelId}"))
-                    .WithUrl($"https://twitcasting.com/{twitcastingStream.ChannelId}/movie/{twitcastingStream.StreamId}")
+                    .WithDescription(Format.Url($"{twitcastingStream.ChannelTitle}", $"https://twitcasting.tv/{twitcastingStream.ChannelId}"))
+                    .WithUrl($"https://twitcasting.tv/{twitcastingStream.ChannelId}/movie/{twitcastingStream.StreamId}")
                     .AddField("需要密碼的私人直播", isPrivate ? "是" : "否", true);
 
                 if (!string.IsNullOrEmpty(twitcastingStream.StreamSubTitle)) embedBuilder.AddField("副標題", twitcastingStream.StreamSubTitle, true);
