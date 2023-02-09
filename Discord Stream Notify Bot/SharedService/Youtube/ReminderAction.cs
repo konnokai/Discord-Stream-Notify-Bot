@@ -139,13 +139,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         {
                             if (CanRecord(db, streamVideo))
                             {
-                                try
-                                {
-                                    //Todo: 自定義化
-                                    if (noticeRecordChannel == null) noticeRecordChannel = _client.GetGuild(738734668882640938).GetTextChannel(805134765191462942);
-                                }
-                                catch { }
-
                                 if (Program.Redis != null)
                                 {
                                     if (await Program.RedisSub.PublishAsync("youtube.record", streamVideo.VideoId) != 0)

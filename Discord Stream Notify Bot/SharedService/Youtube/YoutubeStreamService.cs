@@ -64,6 +64,14 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             });
 
             callbackUrl = botConfig.PubSubCallbackUrl;
+            _emojiService = emojiService;
+
+            try
+            {
+                //Todo: 自定義化
+                noticeRecordChannel = _client.GetGuild(738734668882640938).GetTextChannel(805134765191462942);
+            }
+            catch { }
 
             //https://blog.darkthread.net/blog/polly/
             //https://blog.darkthread.net/blog/polly-circuitbreakerpolicy/

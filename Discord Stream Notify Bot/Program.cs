@@ -52,6 +52,12 @@ namespace Discord_Stream_Notify_Bot
             Console.OutputEncoding = System.Text.Encoding.UTF8;
             Console.CancelKeyPress += Console_CancelKeyPress;
 
+            AppDomain.CurrentDomain.UnhandledException += (sender, args) =>
+            {
+                Exception e = (Exception)args.ExceptionObject;
+                Log.Error(e.ToString());
+            };
+
             botConfig.InitBotConfig();
             timerUpdateStatus = new Timer(TimerHandler);
 
@@ -113,65 +119,6 @@ namespace Discord_Stream_Notify_Bot
                 GatewayIntents = GatewayIntents.AllUnprivileged & ~GatewayIntents.GuildInvites & ~GatewayIntents.GuildScheduledEvents
             });
 
-            #region 初始化互動指令系統
-            var interactionServices = new ServiceCollection()
-                .AddHttpClient()
-                .AddSingleton<SharedService.Twitter.TwitterSpacesService>()
-                .AddSingleton<SharedService.Youtube.YoutubeStreamService>()
-                .AddSingleton<SharedService.YoutubeMember.YoutubeMemberService>()
-                .AddSingleton(_client)
-                .AddSingleton(botConfig)
-                .AddSingleton(new InteractionService(_client, new InteractionServiceConfig()
-                {
-                    AutoServiceScopes = true,
-                    UseCompiledLambda = true,
-                    EnableAutocompleteHandlers = true,
-                    DefaultRunMode = Discord.Interactions.RunMode.Async,
-                    ExitOnMissingModalField = true,
-                }));
-
-            //https://blog.darkthread.net/blog/polly/
-            //HandleTransientHttpError 包含 5xx 及 408 錯誤
-            interactionServices.AddHttpClient<DiscordWebhookClient>();
-            interactionServices.AddHttpClient<TwitterClient>()
-                .AddPolicyHandler(HttpPolicyExtensions
-                    .HandleTransientHttpError()
-                    .RetryAsync(3));
-            interactionServices.AddHttpClient<TwitcastingClient>()
-                .AddPolicyHandler(HttpPolicyExtensions
-                    .HandleTransientHttpError()
-                    .RetryAsync(3));
-
-            interactionServices.LoadInteractionFrom(Assembly.GetAssembly(typeof(InteractionHandler)));
-            IServiceProvider iService = interactionServices.BuildServiceProvider();
-            await iService.GetService<InteractionHandler>().InitializeAsync();
-            #endregion
-
-            #region 初始化一般指令系統
-            var commandServices = new ServiceCollection()
-                .AddHttpClient()
-                .AddSingleton(iService.GetService<SharedService.Twitter.TwitterSpacesService>())
-                .AddSingleton(iService.GetService<SharedService.Youtube.YoutubeStreamService>())
-                .AddSingleton(iService.GetService<SharedService.YoutubeMember.YoutubeMemberService>())
-                .AddSingleton(_client)
-                .AddSingleton(botConfig)
-                .AddSingleton(new CommandService(new CommandServiceConfig()
-                {
-                    CaseSensitiveCommands = false,
-                    DefaultRunMode = Discord.Commands.RunMode.Async
-                }));
-
-            commandServices.AddHttpClient<DiscordWebhookClient>();
-            commandServices.AddHttpClient<TwitterClient>()
-                .AddPolicyHandler(HttpPolicyExtensions
-                    .HandleTransientHttpError()
-                    .RetryAsync(3));
-
-            commandServices.LoadCommandFrom(Assembly.GetAssembly(typeof(CommandHandler)));
-            IServiceProvider service = commandServices.BuildServiceProvider();
-            await service.GetService<CommandHandler>().InitializeAsync();
-            #endregion
-
             #region 初始化Discord設定與事件
             _client.Log += Log.LogMsg;
 
@@ -179,8 +126,6 @@ namespace Discord_Stream_Notify_Bot
             {
                 stopWatch.Start();
                 timerUpdateStatus.Change(0, 15 * 60 * 1000);
-
-                UptimeKumaClient.Init(botConfig.UptimeKumaPushUrl, _client);
 
                 ApplicatonOwner = (await _client.GetApplicationInfoAsync()).Owner;
                 isConnect = true;
@@ -196,93 +141,6 @@ namespace Discord_Stream_Notify_Bot
                         }
                     }
                 }
-
-                #region 註冊互動指令
-                try
-                {
-                    InteractionService interactionService = iService.GetService<InteractionService>();
-#if DEBUG
-                    if (botConfig.TestSlashCommandGuildId == 0 || _client.GetGuild(botConfig.TestSlashCommandGuildId) == null)
-                        Log.Warn("未設定測試Slash指令的伺服器或伺服器不存在，略過");
-                    else
-                    {
-                        try
-                        {
-                            var result = await interactionService.RegisterCommandsToGuildAsync(botConfig.TestSlashCommandGuildId);
-                            Log.Info($"已註冊指令 ({botConfig.TestSlashCommandGuildId}) : {string.Join(", ", result.Select((x) => x.Name))}");
-
-                            result = await interactionService.AddModulesToGuildAsync(botConfig.TestSlashCommandGuildId, false, interactionService.Modules.Where((x) => x.DontAutoRegister).ToArray());
-                            Log.Info($"已註冊指令 ({botConfig.TestSlashCommandGuildId}) : {string.Join(", ", result.Select((x) => x.Name))}");
-                        }
-                        catch (Exception ex)
-                        {
-                            Log.Error("註冊伺服器專用Slash指令失敗");
-                            Log.Error(ex.ToString());
-                        }
-                    }
-#else
-                    try
-                    {
-                        var commandCount = (await RedisDb.StringGetSetAsync("discord_stream_bot:command_count", iService.GetService<InteractionHandler>().CommandCount)).ToString();
-                        if (commandCount == iService.GetService<InteractionHandler>().CommandCount.ToString()) return;
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Error("取得指令數量失敗，請確認Redis伺服器是否可以存取");
-                        Log.Error(ex.Message);
-                        isDisconnect = true;
-                        return;
-                    }
-
-                    try
-                    {
-                        foreach (var item in interactionService.Modules.Where((x) => x.Preconditions.Any((x) => x is Interaction.Attribute.RequireGuildAttribute)))
-                        {
-                            var guildId = ((Interaction.Attribute.RequireGuildAttribute)item.Preconditions.FirstOrDefault((x) => x is Interaction.Attribute.RequireGuildAttribute)).GuildId;
-                            var guild = _client.GetGuild(guildId.Value);
-
-                            if (guild == null)
-                            {
-                                Log.Warn($"{item.Name} 註冊失敗，伺服器 {guildId} 不存在");
-                                continue;
-                            }
-
-                            var result = await interactionService.AddModulesToGuildAsync(guild, false, item);
-                            Log.Info($"已在 {guild.Name}({guild.Id}) 註冊指令: {string.Join(", ", item.SlashCommands.Select((x) => x.Name))}");
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Error("註冊伺服器專用Slash指令失敗");
-                        Log.Error(ex.ToString());
-                    }
-
-                    await interactionService.RegisterCommandsGloballyAsync();
-                    Log.Info("已註冊全球指令");
-#endif
-                }
-                catch (Exception ex)
-                {
-                    Log.Error("註冊Slash指令失敗，關閉中...");
-                    Log.Error(ex.ToString());
-                    isDisconnect = true;
-                }
-                #endregion
-            };
-
-            _client.JoinedGuild += (guild) =>
-            {
-                using (var db = DataBase.DBContext.GetDbContext())
-                {
-                    if (!db.GuildConfig.Any(x => x.GuildId == guild.Id))
-                    {
-                        db.GuildConfig.Add(new GuildConfig() { GuildId = guild.Id });
-                        db.SaveChanges();
-                    }
-                }
-
-                iService.GetService<DiscordWebhookClient>().SendMessageToDiscord($"加入 {guild.Name}({guild.Id})\n擁有者: {guild.OwnerId}");
-                return Task.CompletedTask;
             };
 
             _client.LeftGuild += (guild) =>
@@ -354,15 +212,159 @@ namespace Discord_Stream_Notify_Bot
             };
             #endregion
 
-            AppDomain.CurrentDomain.UnhandledException += (sender, args) =>
-            {
-                Exception e = (Exception)args.ExceptionObject;
-                Log.Error(e.ToString());
-                iService.GetService<DiscordWebhookClient>().SendMessageToDiscord($"{ApplicatonOwner.Mention} {e}");
-            };
-
             await _client.LoginAsync(TokenType.Bot, botConfig.DiscordToken);
             await _client.StartAsync();
+
+            do { await Task.Delay(200); }
+            while (!isConnect);
+
+            UptimeKumaClient.Init(botConfig.UptimeKumaPushUrl, _client);
+
+            #region 初始化互動指令系統
+            var interactionServices = new ServiceCollection()
+                .AddHttpClient()
+                .AddSingleton<SharedService.Twitter.TwitterSpacesService>()
+                .AddSingleton<SharedService.Youtube.YoutubeStreamService>()
+                .AddSingleton<SharedService.YoutubeMember.YoutubeMemberService>()
+                .AddSingleton(_client)
+                .AddSingleton(botConfig)
+                .AddSingleton(new InteractionService(_client, new InteractionServiceConfig()
+                {
+                    AutoServiceScopes = true,
+                    UseCompiledLambda = true,
+                    EnableAutocompleteHandlers = true,
+                    DefaultRunMode = Discord.Interactions.RunMode.Async,
+                    ExitOnMissingModalField = true,
+                }));
+
+            //https://blog.darkthread.net/blog/polly/
+            //HandleTransientHttpError 包含 5xx 及 408 錯誤
+            interactionServices.AddHttpClient<DiscordWebhookClient>();
+            interactionServices.AddHttpClient<TwitterClient>()
+                .AddPolicyHandler(HttpPolicyExtensions
+                    .HandleTransientHttpError()
+                    .RetryAsync(3));
+            interactionServices.AddHttpClient<TwitcastingClient>()
+                .AddPolicyHandler(HttpPolicyExtensions
+                    .HandleTransientHttpError()
+                    .RetryAsync(3));
+
+            interactionServices.LoadInteractionFrom(Assembly.GetAssembly(typeof(InteractionHandler)));
+            IServiceProvider iService = interactionServices.BuildServiceProvider();
+            await iService.GetService<InteractionHandler>().InitializeAsync();
+            #endregion
+
+            #region 初始化一般指令系統
+            var commandServices = new ServiceCollection()
+                .AddHttpClient()
+                .AddSingleton(iService.GetService<SharedService.Twitter.TwitterSpacesService>())
+                .AddSingleton(iService.GetService<SharedService.Youtube.YoutubeStreamService>())
+                .AddSingleton(iService.GetService<SharedService.YoutubeMember.YoutubeMemberService>())
+                .AddSingleton(_client)
+                .AddSingleton(botConfig)
+                .AddSingleton(new CommandService(new CommandServiceConfig()
+                {
+                    CaseSensitiveCommands = false,
+                    DefaultRunMode = Discord.Commands.RunMode.Async
+                }));
+
+            commandServices.AddHttpClient<DiscordWebhookClient>();
+            commandServices.AddHttpClient<TwitterClient>()
+                .AddPolicyHandler(HttpPolicyExtensions
+                    .HandleTransientHttpError()
+                    .RetryAsync(3));
+
+            commandServices.LoadCommandFrom(Assembly.GetAssembly(typeof(CommandHandler)));
+            IServiceProvider service = commandServices.BuildServiceProvider();
+            await service.GetService<CommandHandler>().InitializeAsync();
+            #endregion
+
+            #region 註冊互動指令
+            try
+            {
+                InteractionService interactionService = iService.GetService<InteractionService>();
+#if DEBUG
+                    if (botConfig.TestSlashCommandGuildId == 0 || _client.GetGuild(botConfig.TestSlashCommandGuildId) == null)
+                        Log.Warn("未設定測試Slash指令的伺服器或伺服器不存在，略過");
+                    else
+                    {
+                        try
+                        {
+                            var result = await interactionService.RegisterCommandsToGuildAsync(botConfig.TestSlashCommandGuildId);
+                            Log.Info($"已註冊指令 ({botConfig.TestSlashCommandGuildId}) : {string.Join(", ", result.Select((x) => x.Name))}");
+
+                            result = await interactionService.AddModulesToGuildAsync(botConfig.TestSlashCommandGuildId, false, interactionService.Modules.Where((x) => x.DontAutoRegister).ToArray());
+                            Log.Info($"已註冊指令 ({botConfig.TestSlashCommandGuildId}) : {string.Join(", ", result.Select((x) => x.Name))}");
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Error("註冊伺服器專用Slash指令失敗");
+                            Log.Error(ex.ToString());
+                        }
+                    }
+#else
+                try
+                {
+                    var commandCount = (await RedisDb.StringGetSetAsync("discord_stream_bot:command_count", iService.GetService<InteractionHandler>().CommandCount)).ToString();
+                    if (commandCount == iService.GetService<InteractionHandler>().CommandCount.ToString()) return;
+                }
+                catch (Exception ex)
+                {
+                    Log.Error("取得指令數量失敗，請確認Redis伺服器是否可以存取");
+                    Log.Error(ex.Message);
+                    isDisconnect = true;
+                    return;
+                }
+
+                try
+                {
+                    foreach (var item in interactionService.Modules.Where((x) => x.Preconditions.Any((x) => x is Interaction.Attribute.RequireGuildAttribute)))
+                    {
+                        var guildId = ((Interaction.Attribute.RequireGuildAttribute)item.Preconditions.FirstOrDefault((x) => x is Interaction.Attribute.RequireGuildAttribute)).GuildId;
+                        var guild = _client.GetGuild(guildId.Value);
+
+                        if (guild == null)
+                        {
+                            Log.Warn($"{item.Name} 註冊失敗，伺服器 {guildId} 不存在");
+                            continue;
+                        }
+
+                        var result = await interactionService.AddModulesToGuildAsync(guild, false, item);
+                        Log.Info($"已在 {guild.Name}({guild.Id}) 註冊指令: {string.Join(", ", item.SlashCommands.Select((x) => x.Name))}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Error("註冊伺服器專用Slash指令失敗");
+                    Log.Error(ex.ToString());
+                }
+
+                await interactionService.RegisterCommandsGloballyAsync();
+                Log.Info("已註冊全球指令");
+#endif
+            }
+            catch (Exception ex)
+            {
+                Log.Error("註冊Slash指令失敗，關閉中...");
+                Log.Error(ex.ToString());
+                isDisconnect = true;
+            }
+            #endregion
+
+            _client.JoinedGuild += (guild) =>
+            {
+                using (var db = DataBase.DBContext.GetDbContext())
+                {
+                    if (!db.GuildConfig.Any(x => x.GuildId == guild.Id))
+                    {
+                        db.GuildConfig.Add(new GuildConfig() { GuildId = guild.Id });
+                        db.SaveChanges();
+                    }
+                }
+
+                iService.GetService<DiscordWebhookClient>().SendMessageToDiscord($"加入 {guild.Name}({guild.Id})\n擁有者: {guild.OwnerId}");
+                return Task.CompletedTask;
+            };
 
             Log.Info("已初始化完成!");
 
