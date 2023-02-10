@@ -14,10 +14,7 @@ namespace Discord_Stream_Notify_Bot.HttpClients
 
         public TwitterClient(HttpClient httpClient)
         {
-#if DEBUG
-            return;
-#endif
-            httpClient.DefaultRequestHeaders.Add("UserAgent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.82 Safari/537.36");
+            httpClient.DefaultRequestHeaders.Add("UserAgent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36");
             httpClient.DefaultRequestHeaders.Add("Referer", "https://twitter.com/");
             httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", "AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs=1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA");
             httpClient.DefaultRequestHeaders.Add("ContentType", "application/json");
@@ -27,17 +24,22 @@ namespace Discord_Stream_Notify_Bot.HttpClients
 
         public async Task GetQueryIdAndFeatureSwitchesAsync()
         {
-            HtmlAgilityPack.HtmlWeb htmlWeb = new HtmlAgilityPack.HtmlWeb();
-            htmlWeb.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.82 Safari/537.36";
-            var web = await htmlWeb.LoadFromWebAsync("https://twitter.com/");
-
-            Regex regex = new Regex(@"https:\/\/abs\.twimg\.com\/responsive-web\/client-web([^\/]+|)\/main\.[^.]+\.js");
-            string mainJsUrl = regex.Match(web.Text).Value;
-
-            if (mainJsUrl != "")
+            using (var httpClient = new HttpClient())
             {
-                string mainJsText = await _httpClient.GetStringAsync(mainJsUrl);
+                httpClient.DefaultRequestHeaders.Add("UserAgent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36");
+                httpClient.DefaultRequestHeaders.Add("Referer", "https://twitter.com/");
+                var web = await httpClient.GetStringAsync("https://twitter.com");
 
+                Regex regex = new Regex(@"api:""([^""]+)""");
+                var match = regex.Match(web);
+                if (!match.Success)
+                    throw new Exception("GetQueryIdAndFeatureSwitchesAsync-Get API version error");
+
+                string type = "client-web";
+                if (web.Contains("-legacy"))
+                    type += "-legacy";
+
+                string mainJsText = await httpClient.GetStringAsync($"https://abs.twimg.com/responsive-web/{type}/api.{match.Groups[1].Value}a.js");
                 regex = new Regex("{queryId:\"([^\"]+)\",operationName:\"([^\"]+)\",operationType:\"([^\"]+)\",metadata:{featureSwitches:\\[([^\\]]+)", RegexOptions.None);
                 var queryList = regex.Matches(mainJsText);
 
@@ -48,7 +50,7 @@ namespace Discord_Stream_Notify_Bot.HttpClients
 
                 _httpClient.DefaultRequestHeaders.Remove("x-guest-token");
                 regex = new Regex(@"gt=(\d{19});");
-                var guestToken = regex.Match(web.Text).Groups[1].Value;
+                var guestToken = regex.Match(web).Groups[1].Value;
                 _httpClient.DefaultRequestHeaders.Add("x-guest-token", guestToken);
 
                 Log.Info("NewTwitterMetadata Found!");
@@ -80,14 +82,14 @@ namespace Discord_Stream_Notify_Bot.HttpClients
                 string url = $"https://twitter.com/i/api/graphql/{queryId}/AudioSpaceById?variables={variables}&features={featureSwitches}";
                 return JObject.Parse(await _httpClient.GetStringAsync(url))["data"]["audioSpace"]["metadata"];
             }
-            catch (Exception ex)
+            catch (HttpRequestException httpEx) when (httpEx.Message.Contains("40") && !isRefresh)
             {
-                if (ex.Message.Contains("40") && !isRefresh)
-                {
-                    await GetQueryIdAndFeatureSwitchesAsync();
-                    return await GetTwitterSpaceMetadataAsync(spaceId, true);
-                }
-                else throw;
+                await GetQueryIdAndFeatureSwitchesAsync();
+                return await GetTwitterSpaceMetadataAsync(spaceId, true);
+            }
+            catch (Exception)
+            {
+                throw;
             }
         }
 
