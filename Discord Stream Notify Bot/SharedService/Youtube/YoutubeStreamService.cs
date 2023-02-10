@@ -85,10 +85,24 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
             if (Program.Redis != null)
             {
-                Program.RedisSub.Subscribe("youtube.startstream", async (channel, videoId) =>
+                Program.RedisSub.Subscribe("youtube.startstream", async (channel, videoData) =>
                 {
                     try
                     {
+                        string videoId = "";
+                        bool isMemberOnly = false;
+                        var tempData = videoData.ToString().Split(':');
+                        if (tempData.Length != 2)
+                        {
+                            Log.Info($"{channel} - {videoData}: 資料數量不正確");
+                             videoId = videoData.ToString().Substring(0, 11);
+                        }
+                        else
+                        {
+                            videoId = tempData[0];
+                            isMemberOnly = tempData[1] == "1";
+                        }
+
                         Log.Info($"{channel} - {videoId}");
 
                         var item = await GetVideoAsync(videoId).ConfigureAwait(false);
@@ -105,14 +119,16 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         else
                             startTime = item.LiveStreamingDetails.ScheduledStartTime.Value;
 
-                        EmbedBuilder embedBuilder = new EmbedBuilder();
-                        embedBuilder.WithRecordColor()
+                        EmbedBuilder embedBuilder = new EmbedBuilder()
                         .WithTitle(item.Snippet.Title)
                         .WithDescription(Format.Url(item.Snippet.ChannelTitle, $"https://www.youtube.com/channel/{item.Snippet.ChannelId}"))
                         .WithImageUrl($"https://i.ytimg.com/vi/{item.Id}/maxresdefault.jpg")
                         .WithUrl($"https://www.youtube.com/watch?v={item.Id}")
                         .AddField("直播狀態", "開台中")
                         .AddField("開台時間", startTime.ConvertDateTimeToDiscordMarkdown());
+
+                        if (isMemberOnly) embedBuilder.WithOkColor();
+                        else embedBuilder.WithRecordColor();
 
                         await SendStreamMessageAsync(item.Id, embedBuilder, NoticeType.Start).ConfigureAwait(false);
                         await ChangeGuildBannerAsync(item.Snippet.ChannelId, item.Id);
