@@ -653,7 +653,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                                 var item = videoResult.Items.First((x) => x.Id == reminder.Key);
 
-                                if (!item.LiveStreamingDetails.ScheduledStartTime.HasValue)
+                                if (item.LiveStreamingDetails == null || item.LiveStreamingDetails.ScheduledStartTime == null || !item.LiveStreamingDetails.ScheduledStartTime.HasValue)
                                 {
                                     Reminders.TryRemove(reminder.Key, out var reminderItem);
 
@@ -959,6 +959,13 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 throw new ArgumentNullException(videoUrl);
 
             videoUrl = videoUrl.Trim();
+
+            if (videoUrl.Contains("www.youtube.com/watch")) //https://www.youtube.com/watch?v=7DqDRE_SW34
+                videoUrl = videoUrl.Substring(videoUrl.IndexOf("?v=") + 3, 11);
+            else if (videoUrl.Contains("https://youtu.be")) //https://youtu.be/Z-UJbyLqioM
+                videoUrl = videoUrl.Substring(17, 11);
+            else if (videoUrl.Contains("https://www.youtube.com/live/")) //https://www.youtube.com/live/MdmQgxffY6k?feature=share
+                videoUrl = videoUrl.Substring(29, 11);
 
             if (videoUrl.Length == 11)
                 return videoUrl;

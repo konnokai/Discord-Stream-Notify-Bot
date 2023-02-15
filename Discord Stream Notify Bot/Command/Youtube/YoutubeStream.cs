@@ -64,6 +64,8 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                     videoId = videoId.Substring(videoId.IndexOf("?v=") + 3, 11);
                 else if (videoId.Contains("https://youtu.be")) //https://youtu.be/Z-UJbyLqioM
                     videoId = videoId.Substring(17, 11);
+                else if (videoId.Contains("https://www.youtube.com/live/")) //https://www.youtube.com/live/MdmQgxffY6k?feature=share
+                    videoId = videoId.Substring(29, 11);
             }
             catch (Exception)
             {

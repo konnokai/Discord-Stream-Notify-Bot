@@ -258,7 +258,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     db.SaveChanges();
                 }
             }
-            catch (Exception ex) { Log.Error($"ReminderAction: {streamVideo.VideoId}\n{ex}"); }
+            catch (Exception ex) { Log.Error(ex, $"ReminderAction: {streamVideo.VideoId}"); }
         }
 
         private async Task SendStreamMessageAsync(string videolId, EmbedBuilder embedBuilder, NoticeType noticeType)
