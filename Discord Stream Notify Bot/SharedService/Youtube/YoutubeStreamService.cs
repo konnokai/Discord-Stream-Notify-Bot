@@ -861,7 +861,30 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             Regex regexNewFormat = new Regex(@"(http[s]{0,1}://){0,1}(www\.){0,1}(?'Host'[^/]+)/@(?'CustomId'[^/]+)");
             Match matchOldFormat = regexOldFormat.Match(channelUrl);
             Match matchNewFormat = regexNewFormat.Match(channelUrl);
-            if (matchOldFormat.Success)
+            if (matchNewFormat.Success)
+            {
+                string channelName = matchNewFormat.Groups["CustomId"].Value;
+
+                if (await Program.RedisDb.KeyExistsAsync($"discord_stream_bot:ChannelNameToId:{channelName}"))
+                {
+                    channelId = await Program.RedisDb.StringGetAsync($"discord_stream_bot:ChannelNameToId:{channelName}");
+                }
+                else
+                {
+                    try
+                    {
+                        channelId = await GetChannelIdByUrlAsync($"https://www.youtube.com/@{channelName}");
+                        await Program.RedisDb.StringSetAsync($"discord_stream_bot:ChannelNameToId:{channelName}", channelId);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error(channelUrl);
+                        Log.Error(ex.ToString());
+                        throw;
+                    }
+                }
+            }
+            else if (matchOldFormat.Success)
             {
                 string host = matchOldFormat.Groups["Host"].Value.ToLower();
                 if (host != "youtube.com")
@@ -898,29 +921,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     }
                 }
                 else throw new FormatException("錯誤，網址格式不正確");
-            }
-            else if (matchNewFormat.Success)
-            {
-                string channelName = matchNewFormat.Groups["CustomId"].Value;
-
-                if (await Program.RedisDb.KeyExistsAsync($"discord_stream_bot:ChannelNameToId:{channelName}"))
-                {
-                    channelId = await Program.RedisDb.StringGetAsync($"discord_stream_bot:ChannelNameToId:{channelName}");
-                }
-                else
-                {
-                    try
-                    {
-                        channelId = await GetChannelIdByUrlAsync($"https://www.youtube.com/@{channelName}");
-                        await Program.RedisDb.StringSetAsync($"discord_stream_bot:ChannelNameToId:{channelName}", channelId);
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Error(channelUrl);
-                        Log.Error(ex.ToString());
-                        throw;
-                    }
-                }
             }
             else throw new FormatException("錯誤，請確認是否輸入YouTube頻道網址");
 
