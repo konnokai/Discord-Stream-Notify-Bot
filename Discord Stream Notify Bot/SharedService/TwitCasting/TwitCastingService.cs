@@ -128,7 +128,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitcasting
                                 ChannelId = item.ChannelId,
                                 ChannelTitle = item.ChannelTitle,
                                 StreamId = data.Movie.Id,
-                                StreamTitle = streamData.Movie.Title,
+                                StreamTitle = streamData.Movie.Title ?? "無標題",
                                 StreamSubTitle = streamData.Movie.Telop,
                                 Category = streamData.Movie.Category?.Name,
                                 StreamStartAt = startAt
@@ -139,12 +139,12 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitcasting
                             await SendStreamMessageAsync(twitcastingStream, false, item.IsRecord && RecordTwitcasting(twitcastingStream));
                         }
                         catch (Exception ex) { Log.Error($"TwitcastingService-GetData {item.ChannelId}: {ex}"); }
+
+                        await Task.Delay(1000); // 等個一秒鐘避免觸發429之類的錯誤，雖然也不知道有沒有用
                     }
                 }
                 catch (Exception ex) { Log.Error($"TwitcastingService-Timer {ex}"); }
                 finally { isRuning = false; }
-
-                await Task.Delay(1000); // 等個一秒鐘避免觸發429之類的錯誤，雖然也不知道有沒有用
             }
             twitcastingDb.SaveChanges();
         }
@@ -157,7 +157,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitcasting
             using (var db = DBContext.GetDbContext())
             {
                 var noticeGuildList = db.NoticeTwitcastingStreamChannels.Where((x) => x.ChannelId == twitcastingStream.ChannelId).ToList();
-                Log.New($"發送Twitcasting開台通知 ({noticeGuildList.Count}): {twitcastingStream.ChannelTitle} - {twitcastingStream.StreamTitle}");
+                Log.New($"發送Twitcasting開台通知 ({noticeGuildList.Count}): {twitcastingStream.ChannelTitle} - {twitcastingStream.StreamTitle} (私人直播: {isPrivate})");
 
                 EmbedBuilder embedBuilder = new EmbedBuilder()
                     .WithTitle(twitcastingStream.StreamTitle)
@@ -219,12 +219,10 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitcasting
             }
 
             // 自幹Tc錄影能錄但時間會出問題，還是用StreamLink方案好了
-            string procArgs = $"streamlink \"https://twitcasting.tv/{twitcastingStream.ChannelId}\" best --output \"{twitcastingRecordPath}[{twitcastingStream.ChannelId}]{twitcastingStream.StreamStartAt:yyyyMMdd} - {twitcastingStream.StreamId}.ts\"";
-            Log.New(procArgs);
-            
+            string procArgs = $"streamlink https://twitcasting.tv/{twitcastingStream.ChannelId} best --output \"{twitcastingRecordPath}[{twitcastingStream.ChannelId}]{twitcastingStream.StreamStartAt:yyyyMMdd} - {twitcastingStream.StreamId}.ts\"";
             try
             {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) Process.Start("tmux", $"new-window -d -n \"Twitcasting {twitcastingStream.ChannelId}\" {procArgs}");
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) Process.Start("tmux", $"new-window -d -n \"Twitcasting {twitcastingStream.ChannelId}\" {procArgs}");                
                 else Process.Start(new ProcessStartInfo()
                 {
                     FileName = "streamlink",
