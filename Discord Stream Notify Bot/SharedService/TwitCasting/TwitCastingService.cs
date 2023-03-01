@@ -130,7 +130,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitcasting
                                 StreamId = data.Movie.Id,
                                 StreamTitle = streamData.Movie.Title,
                                 StreamSubTitle = streamData.Movie.Telop,
-                                Category = streamData.Movie.Category.Name,
+                                Category = streamData.Movie.Category?.Name,
                                 StreamStartAt = startAt
                             };
 
@@ -220,9 +220,11 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitcasting
 
             // 自幹Tc錄影能錄但時間會出問題，還是用StreamLink方案好了
             string procArgs = $"streamlink \"https://twitcasting.tv/{twitcastingStream.ChannelId}\" best --output \"{twitcastingRecordPath}[{twitcastingStream.ChannelId}]{twitcastingStream.StreamStartAt:yyyyMMdd} - {twitcastingStream.StreamId}.ts\"";
+            Log.New(procArgs);
+            
             try
             {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) Process.Start("tmux", $"new-window -d -n \"Twitcasring {twitcastingStream.ChannelId}\" {procArgs}");
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) Process.Start("tmux", $"new-window -d -n \"Twitcasting {twitcastingStream.ChannelId}\" {procArgs}");
                 else Process.Start(new ProcessStartInfo()
                 {
                     FileName = "streamlink",

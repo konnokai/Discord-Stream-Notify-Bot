@@ -304,9 +304,9 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitcasting
 
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                var list = db.TwitcastingSpider.Where((x) => x.IsWarningUser).Select((x) => Format.Url(x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}") +
+                var list = db.TwitcastingSpider.Where((x) => !x.IsWarningUser).Select((x) => Format.Url(x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}") +
                     $" 由 `" + (x.GuildId == 0 ? "Bot擁有者" : (_client.GetGuild(x.GuildId) != null ? _client.GetGuild(x.GuildId).Name : "已退出的伺服器")) + "` 新增");
-                int warningChannelNum = db.TwitcastingSpider.Count((x) => !x.IsWarningUser);
+                int warningChannelNum = db.TwitcastingSpider.Count((x) => x.IsWarningUser);
 
                 await Context.SendPaginatedConfirmAsync(page, page =>
                 {
@@ -327,7 +327,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitcasting
 
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                var list = db.TwitcastingSpider.Where((x) => !x.IsWarningUser).Select((x) => Format.Url(x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}") +
+                var list = db.TwitcastingSpider.Where((x) => x.IsWarningUser).Select((x) => Format.Url(x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}") +
                     $" 由 `" + (x.GuildId == 0 ? "Bot擁有者" : (_client.GetGuild(x.GuildId) != null ? _client.GetGuild(x.GuildId).Name : "已退出的伺服器")) + "` 新增");
 
                 await Context.SendPaginatedConfirmAsync(page, page =>
