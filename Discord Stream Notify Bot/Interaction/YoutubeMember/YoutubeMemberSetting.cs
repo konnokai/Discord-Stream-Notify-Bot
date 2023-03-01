@@ -5,7 +5,7 @@ using Discord_Stream_Notify_Bot.SharedService.YoutubeMember;
 
 namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
 {
-    [Group("member-set", "會限驗證設定")]
+    [Group("member-set", "YouTube會限驗證設定")]
     [DefaultMemberPermissions(GuildPermission.Administrator)]
     [EnabledInDm(false)]
     public class YoutubeMemberSetting : TopLevelModule<YoutubeMemberService>

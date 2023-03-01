@@ -3,7 +3,7 @@ using Discord_Stream_Notify_Bot.SharedService.YoutubeMember;
 
 namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
 {
-    [Group("member", "會限驗證相關指令")]
+    [Group("member", "YouTube會限驗證相關指令")]
     public class YoutubeMember : TopLevelModule<YoutubeMemberService>
     {
         [SlashCommand("check", "確認是否已到網站登入綁定")]

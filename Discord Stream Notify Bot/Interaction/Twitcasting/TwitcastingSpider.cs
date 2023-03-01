@@ -3,7 +3,7 @@ using Discord_Stream_Notify_Bot.Interaction.Attribute;
 
 namespace Discord_Stream_Notify_Bot.Interaction.Twitcasting
 {
-    [Group("twitcasting-spider", "Tc台爬蟲")]
+    [Group("twitcasting-spider", "Twitcasting爬蟲設定")]
     [DefaultMemberPermissions(GuildPermission.Administrator)]
     public class TwitcastingSpider : TopLevelModule<SharedService.Twitcasting.TwitcastingService>
     {

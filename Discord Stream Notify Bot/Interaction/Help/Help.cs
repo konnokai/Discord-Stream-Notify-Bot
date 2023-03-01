@@ -3,7 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Discord_Stream_Notify_Bot.Interaction.Help
 {
-    [Group("help", "說明指令")]
+    [Group("help", "說明")]
     public class Help : TopLevelModule<Service.HelpService>
     {
         private readonly InteractionService _interaction;

@@ -4,7 +4,7 @@ using Discord_Stream_Notify_Bot.Interaction.Attribute;
 
 namespace Discord_Stream_Notify_Bot.Interaction.Twitcasting
 {
-    [Group("twitcasting", "Tc台通知")]
+    [Group("twitcasting", "Twitcasting通知")]
     [DefaultMemberPermissions(GuildPermission.ManageMessages)]
     public class Twitcasting : TopLevelModule<SharedService.Twitcasting.TwitcastingService>
     {

@@ -6,7 +6,7 @@ using Video = Google.Apis.YouTube.v3.Data.Video;
 namespace Discord_Stream_Notify_Bot.Interaction.Youtube
 {
     [Group("youtube", "YouTube通知設定")]
-    public class YoutubeStream : TopLevelModule<SharedService.Youtube.YoutubeStreamService>
+    public class Youtube : TopLevelModule<SharedService.Youtube.YoutubeStreamService>
     {
         private readonly DiscordSocketClient _client;
 
@@ -57,7 +57,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             }
         }
 
-        public YoutubeStream(DiscordSocketClient client)
+        public Youtube(DiscordSocketClient client)
         {
             _client = client;
         }

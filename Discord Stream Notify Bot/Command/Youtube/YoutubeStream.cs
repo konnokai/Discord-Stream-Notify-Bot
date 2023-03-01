@@ -41,13 +41,11 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
         #endregion
 
         private readonly DiscordSocketClient _client;
-        private readonly HttpClients.DiscordWebhookClient _discordWebhookClient;
         private readonly SharedService.Youtube.YoutubeStreamService _service;
 
-        public YoutubeStream(DiscordSocketClient client, HttpClients.DiscordWebhookClient discordWebhookClient, SharedService.Youtube.YoutubeStreamService service)
+        public YoutubeStream(DiscordSocketClient client, SharedService.Youtube.YoutubeStreamService service)
         {
             _client = client;
-            _discordWebhookClient = discordWebhookClient;
             _service = service;
         }
 
