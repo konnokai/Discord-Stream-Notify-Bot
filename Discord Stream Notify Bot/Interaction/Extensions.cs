@@ -310,12 +310,21 @@ namespace Discord_Stream_Notify_Bot.Interaction
             if (ephemeral)
                 return;
 
-            var msg = await ctx.Interaction.GetOriginalResponseAsync().ConfigureAwait(false);
             if (lastPage == 0)
                 return;
 
-            await msg.AddReactionAsync(arrow_left).ConfigureAwait(false);
-            await msg.AddReactionAsync(arrow_right).ConfigureAwait(false);
+            var msg = await ctx.Interaction.GetOriginalResponseAsync().ConfigureAwait(false);
+
+            try
+            {
+                await msg.AddReactionAsync(arrow_left).ConfigureAwait(false);
+                await msg.AddReactionAsync(arrow_right).ConfigureAwait(false);
+            }
+            catch (Discord.Net.HttpException httpEx) when (httpEx.DiscordCode == DiscordErrorCode.MissingPermissions)
+            {
+                await ctx.Interaction.ModifyOriginalResponseAsync((act) => act.Content = "無法換頁，如需換頁請直接使用指令換頁");
+                return;
+            }
 
             await Task.Delay(2000).ConfigureAwait(false);
 

@@ -193,7 +193,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
 
                 if (isRecord) embedBuilder.WithRecordColor();
                 else embedBuilder.WithOkColor();
-                
+
                 MessageComponent comp = new ComponentBuilder()
                         .WithButton("贊助小幫手 (Patreon) #ad", style: ButtonStyle.Link, emote: _emojiService.PatreonEmote, url: Utility.PatreonUrl, row: 1)
                         .WithButton("贊助小幫手 (Paypal) #ad", style: ButtonStyle.Link, emote: _emojiService.PayPalEmote, url: Utility.PaypalUrl, row: 1).Build();

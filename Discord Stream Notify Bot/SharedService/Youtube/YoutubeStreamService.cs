@@ -95,7 +95,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         if (tempData.Length != 2)
                         {
                             Log.Info($"{channel} - {videoData}: 資料數量不正確");
-                             videoId = videoData.ToString().Substring(0, 11);
+                            videoId = videoData.ToString().Substring(0, 11);
                         }
                         else
                         {

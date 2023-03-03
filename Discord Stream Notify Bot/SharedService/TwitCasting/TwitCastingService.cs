@@ -222,7 +222,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitcasting
             string procArgs = $"streamlink https://twitcasting.tv/{twitcastingStream.ChannelId} best --output \"{twitcastingRecordPath}[{twitcastingStream.ChannelId}]{twitcastingStream.StreamStartAt:yyyyMMdd} - {twitcastingStream.StreamId}.ts\"";
             try
             {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) Process.Start("tmux", $"new-window -d -n \"Twitcasting {twitcastingStream.ChannelId}\" {procArgs}");                
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) Process.Start("tmux", $"new-window -d -n \"Twitcasting {twitcastingStream.ChannelId}\" {procArgs}");
                 else Process.Start(new ProcessStartInfo()
                 {
                     FileName = "streamlink",

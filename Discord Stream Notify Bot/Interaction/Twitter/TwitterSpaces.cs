@@ -225,7 +225,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
         [EnabledInDm(false)]
         [RequireContext(ContextType.Guild)]
         [SlashCommand("list", "顯示現在已加入推特語音空間通知的頻道")]
-        public async Task ListChannel()
+        public async Task ListChannel([Summary("頁數")] int page = 0)
         {
             using (var db = DataBase.DBContext.GetDbContext())
             {
@@ -235,7 +235,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                 if (list.Count() == 0) { await Context.Interaction.SendErrorAsync("推特語音空間通知清單為空").ConfigureAwait(false); return; }
                 var twitterSpaceList = list.Select((x) => $"{x.Key} => <#{x.Value}>").ToList();
 
-                await Context.SendPaginatedConfirmAsync(0, page =>
+                await Context.SendPaginatedConfirmAsync(page, page =>
                 {
                     return new EmbedBuilder()
                         .WithOkColor()
@@ -355,7 +355,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                 if (nowRecordList.Count > 0)
                 {
                     nowRecordList.Sort();
-                    await Context.SendPaginatedConfirmAsync(0, page =>
+                    await Context.SendPaginatedConfirmAsync(page, page =>
                     {
                         return new EmbedBuilder()
                             .WithOkColor()

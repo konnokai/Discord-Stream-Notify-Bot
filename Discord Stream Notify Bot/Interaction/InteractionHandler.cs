@@ -81,7 +81,7 @@ namespace Discord_Stream_Notify_Bot.Interaction
             }
         }
 
-        private Task SlashCommandExecuted(SlashCommandInfo arg1, IInteractionContext arg2, IResult arg3)
+        private async Task SlashCommandExecuted(SlashCommandInfo arg1, IInteractionContext arg2, IResult arg3)
         {
             string slashCommand = $"/{arg1}";
             var commandData = arg2.Interaction.Data as SocketSlashCommandData;
@@ -97,21 +97,22 @@ namespace Discord_Stream_Notify_Bot.Interaction
                 switch (arg3.Error)
                 {
                     case InteractionCommandError.UnmetPrecondition:
-                        arg2.Interaction.SendErrorAsync(arg3.ErrorReason);
+                        await arg2.Interaction.SendErrorAsync(arg3.ErrorReason);
                         break;
                     case InteractionCommandError.UnknownCommand:
-                        arg2.Interaction.SendErrorAsync("未知的指令，也許被移除或變更了");
+                        await arg2.Interaction.SendErrorAsync("未知的指令，也許被移除或變更了");
                         break;
                     case InteractionCommandError.BadArgs:
-                        arg2.Interaction.SendErrorAsync("輸入的參數錯誤");
+                        await arg2.Interaction.SendErrorAsync("輸入的參數錯誤");
+                        break;
+                    case InteractionCommandError.Exception when arg3.ErrorReason.Contains("50001"):
+                        await arg2.Interaction.SendErrorAsync($"我在 `{arg2.Channel}` 沒有 `讀取&編輯頻道&嵌入連結` 的權限，請給予權限後再次執行本指令", true);
                         break;
                     default:
-                        arg2.Interaction.SendErrorAsync("未知的錯誤，請向Bot擁有者回報");
+                        await arg2.Interaction.SendErrorAsync("未知的錯誤，請向Bot擁有者回報");
                         break;
                 }
             }
-
-            return Task.CompletedTask;
         }
 
         private string GetOptionsValue(SocketSlashCommandDataOption socketSlashCommandDataOption)

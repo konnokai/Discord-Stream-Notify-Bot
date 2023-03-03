@@ -63,7 +63,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
         }
 
         [SlashCommand("list-record-channel", "顯示直播記錄頻道")]
-        public async Task ListRecordChannel()
+        public async Task ListRecordChannel([Summary("頁數")] int page = 0)
         {
             using (var db = DataBase.DBContext.GetDbContext())
             {
@@ -82,7 +82,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                     }
 
                     list.Sort();
-                    await Context.SendPaginatedConfirmAsync(0, page =>
+                    await Context.SendPaginatedConfirmAsync(page, page =>
                     {
                         return new EmbedBuilder()
                             .WithOkColor()
@@ -96,7 +96,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
         }
 
         [SlashCommand("now-record-channel", "取得現在記錄直播的清單")]
-        public async Task NowRecordChannel()
+        public async Task NowRecordChannel([Summary("頁數")] int page = 0)
         {
             var newRecordStreamList = Discord_Stream_Notify_Bot.Utility.GetNowRecordStreamList();
 
@@ -126,7 +126,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                     }
                 }
 
-                await Context.SendPaginatedConfirmAsync(0, (page) =>
+                await Context.SendPaginatedConfirmAsync(page, (page) =>
                 {
                     return new EmbedBuilder()
                         .WithOkColor()
@@ -154,7 +154,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
         }
 
         [SlashCommand("coming-soon-stream", "顯示接下來直播的清單")]
-        public async Task ComingSoonStream()
+        public async Task ComingSoonStream([Summary("頁數")] int page = 0)
         {
             try
             {
@@ -170,7 +170,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                 using (var db = DataBase.DBContext.GetDbContext())
                 {
                     result = result.OrderBy((x) => x.LiveStreamingDetails.ScheduledStartTime.Value).ToList();
-                    await Context.SendPaginatedConfirmAsync(0, (act) =>
+                    await Context.SendPaginatedConfirmAsync(page, (act) =>
                     {
                         return new EmbedBuilder().WithOkColor()
                         .WithTitle("接下來開台的清單")
