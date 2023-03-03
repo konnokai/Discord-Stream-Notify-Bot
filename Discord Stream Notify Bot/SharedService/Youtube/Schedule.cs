@@ -603,11 +603,11 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     }
                 }
 
-                if (addNewStreamVideo.Any((x) => x.Value.ChannelType == DataBase.Table.Video.YTChannelType.NotVTuber))
+                if (addNewStreamVideo.Any((x) => x.Value.ChannelType == DataBase.Table.Video.YTChannelType.NonApproved))
                 {
                     using (var db = DataBase.NotVTuberVideoContext.GetDbContext())
                     {
-                        foreach (var item in addNewStreamVideo.Where((x) => x.Value.ChannelType == DataBase.Table.Video.YTChannelType.NotVTuber))
+                        foreach (var item in addNewStreamVideo.Where((x) => x.Value.ChannelType == DataBase.Table.Video.YTChannelType.NonApproved))
                         {
                             if (!db.Video.Any((x) => x.VideoId == item.Key))
                             {

@@ -368,7 +368,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                         VideoId = youtubePubSubNotification.VideoId,
                                         VideoTitle = youtubePubSubNotification.Title,
                                         ScheduledStartTime = youtubePubSubNotification.Published,
-                                        ChannelType = DataBase.Table.Video.YTChannelType.NotVTuber
+                                        ChannelType = DataBase.Table.Video.YTChannelType.NonApproved
                                     };
 
                                     Log.New($"(非已認可的新影片) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
@@ -381,7 +381,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                     .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
                                     .AddField("上傳時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
 
-                                    if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo))
+                                    if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo) && streamVideo.ScheduledStartTime > DateTime.Now.AddDays(-2))
                                         await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.NewVideo).ConfigureAwait(false);
                                 }
                             }
