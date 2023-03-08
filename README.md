@@ -21,7 +21,16 @@
 10. Imgur Client Id，發送全域訊息如果要上傳圖片附件時會需要用到，可到 [Imgur](https://api.imgur.com/oauth2/addclient) 註冊，`Authorization type:` 選擇 `Anonymous usage without user authorization` 即可
 11. Uptime Kuma Push 監測器的網址，如果不需要上線監測則可為空，需搭配 [Uptime Kuma](https://github.com/louislam/uptime-kuma) 使用
 
-建置環境
+備註
+-
+請使用Release組態進行編譯，Debug組態有忽略掉不少東西會導致功能出現異常等錯誤
+
+如需要自行改程式碼也記得確認Debug組態下的 `#if` 是否會導致偵錯問題
+
+建置&測試環境
 - 
-- Visual Studio 2022
-- .NET Core 6.0
+- Visual Studio 2022 17.5.1
+- .NET SDK 6.0.14
+- Windows 10 & 11 Pro
+- Debian 11
+- Redis 7.0.4
