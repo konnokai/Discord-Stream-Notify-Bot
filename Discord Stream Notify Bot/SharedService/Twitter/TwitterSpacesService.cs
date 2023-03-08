@@ -28,10 +28,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
 
         public TwitterSpacesService(DiscordSocketClient client, HttpClients.TwitterClient twitterClient, BotConfig botConfig, EmojiService emojiService)
         {
-#if DEBUG
-            return;
-#endif
-
             if (string.IsNullOrWhiteSpace(botConfig.TwitterApiKey) || string.IsNullOrWhiteSpace(botConfig.TwitterApiKeySecret))
             {
                 Log.Warn("TwitterApiKey或TwitterApiKeySecret遺失，無法運行推特類功能");
@@ -59,6 +55,10 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                     TimeSpan.FromSeconds(2),
                     TimeSpan.FromSeconds(4)
                 });
+
+#if DEBUG
+            return;
+#endif
 
             timer = new(async (stats) =>
             {
