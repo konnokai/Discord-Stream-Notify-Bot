@@ -162,9 +162,13 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
         {
             using (var db = DataBase.DBContext.GetDbContext())
             {
+                var item = db.TwitterSpaecSpider.FirstOrDefault((x) => x.UserId == twitterSpace.UserId);
+                if (item == null)
+                    return false;
+
                 try
                 {
-                    return db.TwitterSpaecSpider.Any((x) => x.UserId == twitterSpace.UserId);
+                    return item.IsRecord;
                 }
                 catch (Exception ex)
                 {

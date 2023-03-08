@@ -91,7 +91,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
 
                 if (user.data.is_protected)
                 {
-                    await Context.Interaction.SendErrorAsync($"使用者推文被保護，無法查看", true).ConfigureAwait(false);
+                    await Context.Interaction.SendErrorAsync($"使用者已開啟推文保護，無法新增", true).ConfigureAwait(false);
                     return;
                 }
 

@@ -8,13 +8,11 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
     public class TwitterSpaces : TopLevelModule, ICommandService
     {
         private readonly DiscordSocketClient _client;
-        private readonly HttpClients.DiscordWebhookClient _discordWebhookClient;
         private readonly SharedService.Twitter.TwitterSpacesService _service;
 
-        public TwitterSpaces(DiscordSocketClient client, HttpClients.DiscordWebhookClient discordWebhookClient, SharedService.Twitter.TwitterSpacesService service)
+        public TwitterSpaces(DiscordSocketClient client, SharedService.Twitter.TwitterSpacesService service)
         {
             _client = client;
-            _discordWebhookClient = discordWebhookClient;
             _service = service;
         }
 
@@ -135,7 +133,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
                 {
                     if (user.data.is_protected)
                     {
-                        await Context.Channel.SendErrorAsync($"使用者推文被保護，無法查看").ConfigureAwait(false);
+                        await Context.Channel.SendErrorAsync($"使用者已開啟推文保護，無法新增").ConfigureAwait(false);
                         return;
                     }
 
