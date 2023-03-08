@@ -41,6 +41,8 @@ namespace Discord_Stream_Notify_Bot.Command
                 if (db.Video.Any((x) => x.VideoId == videoId)) return db.Video.First((x) => x.VideoId == videoId);
             using (var db = DataBase.OtherVideoContext.GetDbContext())
                 if (db.Video.Any((x) => x.VideoId == videoId)) return db.Video.First((x) => x.VideoId == videoId);
+            using (var db = DataBase.NotVTuberVideoContext.GetDbContext())
+                if (db.Video.Any((x) => x.VideoId == videoId)) return db.Video.First((x) => x.VideoId == videoId);
 
             return null;
         }
