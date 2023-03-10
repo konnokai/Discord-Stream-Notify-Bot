@@ -273,15 +273,20 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                         await logChannel.SendErrorMessageAsync(member.UserId, guildYoutubeMemberConfig.MemberCheckChannelTitle, "400錯誤，等待下次重新檢查");
                                         continue;
                                     }
+                                    else if (ex.Message.ToLower().Contains("quotaexceeded"))
+                                    {
+                                        Log.Error($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {member.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 的會限資格取得失敗: 無API配額");
+
+                                        await logChannel.SendErrorMessageAsync(member.UserId, guildYoutubeMemberConfig.MemberCheckChannelTitle, "無API配額，等待明天重新檢查");
+                                        break;
+                                    }
                                     else
                                     {
                                         Log.Error($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {member.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 的會限資格取得失敗: 未知的錯誤");
                                         Log.Error(ex.ToString());
 
-                                        await RevokeUserGoogleCertAsync(member.UserId.ToString());
-
                                         await logChannel.SendErrorMessageAsync(member.UserId, guildYoutubeMemberConfig.MemberCheckChannelTitle, "不明的錯誤");
-                                        await member.UserId.SendErrorMessageAsync($"無法驗證您的帳號，可能是Google內部錯誤\n請重新執行驗證步驟並向 {Program.ApplicatonOwner} 確認問題", logChannel);
+                                        await member.UserId.SendErrorMessageAsync($"無法驗證您的帳號，可能是Google內部錯誤\n請向 {Program.ApplicatonOwner} 確認問題", logChannel);
                                         continue;
                                     }
                                 }
