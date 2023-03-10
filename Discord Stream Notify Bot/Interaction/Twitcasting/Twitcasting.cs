@@ -88,7 +88,8 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitcasting
             var channelData = await _service.GetChannelIdAndTitleAsync(channelUrl);
             if (string.IsNullOrEmpty(channelData.ChannelTitle))
             {
-                await Context.Interaction.SendErrorAsync("錯誤，Twitcasting找不到該使用者的名稱\n" +
+                await Context.Interaction.SendErrorAsync("Twitcasting上找不到該使用者的名稱\n" +
+                    "這不是 Twitch 直播通知指令!!!!!!!!!!!!!!!!!!\n" +
                     "請確認網址是否正確，若正確請向Bot擁有者回報", true);
                 return;
             }

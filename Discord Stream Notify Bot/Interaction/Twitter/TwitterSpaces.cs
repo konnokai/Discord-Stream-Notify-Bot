@@ -152,7 +152,9 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
             UserModel user = _service.GetTwitterUser(userScreenName);
             if (user == null)
             {
-                await Context.Interaction.SendErrorAsync($"`{userScreenName}` 不存在此使用者", true).ConfigureAwait(false);
+                await Context.Interaction.SendErrorAsync($"`{userScreenName}` 不存在此使用者\n" +
+                    $"這不是 Twitch 直播通知!!!!!!\n" +
+                    "請確認名稱是否正確，若正確請向Bot擁有者回報", true).ConfigureAwait(false);
                 return;
             }
 
