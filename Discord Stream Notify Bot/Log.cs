@@ -71,12 +71,12 @@ public static class Log
         }
     }
 
-    public static void Error(string text, bool newLine = true)
+    public static void Error(string text, bool newLine = true, bool writeLog = true)
     {
         lock (logLockObj)
         {
             FormatColorWrite(text, ConsoleColor.DarkRed, newLine);
-            WriteLogToFile(LogType.Error, text);
+            if (writeLog) WriteLogToFile(LogType.Error, text);
         }
     }
 
