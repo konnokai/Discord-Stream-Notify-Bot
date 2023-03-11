@@ -18,6 +18,7 @@ public static class Log
         lock (writeLockObj)
         {
             text = $"[{DateTime.Now:yyyy/MM/dd HH:mm:ss}] [{type.ToString().ToUpper()}] | {text}\r\n";
+
             switch (type)
             {
                 case LogType.Error:
@@ -26,10 +27,9 @@ public static class Log
                 case LogType.Stream:
                     File.AppendAllText(streamLogPath, text);
                     break;
-                default:
-                    File.AppendAllText(logPath, text);
-                    break;
             }
+
+            File.AppendAllText(logPath, text);
         }
     }
 
