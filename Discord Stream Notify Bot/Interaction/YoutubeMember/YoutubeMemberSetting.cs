@@ -112,11 +112,14 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
 
         [SlashCommand("add-member-check", "新增會限驗證頻道")]
         [CommandSummary("新增會限驗證頻道，目前可上限為20個頻道\n" +
-           "如新增同個頻道則可變更要授予的用戶組")]
+           "如新增同個頻道則可變更要授予的用戶組\n" +
+           "伺服器需大於500人才可使用\n" +
+           "如有任何需要請向擁有者詢問")]
         [RequireContext(ContextType.Guild)]
         [RequireUserPermission(GuildPermission.Administrator, Group = "bot_owner")]
         [RequireOwner(Group = "bot_owner")]
         [CommandExample("https://www.youtube.com/channel/UCR6qhsLpn62WVxCBK1dkLow @peeps🕊")]
+        [RequireGuildMemberCount(500)]
         public async Task AddMemberCheckAsync([Summary("頻道連結")] string url, [Summary("用戶組Id")] IRole role)
         {
             if (!_service.Enable)
