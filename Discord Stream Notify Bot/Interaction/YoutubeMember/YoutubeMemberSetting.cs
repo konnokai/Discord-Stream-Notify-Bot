@@ -205,6 +205,17 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
                         }
 
                         db.GuildYoutubeMemberConfig.Add(guildYoutubeMemberConfig);
+
+                        try
+                        {
+                            await (await Program.ApplicatonOwner.CreateDMChannelAsync()).SendMessageAsync(embed: new EmbedBuilder()
+                                .WithOkColor()
+                                .WithTitle("已新增會限驗證頻道")
+                                .AddField("頻道", Format.Url(channelId, $"https://www.youtube.com/channel/{channelId}"), false)
+                                .AddField("伺服器", $"{Context.Guild.Name} ({Context.Guild.Id})", false)
+                                .AddField("執行者", $"{Context.User.Username} ({Context.User.Id})", false).Build());
+                        }
+                        catch (Exception ex) { Log.Error(ex.ToString()); }
                     }
                     else
                     {
@@ -217,17 +228,6 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
                     await Context.Interaction.SendConfirmAsync($"已設定使用 `{channelId}` 作為會限驗證頻道\n" +
                         $"驗證成功的成員將會獲得 `{role.Name}` 用戶組\n" +
                         (channelDataExist ? "可直接開始檢測會限" : "請等待五分鐘後才可開始檢測會限"), true, true);
-
-                    try
-                    {
-                        await (await Program.ApplicatonOwner.CreateDMChannelAsync()).SendMessageAsync(embed: new EmbedBuilder()
-                            .WithOkColor()
-                            .WithTitle("已新增會限驗證頻道")
-                            .AddField("頻道", Format.Url(channelId, $"https://www.youtube.com/channel/{channelId}"), false)
-                            .AddField("伺服器", $"{Context.Guild.Name} ({Context.Guild.Id})", false)
-                            .AddField("執行者", $"{Context.User.Username} ({Context.User.Id})", false).Build());
-                    }
-                    catch (Exception ex) { Log.Error(ex.ToString()); }
                 }
                 catch (Exception ex)
                 {
