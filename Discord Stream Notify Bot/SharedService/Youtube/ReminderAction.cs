@@ -393,7 +393,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                 .WithButton("贊助小幫手 (Paypal) #ad", style: ButtonStyle.Link, emote: _emojiService.PayPalEmote, url: Utility.PaypalUrl, row: 1).Build();
                         }
 
-                        await pBreaker.Execute(() => channel.SendMessageAsync(sendMessage, false, embedBuilder.Build(), components: comp));
+                        await channel.SendMessageAsync(sendMessage, false, embedBuilder.Build(), components: comp, options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
                     }
                     catch (Discord.Net.HttpException httpEx)
                     {

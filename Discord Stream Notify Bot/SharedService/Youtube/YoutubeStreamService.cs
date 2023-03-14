@@ -51,7 +51,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly EmojiService _emojiService;
         private string callbackUrl;
-        private Polly.Retry.RetryPolicy<Task> pBreaker;
 
         public YoutubeStreamService(DiscordSocketClient client, IHttpClientFactory httpClientFactory, BotConfig botConfig, EmojiService emojiService)
         {
@@ -72,16 +71,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 noticeRecordChannel = _client.GetGuild(738734668882640938).GetTextChannel(805134765191462942);
             }
             catch { }
-
-            //https://blog.darkthread.net/blog/polly/
-            //https://blog.darkthread.net/blog/polly-circuitbreakerpolicy/
-            pBreaker = Policy<Task>
-               .Handle<Exception>()
-               .WaitAndRetry(new TimeSpan[]
-               {
-                    TimeSpan.FromSeconds(1),
-                    TimeSpan.FromSeconds(2)
-               });
 
             if (Program.Redis != null)
             {
