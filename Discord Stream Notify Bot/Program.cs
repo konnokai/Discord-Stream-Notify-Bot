@@ -116,7 +116,11 @@ namespace Discord_Stream_Notify_Bot
                 MessageCacheSize = 50,
                 // 因為沒有註冊事件，Discord .NET建議可移除這兩個沒用到的特權
                 // https://dotblogs.com.tw/yc421206/2015/10/20/c_scharp_enum_of_flags
-                GatewayIntents = GatewayIntents.AllUnprivileged & ~GatewayIntents.GuildInvites & ~GatewayIntents.GuildScheduledEvents
+                GatewayIntents = GatewayIntents.AllUnprivileged & ~GatewayIntents.GuildInvites & ~GatewayIntents.GuildScheduledEvents,
+                AlwaysDownloadDefaultStickers = false,
+                AlwaysResolveStickers = false,
+                FormatUsersInBidirectionalUnicode = false,
+                LogGatewayIntentWarnings = false,
             });
 
             #region 初始化Discord設定與事件
