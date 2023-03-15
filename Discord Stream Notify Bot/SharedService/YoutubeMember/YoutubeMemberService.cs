@@ -402,6 +402,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                     TimeSpan.FromSeconds(2),
                     TimeSpan.FromSeconds(4)
                   });
+
         // RestUser無法被序列化，暫時放棄Cache
         //private static async Task<RestUser> GetRestUserFromCatchOrCreate(ulong userId)
         //{
@@ -440,7 +441,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
         }
 
         public static async Task SendConfirmMessageAsync(this ITextChannel tc, string title, string dec)
-            => await tc.SendMessageAsync(embed: new EmbedBuilder().WithOkColor().WithTitle(title).WithDescription(dec).Build());
+            => await pBreaker.Execute(() => tc.SendMessageAsync(embed: new EmbedBuilder().WithOkColor().WithTitle(title).WithDescription(dec).Build()));
 
         public static async Task SendErrorMessageAsync(this ITextChannel tc, ulong userId, string channelTitle, string status)
         {
