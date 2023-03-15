@@ -55,7 +55,7 @@ namespace Discord_Stream_Notify_Bot
             AppDomain.CurrentDomain.UnhandledException += (sender, args) =>
             {
                 Exception e = (Exception)args.ExceptionObject;
-                Log.Error(e.ToString());
+                Log.Error(e, "UnhandledException!!!!!!!!!!!!!!!!!!!!!");
             };
 
             botConfig.InitBotConfig();
