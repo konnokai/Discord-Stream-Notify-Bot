@@ -16,7 +16,7 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
         [Alias("lagcm")]
         [RequireContext(ContextType.DM)]
         [RequireOwner]
-        public async Task ListAllGuildCheckedMemberAsync()
+        public async Task ListAllGuildCheckedMemberAsync(int page = 0)
         {
             using (var db = DataBase.DBContext.GetDbContext())
             {
@@ -43,7 +43,7 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
                     else dic.Add(guildName, new List<string>() { formatStr });
                 }
 
-                await Context.SendPaginatedConfirmAsync(0, (page) =>
+                await Context.SendPaginatedConfirmAsync(page, (page) =>
                 {
                     return new EmbedBuilder().WithOkColor().WithDescription(string.Join('\n', dic
                         .Skip(page * 7).Take(7).Select((x) =>
