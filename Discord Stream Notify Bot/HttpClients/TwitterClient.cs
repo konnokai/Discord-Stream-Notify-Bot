@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using Microsoft.EntityFrameworkCore.Sqlite.Query.Internal;
+using Newtonsoft.Json.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text.RegularExpressions;
@@ -20,6 +21,21 @@ namespace Discord_Stream_Notify_Bot.HttpClients
             httpClient.DefaultRequestHeaders.Add("ContentType", "application/json");
 
             _httpClient = httpClient;
+        }
+
+        public async Task<string> GetGusetToken()
+        {
+            try
+            {
+                var data = await _httpClient.PostAsync("https://api.twitter.com/1.1/guest/activate.json", null);
+                Regex regex = new Regex(@"""(\d{19})""");
+                var guestToken = regex.Match(await data.Content.ReadAsStringAsync()).Groups[1].Value;
+                return guestToken;
+            }
+            catch
+            {
+                throw new WebException("GetGusetToken");
+            }
         }
 
         public async Task GetQueryIdAndFeatureSwitchesAsync()
@@ -49,8 +65,7 @@ namespace Discord_Stream_Notify_Bot.HttpClients
                 featureSwitches = WebUtility.UrlEncode(featureSwitches);
 
                 _httpClient.DefaultRequestHeaders.Remove("x-guest-token");
-                regex = new Regex(@"gt=(\d{19});");
-                var guestToken = regex.Match(web).Groups[1].Value;
+                string guestToken = await GetGusetToken();
                 _httpClient.DefaultRequestHeaders.Add("x-guest-token", guestToken);
 
                 Log.Info("NewTwitterMetadata Found!");
