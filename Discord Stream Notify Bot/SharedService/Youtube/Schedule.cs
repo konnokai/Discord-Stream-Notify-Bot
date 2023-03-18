@@ -108,7 +108,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                             StartReminder(streamVideo, streamVideo.ChannelType);
                                         }
                                     }
-                                    else if (item.Snippet.LiveBroadcastContent == "live")
+                                    else if (startTime > DateTime.Now.AddMinutes(-10) || item.Snippet.LiveBroadcastContent == "live") // 如果開台時間在十分鐘內或已經開台
                                     {
                                         if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo))
                                             StartReminder(streamVideo, streamVideo.ChannelType);
@@ -233,7 +233,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                         Log.New($"(排程) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
 
-                        if (item.startat > DateTime.Now)
+                        if (item.startat > DateTime.Now.AddMinutes(-10)) // 如果開台時間在十分鐘內
                         {
                             EmbedBuilder embedBuilder = new EmbedBuilder();
                             embedBuilder.WithErrorColor()
@@ -479,7 +479,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         StartReminder(streamVideo, streamVideo.ChannelType);
                     }
                 }
-                else if (item.Snippet.LiveBroadcastContent == "live")
+                else if (startTime > DateTime.Now.AddMinutes(-10) || item.Snippet.LiveBroadcastContent == "live") // 如果開台時間在十分鐘內或已經開台
                 {
                     if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo) && !isFromRNRS)
                         StartReminder(streamVideo, streamVideo.ChannelType);
