@@ -35,3 +35,13 @@
 - Windows 10 & 11 Pro
 - Debian 11
 - Redis 7.0.4
+
+參考專案
+-
+- [NadekoBot](https://gitlab.com/Kwoth/nadekobot)
+- [LivestreamRecorderService](https://github.com/Recorder-moe/LivestreamRecorderService)
+- [Discord .NET](https://github.com/discord-net/Discord.Net)
+
+授權
+-
+- 此專案採用 [MIT](https://github.com/konnokai/Discord-Stream-Notify-Bot/blob/master/LICENSE.txt) 授權
