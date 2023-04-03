@@ -232,7 +232,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                     }
                                     else if (ex.Message.ToLower().Contains("token has been expired or revoked") ||
                                         ex.Message.ToLower().Contains("the access token has expired and could not be refreshed") ||
-                                        ex.Message.ToLower().Contains("authenticateduseraccountclosed") || ex.Message.ToLower().Contains("authenticateduseraccountsuspended"))
+                                        ex.Message.ToLower().Contains("authenticateduseraccountclosed") || ex.Message.ToLower().Contains("authenticateduseraccountsuspended") ||
+                                        ex.Message.ToLower().Contains("user is suspended")) // 帳號被 Google 停用
                                     {
                                         Log.Warn($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {member.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 的會限資格取得失敗: AccessToken已過期或無法刷新");
                                         Log.Warn(JsonConvert.SerializeObject(userCredential.Token));
