@@ -110,6 +110,12 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
                 return;
             }
 
+            if (!_service.IsEnbale)
+            {
+                await Context.Channel.SendErrorAsync("此Bot的Twitter功能已關閉，請向擁有者確認").ConfigureAwait(false);
+                return;
+            }
+
             userScreenName = userScreenName.Replace("@", "");
 
             using (var db = DataBase.DBContext.GetDbContext())

@@ -39,6 +39,12 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                 return;
             }
 
+            if (!_service.IsEnbale)
+            {
+                await Context.Interaction.SendErrorAsync("此Bot的Twitter功能已關閉，請向擁有者確認", true).ConfigureAwait(false);
+                return;
+            }
+
             userScreenName = userScreenName.Replace("@", "");
 
             using (var db = DataBase.DBContext.GetDbContext())

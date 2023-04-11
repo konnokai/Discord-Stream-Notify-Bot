@@ -131,6 +131,12 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                 return;
             }
 
+            if (!_service.IsEnbale)
+            {
+                await Context.Interaction.SendErrorAsync("此Bot的Twitter功能已關閉，請向擁有者確認");
+                return;
+            }
+
             await DeferAsync(true).ConfigureAwait(false);
 
             var permissions = (Context.Guild.GetUser(_client.CurrentUser.Id)).GetPermissions(textChannel);
@@ -263,6 +269,12 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
             if (string.IsNullOrWhiteSpace(userScreenName))
             {
                 await Context.Interaction.SendErrorAsync("使用者名稱不可空白").ConfigureAwait(false);
+                return;
+            }
+
+            if (!_service.IsEnbale)
+            {
+                await Context.Interaction.SendErrorAsync("此Bot的Twitter功能已關閉，請向擁有者確認").ConfigureAwait(false);
                 return;
             }
 
