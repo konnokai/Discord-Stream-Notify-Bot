@@ -14,7 +14,7 @@
 3. Discord Bot Token ([Discord Dev網址](https://discord.com/developers/applications))
 4. Discord Channel WebHook (做紀錄用)
 5. Google Console的API金鑰並確保已於程式庫開啟Youtube Data API v3 ([Google Console網址](https://console.cloud.google.com/apis/library/youtube.googleapis.com))
-6. Twitter V2 Access API Key 跟 Secret (如不需要推特語音通知則不需要) ([Twitter Dev網址](https://developer.twitter.com/))
+6. Twitter AuthToken，這需要從已登入的Twitter帳號中，由欄位名稱為`auth_token`的網頁Cookie來獲得 (如不需要推特語音通知則不需要)
 7. 錄影功能需搭配隔壁 [Youtube Stream Record](https://github.com/konnokai/youtube-stream-record) 使用
 8. Discord & Google 的 OAuth Client ID 跟 Client Secret 會限驗證，需搭配 [網站](https://github.com/konnokai/Discord-Stream-Bot-Backend) 使用
 9. PubSubCallbackUrl，搭配上面的網站後端做YT影片上傳接收使用，當有新爬蟲時小幫手會自動註冊 ([Google PubSubHubbub](https://pubsubhubbub.appspot.com))
