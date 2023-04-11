@@ -1,7 +1,6 @@
 ﻿using Discord.Interactions;
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.Interaction.Attribute;
-using SocialOpinionAPI.Models.Users;
 using static Discord_Stream_Notify_Bot.Interaction.Twitter.TwitterSpaces;
 
 namespace Discord_Stream_Notify_Bot.Interaction.Twitter
@@ -44,7 +43,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
 
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                UserModel user = _service.GetTwitterUser(userScreenName);
+                var user = await _service.GetTwitterUserAsync(userScreenName);
 
                 if (user == null)
                 {
@@ -52,9 +51,9 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                     return;
                 }
 
-                if (db.TwitterSpaecSpider.Any((x) => x.UserId == user.data.id))
+                if (db.TwitterSpaecSpider.Any((x) => x.UserId == user.RestId))
                 {
-                    var item = db.TwitterSpaecSpider.FirstOrDefault((x) => x.UserId == user.data.id);
+                    var item = db.TwitterSpaecSpider.FirstOrDefault((x) => x.UserId == user.RestId);
                     bool isGuildExist = true;
                     string guild = "";
 
@@ -89,7 +88,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                     return;
                 }
 
-                if (user.data.is_protected)
+                if (user.Legacy.Protected.HasValue && user.Legacy.Protected.Value)
                 {
                     await Context.Interaction.SendErrorAsync($"使用者已開啟推文保護，無法新增", true).ConfigureAwait(false);
                     return;
@@ -102,7 +101,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                     return;
                 }
 
-                var spider = new TwitterSpaecSpider() { GuildId = Context.User.Id == Program.ApplicatonOwner.Id ? 0 : Context.Guild.Id, UserId = user.data.id, UserName = user.data.name, UserScreenName = user.data.username.ToLower() };
+                var spider = new TwitterSpaecSpider() { GuildId = Context.User.Id == Program.ApplicatonOwner.Id ? 0 : Context.Guild.Id, UserId = user.RestId, UserName = user.Legacy.Name, UserScreenName = user.Legacy.ScreenName };
                 if (Context.User.Id == Program.ApplicatonOwner.Id && !await PromptUserConfirmAsync("設定該爬蟲為本伺服器使用?"))
                     spider.GuildId = 0;
 

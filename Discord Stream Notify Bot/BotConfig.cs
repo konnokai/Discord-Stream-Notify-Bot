@@ -10,8 +10,7 @@ public class BotConfig
     public string RedisOption { get; set; } = "127.0.0.1,syncTimeout=3000";
     public ulong TestSlashCommandGuildId { get; set; } = 0;
     public string TwitcastingRecordPath { get; set; } = "";
-    public string TwitterApiKey { get; set; } = "";
-    public string TwitterApiKeySecret { get; set; } = "";
+    public string TwitterAuthToken { get; set; } = "";
     public string TwitterSpaceRecordPath { get; set; } = "";
     public string WebHookUrl { get; set; } = "";
     public string RedisTokenKey { get; set; } = "";
@@ -72,8 +71,7 @@ public class BotConfig
             GoogleApiKey = config.GoogleApiKey;
             TestSlashCommandGuildId = config.TestSlashCommandGuildId;
             TwitcastingRecordPath = config.TwitcastingRecordPath;
-            TwitterApiKey = config.TwitterApiKey;
-            TwitterApiKeySecret = config.TwitterApiKeySecret;
+            TwitterAuthToken = config.TwitterAuthToken;
             TwitterSpaceRecordPath = config.TwitterSpaceRecordPath;
             GoogleClientId = config.GoogleClientId;
             GoogleClientSecret = config.GoogleClientSecret;

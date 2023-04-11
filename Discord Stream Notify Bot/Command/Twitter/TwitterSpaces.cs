@@ -1,7 +1,6 @@
 ﻿using Discord.Commands;
 using Discord_Stream_Notify_Bot.Command.Attribute;
 using Discord_Stream_Notify_Bot.DataBase.Table;
-using SocialOpinionAPI.Models.Users;
 
 namespace Discord_Stream_Notify_Bot.Command.Twitter
 {
@@ -115,7 +114,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
 
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                UserModel user = _service.GetTwitterUser(userScreenName);
+                var user = await _service.GetTwitterUserAsync(userScreenName);
 
                 if (user == null)
                 {
@@ -124,25 +123,25 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
                 }
 
                 TwitterSpaecSpider twitterSpaecSpider = null;
-                if (db.TwitterSpaecSpider.Any((x) => x.UserId == user.data.id))
+                if (db.TwitterSpaecSpider.Any((x) => x.UserId == user.RestId))
                 {
-                    twitterSpaecSpider = db.TwitterSpaecSpider.First((x) => x.UserId == user.data.id);
+                    twitterSpaecSpider = db.TwitterSpaecSpider.First((x) => x.UserId == user.RestId);
                     twitterSpaecSpider.IsRecord = !twitterSpaecSpider.IsRecord;
                 }
                 else
                 {
-                    if (user.data.is_protected)
+                    if (user.Legacy.Protected.HasValue && user.Legacy.Protected.Value)
                     {
                         await Context.Channel.SendErrorAsync($"使用者已開啟推文保護，無法新增").ConfigureAwait(false);
                         return;
                     }
 
-                    twitterSpaecSpider = new TwitterSpaecSpider() { GuildId = 0, UserId = user.data.id, UserScreenName = user.data.username.ToLower(), UserName = user.data.name, IsRecord = true };
+                    twitterSpaecSpider = new TwitterSpaecSpider() { GuildId = 0, UserId = user.RestId, UserScreenName = user.Legacy.ScreenName, UserName = user.Legacy.Name, IsRecord = true };
                     db.TwitterSpaecSpider.Add(twitterSpaecSpider);
                 }
 
                 if (db.SaveChanges() >= 1)
-                    await Context.Channel.SendConfirmAsync($"已設定 {user.data.name} 的推特語音紀錄為: " + (twitterSpaecSpider.IsRecord ? "開啟" : "關閉")).ConfigureAwait(false);
+                    await Context.Channel.SendConfirmAsync($"已設定 {user.Legacy.Name} 的推特語音紀錄為: " + (twitterSpaecSpider.IsRecord ? "開啟" : "關閉")).ConfigureAwait(false);
                 else
                     await Context.Channel.SendErrorAsync("未保存").ConfigureAwait(false);
             }

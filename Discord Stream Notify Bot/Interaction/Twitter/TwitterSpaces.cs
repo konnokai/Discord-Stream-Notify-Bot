@@ -1,7 +1,6 @@
 ﻿using Discord.Interactions;
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.Interaction.Attribute;
-using SocialOpinionAPI.Models.Users;
 
 namespace Discord_Stream_Notify_Bot.Interaction.Twitter
 {
@@ -149,7 +148,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
 
             userScreenName = userScreenName.Replace("@", "");
 
-            UserModel user = _service.GetTwitterUser(userScreenName);
+            var user = await _service.GetTwitterUserAsync(userScreenName);
             if (user == null)
             {
                 await Context.Interaction.SendErrorAsync($"`{userScreenName}` 不存在此使用者\n" +
@@ -160,24 +159,24 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
 
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                var noticeTwitterSpaceChannel = db.NoticeTwitterSpaceChannel.FirstOrDefault((x) => x.GuildId == Context.Guild.Id && x.NoticeTwitterSpaceUserId == user.data.id);
+                var noticeTwitterSpaceChannel = db.NoticeTwitterSpaceChannel.FirstOrDefault((x) => x.GuildId == Context.Guild.Id && x.NoticeTwitterSpaceUserId == user.RestId);
 
                 if (noticeTwitterSpaceChannel != null)
                 {
-                    if (await PromptUserConfirmAsync($"`{user.data.name}` 已在語音空間通知清單內，是否覆蓋設定?").ConfigureAwait(false))
+                    if (await PromptUserConfirmAsync($"`{user.Legacy.Name}` 已在語音空間通知清單內，是否覆蓋設定?").ConfigureAwait(false))
                     {
                         noticeTwitterSpaceChannel.DiscordChannelId = textChannel.Id;
                         db.NoticeTwitterSpaceChannel.Update(noticeTwitterSpaceChannel);
                         db.SaveChanges();
-                        await Context.Interaction.SendConfirmAsync($"已將 `{user.data.name}` 的語音空間通知頻道變更至: {textChannel}", true, true).ConfigureAwait(false);
+                        await Context.Interaction.SendConfirmAsync($"已將 `{user.Legacy.Name}` 的語音空間通知頻道變更至: {textChannel}", true, true).ConfigureAwait(false);
                     }
                     return;
                 }
 
                 string addString = "";
-                if (!db.IsTwitterUserInDb(user.data.id)) addString += $"\n\n(注意: 該使用者未加入爬蟲清單\n如長時間無通知請使用 `/help get-command-help twitter-spider add` 查看說明並加入爬蟲)";
-                db.NoticeTwitterSpaceChannel.Add(new NoticeTwitterSpaceChannel() { GuildId = Context.Guild.Id, DiscordChannelId = textChannel.Id, NoticeTwitterSpaceUserId = user.data.id, NoticeTwitterSpaceUserScreenName = user.data.username.ToLower() });
-                await Context.Interaction.SendConfirmAsync($"已將 `{user.data.name}` 加入到語音空間通知頻道清單內{addString}", true, true).ConfigureAwait(false);
+                if (!db.IsTwitterUserInDb(user.RestId)) addString += $"\n\n(注意: 該使用者未加入爬蟲清單\n如長時間無通知請使用 `/help get-command-help twitter-spider add` 查看說明並加入爬蟲)";
+                db.NoticeTwitterSpaceChannel.Add(new NoticeTwitterSpaceChannel() { GuildId = Context.Guild.Id, DiscordChannelId = textChannel.Id, NoticeTwitterSpaceUserId = user.RestId, NoticeTwitterSpaceUserScreenName = user.Legacy.ScreenName });
+                await Context.Interaction.SendConfirmAsync($"已將 `{user.Legacy.Name}` 加入到語音空間通知頻道清單內{addString}", true, true).ConfigureAwait(false);
 
                 db.SaveChanges();
             }
@@ -269,7 +268,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
 
             userScreenName = userScreenName.Replace("@", "");
 
-            UserModel user = _service.GetTwitterUser(userScreenName);
+            var user = await _service.GetTwitterUserAsync(userScreenName);
             if (user == null)
             {
                 await Context.Interaction.SendErrorAsync($"`{userScreenName}` 不存在此使用者").ConfigureAwait(false);
@@ -278,21 +277,21 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
 
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                if (db.NoticeTwitterSpaceChannel.Any((x) => x.GuildId == Context.Guild.Id && x.NoticeTwitterSpaceUserId == user.data.id))
+                if (db.NoticeTwitterSpaceChannel.Any((x) => x.GuildId == Context.Guild.Id && x.NoticeTwitterSpaceUserId == user.RestId))
                 {
-                    var noticeTwitterSpace = db.NoticeTwitterSpaceChannel.First((x) => x.GuildId == Context.Guild.Id && x.NoticeTwitterSpaceUserId == user.data.id);
+                    var noticeTwitterSpace = db.NoticeTwitterSpaceChannel.First((x) => x.GuildId == Context.Guild.Id && x.NoticeTwitterSpaceUserId == user.RestId);
 
                     noticeTwitterSpace.StratTwitterSpaceMessage = message;
 
                     db.NoticeTwitterSpaceChannel.Update(noticeTwitterSpace);
                     db.SaveChanges();
 
-                    if (message != "") await Context.Interaction.SendConfirmAsync($"已設定 `{user.data.name}` 的推特語音空間通知訊息為:\n{message}", false, true).ConfigureAwait(false);
-                    else await Context.Interaction.SendConfirmAsync($"已取消 `{user.data.name}` 的推特語音空間通知訊息", false, true).ConfigureAwait(false);
+                    if (message != "") await Context.Interaction.SendConfirmAsync($"已設定 `{user.Legacy.Name}` 的推特語音空間通知訊息為:\n{message}", false, true).ConfigureAwait(false);
+                    else await Context.Interaction.SendConfirmAsync($"已取消 `{user.Legacy.Name}` 的推特語音空間通知訊息", false, true).ConfigureAwait(false);
                 }
                 else
                 {
-                    await Context.Interaction.SendErrorAsync($"並未設定 `{user.data.name}` 的推特語音空間通知\n" +
+                    await Context.Interaction.SendErrorAsync($"並未設定 `{user.Legacy.Name}` 的推特語音空間通知\n" +
                         $"請先使用 `/twitter-space add {userScreenName}` 新增語音空間通知後再設定通知訊息").ConfigureAwait(false);
                 }
             }
