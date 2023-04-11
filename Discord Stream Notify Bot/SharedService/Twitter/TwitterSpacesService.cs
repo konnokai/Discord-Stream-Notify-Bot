@@ -13,10 +13,9 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
 
         private readonly DiscordSocketClient _client;
         private readonly EmojiService _emojiService;
-        private readonly HttpClients.TwitterClient _twitterClient;
+        private readonly TwitterClient _twitterClient;
         private readonly Timer timer;
         private readonly HashSet<string> hashSet = new HashSet<string>();
-        private readonly string _twitterAuthToken;
 
         private bool isRuning = false;
         private string twitterSpaceRecordPath = "";
@@ -33,100 +32,98 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
             _client = client;
             _twitterClient = twitterClient;
             _emojiService = emojiService;
-            _twitterAuthToken = botConfig.TwitterAuthToken;
             twitterSpaceRecordPath = botConfig.TwitterSpaceRecordPath;
             if (string.IsNullOrEmpty(twitterSpaceRecordPath)) twitterSpaceRecordPath = Program.GetDataFilePath("");
             if (!twitterSpaceRecordPath.EndsWith(Program.GetPlatformSlash())) twitterSpaceRecordPath += Program.GetPlatformSlash();
 
-            //#if DEBUG
-            //            return;
-            //#endif
+#if DEBUG
+            return;
+#endif
 
-            //timer = new(async (stats) =>
-            //{
-            //    if (isRuning) return; isRuning = true;
-            //    try
-            //    {
-            //        using (var db = DataBase.DBContext.GetDbContext())
-            //        {
-            //            var userList = db.TwitterSpaecSpider.Select((x) => x.UserId).ToArray();
+            timer = new(async (stats) =>
+            {
+                if (isRuning) return; isRuning = true;
+                try
+                {
+                    using (var db = DataBase.DBContext.GetDbContext())
+                    {
+                        var userList = db.TwitterSpaecSpider.Select((x) => x.UserId).ToArray();
 
-            //            for (int i = 0; i < userList.Length; i += 100)
-            //            {
-            //                try
-            //                {
-            //                    SocialOpinionAPI.Models.Spaces.SpacesModel spaces = pBreaker.Execute(() => SpacesService.LookupByCreatorId(userList.Skip(i).Take(100).ToList()));
-            //                    if (spaces.data.Count <= 0) continue;
+                        for (int i = 0; i < userList.Length; i += 100)
+                        {
+                            try
+                            {
+                                var spaces = await _twitterClient.GetTwitterSpaceByUsersIdAsync(userList.Skip(i).Take(100).ToArray());
+                                if (spaces.Count <= 0) continue;
 
-            //                    foreach (var item in spaces.data)
-            //                    {
-            //                        if (hashSet.Contains(item.id)) continue;
-            //                        if (db.TwitterSpace.Any((x) => x.SpaecId == item.id)) { hashSet.Add(item.id); continue; }
-            //                        if (item.state != "live") continue;
+                                foreach (var item in spaces)
+                                {
+                                    if (hashSet.Contains(item.SpaceId)) continue;
+                                    if (db.TwitterSpace.Any((x) => x.SpaecId == item.SpaceId)) { hashSet.Add(item.SpaceId); continue; }
 
-            //                        try
-            //                        {
-            //                            var user = db.TwitterSpaecSpider.FirstOrDefault((x) => x.UserId == item.creator_id);
-            //                            var userData = await GetTwitterUserAsync(user.UserScreenName);
+                                    try
+                                    {
+                                        var user = db.TwitterSpaecSpider.FirstOrDefault((x) => x.UserId == item.UserId);
+                                        var userData = await GetTwitterUserAsync(user.UserScreenName);
 
-            //                            if (user.UserScreenName != userData.Legacy.ScreenName || user.UserName != userData.Legacy.Name)
-            //                            {
-            //                                user.UserScreenName = userData.Legacy.ScreenName;
-            //                                user.UserName = userData.Legacy.Name;
-            //                                db.SaveChanges();
-            //                            }
+                                        if (user.UserScreenName != userData.Legacy.ScreenName || user.UserName != userData.Legacy.Name)
+                                        {
+                                            user.UserScreenName = userData.Legacy.ScreenName;
+                                            user.UserName = userData.Legacy.Name;
+                                            db.SaveChanges();
+                                        }
 
-            //                            string masterUrl = "";
-            //                            try
-            //                            {
-            //                                var metadataJson = await _twitterClient.GetTwitterSpaceMetadataAsync(item.id);
-            //                                masterUrl = (await _twitterClient.GetTwitterSpaceMasterUrlAsync(metadataJson["media_key"].ToString())).Replace(" ", "");
-            //                            }
-            //                            catch (Exception ex)
-            //                            {
-            //                                Log.Error($"GetTwitterSpaceMasterUrl: {item.id}\n{ex}");
-            //                                hashSet.Add(item.id);
-            //                                continue;
-            //                            }
+                                        string masterUrl = "";
+                                        try
+                                        {
+                                            var metadataJson = await _twitterClient.GetTwitterSpaceMetadataAsync(item.SpaceId);
+                                            masterUrl = (await _twitterClient.GetTwitterSpaceMasterUrlAsync(metadataJson["media_key"].ToString())).Replace(" ", "");
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            Log.Error($"GetTwitterSpaceMasterUrl: {item.SpaceId}\n{ex}");
+                                            hashSet.Add(item.SpaceId);
+                                            continue;
+                                        }
 
-            //                            var spaceData = new DataBase.Table.TwitterSpace() { UserId = item.creator_id, UserName = user.UserName, UserScreenName = user.UserScreenName, SpaecId = item.id, SpaecTitle = item.title, SpaecActualStartTime = (item?.started_at).GetValueOrDefault(), SpaecMasterPlaylistUrl = masterUrl.Replace("dynamic_playlist.m3u8?type=live", "master_playlist.m3u8") };
+                                        var spaceData = new DataBase.Table.TwitterSpace() { UserId = item.UserId, UserName = user.UserName, UserScreenName = user.UserScreenName, SpaecId = item.SpaceId, SpaecTitle = item.SpaceTitle, SpaecActualStartTime = item.StartAt ?? DateTime.Now, SpaecMasterPlaylistUrl = masterUrl.Replace("dynamic_playlist.m3u8?type=live", "master_playlist.m3u8") };
 
-            //                            if (string.IsNullOrEmpty(spaceData.SpaecTitle))
-            //                                spaceData.SpaecTitle = $"語音空間 ({spaceData.SpaecActualStartTime:yyyy/MM/dd})";
+                                        if (string.IsNullOrEmpty(spaceData.SpaecTitle))
+                                            spaceData.SpaecTitle = $"語音空間 ({spaceData.SpaecActualStartTime:yyyy/MM/dd})";
 
-            //                            db.TwitterSpace.Add(spaceData);
-            //                            hashSet.Add(item.id);
+                                        db.TwitterSpace.Add(spaceData);
+                                        hashSet.Add(item.SpaceId);
 
-            //                            if (IsRecordSpace(spaceData) && !string.IsNullOrEmpty(masterUrl))
-            //                            {
-            //                                try
-            //                                {
-            //                                    RecordSpace(spaceData, masterUrl);
-            //                                    await SendSpaceMessageAsync(userData, spaceData, true);
-            //                                }
-            //                                catch (Exception ex)
-            //                                {
-            //                                    Log.Error($"Spaces-Record {item.id}: {ex}");
-            //                                    await SendSpaceMessageAsync(userData, spaceData);
-            //                                }
-            //                            }
-            //                            else await SendSpaceMessageAsync(userData, spaceData);
-            //                        }
-            //                        catch (Exception ex) { Log.Error($"Spaces-Data {item.id}: {ex}"); }
-            //                    }
-            //                    db.SaveChanges();
-            //                }
-            //                catch (Exception ex)
-            //                {
-            //                    if (!ex.Message.Contains("503") && !ex.Message.Contains("temporarily unavailable"))
-            //                        Log.Error($"Prepare-Spaces: {ex}");
-            //                }
-            //            }
-            //        }
-            //    }
-            //    catch (Exception ex) { Log.Error($"Spaces-Timer: {ex}"); }
-            //    finally { isRuning = false; }
-            //}, null, TimeSpan.FromSeconds(30), TimeSpan.FromMinutes(1));
+                                        if (IsRecordSpace(spaceData) && !string.IsNullOrEmpty(masterUrl))
+                                        {
+                                            try
+                                            {
+                                                RecordSpace(spaceData, masterUrl);
+                                                await SendSpaceMessageAsync(userData, spaceData, true);
+                                            }
+                                            catch (Exception ex)
+                                            {
+                                                Log.Error($"Spaces-Record {item.SpaceId}: {ex}");
+                                                await SendSpaceMessageAsync(userData, spaceData);
+                                            }
+                                        }
+                                        else await SendSpaceMessageAsync(userData, spaceData);
+                                    }
+                                    catch (Exception ex) { Log.Error($"Spaces-Data {item.SpaceId}: {ex}"); }
+                                }
+                                db.SaveChanges();
+                            }
+                            catch (Exception ex)
+                            {
+                                if (!ex.Message.Contains("503") && !ex.Message.Contains("temporarily unavailable"))
+                                    Log.Error($"Prepare-Spaces: {ex}");
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex) { Log.Error($"Spaces-Timer: {ex}"); }
+                finally { isRuning = false; }
+            }, null, TimeSpan.FromSeconds(30), TimeSpan.FromMinutes(1));
         }
 
         public async Task<Result> GetTwitterUserAsync(string userScreenName)

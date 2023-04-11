@@ -12,19 +12,19 @@ namespace Discord_Stream_Notify_Bot.HttpClients
     {
         private readonly Dictionary<string, (string QueryId, string FeatureSwitches)> _apiQueryData = new();
         private readonly HttpClient _httpClient;
-        private readonly string _authToken;
+        private readonly HttpClientHandler _handler;
 
         public TwitterClient(HttpClient httpClient, BotConfig botConfig)
         {
+            httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", "AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs=1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA");
             httpClient.DefaultRequestHeaders.Add("UserAgent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36");
             httpClient.DefaultRequestHeaders.Add("Referer", "https://twitter.com/");
-            httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", "AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs=1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA");
             httpClient.DefaultRequestHeaders.Add("ContentType", "application/json");
-            // https://blog.nest.moe/posts/how-to-crawl-twitter-with-graphql/#csrf-token
-            //httpClient.DefaultRequestHeaders.Add("x-csrf-token", DateTimeOffset.UtcNow.ToString().ToMD5());
 
             _httpClient = httpClient;
-            _authToken = botConfig.TwitterAuthToken;
+            _handler = new HttpClientHandler();
+            _handler.CookieContainer = new CookieContainer();
+            _handler.CookieContainer.Add(new Cookie("auth_token", botConfig.TwitterAuthToken, "/", ".twitter.com"));
         }
 
         public async Task<string> GetGusetTokenAsync()
@@ -116,14 +116,51 @@ namespace Discord_Stream_Notify_Bot.HttpClients
         }
 
         // https://github.com/HitomaruKonpaku/twspace-crawler/blob/abaac096bf6bf33a13454c68c22720d2665bd062/src/apis/TwitterApi.ts#L47-L56
-        //public async Task<List<(string UserId, string BroadcastId, string Title)>> GetTwitterSpaceByUsersIdAsync(params string[] usersId)
-        //{
-        //    // https://twitter.com/i/api/fleets/v1/avatar_content?user_ids=4486321634,1433657158067896325&only_spaces=true
-        //    // user_ids可以放多個，使用','來分隔，應該也是以100人為限
-        //    // 如果沒Spaces的話會回傳空的資料，所以不用特別判定現在是否正在開
+        public async Task<List<TwitterSpacesData>> GetTwitterSpaceByUsersIdAsync(params string[] usersId)
+        {
+            var resultList = new List<TwitterSpacesData>();
+            using (var httpClient = new HttpClient(_handler, false))
+            {
+                httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", "AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs=1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA");
+                httpClient.DefaultRequestHeaders.Add("UserAgent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36");
+                httpClient.DefaultRequestHeaders.Add("Referer", "https://twitter.com/");
+                httpClient.DefaultRequestHeaders.Add("ContentType", "application/json");
+                // https://blog.nest.moe/posts/how-to-crawl-twitter-with-graphql/#csrf-token
+                httpClient.DefaultRequestHeaders.Add("x-csrf-token", DateTimeOffset.UtcNow.ToString().ToMD5());
 
+                try
+                {
+                    // user_ids可以放多個，使用','來分隔，應該也是以100人為限
+                    // 如果沒Spaces的話會回傳空的資料，所以不用特別判定現在是否正在開
+                    var result = await httpClient.GetStringAsync($"https://twitter.com/i/api/fleets/v1/avatar_content?user_ids={string.Join(',', usersId)}&only_spaces=true");
+                    if (result.Contains("{\"users\":{}")) // 空的代表查詢的Id都沒有開Space;
+                        return resultList;
 
-        //}
+                    var json = JObject.Parse(result);
+
+                    foreach (var item in usersId)
+                    {
+                        if (json["users"][item] != null)
+                        {
+                            var spaceData = json["users"][item]["spaces"]["live_content"]["audiospace"];
+                            resultList.Add(new TwitterSpacesData() { UserId = item, SpaceId = spaceData["broadcast_id"].ToString(), SpaceTitle = spaceData["title"].ToString(), StartAt = (DateTime?)spaceData["start"] });
+                        }
+                    }
+
+                    return resultList;
+                }
+                catch (JsonReaderException jsonEx)
+                {
+                    Log.Error(jsonEx, "GetTwitterSpaceByUsersIdAsync-Json");
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex, "GetTwitterSpaceByUsersIdAsync");
+                    throw;
+                }
+            }
+        }
 
         public async Task<JToken> GetTwitterSpaceMetadataAsync(string spaceId, bool isRefresh = false)
         {
