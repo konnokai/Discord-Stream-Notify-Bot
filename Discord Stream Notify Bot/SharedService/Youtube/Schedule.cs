@@ -196,7 +196,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         var video = await GetVideoAsync(videoId);
                         streamVideo = new DataBase.Table.Video()
                         {
-                            ChannelId = channelData.socialLinks.youtube.Replace("https://www.youtube.com/channel/", ""),
+                            ChannelId = video.Snippet.ChannelId,
                             ChannelTitle = video.Snippet.ChannelTitle,
                             VideoId = videoId,
                             VideoTitle = item.title,
