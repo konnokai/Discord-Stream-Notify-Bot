@@ -113,6 +113,10 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                                 }
                                 db.SaveChanges();
                             }
+                            catch (System.Net.Http.HttpRequestException httpEx) when (httpEx.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+                            {
+                                Log.Error($"Prepare-Spaces: 429錯誤");
+                            }
                             catch (Exception ex)
                             {
                                 if (!ex.Message.Contains("503") && !ex.Message.Contains("temporarily unavailable"))
