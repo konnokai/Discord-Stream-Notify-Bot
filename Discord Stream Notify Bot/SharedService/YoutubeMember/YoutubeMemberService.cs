@@ -394,15 +394,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
 
     static class Ext
     {
-        static Polly.Retry.RetryPolicy<Task<IUserMessage>> pBreaker = Policy<Task<IUserMessage>>
-                  .Handle<Exception>()
-                  .WaitAndRetry(new TimeSpan[]
-                  {
-                    TimeSpan.FromSeconds(1),
-                    TimeSpan.FromSeconds(2),
-                    TimeSpan.FromSeconds(4)
-                  });
-
         // RestUser無法被序列化，暫時放棄Cache
         //private static async Task<RestUser> GetRestUserFromCatchOrCreate(ulong userId)
         //{
@@ -431,25 +422,25 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
         //    }
         //}
 
-        public static async Task SendConfirmMessageAsync(this ITextChannel tc, ulong userId, EmbedBuilder embedBuilder)
+        public static async Task<IUserMessage> SendConfirmMessageAsync(this ITextChannel tc, ulong userId, EmbedBuilder embedBuilder)
         {
             var user = await Program._client.Rest.GetUserAsync(userId);
             if (user == null)
-                await pBreaker.Execute(() => tc.SendMessageAsync(embed: embedBuilder.WithOkColor().Build()));
+                return await tc.SendMessageAsync(embed: embedBuilder.WithOkColor().Build(), options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
             else
-                await pBreaker.Execute(() => tc.SendMessageAsync(embed: embedBuilder.WithOkColor().WithAuthor(user).WithThumbnailUrl(user.GetAvatarUrl()).Build()));
+                return await tc.SendMessageAsync(embed: embedBuilder.WithOkColor().WithAuthor(user).WithThumbnailUrl(user.GetAvatarUrl()).Build(), options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
         }
 
-        public static async Task SendConfirmMessageAsync(this ITextChannel tc, string title, string dec)
-            => await pBreaker.Execute(() => tc.SendMessageAsync(embed: new EmbedBuilder().WithOkColor().WithTitle(title).WithDescription(dec).Build()));
+        public static async Task<IUserMessage> SendConfirmMessageAsync(this ITextChannel tc, string title, string dec)
+            => await tc.SendMessageAsync(embed: new EmbedBuilder().WithOkColor().WithTitle(title).WithDescription(dec).Build(), options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
 
-        public static async Task SendErrorMessageAsync(this ITextChannel tc, ulong userId, string channelTitle, string status)
+        public static async Task<IUserMessage> SendErrorMessageAsync(this ITextChannel tc, ulong userId, string channelTitle, string status)
         {
             var user = await Program._client.Rest.GetUserAsync(userId);
             if (user == null)
-                await pBreaker.Execute(() => tc.SendMessageAsync(embed: new EmbedBuilder().WithErrorColor().AddField("檢查頻道", channelTitle).AddField("狀態", status).Build()));
+                return await tc.SendMessageAsync(embed: new EmbedBuilder().WithErrorColor().AddField("檢查頻道", channelTitle).AddField("狀態", status).Build(), options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
             else
-                await pBreaker.Execute(() => tc.SendMessageAsync(embed: new EmbedBuilder().WithErrorColor().WithAuthor(user).WithThumbnailUrl(user.GetAvatarUrl()).AddField("檢查頻道", channelTitle).AddField("狀態", status).Build()));
+                return await tc.SendMessageAsync(embed: new EmbedBuilder().WithErrorColor().WithAuthor(user).WithThumbnailUrl(user.GetAvatarUrl()).AddField("檢查頻道", channelTitle).AddField("狀態", status).Build(), options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
         }
 
         public static async Task SendConfirmMessageAsync(this ulong userId, string text, ITextChannel tc)
