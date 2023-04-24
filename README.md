@@ -15,7 +15,7 @@
 4. Discord Channel WebHook (做紀錄用)
 5. Google Console的API金鑰並確保已於程式庫開啟 Youtube Data API v3 ([Google Console網址](https://console.cloud.google.com/apis/library/youtube.googleapis.com))
 6. Twitter AuthToken，這需要從已登入的 Twitter 帳號中，由欄位名稱為 `auth_token` 的網頁 Cookie 來獲得 (如不需要推特語音通知則不需要)
-7. 錄影功能需搭配隔壁 [Youtube Stream Record](https://github.com/konnokai/youtube-stream-record) 使用
+7. 錄影功能需搭配隔壁 [Youtube Stream Record](https://github.com/konnokai/youtube-stream-record) 使用 (如無搭配錄影的話則不會有關台通知，且不能即時的通知開台*)
 8. Discord & Google 的 OAuth Client ID 跟 Client Secret，用於 YouTube 會限驗證，需搭配 [網站後端](https://github.com/konnokai/Discord-Stream-Bot-Backend) 使用
 9. PubSubCallbackUrl，搭配上面的網站後端做YT影片上傳接收使用，當有新爬蟲時小幫手會自動註冊，網址格式為: `https://[後端域名]/NotificationCallback` ([Google PubSubHubbub](https://pubsubhubbub.appspot.com))
 10. Imgur Client Id，發送全域訊息如果要上傳圖片附件時會需要用到，可到 [Imgur](https://api.imgur.com/oauth2/addclient) 註冊，`Authorization type:` 選擇 `Anonymous usage without user authorization` 即可
@@ -27,6 +27,8 @@
 請使用Release組態進行編譯，Debug組態有忽略掉不少東西會導致功能出現異常等錯誤
 
 如需要自行改程式碼也記得確認Debug組態下的 `#if` 是否會導致偵錯問題
+
+\* 未錄影的話則是固定在排定開台時間的前一分鐘通知，若有開啟錄影則會在錄影環境偵測到開始錄影時一併發送開台通知
 
 建置&測試環境
 - 
