@@ -9,8 +9,8 @@
 
 自行運行所需環境與參數
 -
-1. .NET Core 6.0 Runtime 或 SDK ([微軟網址](https://dotnet.microsoft.com/en-us/download/dotnet/5.0))
-2. Redis Server ([Windows下載網址](https://github.com/MicrosoftArchive/redis)，Linux可直接透過apt或yum安裝)
+1. .NET Core 6.0 Runtime 或 SDK ([微軟網址](https://dotnet.microsoft.com/en-us/download/dotnet/.0))
+2. Redis Server ([Windows 下載網址](https://github.com/MicrosoftArchive/redis)，Linux 可直接透過 apt 或 yum 安裝)
 3. Discord Bot Token ([Discord Dev網址](https://discord.com/developers/applications))
 4. Discord Channel WebHook (做紀錄用)
 5. Google Console的API金鑰並確保已於程式庫開啟 Youtube Data API v3 ([Google Console網址](https://console.cloud.google.com/apis/library/youtube.googleapis.com))
