@@ -13,11 +13,11 @@
 2. Redis Server ([Windows下載網址](https://github.com/MicrosoftArchive/redis)，Linux可直接透過apt或yum安裝)
 3. Discord Bot Token ([Discord Dev網址](https://discord.com/developers/applications))
 4. Discord Channel WebHook (做紀錄用)
-5. Google Console的API金鑰並確保已於程式庫開啟Youtube Data API v3 ([Google Console網址](https://console.cloud.google.com/apis/library/youtube.googleapis.com))
-6. Twitter AuthToken，這需要從已登入的Twitter帳號中，由欄位名稱為`auth_token`的網頁Cookie來獲得 (如不需要推特語音通知則不需要)
+5. Google Console的API金鑰並確保已於程式庫開啟 Youtube Data API v3 ([Google Console網址](https://console.cloud.google.com/apis/library/youtube.googleapis.com))
+6. Twitter AuthToken，這需要從已登入的 Twitter 帳號中，由欄位名稱為 `auth_token` 的網頁 Cookie 來獲得 (如不需要推特語音通知則不需要)
 7. 錄影功能需搭配隔壁 [Youtube Stream Record](https://github.com/konnokai/youtube-stream-record) 使用
-8. Discord & Google 的 OAuth Client ID 跟 Client Secret 會限驗證，需搭配 [網站](https://github.com/konnokai/Discord-Stream-Bot-Backend) 使用
-9. PubSubCallbackUrl，搭配上面的網站後端做YT影片上傳接收使用，當有新爬蟲時小幫手會自動註冊 ([Google PubSubHubbub](https://pubsubhubbub.appspot.com))
+8. Discord & Google 的 OAuth Client ID 跟 Client Secret，用於 YouTube 會限驗證，需搭配 [網站後端](https://github.com/konnokai/Discord-Stream-Bot-Backend) 使用
+9. PubSubCallbackUrl，搭配上面的網站後端做YT影片上傳接收使用，當有新爬蟲時小幫手會自動註冊，網址格式為: `https://[後端域名]/NotificationCallback` ([Google PubSubHubbub](https://pubsubhubbub.appspot.com))
 10. Imgur Client Id，發送全域訊息如果要上傳圖片附件時會需要用到，可到 [Imgur](https://api.imgur.com/oauth2/addclient) 註冊，`Authorization type:` 選擇 `Anonymous usage without user authorization` 即可
 11. Uptime Kuma Push 監測器的網址，如果不需要上線監測則可為空，需搭配 [Uptime Kuma](https://github.com/louislam/uptime-kuma) 使用
 12. [ffmpeg](https://ffmpeg.org/download.html), [streamlink](https://streamlink.github.io/install.html)，原則上不裝的話就只是不會錄影 (裝完記得確認PATH環境變數是否有設定正確的路徑)
@@ -41,6 +41,8 @@
 - [NadekoBot](https://gitlab.com/Kwoth/nadekobot)
 - [LivestreamRecorderService](https://github.com/Recorder-moe/LivestreamRecorderService)
 - [Discord .NET](https://github.com/discord-net/Discord.Net)
+- [twspace-crawler](https://github.com/HitomaruKonpaku/twspace-crawler)
+- 其餘參考附於程式碼內
 
 授權
 -
