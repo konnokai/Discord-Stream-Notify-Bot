@@ -15,7 +15,6 @@ public class BotConfig
     public string WebHookUrl { get; set; } = "";
     public string RedisTokenKey { get; set; } = "";
     public string PubSubCallbackUrl { get; set; } = "";
-    public string ImgurClientId { get; set; } = "";
     public string UptimeKumaPushUrl { get; set; } = "";
 
     public void InitBotConfig()
@@ -77,7 +76,6 @@ public class BotConfig
             GoogleClientSecret = config.GoogleClientSecret;
             RedisOption = config.RedisOption;
             RedisTokenKey = config.RedisTokenKey;
-            ImgurClientId = config.ImgurClientId;
             UptimeKumaPushUrl = config.UptimeKumaPushUrl;
 
             if (string.IsNullOrWhiteSpace(config.RedisTokenKey) || string.IsNullOrWhiteSpace(RedisTokenKey))

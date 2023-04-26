@@ -2,8 +2,6 @@
 {
     public class SendMsgToAllGuildService : IInteractionService
     {
-        public string ImgurClientId { get; set; } = "";
-
         private class ButtonCheckData
         {
             public ulong UserId { get; set; }
@@ -24,10 +22,8 @@
         private ButtonCheckData checkData;
         private bool isSending = false;
 
-        public SendMsgToAllGuildService(DiscordSocketClient discordSocketClient, BotConfig botConfig)
+        public SendMsgToAllGuildService(DiscordSocketClient discordSocketClient)
         {
-            ImgurClientId = botConfig.ImgurClientId;
-
             _client = discordSocketClient;
             _client.ModalSubmitted += async modal =>
             {
