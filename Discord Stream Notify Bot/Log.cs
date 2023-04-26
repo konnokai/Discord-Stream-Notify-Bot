@@ -121,9 +121,12 @@ public static class Log
         WriteLogToFile(LogType.Verb, message.Message);
 #endif
 
-        if (message.Exception != null && (message.Exception is not GatewayReconnectException || message.Exception is not TaskCanceledException))
+        if (message.Exception != null && message.Message != null && !message.Message.Contains("TYPING_START") && (message.Exception is not GatewayReconnectException || message.Exception is not TaskCanceledException))
         {
             consoleColor = ConsoleColor.DarkRed;
+#if RELEASE
+            FormatColorWrite(message.Message, consoleColor);
+#endif
             FormatColorWrite(message.Exception.GetType().FullName, consoleColor);
             FormatColorWrite(message.Exception.Message, consoleColor);
             FormatColorWrite(message.Exception.StackTrace, consoleColor);
