@@ -18,9 +18,8 @@
 7. 錄影功能需搭配隔壁 [Youtube Stream Record](https://github.com/konnokai/youtube-stream-record) 使用 (如無搭配錄影的話則不會有關台通知，且不能即時的通知開台*)
 8. Discord & Google 的 OAuth Client ID 跟 Client Secret，用於 YouTube 會限驗證，需搭配 [網站後端](https://github.com/konnokai/Discord-Stream-Bot-Backend) 使用
 9. PubSubCallbackUrl，搭配上面的網站後端做YT影片上傳接收使用，當有新爬蟲時小幫手會自動註冊，網址格式為: `https://[後端域名]/NotificationCallback` ([Google PubSubHubbub](https://pubsubhubbub.appspot.com))
-10. Imgur Client Id，發送全域訊息如果要上傳圖片附件時會需要用到，可到 [Imgur](https://api.imgur.com/oauth2/addclient) 註冊，`Authorization type:` 選擇 `Anonymous usage without user authorization` 即可
-11. Uptime Kuma Push 監測器的網址，如果不需要上線監測則可為空，需搭配 [Uptime Kuma](https://github.com/louislam/uptime-kuma) 使用
-12. [ffmpeg](https://ffmpeg.org/download.html), [streamlink](https://streamlink.github.io/install.html)，原則上不裝的話就只是不會錄影 (裝完記得確認PATH環境變數是否有設定正確的路徑)
+10. Uptime Kuma Push 監測器的網址，如果不需要上線監測則可為空，需搭配 [Uptime Kuma](https://github.com/louislam/uptime-kuma) 使用
+11. [ffmpeg](https://ffmpeg.org/download.html), [streamlink](https://streamlink.github.io/install.html)，原則上不裝的話就只是不會錄影 (裝完記得確認PATH環境變數是否有設定正確的路徑)
 
 備註
 -
