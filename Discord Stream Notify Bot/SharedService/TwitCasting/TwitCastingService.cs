@@ -33,7 +33,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitcasting
 
         public async Task<(string ChannelId, string ChannelTitle)> GetChannelIdAndTitleAsync(string channelUrl)
         {
-            string channelId = channelUrl.Split('?')[0].Replace("https://twitcasting.tv/", "");
+            string channelId = channelUrl.Split('?')[0].Replace("https://twitcasting.tv/", "").Split('/')[0];
             if (string.IsNullOrEmpty(channelId))
                 return (string.Empty, string.Empty);
 
