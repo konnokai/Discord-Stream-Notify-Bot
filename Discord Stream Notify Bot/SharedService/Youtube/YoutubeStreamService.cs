@@ -924,17 +924,19 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 //https://stackoverflow.com/a/36559834
                 HtmlWeb htmlWeb = new HtmlWeb();
                 var htmlDocument = await htmlWeb.LoadFromWebAsync(channelUrl);
-                var node = htmlDocument.DocumentNode.Descendants().FirstOrDefault((x) => x.Name == "meta" && x.Attributes.Any((x2) => x2.Name == "itemprop" && x2.Value == "channelId"));
+                var node = htmlDocument.DocumentNode.Descendants().FirstOrDefault((x) => x.Name == "meta" && x.Attributes.Any((x2) => x2.Name == "itemprop" && x2.Value == "channelId" || x2.Value == "identifier"));
                 if (node == null)
                     throw new UriFormatException("錯誤，找不到節點\n" +
                         "請確認是否輸入正確的YouTube頻道網址\n" +
-                        "或確認該頻道是否存在");
+                        "或確認該頻道是否存在\n" +
+                        $"若正確請向Bot擁有者 ({Program.ApplicatonOwner}) 詢問");
 
                 channelId = node.Attributes.FirstOrDefault((x) => x.Name == "content").Value;
                 if (string.IsNullOrEmpty(channelId))
                     throw new UriFormatException("錯誤，找不到頻道Id\n" +
                         "請確認是否輸入正確的YouTube頻道網址\n" +
-                        "或確認該頻道是否存在");
+                        "或確認該頻道是否存在\n" +
+                        $"若正確請向Bot擁有者 ({Program.ApplicatonOwner}) 詢問");
 
                 return channelId;
             }
