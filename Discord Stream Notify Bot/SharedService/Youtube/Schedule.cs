@@ -146,7 +146,9 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
         }
 
         // 2434官網直播表: https://www.nijisanji.jp/streams
-        // 直播資料路徑會變動，必須要從上面的網址直接解析Json
+        // 直播資料路徑會變動，~~必須要從上面的網址直接解析Json~~
+        // 發現有API網址了: https://www.nijisanji.jp/api/streams?day_offset=-1
+        // day_offset是必要參數，可以設定-3~6
         // 2434成員資料
         // JP: https://www.nijisanji.jp/api/livers?limit=300&offset=0&orderKey=subscriber_count&order=desc&affiliation=nijisanji&locale=ja&includeHidden=true
         // EN: https://www.nijisanji.jp/api/livers?limit=300&offset=0&orderKey=subscriber_count&order=desc&affiliation=nijisanjien&locale=ja&includeHidden=true
@@ -161,19 +163,23 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
             try
             {
+                List<Data> datas = new List<Data>();
                 NijisanjiStreamJson nijisanjiStreamJson = null;
                 try
                 {
-                    HtmlWeb htmlWeb = new HtmlWeb();
-                    HtmlDocument htmlDocument = htmlWeb.Load("https://www.nijisanji.jp/streams");
-                    if (htmlDocument.DocumentNode.InnerHtml.Contains("ERROR</h1>"))
+                    for (int i = -1; i <= 1; i++)
                     {
-                        Log.Warn("NijisanjiScheduleAsync: CloudFront回傳錯誤，略過");
-                        Program.isNijisanjiChannelSpider = false;
-                        return;
+                        string result = await httpClient.GetStringAsync($"https://www.nijisanji.jp/api/streams?day_offset={i}");
+                        if (result.Contains("ERROR</h1>"))
+                        {
+                            Log.Warn("NijisanjiScheduleAsync: CloudFront回傳錯誤，略過");
+                            Program.isNijisanjiChannelSpider = false;
+                            return;
+                        }
+                        nijisanjiStreamJson = JsonConvert.DeserializeObject<NijisanjiStreamJson>(result);
+                        datas.AddRange(nijisanjiStreamJson.Included);
+                        datas.AddRange(nijisanjiStreamJson.Data);
                     }
-                    var streamJsonText = htmlDocument.DocumentNode.Descendants().FirstOrDefault((x) => x.Name == "script" && x.GetAttributeValue("id", "") == "__NEXT_DATA__" && x.GetAttributeValue("type", "") == "application/json").InnerText;
-                    nijisanjiStreamJson = JsonConvert.DeserializeObject<NijisanjiStreamJson>(streamJsonText);
                 }
                 catch (Exception ex)
                 {
@@ -183,15 +189,45 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     return;
                 }
 
-                foreach (var item in nijisanjiStreamJson.props.pageProps.streams)
+                foreach (var item in datas)
                 {
-                    string videoId = item.url.Split("?v=")[1].Trim();
-                    if (Extensions.HasStreamVideoByVideoId(videoId) || newStreamList.Contains(videoId) || addNewStreamVideo.ContainsKey(videoId)) continue;
+                    if (item.Type != "youtube_event")
+                        continue;
 
+                    string videoId = item.Attributes.Url.Split("?v=")[1].Trim(), channelTitle = "", liverId = null, externalId = null;
+                    if (Extensions.HasStreamVideoByVideoId(videoId) || newStreamList.Contains(videoId) || addNewStreamVideo.ContainsKey(videoId)) continue;
                     newStreamList.Add(videoId);
-                    DataBase.Table.Video streamVideo;
-                    var channelData = NijisanjiLiverContents.FirstOrDefault((x) => x.id == item.youtubechannel.liver.externalid);
-                    if (channelData == null)
+
+                    var youtubeChannelData = datas.FirstOrDefault((x) => x.Type == "youtube_channel" && x.Id == item.Relationships.YoutubeChannel.Data.Id);
+                    if (youtubeChannelData != null)
+                    {
+                        channelTitle = youtubeChannelData.Attributes.Name;
+                        liverId = youtubeChannelData.Relationships?.Liver?.Data?.Id;
+                        externalId = datas.FirstOrDefault((x) => x.Type == "liver" && x.Id == liverId).Attributes.ExternalId;
+                    }
+
+                    DataBase.Table.Video streamVideo = null;
+                    if (!string.IsNullOrEmpty(externalId))
+                    {
+                        var channelData = NijisanjiLiverContents.FirstOrDefault((x) => x.id == externalId);
+                        if (channelData != null)
+                        {
+                            if (string.IsNullOrEmpty(channelTitle))
+                                channelTitle = $"{channelData.name} / {channelData.enName}";
+
+                            streamVideo = new DataBase.Table.Video()
+                            {
+                                ChannelId = channelData.socialLinks.youtube.Replace("https://www.youtube.com/channel/", ""),
+                                ChannelTitle = channelTitle,
+                                VideoId = videoId,
+                                VideoTitle = item.Attributes.Title,
+                                ScheduledStartTime = item.Attributes.StartAt.Value,
+                                ChannelType = DataBase.Table.Video.YTChannelType.Nijisanji
+                            };
+                        }
+                    }
+
+                    if (streamVideo == null)
                     {
                         var video = await GetVideoAsync(videoId);
                         streamVideo = new DataBase.Table.Video()
@@ -199,36 +235,24 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                             ChannelId = video.Snippet.ChannelId,
                             ChannelTitle = video.Snippet.ChannelTitle,
                             VideoId = videoId,
-                            VideoTitle = item.title,
-                            ScheduledStartTime = item.startat.Value,
+                            VideoTitle = item.Attributes.Title,
+                            ScheduledStartTime = item.Attributes.StartAt.Value,
                             ChannelType = DataBase.Table.Video.YTChannelType.Nijisanji
                         };
 
-                        Log.Warn($"檢測到無Liver資料的頻道({videoId}): `{video.Snippet.ChannelTitle}` / {item.title}");
+                        Log.Warn($"檢測到無Liver資料的頻道({videoId}): `{video.Snippet.ChannelTitle}` / {item.Attributes.Title}");
                         Log.Warn("重新刷新Liver資料清單");
 
                         NijisanjiLiverContents.Clear();
                         foreach (var affiliation in new string[] { "nijisanji", "nijisanjien", "virtuareal" })
                         {
-                            await Task.Run(async () => await GetOrCreateNijisanjiLiverListAsync(affiliation));
+                            await Task.Run(async () => await GetOrCreateNijisanjiLiverListAsync(affiliation, true));
                         }
-                    }
-                    else
-                    {
-                        streamVideo = new DataBase.Table.Video()
-                        {
-                            ChannelId = channelData.socialLinks.youtube.Replace("https://www.youtube.com/channel/", ""),
-                            ChannelTitle = $"{channelData.name} / {channelData.enName}",
-                            VideoId = videoId,
-                            VideoTitle = item.title,
-                            ScheduledStartTime = item.startat.Value,
-                            ChannelType = DataBase.Table.Video.YTChannelType.Nijisanji
-                        };
                     }
 
                     Log.New($"(排程) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
 
-                    if (item.startat > DateTime.Now.AddMinutes(-10)) // 如果開台時間在十分鐘內
+                    if (item.Attributes.StartAt > DateTime.Now.AddMinutes(-10)) // 如果開台時間在十分鐘內
                     {
                         EmbedBuilder embedBuilder = new EmbedBuilder();
                         embedBuilder.WithErrorColor()
@@ -237,7 +261,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         .WithImageUrl($"https://i.ytimg.com/vi/{streamVideo.VideoId}/maxresdefault.jpg")
                         .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
                         .AddField("直播狀態", "尚未開台")
-                        .AddField("排定開台時間", item.startat.Value.ConvertDateTimeToDiscordMarkdown());
+                        .AddField("排定開台時間", item.Attributes.StartAt.Value.ConvertDateTimeToDiscordMarkdown());
 
                         if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo))
                         {
@@ -245,7 +269,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                             StartReminder(streamVideo, streamVideo.ChannelType);
                         }
                     }
-                    else if (item.status == "on_air")
+                    else if (item.Attributes.Status == "on_air")
                     {
                         if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo))
                             StartReminder(streamVideo, streamVideo.ChannelType);

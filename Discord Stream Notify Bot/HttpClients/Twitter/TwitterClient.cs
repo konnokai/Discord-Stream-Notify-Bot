@@ -70,7 +70,7 @@ namespace Discord_Stream_Notify_Bot.HttpClients
                     string featureSwitches = "{" + string.Join(',', item.Groups[4].Value.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select((x) => $"{x}:false")) + "}";
                     featureSwitches = WebUtility.UrlEncode(featureSwitches);
                     _apiQueryData.Add(item.Groups[2].Value, new(queryId, featureSwitches));
-                }  
+                }
 
                 _httpClient.DefaultRequestHeaders.Remove("x-guest-token");
                 string guestToken = await GetGusetTokenAsync();
