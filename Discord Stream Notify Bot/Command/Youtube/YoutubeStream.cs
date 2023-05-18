@@ -2,6 +2,7 @@
 using Discord_Stream_Notify_Bot.Command.Attribute;
 using Discord_Stream_Notify_Bot.DataBase;
 using Discord_Stream_Notify_Bot.DataBase.Table;
+using System.Text.RegularExpressions;
 
 namespace Discord_Stream_Notify_Bot.Command.Youtube
 {
@@ -23,18 +24,18 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
         [RequireOwner]
         public async Task RightNowRecordStream(string videoId)
         {
-            try
+            if (videoId.Length != 11)
             {
-                if (videoId.Contains("www.youtube.com/watch")) //https://www.youtube.com/watch?v=7DqDRE_SW34
-                    videoId = videoId.Substring(videoId.IndexOf("?v=") + 3, 11);
-                else if (videoId.Contains("https://youtu.be")) //https://youtu.be/Z-UJbyLqioM
-                    videoId = videoId.Substring(17, 11);
-                else if (videoId.Contains("https://www.youtube.com/live/")) //https://www.youtube.com/live/MdmQgxffY6k?feature=share
-                    videoId = videoId.Substring(29, 11);
+                string pattern = @"(?<=youtu\.be\/|youtube\.com\/(?:watch\?.*v=|live\/))(?'VideoId'[\w-]{11})";
+                var match = Regex.Match(videoId, pattern);
+
+                if (match.Success)
+                {
+                    videoId = match.Groups["VideoId"].Value;
             }
-            catch (Exception)
+                else
             {
-                await Context.Channel.SendConfirmAsync("VideoId錯誤，請確認是否輸入正確的網址").ConfigureAwait(false);
+                    await Context.Channel.SendConfirmAsync("Regex驗證失敗，請確認是否輸入正確的網址").ConfigureAwait(false);
                 return;
             }
 
@@ -42,6 +43,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
             {
                 await Context.Channel.SendConfirmAsync("VideoId錯誤錯誤，需為11字數").ConfigureAwait(false);
                 return;
+            }
             }
 
             var nowRecordStreamList = Utility.GetNowRecordStreamList();
