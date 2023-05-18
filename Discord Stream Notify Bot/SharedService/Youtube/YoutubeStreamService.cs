@@ -742,29 +742,32 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             subscribePubSub = new Timer((objState) => SubscribePubSub(), null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(30));
         }
 
-        private async Task GetOrCreateNijisanjiLiverListAsync(string affiliation)
+        private async Task GetOrCreateNijisanjiLiverListAsync(string affiliation, bool forceRefresh = false)
         {
-            try
+            if (!forceRefresh)
             {
-                if (await Program.RedisDb.KeyExistsAsync($"youtube.nijisanji.liver.{affiliation}"))
+                try
                 {
-                    var liver = JsonConvert.DeserializeObject<List<NijisanjiLiverJson>>(await Program.RedisDb.StringGetAsync($"youtube.nijisanji.liver.{affiliation}"));
-                    foreach (var item in liver)
+                    if (await Program.RedisDb.KeyExistsAsync($"youtube.nijisanji.liver.{affiliation}"))
                     {
-                        NijisanjiLiverContents.Add(item);
+                        var liver = JsonConvert.DeserializeObject<List<NijisanjiLiverJson>>(await Program.RedisDb.StringGetAsync($"youtube.nijisanji.liver.{affiliation}"));
+                        foreach (var item in liver)
+                        {
+                            NijisanjiLiverContents.Add(item);
+                        }
+                        return;
                     }
-                    return;
                 }
-            }
-            catch (Exception ex)
-            {
-                Log.Error($"GetOrCreateNijisanjiLiverListAsync-GetRedisData-{affiliation}: {ex}");
+                catch (Exception ex)
+                {
+                    Log.Error($"GetOrCreateNijisanjiLiverListAsync-GetRedisData-{affiliation}: {ex}");
+                }
             }
 
             try
             {
                 var httpClient = _httpClientFactory.CreateClient();
-                var json = await httpClient.GetStringAsync($"https://www.nijisanji.jp/api/livers?limit=300&offset=0&orderKey=subscriber_count&order=desc&affiliation={affiliation}&locale=ja&includeHidden=true");
+                var json = await httpClient.GetStringAsync($"https://www.nijisanji.jp/api/livers?limit=300&offset=0&orderKey=subscriber_count&order=desc&affiliation={affiliation}&locale=ja&includeAll=true&includeHidden=true");
                 var liver = JsonConvert.DeserializeObject<List<NijisanjiLiverJson>>(json);
                 await Program.RedisDb.StringSetAsync($"youtube.nijisanji.liver.{affiliation}", JsonConvert.SerializeObject(liver), TimeSpan.FromDays(1));
                 foreach (var item in liver)

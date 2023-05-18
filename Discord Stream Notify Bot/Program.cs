@@ -291,24 +291,24 @@ namespace Discord_Stream_Notify_Bot
             {
                 InteractionService interactionService = iService.GetService<InteractionService>();
 #if DEBUG
-                    if (botConfig.TestSlashCommandGuildId == 0 || _client.GetGuild(botConfig.TestSlashCommandGuildId) == null)
-                        Log.Warn("未設定測試Slash指令的伺服器或伺服器不存在，略過");
-                    else
+                if (botConfig.TestSlashCommandGuildId == 0 || _client.GetGuild(botConfig.TestSlashCommandGuildId) == null)
+                    Log.Warn("未設定測試Slash指令的伺服器或伺服器不存在，略過");
+                else
+                {
+                    try
                     {
-                        try
-                        {
-                            var result = await interactionService.RegisterCommandsToGuildAsync(botConfig.TestSlashCommandGuildId);
-                            Log.Info($"已註冊指令 ({botConfig.TestSlashCommandGuildId}) : {string.Join(", ", result.Select((x) => x.Name))}");
+                        var result = await interactionService.RegisterCommandsToGuildAsync(botConfig.TestSlashCommandGuildId);
+                        Log.Info($"已註冊指令 ({botConfig.TestSlashCommandGuildId}) : {string.Join(", ", result.Select((x) => x.Name))}");
 
-                            result = await interactionService.AddModulesToGuildAsync(botConfig.TestSlashCommandGuildId, false, interactionService.Modules.Where((x) => x.DontAutoRegister).ToArray());
-                            Log.Info($"已註冊指令 ({botConfig.TestSlashCommandGuildId}) : {string.Join(", ", result.Select((x) => x.Name))}");
-                        }
-                        catch (Exception ex)
-                        {
-                            Log.Error("註冊伺服器專用Slash指令失敗");
-                            Log.Error(ex.ToString());
-                        }
+                        result = await interactionService.AddModulesToGuildAsync(botConfig.TestSlashCommandGuildId, false, interactionService.Modules.Where((x) => x.DontAutoRegister).ToArray());
+                        Log.Info($"已註冊指令 ({botConfig.TestSlashCommandGuildId}) : {string.Join(", ", result.Select((x) => x.Name))}");
                     }
+                    catch (Exception ex)
+                    {
+                        Log.Error("註冊伺服器專用Slash指令失敗");
+                        Log.Error(ex.ToString());
+                    }
+                }
 #else
                 try
                 {

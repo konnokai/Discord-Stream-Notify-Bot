@@ -3,7 +3,6 @@ using System.Reflection;
 
 #if DEBUG
 using System.Text.RegularExpressions;
-using System.Collections.Generic;
 #endif
 
 namespace Discord_Stream_Notify_Bot.Interaction
@@ -120,7 +119,7 @@ namespace Discord_Stream_Notify_Bot.Interaction
             try
             {
                 if (socketSlashCommandDataOption.Type != ApplicationCommandOptionType.SubCommand && socketSlashCommandDataOption.Type != ApplicationCommandOptionType.SubCommandGroup && !socketSlashCommandDataOption.Options.Any())
-                    return $" {socketSlashCommandDataOption.Value}";                
+                    return $" {socketSlashCommandDataOption.Value}";
 
                 if (socketSlashCommandDataOption.Type == ApplicationCommandOptionType.SubCommand || socketSlashCommandDataOption.Type == ApplicationCommandOptionType.SubCommandGroup) GetOptionsValue(socketSlashCommandDataOption.Options.First());
                 return " " + string.Join(' ', socketSlashCommandDataOption.Options.Select(option => option.Value));
