@@ -243,7 +243,7 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
                             if (noticeChannel != null)
                                 channelListResult.Add($"{noticeChannel}: {item.NoticeStreamChannelId}");
                             else
-                                channelListResult.Add($"(不存在) {item.Id}: {item.NoticeStreamChannelId}");
+                                channelListResult.Add($"(不存在) {item.DiscordChannelId}: {item.NoticeStreamChannelId}");
                         }
 
                         result += $"設定通知的頻道: \n```{string.Join('\n', channelListResult)}```\n";
