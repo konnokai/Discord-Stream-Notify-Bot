@@ -10,5 +10,6 @@ namespace Discord_Stream_Notify_Bot.DataBase.Table
         public ulong GuildId { get; set; }
         public bool IsTrustedChannel { get; set; } = false;
         public DateTime LastSubscribeTime { get; set; } = DateTime.MinValue;
+        public DateTime? DateAdded { get; set; } = DateTime.UtcNow;
     }
 }

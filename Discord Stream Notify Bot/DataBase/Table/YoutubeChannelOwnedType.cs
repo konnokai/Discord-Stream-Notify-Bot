@@ -9,5 +9,6 @@ namespace Discord_Stream_Notify_Bot.DataBase.Table
         public string ChannelId { get; set; }
         public string ChannelTitle { get; set; } = null;
         public Video.YTChannelType ChannelType { get; set; } = Video.YTChannelType.Other;
+        public DateTime? DateAdded { get; set; } = DateTime.UtcNow;
     }
 }

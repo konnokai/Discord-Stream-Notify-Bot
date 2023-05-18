@@ -6,5 +6,6 @@ namespace Discord_Stream_Notify_Bot.DataBase.Table
     {
         [Key]
         public int Id { get; set; }
+        public DateTime? DateAdded { get; set; } = DateTime.UtcNow;
     }
 }

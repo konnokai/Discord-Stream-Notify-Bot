@@ -11,5 +11,6 @@ namespace Discord_Stream_Notify_Bot.DataBase.Table
         public ulong GuildId { get; set; }
         public bool IsWarningUser { get; set; } = false;
         public bool IsRecord { get; set; } = true;
+        public DateTime? DateAdded { get; set; } = DateTime.UtcNow;
     }
 }

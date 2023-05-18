@@ -6,5 +6,6 @@ namespace Discord_Stream_Notify_Bot.DataBase.Table
     {
         [Key]
         public string YoutubeChannelId { get; set; }
+        public DateTime? DateAdded { get; set; } = DateTime.UtcNow;
     }
 }

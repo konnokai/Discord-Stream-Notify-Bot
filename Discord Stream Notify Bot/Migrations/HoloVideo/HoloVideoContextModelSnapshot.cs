@@ -42,7 +42,7 @@ namespace Discord_Stream_Notify_Bot.Migrations.HoloVideo
 
                     b.HasKey("VideoId");
 
-                    b.ToTable("Video");
+                    b.ToTable("Video", (string)null);
                 });
 #pragma warning restore 612, 618
         }
