@@ -23,9 +23,6 @@ namespace Discord_Stream_Notify_Bot.Migrations.TwitcastingStream
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<DateTime>("AddedDateTime")
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("Category")
                         .HasColumnType("TEXT");
 
@@ -33,6 +30,9 @@ namespace Discord_Stream_Notify_Bot.Migrations.TwitcastingStream
                         .HasColumnType("TEXT");
 
                     b.Property<string>("ChannelTitle")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("DateAdded")
                         .HasColumnType("TEXT");
 
                     b.Property<int>("StreamId")

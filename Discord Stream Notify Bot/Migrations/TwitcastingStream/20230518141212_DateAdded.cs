@@ -5,22 +5,21 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace Discord_Stream_Notify_Bot.Migrations.TwitcastingStream
 {
-    public partial class AddedDateTime : Migration
+    public partial class DateAdded : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AddColumn<DateTime>(
-                name: "AddedDateTime",
+                name: "DateAdded",
                 table: "TwitcastingStreams",
                 type: "TEXT",
-                nullable: false,
-                defaultValue: new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified));
+                nullable: true);
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropColumn(
-                name: "AddedDateTime",
+                name: "DateAdded",
                 table: "TwitcastingStreams");
         }
     }

@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Discord_Stream_Notify_Bot.Migrations.TwitcastingStream
 {
     [DbContext(typeof(TwitcastingStreamContext))]
-    [Migration("20230518025504_AddedDateTime")]
-    partial class AddedDateTime
+    [Migration("20230518141212_DateAdded")]
+    partial class DateAdded
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -25,9 +25,6 @@ namespace Discord_Stream_Notify_Bot.Migrations.TwitcastingStream
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<DateTime>("AddedDateTime")
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("Category")
                         .HasColumnType("TEXT");
 
@@ -35,6 +32,9 @@ namespace Discord_Stream_Notify_Bot.Migrations.TwitcastingStream
                         .HasColumnType("TEXT");
 
                     b.Property<string>("ChannelTitle")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("DateAdded")
                         .HasColumnType("TEXT");
 
                     b.Property<int>("StreamId")
