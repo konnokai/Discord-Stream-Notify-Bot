@@ -32,18 +32,18 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                 if (match.Success)
                 {
                     videoId = match.Groups["VideoId"].Value;
-            }
+                }
                 else
-            {
+                {
                     await Context.Channel.SendConfirmAsync("Regex驗證失敗，請確認是否輸入正確的網址").ConfigureAwait(false);
-                return;
-            }
+                    return;
+                }
 
-            if (videoId.Length != 11)
-            {
-                await Context.Channel.SendConfirmAsync("VideoId錯誤錯誤，需為11字數").ConfigureAwait(false);
-                return;
-            }
+                if (videoId.Length != 11)
+                {
+                    await Context.Channel.SendConfirmAsync("VideoId錯誤錯誤，需為11字數").ConfigureAwait(false);
+                    return;
+                }
             }
 
             var nowRecordStreamList = Utility.GetNowRecordStreamList();
@@ -84,6 +84,9 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                     {
                         Log.Info($"已發送錄影請求: {videoId}");
                         await Context.Channel.SendConfirmAsync("已開始錄影", description).ConfigureAwait(false);
+
+                        if (_service.Reminders.TryRemove(videoId, out _))
+                            await Context.Channel.SendConfirmAsync("已從排程清單中移除該直播").ConfigureAwait(false);
                     }
                     else
                     {
