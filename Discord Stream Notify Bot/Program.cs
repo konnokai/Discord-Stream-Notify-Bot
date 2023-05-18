@@ -312,6 +312,12 @@ namespace Discord_Stream_Notify_Bot
 #else
                 try
                 {
+                    if (botConfig.TestSlashCommandGuildId != 0 && _client.GetGuild(botConfig.TestSlashCommandGuildId) != null)
+                    {
+                        var result = await interactionService.RemoveModulesFromGuildAsync(botConfig.TestSlashCommandGuildId, interactionService.Modules.Where((x) => !x.DontAutoRegister).ToArray());
+                        Log.Info($"({botConfig.TestSlashCommandGuildId}) 已移除測試指令，剩餘指令: {string.Join(", ", result.Select((x) => x.Name))}");
+                    }
+
                     var commandCount = (await RedisDb.StringGetSetAsync("discord_stream_bot:command_count", iService.GetService<InteractionHandler>().CommandCount)).ToString();
                     if (commandCount != iService.GetService<InteractionHandler>().CommandCount.ToString())
                     {
