@@ -36,7 +36,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
             if (string.IsNullOrEmpty(twitterSpaceRecordPath)) twitterSpaceRecordPath = Program.GetDataFilePath("");
             if (!twitterSpaceRecordPath.EndsWith(Program.GetPlatformSlash())) twitterSpaceRecordPath += Program.GetPlatformSlash();
 
-#if DEBUG
+#if DEBUG || DEBUG_DONTREGISTERCOMMAND
             return;
 #endif
 
@@ -194,7 +194,10 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                         var channel = guild.GetTextChannel(item.DiscordChannelId);
                         if (channel == null) continue;
 
-                        await channel.SendMessageAsync(item.StratTwitterSpaceMessage, false, embedBuilder.Build(), components: comp);
+                        var message = await channel.SendMessageAsync(item.StratTwitterSpaceMessage, false, embedBuilder.Build(), components: comp);
+
+                        if (channel is INewsChannel)
+                            await message.CrosspostAsync();
                     }
                     catch (Exception ex)
                     {

@@ -68,9 +68,17 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitcasting
         [RequireOwner(Group = "bot_owner")]
         [CommandExample("nana_kaguraaa", "https://twitcasting.tv/nana_kaguraaa")]
         [SlashCommand("add", "新增Twitcasting直播通知的頻道")]
-        public async Task AddChannel([Summary("頻道網址")] string channelUrl, [Summary("發送通知的頻道")] ITextChannel textChannel)
+        public async Task AddChannel([Summary("頻道網址")] string channelUrl, [Summary("發送通知的頻道")] IChannel channel)
         {
             await DeferAsync(true).ConfigureAwait(false);
+
+            if (channel.GetChannelType() != ChannelType.Text && channel.GetChannelType() != ChannelType.News)
+            {
+                await Context.Interaction.SendErrorAsync($"`{channel}` 非可接受的頻道類型，僅可接受文字頻道或公告頻道", true);
+                return;
+            }
+
+            var textChannel = channel as IGuildChannel;
 
             var permissions = Context.Guild.GetUser(_client.CurrentUser.Id).GetPermissions(textChannel);
             if (!permissions.ViewChannel || !permissions.SendMessages)

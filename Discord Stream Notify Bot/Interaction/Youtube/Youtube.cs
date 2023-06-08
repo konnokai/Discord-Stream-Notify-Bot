@@ -316,9 +316,17 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             "(all選項會覆蓋所有的通知設定，請注意)")]
         [CommandExample("https://www.youtube.com/channel/UCdn5BQ06XqgXoAxIhbqw5Rg", "all", "2434")]
         [SlashCommand("add", "新增YouTube直播開台通知的頻道")]
-        public async Task AddChannel([Summary("頻道網址")] string channelUrl, [Summary("發送通知的頻道")] ITextChannel textChannel)
+        public async Task AddTextChannel([Summary("頻道網址")] string channelUrl, [Summary("發送通知的頻道", "文字頻道或公告頻道")] IChannel channel)
         {
             await DeferAsync(true).ConfigureAwait(false);
+                        
+            if (channel.GetChannelType() != ChannelType.Text && channel.GetChannelType() != ChannelType.News)
+            {
+                await Context.Interaction.SendErrorAsync($"`{channel}` 非可接受的頻道類型，僅可接受文字頻道或公告頻道", true);
+                return;
+            }
+
+            var textChannel = channel as IGuildChannel;
 
             var permissions = Context.Guild.GetUser(_client.CurrentUser.Id).GetPermissions(textChannel);
             if (!permissions.ViewChannel || !permissions.SendMessages)

@@ -187,7 +187,9 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitcasting
                         var channel = guild.GetTextChannel(item.DiscordChannelId);
                         if (channel == null) continue;
 
-                        await channel.SendMessageAsync(item.StartStreamMessage, false, embedBuilder.Build(), components: comp);
+                        var message = await channel.SendMessageAsync(item.StartStreamMessage, false, embedBuilder.Build(), components: comp);
+                        if (channel is INewsChannel)
+                            await message.CrosspostAsync();
                     }
                     catch (Exception ex)
                     {
