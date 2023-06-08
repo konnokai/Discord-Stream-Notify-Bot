@@ -80,12 +80,18 @@ public static class Log
         }
     }
 
-    public static void Error(Exception ex, string text, bool newLine = true)
+    public static void Error(Exception ex, string text, bool newLine = true, bool writeLog = true)
     {
         lock (logLockObj)
         {
             FormatColorWrite(text, ConsoleColor.DarkRed, newLine);
-            FormatColorWrite(ex.ToString(), ConsoleColor.DarkRed, newLine);
+            FormatColorWrite(ex.ToString(), ConsoleColor.DarkRed, true);
+
+            if (writeLog)
+            {
+                WriteLogToFile(LogType.Error, $"{text}");
+                WriteLogToFile(LogType.Error, $"{ex}");
+            }
         }
     }
 
