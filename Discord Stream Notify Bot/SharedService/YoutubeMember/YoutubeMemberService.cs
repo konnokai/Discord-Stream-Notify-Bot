@@ -431,7 +431,17 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
         }
 
         public static async Task<IUserMessage> SendConfirmMessageAsync(this ITextChannel tc, string title, string dec)
-            => await tc.SendMessageAsync(embed: new EmbedBuilder().WithOkColor().WithTitle(title).WithDescription(dec).Build(), options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
+        {
+            try
+            {
+                return await tc.SendMessageAsync(embed: new EmbedBuilder().WithOkColor().WithTitle(title).WithDescription(dec).Build(), options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "SendConfirmMessageAsync");
+                return null;
+            }
+        }
 
         public static async Task<IUserMessage> SendErrorMessageAsync(this ITextChannel tc, ulong userId, string channelTitle, string status)
         {
