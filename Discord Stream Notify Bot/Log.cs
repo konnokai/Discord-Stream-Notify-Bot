@@ -121,7 +121,7 @@ public static class Log
                 break;
         }
 
-#if DEBUG
+#if DEBUG || DEBUG_DONTREGISTERCOMMAND
         if (!string.IsNullOrEmpty(message.Message)) FormatColorWrite(message.Message, consoleColor);
 #else
         WriteLogToFile(LogType.Verb, message.Message);

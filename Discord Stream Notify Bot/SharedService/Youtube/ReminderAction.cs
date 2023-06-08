@@ -341,7 +341,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                 Log.New($"發送直播通知 ({noticeGuildList.Count} / {noticeType}): {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
 
-#if DEBUG
+#if DEBUG || DEBUG_DONTREGISTERCOMMAND
                 return;
 #endif
 

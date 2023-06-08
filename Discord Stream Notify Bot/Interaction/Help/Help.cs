@@ -113,7 +113,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Help
             {
                 EmbedBuilder embed = new EmbedBuilder().WithOkColor().WithFooter("輸入 `/help get-all-modules` 取得所有的模組");
                 embed.Title = "直播小幫手 建置版本" + Program.VERSION;
-#if DEBUG
+#if DEBUG || DEBUG_DONTREGISTERCOMMAND
                 embed.Title += " (測試版)";
 #endif
                 embed.WithDescription(System.IO.File.ReadAllText(Program.GetDataFilePath("HelpDescription.txt")).Replace("\\n", "\n") +

@@ -38,7 +38,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Utility
         {
             EmbedBuilder embedBuilder = new EmbedBuilder().WithOkColor();
             embedBuilder.WithTitle("直播小幫手");
-#if DEBUG
+#if DEBUG || DEBUG_DONTREGISTERCOMMAND
             embedBuilder.Title += " (測試版)";
 #endif
 

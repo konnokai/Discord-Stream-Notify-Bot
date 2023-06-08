@@ -6,7 +6,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
     {
         private async Task ChangeGuildBannerAsync(string channelId, string videoId)
         {
-#if DEBUG
+#if DEBUG || DEBUG_DONTREGISTERCOMMAND
             return;
 #endif
 

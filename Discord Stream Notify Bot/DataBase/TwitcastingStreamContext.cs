@@ -9,7 +9,7 @@ namespace Discord_Stream_Notify_Bot.DataBase
 
         protected override void OnConfiguring(DbContextOptionsBuilder options)
             => options.UseSqlite($"Data Source={Program.GetDataFilePath("TwitcastingStreamDb.db")}")
-#if DEBUG
+#if DEBUG || DEBUG_DONTREGISTERCOMMAND
             //.LogTo((act) => System.IO.File.AppendAllText("TwitcastingVideoDbTrackerLog.txt", act), Microsoft.Extensions.Logging.LogLevel.Information)
 #endif
             .EnableSensitiveDataLogging();

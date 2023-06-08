@@ -163,7 +163,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
 
         private async Task SendSpaceMessageAsync(Result userModel, DataBase.Table.TwitterSpace twitterSpace, bool isRecord = false)
         {
-#if DEBUG
+#if DEBUG || DEBUG_DONTREGISTERCOMMAND
             Log.New($"推特空間開台通知: {twitterSpace.UserScreenName} - {twitterSpace.SpaecTitle}");
 #else
             using (var db = DataBase.DBContext.GetDbContext())

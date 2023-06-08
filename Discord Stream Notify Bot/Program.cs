@@ -309,7 +309,7 @@ namespace Discord_Stream_Notify_Bot
                         Log.Error(ex.ToString());
                     }
                 }
-#else
+#elif RELEASE
                 try
                 {
                     if (botConfig.TestSlashCommandGuildId != 0 && _client.GetGuild(botConfig.TestSlashCommandGuildId) != null)

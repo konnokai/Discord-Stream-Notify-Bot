@@ -1,7 +1,7 @@
 ﻿using Discord.Interactions;
 using System.Reflection;
 
-#if DEBUG
+#if DEBUG || DEBUG_DONTREGISTERCOMMAND
 using System.Text.RegularExpressions;
 #endif
 
@@ -29,7 +29,7 @@ namespace Discord_Stream_Notify_Bot.Interaction
                 services: _services);
 
             #region 檢查指令是否符合Discord的Regex規範
-#if DEBUG
+#if DEBUG || DEBUG_DONTREGISTERCOMMAND
             bool isError = false;
             Regex regex = new Regex(@"^[\w-]{1,32}$");
             var list = _interactions.Modules.Select(module => module.SlashCommands.Select((x) => new KeyValuePair<string, List<string>>(x.Name, x.Parameters.Select((x2) => x2.Name).ToList())));

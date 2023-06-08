@@ -564,7 +564,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
             otherSchedule = new Timer(async (objState) => await OtherScheduleAsync(), null, TimeSpan.FromSeconds(20), TimeSpan.FromMinutes(5));
 
-#if DEBUG
+#if DEBUG || DEBUG_DONTREGISTERCOMMAND
             return;
 #endif
 
