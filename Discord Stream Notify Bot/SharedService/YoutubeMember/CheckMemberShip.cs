@@ -281,6 +281,11 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                         await logChannel.SendErrorMessageAsync(member.UserId, guildYoutubeMemberConfig.MemberCheckChannelTitle, "無API配額，等待明天重新檢查");
                                         break;
                                     }
+                                    else if (ex.Message.ToLower().Contains("resource temporarily unavailable"))
+                                    {
+                                        Log.Error($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {member.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 的會限資格取得失敗: 暫時無法存取資源");
+                                        continue;
+                                    }
                                     else
                                     {
                                         Log.Error($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {member.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 的會限資格取得失敗: 未知的錯誤");
