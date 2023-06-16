@@ -149,6 +149,11 @@ namespace Discord_Stream_Notify_Bot.HttpClients
 
                     return resultList;
                 }
+                catch (HttpRequestException httpEx) when (httpEx.StatusCode == HttpStatusCode.TooManyRequests)
+                {
+                    Log.Error($"GetTwitterSpaceByUsersIdAsync: 429錯誤");
+                    return new List<TwitterSpacesData>();
+                }
                 catch (JsonReaderException jsonEx)
                 {
                     Log.Error(jsonEx, "GetTwitterSpaceByUsersIdAsync-Json");
