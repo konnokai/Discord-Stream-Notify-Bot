@@ -423,11 +423,25 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
 
         public static async Task<IUserMessage> SendConfirmMessageAsync(this ITextChannel tc, ulong userId, EmbedBuilder embedBuilder)
         {
-            var user = await Program._client.Rest.GetUserAsync(userId);
-            if (user == null)
-                return await tc.SendMessageAsync(embed: embedBuilder.WithOkColor().Build(), options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
-            else
-                return await tc.SendMessageAsync(embed: embedBuilder.WithOkColor().WithAuthor(user).WithThumbnailUrl(user.GetAvatarUrl()).Build(), options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
+            try
+            {
+                var user = await Program._client.Rest.GetUserAsync(userId);
+                if (user == null)
+                    return await tc.SendMessageAsync(embed: embedBuilder.WithOkColor().Build(), options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
+                else
+                    return await tc.SendMessageAsync(embed: embedBuilder.WithOkColor().WithAuthor(user).WithThumbnailUrl(user.GetAvatarUrl()).Build(), options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
+            }
+            catch (Discord.Net.HttpException discordEx) when (discordEx.HttpCode == System.Net.HttpStatusCode.ServiceUnavailable)
+            {
+                Log.Warn("SendConfirmMessageAsync: Discord 503 錯誤，嘗試重發...");
+                await Task.Delay(3000);
+                return await SendConfirmMessageAsync(tc, userId, embedBuilder);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "YoutubeMemberService-SendConfirmMessageAsync");
+                throw;
+            }
         }
 
         public static async Task<IUserMessage> SendConfirmMessageAsync(this ITextChannel tc, string title, string dec)
@@ -445,11 +459,25 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
 
         public static async Task<IUserMessage> SendErrorMessageAsync(this ITextChannel tc, ulong userId, string channelTitle, string status)
         {
-            var user = await Program._client.Rest.GetUserAsync(userId);
-            if (user == null)
-                return await tc.SendMessageAsync(embed: new EmbedBuilder().WithErrorColor().AddField("檢查頻道", channelTitle).AddField("狀態", status).Build(), options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
-            else
-                return await tc.SendMessageAsync(embed: new EmbedBuilder().WithErrorColor().WithAuthor(user).WithThumbnailUrl(user.GetAvatarUrl()).AddField("檢查頻道", channelTitle).AddField("狀態", status).Build(), options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
+            try
+            {
+                var user = await Program._client.Rest.GetUserAsync(userId);
+                if (user == null)
+                    return await tc.SendMessageAsync(embed: new EmbedBuilder().WithErrorColor().AddField("檢查頻道", channelTitle).AddField("狀態", status).Build(), options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
+                else
+                    return await tc.SendMessageAsync(embed: new EmbedBuilder().WithErrorColor().WithAuthor(user).WithThumbnailUrl(user.GetAvatarUrl()).AddField("檢查頻道", channelTitle).AddField("狀態", status).Build(), options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
+            }
+            catch (Discord.Net.HttpException discordEx) when (discordEx.HttpCode == System.Net.HttpStatusCode.ServiceUnavailable)
+            {
+                Log.Warn("SendErrorMessageAsync: Discord 503 錯誤，嘗試重發...");
+                await Task.Delay(3000);
+                return await SendErrorMessageAsync(tc, userId, channelTitle, status);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "YoutubeMemberService-SendErrorMessageAsync");
+                throw;
+            }
         }
 
         public static async Task SendConfirmMessageAsync(this ulong userId, string text, ITextChannel tc)
