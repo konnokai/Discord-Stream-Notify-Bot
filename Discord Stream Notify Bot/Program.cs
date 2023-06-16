@@ -217,8 +217,17 @@ namespace Discord_Stream_Notify_Bot
             #endregion
 
             Log.Info("登入中...");
-            await _client.LoginAsync(TokenType.Bot, botConfig.DiscordToken);
-            await _client.StartAsync();
+
+            try
+            {
+                await _client.LoginAsync(TokenType.Bot, botConfig.DiscordToken);
+                await _client.StartAsync();
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Discord 登入失敗!");
+                return;
+            }
 
             do { await Task.Delay(200); }
             while (!isConnect);
