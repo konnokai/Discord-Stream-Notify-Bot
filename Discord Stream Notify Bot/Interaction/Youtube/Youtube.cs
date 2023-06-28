@@ -647,9 +647,9 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                     db.NoticeYoutubeStreamChannel.Update(noticeStreamChannel);
                     db.SaveChanges();
 
-                    if (message == "-") await Context.Interaction.SendConfirmAsync($"已關閉 `{channelId} 的 `{noticeTypeString}` 通知", true, true).ConfigureAwait(false);
-                    else if (message != "") await Context.Interaction.SendConfirmAsync($"已設定 `{channelId} 的 `{noticeTypeString}` 通知訊息為:\n{message}", true, true).ConfigureAwait(false);
-                    else await Context.Interaction.SendConfirmAsync($"已取消 `{channelId}` 的 `{noticeTypeString}` 通知訊息", true, true).ConfigureAwait(false);
+                    if (message == "-") await Context.Interaction.SendConfirmAsync($"已關閉 `{channelId}` 的 `{noticeTypeString}` 通知", true, true).ConfigureAwait(false);
+                    else if (message != "") await Context.Interaction.SendConfirmAsync($"已設定 `{channelId}` 的 `{noticeTypeString}` 通知訊息為:\n{message}", true, true).ConfigureAwait(false);
+                    else await Context.Interaction.SendConfirmAsync($"已清除 `{channelId}` 的 `{noticeTypeString}` 通知訊息", true, true).ConfigureAwait(false);
                 }
                 else
                 {
