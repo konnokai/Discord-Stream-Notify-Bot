@@ -55,11 +55,17 @@
     <None Update="Data\HelpDescription.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+  </ItemGroup>  
+
+  <ItemGroup>
+    <Using Include="Discord" />
+    <Using Include="StackExchange.Redis" />
   </ItemGroup>
 	
 	<PropertyGroup>
 		<SourceRevisionId>build$([System.DateTime]::UtcNow.AddHours(8).ToString("yyyy/MM/dd HH:mm:ss"))</SourceRevisionId>
 		<ApplicationIcon>Logo_64.ico</ApplicationIcon>
+		<ImplicitUsings>enable</ImplicitUsings>
 	</PropertyGroup>
 	
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
