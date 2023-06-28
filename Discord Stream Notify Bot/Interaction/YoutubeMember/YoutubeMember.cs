@@ -136,7 +136,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
                         "(注意: 解除綁定後也會一併解除會限用戶組，如要重新獲得需重新至網站綁定)"))
                         return;
 
-                    await Program.RedisSub.PublishAsync("member.revokeToken", Context.User.Id);
+                    await Program.RedisSub.PublishAsync(new RedisChannel("member.revokeToken", RedisChannel.PatternMode.Literal), Context.User.Id);
 
                     try
                     {

@@ -1,6 +1,7 @@
 ﻿using Discord.Interactions;
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.Interaction.Attribute;
+using System;
 using Video = Google.Apis.YouTube.v3.Data.Video;
 
 namespace Discord_Stream_Notify_Bot.Interaction.Youtube
@@ -172,7 +173,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
 
                 using (var db = DataBase.DBContext.GetDbContext())
                 {
-                    result = result.OrderBy((x) => x.LiveStreamingDetails.ScheduledStartTime.Value).ToList();
+                    result = result.OrderBy((x) => x.LiveStreamingDetails.ScheduledStartTimeDateTimeOffset).ToList();
                     await Context.SendPaginatedConfirmAsync(page, (act) =>
                     {
                         return new EmbedBuilder().WithOkColor()
@@ -181,7 +182,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                            result.Skip(act * 7).Take(7)
                            .Select((x) => $"{Format.Url(x.Snippet.Title, $"https://www.youtube.com/watch?v={x.Id}")}" +
                            $"\n{Format.Url(x.Snippet.ChannelTitle, $"https://www.youtube.com/channel/{x.Snippet.ChannelId}")}" +
-                           $"\n直播時間: {x.LiveStreamingDetails.ScheduledStartTime.Value}" +
+                           $"\n直播時間: {DateTime.Parse(x.LiveStreamingDetails.ScheduledStartTimeRaw)}" +
                            "\n是否在直播錄影清單內: " + (db.RecordYoutubeChannel.Any((x2) => x2.YoutubeChannelId.Trim() == x.Snippet.ChannelId) ? "是" : "否"))));
                     }, result.Count, 7).ConfigureAwait(false);
                 }

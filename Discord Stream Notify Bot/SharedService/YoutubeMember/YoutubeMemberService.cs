@@ -44,7 +44,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                 DataStore = new RedisDataStore(RedisConnection.Instance.ConnectionMultiplexer)
             });
 
-            Program.RedisSub.Subscribe("member.revokeToken", async (channel, value) =>
+            Program.RedisSub.Subscribe(new RedisChannel("member.revokeToken", RedisChannel.PatternMode.Literal), async (channel, value) =>
             {
                 try
                 {
@@ -140,7 +140,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
             checkOldMemberStatus = new Timer(new TimerCallback(async (obj) => await CheckMemberShip(obj)), true, TimeSpan.FromSeconds(Math.Round(Convert.ToDateTime($"{DateTime.Now.AddDays(1):yyyy/MM/dd 04:00:00}").Subtract(DateTime.Now).TotalSeconds)), TimeSpan.FromDays(1));
             checkNewMemberStatus = new Timer(new TimerCallback(async (obj) => await CheckMemberShip(obj)), false, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(5));
 
-            Program.RedisSub.Publish("member.syncRedisToken", _botConfig.RedisTokenKey);
+            Program.RedisSub.Publish(new RedisChannel("member.syncRedisToken", RedisChannel.PatternMode.Literal), _botConfig.RedisTokenKey);
             Log.Info("已同步Redis Token");
         }
 

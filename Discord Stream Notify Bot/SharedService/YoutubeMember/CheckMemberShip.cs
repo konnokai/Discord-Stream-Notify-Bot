@@ -19,7 +19,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
             using (var db = DBContext.GetDbContext())
             {
                 var needCheckList = db.GuildYoutubeMemberConfig.Where((x) => !string.IsNullOrEmpty(x.MemberCheckChannelId) && !string.IsNullOrEmpty(x.MemberCheckChannelTitle) && x.MemberCheckVideoId != "-");
-                Log.Info((isOldCheck ? "舊" : "新") + $"會限檢查開始: {needCheckList.Count()}個頻道");
+                Log.Info((isOldCheck ? "舊" : "新") + $"會限檢查開始: {needCheckList.Count()} 個頻道");
 
                 HashSet<string> checkedMemberSet = new();
                 List<YoutubeMemberCheck> needRemoveList = new();

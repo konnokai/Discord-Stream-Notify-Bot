@@ -80,7 +80,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
             {
                 if (Program.Redis != null)
                 {
-                    if (await Program.RedisSub.PublishAsync("youtube.record", videoId) != 0)
+                    if (await Program.RedisSub.PublishAsync(new RedisChannel("youtube.record", RedisChannel.PatternMode.Literal), videoId) != 0)
                     {
                         Log.Info($"已發送錄影請求: {videoId}");
                         await Context.Channel.SendConfirmAsync("已開始錄影", description).ConfigureAwait(false);

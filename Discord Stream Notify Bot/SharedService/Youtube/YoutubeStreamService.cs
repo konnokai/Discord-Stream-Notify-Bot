@@ -71,7 +71,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
             if (Program.Redis != null)
             {
-                Program.RedisSub.Subscribe("youtube.startstream", async (channel, videoData) =>
+                Program.RedisSub.Subscribe(new RedisChannel("youtube.startstream", RedisChannel.PatternMode.Literal), async (channel, videoData) =>
                 {
                     try
                     {
@@ -95,15 +95,15 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         if (item == null)
                         {
                             Log.Warn($"{videoId} Delete");
-                            await Program.RedisSub.PublishAsync("youtube.deletestream", videoId);
+                            await Program.RedisSub.PublishAsync(new RedisChannel("youtube.deletestream", RedisChannel.PatternMode.Literal), videoId);
                             return;
                         }
 
                         DateTime startTime;
-                        if (item.LiveStreamingDetails.ActualStartTime.HasValue)
-                            startTime = item.LiveStreamingDetails.ActualStartTime.Value;
+                        if (!string.IsNullOrEmpty(item.LiveStreamingDetails.ActualStartTimeRaw))
+                            startTime = DateTime.Parse(item.LiveStreamingDetails.ActualStartTimeRaw);
                         else
-                            startTime = item.LiveStreamingDetails.ScheduledStartTime.Value;
+                            startTime = DateTime.Parse(item.LiveStreamingDetails.ScheduledStartTimeRaw);
 
                         EmbedBuilder embedBuilder = new EmbedBuilder()
                         .WithTitle(item.Snippet.Title)
@@ -125,7 +125,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     }
                 });
 
-                Program.RedisSub.Subscribe("youtube.endstream", async (channel, videoId) =>
+                Program.RedisSub.Subscribe(new RedisChannel("youtube.endstream", RedisChannel.PatternMode.Literal), async (channel, videoId) =>
                 {
                     try
                     {
@@ -135,18 +135,18 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         if (item == null)
                         {
                             Log.Warn($"{videoId} Delete");
-                            await Program.RedisSub.PublishAsync("youtube.deletestream", videoId);
+                            await Program.RedisSub.PublishAsync(new RedisChannel("youtube.deletestream", RedisChannel.PatternMode.Literal), videoId);
                             return;
                         }
 
-                        if (!item.LiveStreamingDetails.ActualEndTime.HasValue)
+                        if (string.IsNullOrEmpty(item.LiveStreamingDetails.ActualEndTimeRaw))
                         {
                             Log.Warn("還沒關台");
                             return;
                         }
 
-                        var startTime = item.LiveStreamingDetails.ActualStartTime.Value;
-                        var endTime = item.LiveStreamingDetails.ActualEndTime.Value;
+                        var startTime = DateTime.Parse(item.LiveStreamingDetails.ActualStartTimeRaw);
+                        var endTime = DateTime.Parse(item.LiveStreamingDetails.ActualEndTimeRaw);
 
                         EmbedBuilder embedBuilder = new EmbedBuilder();
                         embedBuilder.WithErrorColor()
@@ -166,7 +166,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     }
                 });
 
-                Program.RedisSub.Subscribe("youtube.deletestream", async (channel, videoId) =>
+                Program.RedisSub.Subscribe(new RedisChannel("youtube.deletestream", RedisChannel.PatternMode.Literal), async (channel, videoId) =>
                 {
                     Log.Info($"{channel} - {videoId}");
 
@@ -196,7 +196,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     }
                 });
 
-                Program.RedisSub.Subscribe("youtube.memberonly", async (channel, videoId) =>
+                Program.RedisSub.Subscribe(new RedisChannel("youtube.memberonly", RedisChannel.PatternMode.Literal), async (channel, videoId) =>
                 {
                     Log.Info($"{channel} - {videoId}");
 
@@ -212,18 +212,18 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                 if (item == null)
                                 {
                                     Log.Warn($"{videoId} Delete");
-                                    await Program.RedisSub.PublishAsync("youtube.deletestream", videoId);
+                                    await Program.RedisSub.PublishAsync(new RedisChannel("youtube.deletestream", RedisChannel.PatternMode.Literal), videoId);
                                     return;
                                 }
 
-                                if (!item.LiveStreamingDetails.ActualEndTime.HasValue)
+                                if (string.IsNullOrEmpty(item.LiveStreamingDetails.ActualEndTimeRaw))
                                 {
                                     Log.Warn("還沒關台");
                                     return;
                                 }
 
-                                var startTime = item.LiveStreamingDetails.ActualStartTime.Value;
-                                var endTime = item.LiveStreamingDetails.ActualEndTime.Value;
+                                var startTime = DateTime.Parse(item.LiveStreamingDetails.ActualStartTimeRaw);
+                                var endTime = DateTime.Parse(item.LiveStreamingDetails.ActualEndTimeRaw);
 
                                 EmbedBuilder embedBuilder = new EmbedBuilder();
                                 embedBuilder.WithErrorColor()
@@ -246,7 +246,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     }
                 });
 
-                Program.RedisSub.Subscribe("youtube.unarchived", async (channel, videoId) =>
+                Program.RedisSub.Subscribe(new RedisChannel("youtube.unarchived", RedisChannel.PatternMode.Literal), async (channel, videoId) =>
                 {
                     Log.Info($"{channel} - {videoId}");
 
@@ -277,7 +277,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     }
                 });
 
-                Program.RedisSub.Subscribe("youtube.429error", async (channel, videoId) =>
+                Program.RedisSub.Subscribe(new RedisChannel("youtube.429error", RedisChannel.PatternMode.Literal), async (channel, videoId) =>
                 {
                     Log.Info($"{channel} - {videoId}");
                     IsRecord = false;
@@ -309,7 +309,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     }
                 });
 
-                Program.RedisSub.Subscribe("youtube.pubsub.CreateOrUpdate", async (channel, youtubeNotificationJson) =>
+                Program.RedisSub.Subscribe(new RedisChannel("youtube.pubsub.CreateOrUpdate", RedisChannel.PatternMode.Literal), async (channel, youtubeNotificationJson) =>
                 {
                     YoutubePubSubNotification youtubePubSubNotification = JsonConvert.DeserializeObject<YoutubePubSubNotification>(youtubeNotificationJson.ToString());
 
@@ -341,8 +341,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                     }
                                     catch (Exception ex)
                                     {
-                                        Log.Error($"PubSub_AddData_CreateOrUpdate: {item.Id}");
-                                        Log.Error($"{ex}");
+                                        Log.Error(ex, $"PubSub_AddData_CreateOrUpdate: {item.Id}");
                                     }
                                 }
                                 else
@@ -357,7 +356,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                         ChannelType = DataBase.Table.Video.YTChannelType.NonApproved
                                     };
 
-                                    Log.New($"(非已認可的新影片) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
+                                    Log.New($"(非已認可的新影片) | {youtubePubSubNotification.Published} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
 
                                     EmbedBuilder embedBuilder = new EmbedBuilder();
                                     embedBuilder.WithOkColor()
@@ -380,7 +379,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     }
                 });
 
-                Program.RedisSub.Subscribe("youtube.pubsub.Deleted", async (channel, youtubeNotificationJson) =>
+                Program.RedisSub.Subscribe(new RedisChannel("youtube.pubsub.Deleted", RedisChannel.PatternMode.Literal), async (channel, youtubeNotificationJson) =>
                 {
                     YoutubePubSubNotification youtubePubSubNotification = JsonConvert.DeserializeObject<YoutubePubSubNotification>(youtubeNotificationJson.ToString());
 
@@ -415,7 +414,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     }
                 });
 
-                Program.RedisSub.Subscribe("youtube.pubsub.NeedRegister", async (channel, channelId) =>
+                Program.RedisSub.Subscribe(new RedisChannel("youtube.pubsub.NeedRegister", RedisChannel.PatternMode.Literal), async (channel, channelId) =>
                 {
                     using (var db = DataBase.DBContext.GetDbContext())
                     {
@@ -639,7 +638,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                                 var item = videoResult.Items.First((x) => x.Id == reminder.Key);
 
-                                if (item.LiveStreamingDetails == null || item.LiveStreamingDetails.ScheduledStartTime == null || !item.LiveStreamingDetails.ScheduledStartTime.HasValue)
+                                if (item.LiveStreamingDetails == null || string.IsNullOrEmpty(item.LiveStreamingDetails.ScheduledStartTimeRaw))
                                 {
                                     Reminders.TryRemove(reminder.Key, out var reminderItem);
 
@@ -657,7 +656,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                     continue;
                                 }
 
-                                if (reminder.Value.StreamVideo.ScheduledStartTime != item.LiveStreamingDetails.ScheduledStartTime.Value)
+                                if (reminder.Value.StreamVideo.ScheduledStartTime != DateTime.Parse(item.LiveStreamingDetails.ScheduledStartTimeRaw))
                                 {
                                     changeVideoNum++;
                                     try
@@ -668,7 +667,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                             t.Timer.Dispose();
                                         }
 
-                                        var startTime = item.LiveStreamingDetails.ScheduledStartTime.Value;
+                                        var startTime = DateTime.Parse(item.LiveStreamingDetails.ScheduledStartTimeRaw);
                                         var streamVideo = new DataBase.Table.Video()
                                         {
                                             ChannelId = item.Snippet.ChannelId,

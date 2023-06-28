@@ -83,7 +83,7 @@ namespace Discord_Stream_Notify_Bot
 
                 Log.Info("Redis已連線");
 
-                if (RedisSub.Publish("youtube.test", "nope") != 0)
+                if (RedisSub.Publish(new RedisChannel("youtube.test", RedisChannel.PatternMode.Literal), "nope") != 0)
                 {
                     Log.Info("Redis Sub已存在");
                 }
@@ -296,37 +296,36 @@ namespace Discord_Stream_Notify_Bot
             try
             {
                 InteractionService interactionService = iService.GetService<InteractionService>();
-#if DEBUG
-                if (botConfig.TestSlashCommandGuildId == 0 || _client.GetGuild(botConfig.TestSlashCommandGuildId) == null)
-                    Log.Warn("未設定測試Slash指令的伺服器或伺服器不存在，略過");
-                else
+                var commandCount = (await RedisDb.StringGetSetAsync("discord_stream_bot:command_count", iService.GetService<InteractionHandler>().CommandCount)).ToString();
+                if (commandCount != iService.GetService<InteractionHandler>().CommandCount.ToString())
                 {
+#if DEBUG
+                    if (botConfig.TestSlashCommandGuildId == 0 || _client.GetGuild(botConfig.TestSlashCommandGuildId) == null)
+                        Log.Warn("未設定測試Slash指令的伺服器或伺服器不存在，略過");
+                    else
+                    {
+                        try
+                        {
+                            var result = await interactionService.RegisterCommandsToGuildAsync(botConfig.TestSlashCommandGuildId);
+                            Log.Info($"已註冊指令 ({botConfig.TestSlashCommandGuildId}) : {string.Join(", ", result.Select((x) => x.Name))}");
+
+                            result = await interactionService.AddModulesToGuildAsync(botConfig.TestSlashCommandGuildId, false, interactionService.Modules.Where((x) => x.DontAutoRegister).ToArray());
+                            Log.Info($"已註冊指令 ({botConfig.TestSlashCommandGuildId}) : {string.Join(", ", result.Select((x) => x.Name))}");
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Error("註冊伺服器專用Slash指令失敗");
+                            Log.Error(ex.ToString());
+                        }
+                    }
+#elif RELEASE
                     try
                     {
-                        var result = await interactionService.RegisterCommandsToGuildAsync(botConfig.TestSlashCommandGuildId);
-                        Log.Info($"已註冊指令 ({botConfig.TestSlashCommandGuildId}) : {string.Join(", ", result.Select((x) => x.Name))}");
-
-                        result = await interactionService.AddModulesToGuildAsync(botConfig.TestSlashCommandGuildId, false, interactionService.Modules.Where((x) => x.DontAutoRegister).ToArray());
-                        Log.Info($"已註冊指令 ({botConfig.TestSlashCommandGuildId}) : {string.Join(", ", result.Select((x) => x.Name))}");
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Error("註冊伺服器專用Slash指令失敗");
-                        Log.Error(ex.ToString());
-                    }
-                }
-#elif RELEASE
-                try
-                {
-                    if (botConfig.TestSlashCommandGuildId != 0 && _client.GetGuild(botConfig.TestSlashCommandGuildId) != null)
-                    {
-                        var result = await interactionService.RemoveModulesFromGuildAsync(botConfig.TestSlashCommandGuildId, interactionService.Modules.Where((x) => !x.DontAutoRegister).ToArray());
-                        Log.Info($"({botConfig.TestSlashCommandGuildId}) 已移除測試指令，剩餘指令: {string.Join(", ", result.Select((x) => x.Name))}");
-                    }
-
-                    var commandCount = (await RedisDb.StringGetSetAsync("discord_stream_bot:command_count", iService.GetService<InteractionHandler>().CommandCount)).ToString();
-                    if (commandCount != iService.GetService<InteractionHandler>().CommandCount.ToString())
-                    {
+                        if (botConfig.TestSlashCommandGuildId != 0 && _client.GetGuild(botConfig.TestSlashCommandGuildId) != null)
+                        {
+                            var result = await interactionService.RemoveModulesFromGuildAsync(botConfig.TestSlashCommandGuildId, interactionService.Modules.Where((x) => !x.DontAutoRegister).ToArray());
+                            Log.Info($"({botConfig.TestSlashCommandGuildId}) 已移除測試指令，剩餘指令: {string.Join(", ", result.Select((x) => x.Name))}");
+                        }
                         try
                         {
                             foreach (var item in interactionService.Modules.Where((x) => x.Preconditions.Any((x) => x is Interaction.Attribute.RequireGuildAttribute)))
@@ -353,14 +352,14 @@ namespace Discord_Stream_Notify_Bot
                         await interactionService.RegisterCommandsGloballyAsync();
                         Log.Info("已註冊全球指令");
                     }
-                }
-                catch (Exception ex)
-                {
-                    Log.Error("取得指令數量失敗，請確認Redis伺服器是否可以存取");
-                    Log.Error(ex.Message);
-                    isDisconnect = true;
-                }
+                    catch (Exception ex)
+                    {
+                        Log.Error("取得指令數量失敗，請確認Redis伺服器是否可以存取");
+                        Log.Error(ex.Message);
+                        isDisconnect = true;
+                    }
 #endif
+                }
             }
             catch (Exception ex)
             {

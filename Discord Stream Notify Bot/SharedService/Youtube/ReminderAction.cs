@@ -68,8 +68,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 }
 
                 DateTime startTime;
-                if (videoResult.LiveStreamingDetails.ScheduledStartTime.HasValue) startTime = videoResult.LiveStreamingDetails.ScheduledStartTime.Value;
-                else startTime = videoResult.LiveStreamingDetails.ActualStartTime.Value;
+                if (!string.IsNullOrEmpty(videoResult.LiveStreamingDetails.ScheduledStartTimeRaw)) startTime = DateTime.Parse(videoResult.LiveStreamingDetails.ScheduledStartTimeRaw);
+                else startTime = DateTime.Parse(videoResult.LiveStreamingDetails.ActualStartTimeRaw);
 
                 if (startTime.AddMinutes(-2) < DateTime.Now)
                 {
@@ -137,7 +137,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                             {
                                 if (Program.Redis != null)
                                 {
-                                    if (await Program.RedisSub.PublishAsync("youtube.record", streamVideo.VideoId) != 0)
+                                    if (await Program.RedisSub.PublishAsync(new RedisChannel("youtube.record", RedisChannel.PatternMode.Literal), streamVideo.VideoId) != 0)
                                     {
                                         Log.Info($"已發送錄影請求: {streamVideo.VideoId}");
                                         isRecord = true;
@@ -273,7 +273,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         {
                             var item = await GetVideoAsync(videolId).ConfigureAwait(false);
 
-                            var startTime = item.LiveStreamingDetails.ActualStartTime.Value;
+                            var startTime = DateTime.Parse(item.LiveStreamingDetails.ActualStartTimeRaw);
                             streamVideo = new DataBase.Table.Video()
                             {
                                 ChannelId = item.Snippet.ChannelId,
@@ -289,7 +289,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         }
                         catch (Exception ex)
                         {
-                            Log.Error(ex.Message + "\n" + ex.StackTrace);
+                            Log.Error(ex, $"SendStreamMessageAsync-GetVideoAsync: {videolId}");
                             return;
                         }
                     }
@@ -304,9 +304,21 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             if (!Program.isConnect)
                 return;
 
-            string type = streamVideo.ChannelType == DataBase.Table.Video.YTChannelType.Holo ? "holo" : streamVideo.ChannelType == DataBase.Table.Video.YTChannelType.Nijisanji ? "2434" : "other";
-            List<NoticeYoutubeStreamChannel> noticeGuildList = new List<NoticeYoutubeStreamChannel>();
+            string type;
+            switch (streamVideo.ChannelType)
+            {
+                case DataBase.Table.Video.YTChannelType.Holo:
+                    type = "holo";
+                    break;
+                case DataBase.Table.Video.YTChannelType.Nijisanji:
+                    type = "2434";
+                    break;
+                default:
+                    type = "other";
+                    break;
+            }
 
+            List<NoticeYoutubeStreamChannel> noticeGuildList = new List<NoticeYoutubeStreamChannel>();
             using (var db = DataBase.DBContext.GetDbContext())
             {
                 try
