@@ -13,52 +13,55 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
         {
             public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
             {
-                using var db = DataBase.DBContext.GetDbContext();
-                IQueryable<DataBase.Table.YoutubeChannelSpider> channelList;
-
-                if (autocompleteInteraction.User.Id == Program.ApplicatonOwner.Id)
+                return await Task.Run(() =>
                 {
-                    channelList = db.YoutubeChannelSpider;
-                }
-                else
-                {
-                    if (!db.YoutubeChannelSpider.Any((x) => x.GuildId == autocompleteInteraction.GuildId))
-                        return AutocompletionResult.FromSuccess();
+                    using var db = DataBase.DBContext.GetDbContext();
+                    IQueryable<DataBase.Table.YoutubeChannelSpider> channelList;
 
-                    channelList = db.YoutubeChannelSpider.Where((x) => x.GuildId == autocompleteInteraction.GuildId);
-                }
-
-                var channelList2 = new List<DataBase.Table.YoutubeChannelSpider>();
-                try
-                {
-                    string value = autocompleteInteraction.Data.Current.Value.ToString();
-                    if (!string.IsNullOrEmpty(value))
+                    if (autocompleteInteraction.User.Id == Program.ApplicatonOwner.Id)
                     {
-                        foreach (var item in channelList)
-                        {
-                            if (item.ChannelTitle.Contains(value, StringComparison.CurrentCultureIgnoreCase) || item.ChannelId.Contains(value, StringComparison.CurrentCultureIgnoreCase))
-                            {
-                                channelList2.Add(item);
-                            }
-                        }
+                        channelList = db.YoutubeChannelSpider;
                     }
                     else
                     {
-                        channelList2 = channelList.ToList();
+                        if (!db.YoutubeChannelSpider.Any((x) => x.GuildId == autocompleteInteraction.GuildId))
+                            return AutocompletionResult.FromSuccess();
+
+                        channelList = db.YoutubeChannelSpider.Where((x) => x.GuildId == autocompleteInteraction.GuildId);
                     }
-                }
-                catch (Exception ex)
-                {
-                    Log.Error($"GuildYoutubeChannelSpiderAutocompleteHandler - {ex}");
-                }
 
-                List<AutocompleteResult> results = new();
-                foreach (var item in channelList2)
-                {
-                    results.Add(new AutocompleteResult(item.ChannelTitle, item.ChannelId));
-                }
+                    var channelList2 = new List<DataBase.Table.YoutubeChannelSpider>();
+                    try
+                    {
+                        string value = autocompleteInteraction.Data.Current.Value.ToString();
+                        if (!string.IsNullOrEmpty(value))
+                        {
+                            foreach (var item in channelList)
+                            {
+                                if (item.ChannelTitle.Contains(value, StringComparison.CurrentCultureIgnoreCase) || item.ChannelId.Contains(value, StringComparison.CurrentCultureIgnoreCase))
+                                {
+                                    channelList2.Add(item);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            channelList2 = channelList.ToList();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error($"GuildYoutubeChannelSpiderAutocompleteHandler - {ex}");
+                    }
 
-                return AutocompletionResult.FromSuccess(results.Take(25));
+                    List<AutocompleteResult> results = new();
+                    foreach (var item in channelList2)
+                    {
+                        results.Add(new AutocompleteResult(item.ChannelTitle, item.ChannelId));
+                    }
+
+                    return AutocompletionResult.FromSuccess(results.Take(25));
+                });
             }
         }
 

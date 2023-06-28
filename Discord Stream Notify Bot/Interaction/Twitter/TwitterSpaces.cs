@@ -13,46 +13,49 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
         {
             public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
             {
-                using var db = DataBase.DBContext.GetDbContext();
-                if (!db.NoticeTwitterSpaceChannel.Any((x) => x.GuildId == context.Guild.Id))
-                    return AutocompletionResult.FromSuccess();
-
-                var channelIdList = db.NoticeTwitterSpaceChannel.Where((x) => x.GuildId == context.Guild.Id).Select((x) => new KeyValuePair<string, string>(db.GetTwitterUserNameByUserScreenName(x.NoticeTwitterSpaceUserScreenName), x.NoticeTwitterSpaceUserScreenName));
-
-                var channelIdList2 = new Dictionary<string, string>();
-                try
+                return await Task.Run(() =>
                 {
-                    string value = autocompleteInteraction.Data.Current.Value.ToString();
-                    if (!string.IsNullOrEmpty(value))
+                    using var db = DataBase.DBContext.GetDbContext();
+                    if (!db.NoticeTwitterSpaceChannel.Any((x) => x.GuildId == context.Guild.Id))
+                        return AutocompletionResult.FromSuccess();
+
+                    var channelIdList = db.NoticeTwitterSpaceChannel.Where((x) => x.GuildId == context.Guild.Id).Select((x) => new KeyValuePair<string, string>(db.GetTwitterUserNameByUserScreenName(x.NoticeTwitterSpaceUserScreenName), x.NoticeTwitterSpaceUserScreenName));
+
+                    var channelIdList2 = new Dictionary<string, string>();
+                    try
                     {
-                        foreach (var item in channelIdList)
+                        string value = autocompleteInteraction.Data.Current.Value.ToString();
+                        if (!string.IsNullOrEmpty(value))
                         {
-                            if (item.Key.Contains(value, StringComparison.CurrentCultureIgnoreCase) || item.Value.Contains(value, StringComparison.CurrentCultureIgnoreCase))
+                            foreach (var item in channelIdList)
+                            {
+                                if (item.Key.Contains(value, StringComparison.CurrentCultureIgnoreCase) || item.Value.Contains(value, StringComparison.CurrentCultureIgnoreCase))
+                                {
+                                    channelIdList2.Add(item.Key, item.Value);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            foreach (var item in channelIdList)
                             {
                                 channelIdList2.Add(item.Key, item.Value);
                             }
                         }
                     }
-                    else
+                    catch (Exception ex)
                     {
-                        foreach (var item in channelIdList)
-                        {
-                            channelIdList2.Add(item.Key, item.Value);
-                        }
+                        Log.Error($"GuildNoticeTwitterSpaceIdAutocompleteHandler - {ex}");
                     }
-                }
-                catch (Exception ex)
-                {
-                    Log.Error($"GuildNoticeTwitterSpaceIdAutocompleteHandler - {ex}");
-                }
 
-                List<AutocompleteResult> results = new();
-                foreach (var item in channelIdList2)
-                {
-                    results.Add(new AutocompleteResult(item.Key, item.Value));
-                }
+                    List<AutocompleteResult> results = new();
+                    foreach (var item in channelIdList2)
+                    {
+                        results.Add(new AutocompleteResult(item.Key, item.Value));
+                    }
 
-                return AutocompletionResult.FromSuccess(results.Take(25));
+                    return AutocompletionResult.FromSuccess(results.Take(25));
+                });
             }
         }
 
@@ -60,52 +63,55 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
         {
             public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
             {
-                using var db = DataBase.DBContext.GetDbContext();
-                IQueryable<TwitterSpaecSpider> channelList;
-
-                if (autocompleteInteraction.User.Id == Program.ApplicatonOwner.Id)
+                return await Task.Run(() =>
                 {
-                    channelList = db.TwitterSpaecSpider;
-                }
-                else
-                {
-                    if (!db.TwitterSpaecSpider.Any((x) => x.GuildId == autocompleteInteraction.GuildId))
-                        return AutocompletionResult.FromSuccess();
+                    using var db = DataBase.DBContext.GetDbContext();
+                    IQueryable<TwitterSpaecSpider> channelList;
 
-                    channelList = db.TwitterSpaecSpider.Where((x) => x.GuildId == autocompleteInteraction.GuildId);
-                }
-
-                var channelList2 = new List<TwitterSpaecSpider>();
-                try
-                {
-                    string value = autocompleteInteraction.Data.Current.Value.ToString();
-                    if (!string.IsNullOrEmpty(value))
+                    if (autocompleteInteraction.User.Id == Program.ApplicatonOwner.Id)
                     {
-                        foreach (var item in channelList)
-                        {
-                            if (item.UserName.Contains(value, StringComparison.CurrentCultureIgnoreCase) || item.UserScreenName.Contains(value, StringComparison.CurrentCultureIgnoreCase))
-                            {
-                                channelList2.Add(item);
-                            }
-                        }
+                        channelList = db.TwitterSpaecSpider;
                     }
                     else
                     {
-                        channelList2 = channelList.ToList();
+                        if (!db.TwitterSpaecSpider.Any((x) => x.GuildId == autocompleteInteraction.GuildId))
+                            return AutocompletionResult.FromSuccess();
+
+                        channelList = db.TwitterSpaecSpider.Where((x) => x.GuildId == autocompleteInteraction.GuildId);
                     }
-                }
-                catch (Exception ex)
-                {
-                    Log.Error($"GuildTwitterSpaceSpiderAutocompleteHandler - {ex}");
-                }
 
-                List<AutocompleteResult> results = new();
-                foreach (var item in channelList2)
-                {
-                    results.Add(new AutocompleteResult(item.UserName, item.UserScreenName));
-                }
+                    var channelList2 = new List<TwitterSpaecSpider>();
+                    try
+                    {
+                        string value = autocompleteInteraction.Data.Current.Value.ToString();
+                        if (!string.IsNullOrEmpty(value))
+                        {
+                            foreach (var item in channelList)
+                            {
+                                if (item.UserName.Contains(value, StringComparison.CurrentCultureIgnoreCase) || item.UserScreenName.Contains(value, StringComparison.CurrentCultureIgnoreCase))
+                                {
+                                    channelList2.Add(item);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            channelList2 = channelList.ToList();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error($"GuildTwitterSpaceSpiderAutocompleteHandler - {ex}");
+                    }
 
-                return AutocompletionResult.FromSuccess(results.Take(25));
+                    List<AutocompleteResult> results = new();
+                    foreach (var item in channelList2)
+                    {
+                        results.Add(new AutocompleteResult(item.UserName, item.UserScreenName));
+                    }
+
+                    return AutocompletionResult.FromSuccess(results.Take(25));
+                });
             }
         }
 

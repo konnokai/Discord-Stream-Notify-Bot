@@ -23,46 +23,49 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
         {
             public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
             {
-                using var db = DataBase.DBContext.GetDbContext();
-                if (!db.GuildYoutubeMemberConfig.Any((x) => x.GuildId == context.Guild.Id))
-                    return AutocompletionResult.FromSuccess();
-
-                var channelIdList = db.GuildYoutubeMemberConfig.Where((x) => x.GuildId == context.Guild.Id).Select((x) => new KeyValuePair<string, string>(x.MemberCheckChannelTitle, x.MemberCheckChannelId));
-
-                var channelIdList2 = new Dictionary<string, string>();
-                try
+                return await Task.Run(() =>
                 {
-                    string value = autocompleteInteraction.Data.Current.Value.ToString();
-                    if (!string.IsNullOrEmpty(value))
+                    using var db = DataBase.DBContext.GetDbContext();
+                    if (!db.GuildYoutubeMemberConfig.Any((x) => x.GuildId == context.Guild.Id))
+                        return AutocompletionResult.FromSuccess();
+
+                    var channelIdList = db.GuildYoutubeMemberConfig.Where((x) => x.GuildId == context.Guild.Id).Select((x) => new KeyValuePair<string, string>(x.MemberCheckChannelTitle, x.MemberCheckChannelId));
+
+                    var channelIdList2 = new Dictionary<string, string>();
+                    try
                     {
-                        foreach (var item in channelIdList)
+                        string value = autocompleteInteraction.Data.Current.Value.ToString();
+                        if (!string.IsNullOrEmpty(value))
                         {
-                            if (item.Key.Contains(value, StringComparison.CurrentCultureIgnoreCase) || item.Value.Contains(value, StringComparison.CurrentCultureIgnoreCase))
+                            foreach (var item in channelIdList)
+                            {
+                                if (item.Key.Contains(value, StringComparison.CurrentCultureIgnoreCase) || item.Value.Contains(value, StringComparison.CurrentCultureIgnoreCase))
+                                {
+                                    channelIdList2.Add(item.Key, item.Value);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            foreach (var item in channelIdList)
                             {
                                 channelIdList2.Add(item.Key, item.Value);
                             }
                         }
                     }
-                    else
+                    catch (Exception ex)
                     {
-                        foreach (var item in channelIdList)
-                        {
-                            channelIdList2.Add(item.Key, item.Value);
-                        }
+                        Log.Error($"GuildYoutubeMemberCheckChannelIdAutocompleteHandler - {ex}");
                     }
-                }
-                catch (Exception ex)
-                {
-                    Log.Error($"GuildYoutubeMemberCheckChannelIdAutocompleteHandler - {ex}");
-                }
 
-                List<AutocompleteResult> results = new();
-                foreach (var item in channelIdList2)
-                {
-                    results.Add(new AutocompleteResult(item.Key, item.Value));
-                }
+                    List<AutocompleteResult> results = new();
+                    foreach (var item in channelIdList2)
+                    {
+                        results.Add(new AutocompleteResult(item.Key, item.Value));
+                    }
 
-                return AutocompletionResult.FromSuccess(results.Take(25));
+                    return AutocompletionResult.FromSuccess(results.Take(25));
+                });
             }
         }
 
