@@ -4,7 +4,6 @@ using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
 using Google.Apis.YouTube.v3;
 using Microsoft.EntityFrameworkCore;
-using System.Threading;
 
 namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
 {

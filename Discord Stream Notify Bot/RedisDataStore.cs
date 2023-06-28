@@ -1,6 +1,5 @@
 ﻿using Discord_Stream_Notify_Bot.Auth;
 using Google.Apis.Util.Store;
-using StackExchange.Redis;
 
 namespace Discord_Stream_Notify_Bot
 {

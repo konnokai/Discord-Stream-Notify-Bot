@@ -3,7 +3,6 @@ using Discord_Stream_Notify_Bot.HttpClients.Twitter;
 using Discord_Stream_Notify_Bot.Interaction;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Threading;
 
 namespace Discord_Stream_Notify_Bot.SharedService.Twitter
 {

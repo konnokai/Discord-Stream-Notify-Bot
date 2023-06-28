@@ -1,6 +1,4 @@
-﻿using System.IO;
-
-namespace Discord_Stream_Notify_Bot.SharedService.Youtube
+﻿namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 {
     public partial class YoutubeStreamService
     {

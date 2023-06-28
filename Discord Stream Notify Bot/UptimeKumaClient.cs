@@ -1,7 +1,4 @@
-﻿using System.Net.Http;
-using System.Threading;
-
-public static class UptimeKumaClient
+﻿public static class UptimeKumaClient
 {
     static Timer timerUptimeKumaPush;
     static DiscordSocketClient _client;

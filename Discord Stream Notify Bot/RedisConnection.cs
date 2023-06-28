@@ -1,6 +1,4 @@
-﻿using StackExchange.Redis;
-
-public sealed class RedisConnection
+﻿public sealed class RedisConnection
 {
     private static Lazy<RedisConnection> lazy = new Lazy<RedisConnection>(() =>
     {

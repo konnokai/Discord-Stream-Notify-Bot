@@ -1,5 +1,4 @@
-﻿using System.Net.Http;
-using System.Text;
+﻿using System.Text;
 
 namespace Discord_Stream_Notify_Bot.HttpClients
 {

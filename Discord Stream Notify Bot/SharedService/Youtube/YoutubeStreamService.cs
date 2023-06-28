@@ -7,9 +7,7 @@ using HtmlAgilityPack;
 using System.Collections.Concurrent;
 using System.Data;
 using System.Net;
-using System.Net.Http;
 using System.Text.RegularExpressions;
-using System.Threading;
 
 namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 {

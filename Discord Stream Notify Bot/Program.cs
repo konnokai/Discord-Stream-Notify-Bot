@@ -17,12 +17,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Polly;
 using Polly.Extensions.Http;
-using StackExchange.Redis;
 using System.Diagnostics;
-using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Threading;
 
 namespace Discord_Stream_Notify_Bot
 {

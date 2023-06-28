@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics;
-using System.IO;
 
 public static class Log
 {

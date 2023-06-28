@@ -3,7 +3,6 @@ using Discord_Stream_Notify_Bot.SharedService.Youtube.Json;
 using HtmlAgilityPack;
 using Newtonsoft.Json.Linq;
 using System.Data;
-using System.Net.Http;
 using System.Text.RegularExpressions;
 using Extensions = Discord_Stream_Notify_Bot.Interaction.Extensions;
 

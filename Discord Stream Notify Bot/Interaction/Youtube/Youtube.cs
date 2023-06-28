@@ -319,7 +319,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
         public async Task AddTextChannel([Summary("頻道網址")] string channelUrl, [Summary("發送通知的頻道", "文字頻道或公告頻道")] IChannel channel)
         {
             await DeferAsync(true).ConfigureAwait(false);
-                        
+
             if (channel.GetChannelType() != ChannelType.Text && channel.GetChannelType() != ChannelType.News)
             {
                 await Context.Interaction.SendErrorAsync($"`{channel}` 非可接受的頻道類型，僅可接受文字頻道或公告頻道", true);

@@ -1,7 +1,5 @@
 ﻿using Discord_Stream_Notify_Bot.HttpClients.TwitCasting;
-using System.Net.Http;
 using System.Net.Http.Json;
-using System.Threading;
 
 namespace Discord_Stream_Notify_Bot.HttpClients
 {

@@ -1,7 +1,6 @@
 ﻿using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.Interaction;
 using Polly;
-using System.Threading;
 
 namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 {

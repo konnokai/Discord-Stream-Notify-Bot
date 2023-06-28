@@ -1,5 +1,4 @@
 ﻿using Discord_Stream_Notify_Bot;
-using System.IO;
 
 public class BotConfig
 {
