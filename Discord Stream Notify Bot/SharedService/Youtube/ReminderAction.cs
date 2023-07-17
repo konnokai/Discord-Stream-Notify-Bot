@@ -402,8 +402,15 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                         var message = await channel.SendMessageAsync(sendMessage, false, embedBuilder.Build(), components: comp, options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
 
-                        if (channel is INewsChannel)
-                            await message.CrosspostAsync();
+                        try
+                        {
+                            if (channel is INewsChannel)
+                                await message.CrosspostAsync();
+                        }
+                        catch (Discord.Net.HttpException httpEx) when (httpEx.DiscordCode == DiscordErrorCode.MessageAlreadyCrossposted)
+                        {
+                            // ignore
+                        }
                     }
                     catch (Discord.Net.HttpException httpEx)
                     {

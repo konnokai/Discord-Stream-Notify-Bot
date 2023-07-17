@@ -187,8 +187,16 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitcasting
                         if (channel == null) continue;
 
                         var message = await channel.SendMessageAsync(item.StartStreamMessage, false, embedBuilder.Build(), components: comp);
-                        if (channel is INewsChannel)
-                            await message.CrosspostAsync();
+
+                        try
+                        {
+                            if (channel is INewsChannel)
+                                await message.CrosspostAsync();
+                        }
+                        catch (Discord.Net.HttpException httpEx) when (httpEx.DiscordCode == DiscordErrorCode.MessageAlreadyCrossposted)
+                        {
+                            // ignore
+                        }
                     }
                     catch (Exception ex)
                     {

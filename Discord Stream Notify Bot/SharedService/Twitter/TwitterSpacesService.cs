@@ -195,8 +195,15 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
 
                         var message = await channel.SendMessageAsync(item.StratTwitterSpaceMessage, false, embedBuilder.Build(), components: comp);
 
-                        if (channel is INewsChannel)
-                            await message.CrosspostAsync();
+                        try
+                        {
+                            if (channel is INewsChannel)
+                                await message.CrosspostAsync();
+                        }
+                        catch (Discord.Net.HttpException httpEx) when (httpEx.DiscordCode == DiscordErrorCode.MessageAlreadyCrossposted)
+                        {
+                            // ignore
+                        }
                     }
                     catch (Exception ex)
                     {
