@@ -19,6 +19,50 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
             using (var db = DBContext.GetDbContext())
             {
                 var needCheckList = db.GuildYoutubeMemberConfig.Where((x) => !string.IsNullOrEmpty(x.MemberCheckChannelId) && !string.IsNullOrEmpty(x.MemberCheckChannelTitle) && x.MemberCheckVideoId != "-");
+                if (isOldCheck && needCheckList.Any())
+                {
+                    try
+                    {
+                        int splitDay = 3;
+                        int needCheckCount = needCheckList.Count() / splitDay;
+                        int checkRound = 0, skipCount, lastSkipCount = 0;
+
+                        if (File.Exists(Program.GetDataFilePath("MemberCheck.dat")))
+                        {
+                            string[] data = File.ReadAllText(Program.GetDataFilePath("MemberCheck.dat")).Split(',');
+
+                            checkRound = int.Parse(data[0]);
+                            lastSkipCount = int.Parse(data[1]);
+                        }
+
+                        checkRound += 1;
+                        skipCount = lastSkipCount;
+
+                        if (checkRound >= splitDay)
+                        {
+                            needCheckCount = needCheckList.Count() - lastSkipCount;
+                        }
+                        else
+                        {
+                            lastSkipCount += needCheckCount;
+                        }
+
+                        needCheckList = needCheckList.Skip(skipCount).Take(needCheckCount);
+
+                        if (checkRound >= splitDay)
+                        {
+                            checkRound = 0;
+                            lastSkipCount = 0;
+                        }
+
+                        File.WriteAllText(Program.GetDataFilePath("MemberCheck.dat"), $"{checkRound},{lastSkipCount}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error(ex, "Split member check list error");
+                    }
+                }
+
                 Log.Info((isOldCheck ? "舊" : "新") + $"會限檢查開始: {needCheckList.Count()} 個頻道");
 
                 HashSet<string> checkedMemberSet = new();
