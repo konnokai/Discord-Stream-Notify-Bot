@@ -129,7 +129,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                         StartReminder(streamVideo, streamVideo.ChannelType);
                                 }
                                 else addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo);
-                            }                            
+                            }
                         }
                     }
                 }
@@ -519,7 +519,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         StartReminder(streamVideo, streamVideo.ChannelType);
                 }
                 else addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo);
-            }            
+            }
             else if (string.IsNullOrEmpty(item.LiveStreamingDetails.ActualStartTimeRaw) && item.LiveStreamingDetails.ActiveLiveChatId != null)
             {
                 var streamVideo = new DataBase.Table.Video()

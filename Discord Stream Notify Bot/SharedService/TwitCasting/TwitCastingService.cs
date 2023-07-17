@@ -215,8 +215,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitcasting
 
             try
             {
-                if (!System.IO.Directory.Exists(twitcastingRecordPath))
-                    System.IO.Directory.CreateDirectory(twitcastingRecordPath);
+                if (!Directory.Exists(twitcastingRecordPath))
+                    Directory.CreateDirectory(twitcastingRecordPath);
             }
             catch (Exception ex)
             {

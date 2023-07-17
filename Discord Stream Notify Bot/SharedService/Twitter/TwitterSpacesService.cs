@@ -222,7 +222,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
 
             try
             {
-                if (!System.IO.Directory.Exists(twitterSpaceRecordPath)) System.IO.Directory.CreateDirectory(twitterSpaceRecordPath);
+                if (!Directory.Exists(twitterSpaceRecordPath)) 
+                    Directory.CreateDirectory(twitterSpaceRecordPath);
             }
             catch (Exception ex)
             {
