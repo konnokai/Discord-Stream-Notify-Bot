@@ -2,6 +2,7 @@
 using Discord_Stream_Notify_Bot.Command.Attribute;
 using Discord_Stream_Notify_Bot.DataBase;
 using Discord_Stream_Notify_Bot.DataBase.Table;
+using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using System.Text.RegularExpressions;
 
 namespace Discord_Stream_Notify_Bot.Command.Youtube
@@ -333,6 +334,36 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
 
                 db.SaveChanges();
                 await Context.Channel.SendConfirmAsync($"`{title}` 的所屬已改為 `{channelType.GetProductionName()}`");
+            }
+        }
+
+
+        [RequireContext(ContextType.DM)]
+        [RequireOwner]
+        [Command("FixNijisanjiDatabase")]
+        [Alias("FixND")]
+        public async Task FixNijisanjiDatabase()
+        {
+            using (var db = NijisanjiVideoContext.GetDbContext())
+            {
+                try
+                {
+                    var needFixList = db.Video.Where((x) => x.ChannelId.StartsWith("https"));
+
+                    foreach (var item in needFixList)
+                    {
+                        item.ChannelId = await _service.GetChannelIdAsync(item.ChannelId);
+                        db.Video.Update(item);
+                    }
+
+                    int result = await db.SaveChangesAsync();
+
+                    await Context.Channel.SendConfirmAsync($"已修正 {result} 個影片資料");
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex, "FixNijisanjiDatabase");
+                }               
             }
         }
 

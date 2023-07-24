@@ -214,15 +214,25 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                             if (string.IsNullOrEmpty(channelTitle))
                                 channelTitle = $"{channelData.name} / {channelData.enName}";
 
-                            streamVideo = new DataBase.Table.Video()
+                            string channelId = "";
+                            try
                             {
-                                ChannelId = channelData.socialLinks.youtube.Replace("https://www.youtube.com/channel/", ""),
-                                ChannelTitle = channelTitle,
-                                VideoId = videoId,
-                                VideoTitle = item.Attributes.Title,
-                                ScheduledStartTime = item.Attributes.StartAt.Value,
-                                ChannelType = DataBase.Table.Video.YTChannelType.Nijisanji
-                            };
+                                channelId = await GetChannelIdAsync(channelData.socialLinks.youtube);
+
+                                streamVideo = new DataBase.Table.Video()
+                                {
+                                    ChannelId = channelId,
+                                    ChannelTitle = channelTitle,
+                                    VideoId = videoId,
+                                    VideoTitle = item.Attributes.Title,
+                                    ScheduledStartTime = item.Attributes.StartAt.Value,
+                                    ChannelType = DataBase.Table.Video.YTChannelType.Nijisanji
+                                };
+                            }
+                            catch (Exception ex) 
+                            {
+                                Log.Error(ex, $"channelData 解析失敗: {channelData.socialLinks.youtube}");
+                            }
                         }
                     }
 
