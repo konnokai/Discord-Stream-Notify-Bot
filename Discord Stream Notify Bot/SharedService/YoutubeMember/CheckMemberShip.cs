@@ -233,7 +233,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
 
                                         break;
                                     }
-                                    else if (ex.Message.ToLower().Contains("403") || ex.Message.ToLower().Contains("the request might not be properly authorized"))
+                                    else if (ex.Message.ToLower().Contains("403") || ex.Message.ToLower().Contains("the request might not be properly authorized") || ex.Message.ToLower().Contains("forbidden"))
                                     {
                                         Log.Warn($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {member.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 的會限資格取得失敗: 無會員");
 
