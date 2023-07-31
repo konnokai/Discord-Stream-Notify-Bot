@@ -1,9 +1,10 @@
 ﻿using Discord.Interactions;
+using Discord_Stream_Notify_Bot.Interaction.Utility.Service;
 
 namespace Discord_Stream_Notify_Bot.Interaction.Utility
 {
     [Group("utility", "工具")]
-    public class Utility : TopLevelModule
+    public class Utility : TopLevelModule<UtilityService>
     {
         private readonly DiscordSocketClient _client;
         private readonly HttpClients.DiscordWebhookClient _discordWebhookClient;
@@ -50,6 +51,17 @@ namespace Discord_Stream_Notify_Bot.Interaction.Utility
             embedBuilder.AddField("上線時間", $"{Program.stopWatch.Elapsed:d\\天\\ hh\\:mm\\:ss}", false);
 
             await RespondAsync(embed: embedBuilder.Build());
+        }
+
+        [SlashCommand("send-message-to-bot-owner", "聯繫 Bot 擁有者")]        
+        public async Task SendMessageToBotOwner()
+        {
+            var modalBuilder = new ModalBuilder().WithTitle("聯繫 Bot 擁有者")
+                .WithCustomId("send-message-to-bot-owner")
+                .AddTextInput("訊息", "message", TextInputStyle.Paragraph, "請輸入你要發送的訊息", 10, null, true)
+                .AddTextInput("聯繫方式", "contact-method", TextInputStyle.Short, "請輸入可與你聯繫的方式及相關資訊 (推特、Discord、Facebook等)", 3, null, true);
+
+            await RespondWithModalAsync(modalBuilder.Build());
         }
     }
 }

@@ -92,7 +92,7 @@ namespace Discord_Stream_Notify_Bot.Interaction
             }
             else
             {
-                Log.Error($"[{arg2.Guild.Name}/{arg2.Channel.Name}] {arg2.User.Username} 執行 `{slashCommand}` 發生錯誤\r\n{arg3.ErrorReason}", arg3.Error != InteractionCommandError.UnmetPrecondition);
+                Log.Error($"[{arg2.Guild.Name}/{arg2.Channel.Name}] {arg2.User.Username} 執行 `{slashCommand}` 發生錯誤\r\n{arg3.ErrorReason}");
                 switch (arg3.Error)
                 {
                     case InteractionCommandError.UnmetPrecondition:
