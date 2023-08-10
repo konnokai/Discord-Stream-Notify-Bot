@@ -323,19 +323,21 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             {
                 try
                 {
+                    // 有設定該頻道的通知就不用過濾，他們肯定是要這頻道的通知
                     noticeGuildList.AddRange(db.NoticeYoutubeStreamChannel.Where((x) => x.NoticeStreamChannelId == streamVideo.ChannelId));
                 }
                 catch (Exception ex)
                 {
+                    // 原則上不會有錯，我也不知道加這幹嘛
                     Log.Error($"SendStreamMessageAsyncChannel: {streamVideo.VideoId}\n{ex}");
                 }
 
-                //類型檢查
+                //類型檢查，其他類型的頻道要特別檢查，確保必須是認可的頻道才可被添加到其他類型通知
                 try
                 {
-                    if (type != "other" || //如果不是其他類的頻道
-                        !db.YoutubeChannelSpider.Any((x) => x.ChannelId == streamVideo.ChannelId) || //或該頻道非在爬蟲清單內
-                        db.YoutubeChannelSpider.First((x) => x.ChannelId == streamVideo.ChannelId).IsTrustedChannel) //該爬蟲是已認可的頻道
+                    if (type != "other" || //如果不是其他類的頻道，直接添加到對應的類型通知即可
+                        !db.YoutubeChannelSpider.Any((x) => x.ChannelId == streamVideo.ChannelId) || //若該頻道非在爬蟲清單內，那也沒有認不認可的問題
+                        db.YoutubeChannelSpider.First((x) => x.ChannelId == streamVideo.ChannelId).IsTrustedChannel) //最後該爬蟲必須是已認可的頻道，才可添加至其他類型的通知
                     {
                         noticeGuildList.AddRange(db.NoticeYoutubeStreamChannel.Where((x) => x.NoticeStreamChannelId == "all" || x.NoticeStreamChannelId == type));
                     }
