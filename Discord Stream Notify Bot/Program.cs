@@ -414,68 +414,62 @@ namespace Discord_Stream_Notify_Bot
 
         public static void ChangeStatus()
         {
-            Action<string> setGame = new Action<string>(async (text) =>
+            Task.Run(async () =>
             {
-                try
+                switch (Status)
                 {
-                    await _client.SetGameAsync($"s!h | {text}", type: ActivityType.Playing);
-                }
-                catch (Exception) { }
-            });
-
-            switch (Status)
-            {
-                case BotPlayingStatus.Guild:
-                    setGame($"在 {_client.Guilds.Count} 個伺服器");
-                    Status = BotPlayingStatus.Member;
-                    break;
-                case BotPlayingStatus.Member:
-                    try
-                    {
-                        setGame($"服務 {_client.Guilds.Sum((x) => x.MemberCount)} 個成員");
-                        Status = BotPlayingStatus.Info;
-                    }
-                    catch (Exception) { Status = BotPlayingStatus.Stream; ChangeStatus(); }
-                    break;
-                case BotPlayingStatus.Stream:
-                    Status = BotPlayingStatus.StreamCount;
-                    try
-                    {
-                        List<DataBase.Table.Video> list = null;
-                        switch (new Random().Next(0, 2))
+                    case BotPlayingStatus.Guild:
+                        await _client.SetCustomStatusAsync($"在 {_client.Guilds.Count} 個伺服器");
+                        Status = BotPlayingStatus.Member;
+                        break;
+                    case BotPlayingStatus.Member:
+                        try
                         {
-                            case 0:
-                                using (var db = DataBase.HoloVideoContext.GetDbContext())
-                                    list = db.Video.ToList();
-                                break;
-                            case 1:
-                                using (var db = DataBase.NijisanjiVideoContext.GetDbContext())
-                                    list = db.Video.ToList();
-                                break;
-                            case 2:
-                                using (var db = DataBase.OtherVideoContext.GetDbContext())
-                                    list = db.Video.ToList();
-                                break;
+                            await _client.SetCustomStatusAsync($"服務 {_client.Guilds.Sum((x) => x.MemberCount)} 個成員");
+                            Status = BotPlayingStatus.Info;
                         }
-                        var item = list[new Random().Next(0, list.Count)];
-                        _client.SetGameAsync(item.VideoTitle, $"https://www.youtube.com/watch?v={item.VideoId}", ActivityType.Streaming);
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Error("ChangeStatus");
-                        Log.Error(ex.Message);
-                        ChangeStatus();
-                    }
-                    break;
-                case BotPlayingStatus.StreamCount:
-                    Status = BotPlayingStatus.Info;
-                    setGame($"看了 {Utility.GetDbStreamCount()} 個直播");
-                    break;
-                case BotPlayingStatus.Info:
-                    setGame("去看你的直播啦");
-                    Status = BotPlayingStatus.Guild;
-                    break;
-            }
+                        catch (Exception) { Status = BotPlayingStatus.Stream; ChangeStatus(); }
+                        break;
+                    case BotPlayingStatus.Stream:
+                        Status = BotPlayingStatus.StreamCount;
+                        try
+                        {
+                            List<DataBase.Table.Video> list = null;
+                            switch (new Random().Next(0, 2))
+                            {
+                                case 0:
+                                    using (var db = DataBase.HoloVideoContext.GetDbContext())
+                                        list = db.Video.ToList();
+                                    break;
+                                case 1:
+                                    using (var db = DataBase.NijisanjiVideoContext.GetDbContext())
+                                        list = db.Video.ToList();
+                                    break;
+                                case 2:
+                                    using (var db = DataBase.OtherVideoContext.GetDbContext())
+                                        list = db.Video.ToList();
+                                    break;
+                            }
+                            var item = list[new Random().Next(0, list.Count)];
+                            await _client.SetGameAsync(item.VideoTitle, $"https://www.youtube.com/watch?v={item.VideoId}", ActivityType.Streaming);
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Error("ChangeStatus");
+                            Log.Error(ex.Message);
+                            ChangeStatus();
+                        }
+                        break;
+                    case BotPlayingStatus.StreamCount:
+                        Status = BotPlayingStatus.Info;
+                        await _client.SetCustomStatusAsync($"看了 {Utility.GetDbStreamCount()} 個直播");
+                        break;
+                    case BotPlayingStatus.Info:
+                        await _client.SetCustomStatusAsync("去看你的直播啦");
+                        Status = BotPlayingStatus.Guild;
+                        break;
+                }
+            });
         }
 
         public static string GetDataFilePath(string fileName)
