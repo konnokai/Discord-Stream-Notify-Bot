@@ -420,6 +420,10 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                             db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where((x) => x.DiscordChannelId == item.DiscordChannelId));
                             db.SaveChanges();
                         }
+                        else if (httpEx.HttpCode  == System.Net.HttpStatusCode.InternalServerError || httpEx.HttpCode == System.Net.HttpStatusCode.BadGateway || httpEx.HttpCode == System.Net.HttpStatusCode.GatewayTimeout)
+                        {
+                            Log.Warn("Youtube 通知 - Discord 500錯誤");
+                        }
                         else
                         {
                             Log.Error(httpEx, $"Youtube 通知 - Discord 未知錯誤 {item.GuildId} / {item.DiscordChannelId}");
