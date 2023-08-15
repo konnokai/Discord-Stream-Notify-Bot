@@ -155,7 +155,11 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
         // KR跟ID沒看到網站有請求
         private async Task NijisanjiScheduleAsync()
         {
-            if (Program.isNijisanjiChannelSpider || Program.isDisconnect) return;
+            if (Program.isNijisanjiChannelSpider || Program.isDisconnect)
+            {
+                Log.Error("彩虹社影片清單整理已取消");
+                return;
+            }
             //Log.Info("彩虹社影片清單整理開始");
             Program.isNijisanjiChannelSpider = true;
             using var httpClient = _httpClientFactory.CreateClient();
@@ -266,7 +270,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo))
                             StartReminder(streamVideo, streamVideo.ChannelType);
                     }
-                    else if (item.Attributes.StartAt > DateTime.Now.AddMinutes(-10)) // 離開始時間還有十分鐘
+                    else if (!item.Attributes.EndAt.HasValue) // 沒有關台時間但又沒開台就當是新的直播
                     {
                         EmbedBuilder embedBuilder = new EmbedBuilder();
                         embedBuilder.WithErrorColor()
@@ -281,11 +285,17 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                         if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo))
                         {
+                            // 在想需不需要先檢查是否已過開台時間再發送尚未開台通知
+                            // 不過考量到上面有 on_air 狀態檢測，應該是不用?
                             if (!isFirst2434) await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.NewStream).ConfigureAwait(false);
                             StartReminder(streamVideo, streamVideo.ChannelType);
                         }
                     }
-                    else addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo);
+                    else
+                    {
+                        Log.New($"(已下播的新直播) | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
+                        addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo); 
+                    }
                 }
             }
             catch (Exception ex)
