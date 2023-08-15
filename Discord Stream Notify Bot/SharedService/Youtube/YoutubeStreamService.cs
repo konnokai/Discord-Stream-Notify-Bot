@@ -864,6 +864,11 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         channelId = await GetChannelIdByUrlAsync($"https://www.youtube.com/@{channelName}");
                         await Program.RedisDb.StringSetAsync($"discord_stream_bot:ChannelNameToId:{channelName}", channelId);
                     }
+                    catch (UriFormatException)
+                    {
+                        Log.Error($"GetChannelIdAsync-GetChannelIdByUrlAsync: {channelUrl}");
+                        throw;
+                    }
                     catch (Exception ex)
                     {
                         Log.Error(channelUrl);
@@ -900,6 +905,11 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                             channelId = await GetChannelIdByUrlAsync($"https://www.youtube.com/{type}/{channelName}");
                             await Program.RedisDb.StringSetAsync($"discord_stream_bot:ChannelNameToId:{channelName}", channelId);
                         }
+                        catch (UriFormatException)
+                        {
+                            Log.Error($"GetChannelIdAsync-GetChannelIdByUrlAsync: {channelUrl}");
+                            throw;
+                        }
                         catch (Exception ex)
                         {
                             Log.Error(channelUrl);
@@ -925,18 +935,26 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 HtmlWeb htmlWeb = new HtmlWeb();
                 var htmlDocument = await htmlWeb.LoadFromWebAsync(channelUrl);
                 var node = htmlDocument.DocumentNode.Descendants().FirstOrDefault((x) => x.Name == "meta" && x.Attributes.Any((x2) => x2.Name == "itemprop" && x2.Value == "channelId" || x2.Value == "identifier"));
+
+                // 已知阿喵喵的頻道 (https://www.youtube.com/@AmamiyaKokoro) 會被 YT 自動 303 轉址
+                // 但只會轉一半 (Location: https://www.youtube.com/UCkIimWZ9gBJRamKF0rmPU8w ， 缺少 channel)
+                // 這需要 HttpClient 把 Header 抓出來處理，等有頻道也會發生這情況時再處理
+
+                // Vox 的頻道也會，但他只是從 https://www.youtube.com/@VoxAkuma 變成 https://www.youtube.com/voxakuma
+                // 然後一樣 404 ，幹
+
                 if (node == null)
                     throw new UriFormatException("錯誤，找不到節點\n" +
-                        "請確認是否輸入正確的YouTube頻道網址\n" +
-                        "或確認該頻道是否存在\n" +
-                        $"若正確請向Bot擁有者 ({Program.ApplicatonOwner}) 詢問");
+                        "請確認是否輸入正確的 YouTube 頻道網址，或確認該頻道是否存在\n" +
+                        "部分頻道會有跳轉後遇到 404 錯誤的問題，你可以嘗試直接開啟連結確認是否會出現 404 錯誤\n" +
+                        "有需要可直接向 Bot 擁有者詢問\n" +
+                        "(你可以使用 `/utility send-message-to-bot-owner` 指令來聯絡 Bot 擁有者)");
 
                 channelId = node.Attributes.FirstOrDefault((x) => x.Name == "content").Value;
                 if (string.IsNullOrEmpty(channelId))
-                    throw new UriFormatException("錯誤，找不到頻道Id\n" +
-                        "請確認是否輸入正確的YouTube頻道網址\n" +
-                        "或確認該頻道是否存在\n" +
-                        $"若正確請向Bot擁有者 ({Program.ApplicatonOwner}) 詢問");
+                    throw new UriFormatException("錯誤，找不到頻道 Id\n" +
+                        "正常來說不該遇到這問題才對，請直接向 Bot 擁有者詢問\n" +
+                        "(你可以使用 `/utility send-message-to-bot-owner` 指令來聯絡 Bot 擁有者)");
 
                 return channelId;
             }
