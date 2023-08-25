@@ -16,16 +16,43 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
 
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                var list = db.YoutubeChannelSpider.Where((x) => x.GuildId != 0 && _client.GetGuild(x.GuildId) == null).Select((x) => Format.Url(x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}"));
-
-                await Context.SendPaginatedConfirmAsync(page, page =>
+                try
                 {
-                    return new EmbedBuilder()
-                        .WithOkColor()
-                        .WithTitle("死去的直播爬蟲清單")
-                        .WithDescription(string.Join('\n', list.Skip(page * 10).Take(10)))
-                        .WithFooter($"{Math.Min(list.Count(), (page + 1) * 10)} / {list.Count()}個頻道");
-                }, list.Count(), 10, false).ConfigureAwait(false);
+                    var list = new List<string>();
+                    foreach (var item in db.YoutubeChannelSpider.Where((x) => x.GuildId != 0))
+                    {
+                        try
+                        {
+                            // 很慢，想到再來加強
+                            await _client.Rest.GetGuildAsync(item.GuildId);
+                        }
+                        catch (Exception)
+                        {
+                            list.Add(Format.Url(item.ChannelTitle, $"https://www.youtube.com/channel/{item.ChannelId}"));
+                        }
+                    }
+
+                    if (!list.Any())
+                    {
+                        await Context.Channel.SendConfirmAsync("無已死去的爬蟲...");
+                        return;
+                    }
+
+                    await Context.SendPaginatedConfirmAsync(page, page =>
+                    {
+                        return new EmbedBuilder()
+                            .WithOkColor()
+                            .WithTitle("死去的直播爬蟲清單")
+                            .WithDescription(string.Join('\n', list.Skip(page * 10).Take(10)))
+                            .WithFooter($"{Math.Min(list.Count(), (page + 1) * 10)} / {list.Count()}個頻道");
+                    }, list.Count(), 10, false).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex, "ListDeathChannelSpider");
+                    await Context.Channel.SendErrorAsync(ex.ToString());
+                    return;
+                }
             }
         }
 
