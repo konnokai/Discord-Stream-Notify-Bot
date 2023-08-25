@@ -161,11 +161,12 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 return;
             }
             //Log.Info("彩虹社影片清單整理開始");
-            Program.isNijisanjiChannelSpider = true;
-            using var httpClient = _httpClientFactory.CreateClient();
 
             try
             {
+                Program.isNijisanjiChannelSpider = true;
+                using var httpClient = _httpClientFactory.CreateClient();
+
                 List<Data> datas = new List<Data>();
                 NijisanjiStreamJson nijisanjiStreamJson = null;
                 try
@@ -175,8 +176,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         string result = await httpClient.GetStringAsync($"https://www.nijisanji.jp/api/streams?day_offset={i}");
                         if (result.Contains("ERROR</h1>"))
                         {
-                            Log.Warn("NijisanjiScheduleAsync: CloudFront回傳錯誤，略過");
                             Program.isNijisanjiChannelSpider = false;
+                            Log.Warn("NijisanjiScheduleAsync: CloudFront回傳錯誤，略過");
                             return;
                         }
                         nijisanjiStreamJson = JsonConvert.DeserializeObject<NijisanjiStreamJson>(result);
@@ -186,9 +187,9 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 }
                 catch (Exception ex)
                 {
+                    Program.isNijisanjiChannelSpider = false;
                     if (!ex.Message.Contains("EOF or 0 bytes") && !ex.Message.Contains("504") && !ex.Message.Contains("500"))
                         Log.Error($"NijisanjiScheduleAsync: {ex}");
-                    Program.isNijisanjiChannelSpider = false;
                     return;
                 }
 
@@ -272,23 +273,30 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     }
                     else if (!item.Attributes.EndAt.HasValue) // 沒有關台時間但又沒開台就當是新的直播
                     {
-                        EmbedBuilder embedBuilder = new EmbedBuilder();
-                        embedBuilder.WithErrorColor()
-                        .WithTitle(streamVideo.VideoTitle)
-                        .WithDescription(Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}"))
-                        .WithImageUrl($"https://i.ytimg.com/vi/{streamVideo.VideoId}/maxresdefault.jpg")
-                        .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
-                        .AddField("直播狀態", "尚未開台")
-                        .AddField("排定開台時間", item.Attributes.StartAt.Value.ConvertDateTimeToDiscordMarkdown());
-
-                        Log.New($"(新直播) | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
-
-                        if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo))
+                        try
                         {
-                            // 在想需不需要先檢查是否已過開台時間再發送尚未開台通知
-                            // 不過考量到上面有 on_air 狀態檢測，應該是不用?
-                            if (!isFirst2434) await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.NewStream).ConfigureAwait(false);
-                            StartReminder(streamVideo, streamVideo.ChannelType);
+                            EmbedBuilder embedBuilder = new EmbedBuilder();
+                            embedBuilder.WithErrorColor()
+                            .WithTitle(streamVideo.VideoTitle)
+                            .WithDescription(Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}"))
+                            .WithImageUrl($"https://i.ytimg.com/vi/{streamVideo.VideoId}/maxresdefault.jpg")
+                            .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
+                            .AddField("直播狀態", "尚未開台")
+                            .AddField("排定開台時間", item.Attributes.StartAt.Value.ConvertDateTimeToDiscordMarkdown());
+
+                            Log.New($"(新直播) | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
+
+                            if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo))
+                            {
+                                // 在想需不需要先檢查是否已過開台時間再發送尚未開台通知
+                                // 不過考量到上面有 on_air 狀態檢測，應該是不用?
+                                if (!isFirst2434) await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.NewStream).ConfigureAwait(false);
+                                StartReminder(streamVideo, streamVideo.ChannelType);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Error(ex, $"NijisanjiScheduleAsync-New Stream: {streamVideo.VideoId}");
                         }
                     }
                     else
