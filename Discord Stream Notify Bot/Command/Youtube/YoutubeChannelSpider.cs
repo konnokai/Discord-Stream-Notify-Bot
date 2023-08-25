@@ -31,6 +31,37 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
 
         [RequireContext(ContextType.DM)]
         [RequireOwner]
+        [Command("AddSpiderToGuild")]
+        [Summary("新增爬蟲並指定伺服器")]
+        [Alias("astg")]
+        public async Task AddSpiderToGuild(string channelId, ulong guildId)
+        {
+            channelId = await _service.GetChannelIdAsync(channelId);
+            using (var db = DataBase.DBContext.GetDbContext())
+            {
+                var youtubeChannelSpider = db.YoutubeChannelSpider.SingleOrDefault((x) => x.ChannelId == channelId);
+                if (youtubeChannelSpider != null)
+                {
+                    await Context.Channel.SendErrorAsync($"`{channelId}` 已被 `{youtubeChannelSpider.GuildId}` 設定");
+                    return;
+                }
+
+                string channelTitle = await _service.GetChannelTitle(channelId).ConfigureAwait(false);
+                if (channelTitle == "")
+                {
+                    await Context.Channel.SendErrorAsync($"頻道 `{channelId}` 不存在").ConfigureAwait(false);
+                    return;
+                }
+
+                db.YoutubeChannelSpider.Add(new DataBase.Table.YoutubeChannelSpider() { ChannelId = channelId, GuildId = guildId, ChannelTitle = channelTitle, IsTrustedChannel = true });
+                db.SaveChanges();
+
+                await Context.Channel.SendConfirmAsync($"已將 `{channelTitle}` 設定至 `{guildId}`，等待爬蟲註冊...");
+            }
+        }
+
+        [RequireContext(ContextType.DM)]
+        [RequireOwner]
         [Command("ListNotTrustedChannelSpider")]
         [Summary("顯示已加入爬蟲檢測的\"未認可\"頻道\n" +
             "注意: 本清單可能含有中之人或前世頻道")]
