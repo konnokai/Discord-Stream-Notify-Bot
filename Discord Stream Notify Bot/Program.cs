@@ -1,13 +1,4 @@
-﻿global using Discord;
-global using Discord.WebSocket;
-global using Google.Apis.YouTube.v3.Data;
-global using Newtonsoft.Json;
-global using System;
-global using System.Collections.Generic;
-global using System.Linq;
-global using System.Threading.Tasks;
-
-using Discord.Commands;
+﻿using Discord.Commands;
 using Discord.Interactions;
 using Discord_Stream_Notify_Bot.Command;
 using Discord_Stream_Notify_Bot.DataBase.Table;
