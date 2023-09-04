@@ -208,9 +208,13 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
         {
             try
             {
-                if (gid == 0) gid = Context.Guild.Id;
-                var guild = _client.GetGuild(gid);
+                if (gid == 0)
+                {
+                    await Context.Channel.SendErrorAsync("GuildId 不可為空").ConfigureAwait(false);
+                    return;
+                }
 
+                var guild = _client.GetGuild(gid);
                 if (guild == null)
                 {
                     await Context.Channel.SendErrorAsync("找不到指定的伺服器").ConfigureAwait(false);
@@ -219,7 +223,8 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
 
                 string result = $"伺服器名稱: **{guild.Name}**\n" +
                             $"伺服器Id: {guild.Id}\n" +
-                            $"擁有者Id: {guild.OwnerId}\n";
+                            $"擁有者Id: {guild.OwnerId}\n" +
+                            $"人數: {guild.MemberCount}\n";
 
                 using (var db = DataBase.DBContext.GetDbContext())
                 {
@@ -229,6 +234,12 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
                         var channel = guild.GetChannel(guildConfig.LogMemberStatusChannelId);
                         if (channel != null)
                             result += $"伺服器會限記錄頻道: {channel.Name} ({channel.Id})\n";
+                    }
+
+                    var youtubeChannelSpiders = db.YoutubeChannelSpider.Where((x) => x.GuildId == gid);
+                    if (youtubeChannelSpiders.Any())
+                    {
+                        result += $"設定的 YouTube 爬蟲: \n```{string.Join('\n', youtubeChannelSpiders.Select((x) => $"{x.ChannelTitle}: {x.ChannelId}"))}";
                     }
 
                     var channelList = db.NoticeYoutubeStreamChannel.Where((x) => x.GuildId == guild.Id);
@@ -252,8 +263,7 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
                     var memberChcekList = db.GuildYoutubeMemberConfig.Where((x) => x.GuildId == guild.Id);
                     if (memberChcekList.Any())
                     {
-                        var memberChcekListResult = memberChcekList.Select((x) => $"{x.MemberCheckChannelTitle}: {x.MemberCheckGrantRoleId}");
-                        result += $"設定會限的頻道: \n```{string.Join('\n', memberChcekListResult)}```";
+                        result += $"設定會限的頻道: \n```{string.Join('\n', memberChcekList.Select((x) => $"{x.MemberCheckChannelTitle}: {x.MemberCheckGrantRoleId}"))}```";
                     }
 
                     await Context.Channel.SendConfirmAsync(result).ConfigureAwait(false);
