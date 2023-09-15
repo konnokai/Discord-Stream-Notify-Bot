@@ -54,7 +54,8 @@ namespace Discord_Stream_Notify_Bot.Interaction.Utility
             await RespondAsync(embed: embedBuilder.Build());
         }
 
-        [SlashCommand("send-message-to-bot-owner", "聯繫 Bot 擁有者")]        
+        [SlashCommand("send-message-to-bot-owner", "聯繫 Bot 擁有者")]
+        [DefaultMemberPermissions(GuildPermission.Administrator)]
         public async Task SendMessageToBotOwner()
         {
             var modalBuilder = new ModalBuilder().WithTitle("聯繫 Bot 擁有者")
