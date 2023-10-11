@@ -234,7 +234,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                     ChannelType = DataBase.Table.Video.YTChannelType.Nijisanji
                                 };
                             }
-                            catch (Exception ex) 
+                            catch (Exception ex)
                             {
                                 Log.Error(ex, $"channelData 解析失敗: {channelData.socialLinks.youtube}");
                             }
@@ -302,7 +302,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     else
                     {
                         Log.New($"(已下播的新直播) | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
-                        addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo); 
+                        addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo);
                     }
                 }
             }

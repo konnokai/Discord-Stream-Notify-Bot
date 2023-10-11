@@ -855,27 +855,29 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             {
                 string channelName = matchNewFormat.Groups["CustomId"].Value;
 
-                if (await Program.RedisDb.KeyExistsAsync($"discord_stream_bot:ChannelNameToId:{channelName}"))
+                using (var db = DataBase.DBContext.GetDbContext())
                 {
-                    channelId = await Program.RedisDb.StringGetAsync($"discord_stream_bot:ChannelNameToId:{channelName}");
-                }
-                else
-                {
-                    try
+                    channelId = db.YoutubeChannelNameToId.SingleOrDefault((x) => x.ChannelName == channelName)?.ChannelId;
+
+                    if (string.IsNullOrEmpty(channelId))
                     {
-                        channelId = await GetChannelIdByUrlAsync($"https://www.youtube.com/@{channelName}");
-                        await Program.RedisDb.StringSetAsync($"discord_stream_bot:ChannelNameToId:{channelName}", channelId);
-                    }
-                    catch (UriFormatException)
-                    {
-                        Log.Error($"GetChannelIdAsync-GetChannelIdByUrlAsync: {channelUrl}");
-                        throw;
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Error(channelUrl);
-                        Log.Error(ex.ToString());
-                        throw;
+                        try
+                        {
+                            channelId = await GetChannelIdByUrlAsync($"https://www.youtube.com/@{channelName}");
+                            db.YoutubeChannelNameToId.Add(new DataBase.Table.YoutubeChannelNameToId() { ChannelName = channelName, ChannelId = channelId });
+                            await db.SaveChangesAsync();
+                        }
+                        catch (UriFormatException)
+                        {
+                            Log.Error($"GetChannelIdAsync-GetChannelIdByUrlAsync: {channelUrl}");
+                            throw;
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Error(channelUrl);
+                            Log.Error(ex.ToString());
+                            throw;
+                        }
                     }
                 }
             }
@@ -896,27 +898,29 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 {
                     string channelName = WebUtility.UrlDecode(matchOldFormat.Groups["ChannelName"].Value);
 
-                    if (await Program.RedisDb.KeyExistsAsync($"discord_stream_bot:ChannelNameToId:{channelName}"))
+                    using (var db = DataBase.DBContext.GetDbContext())
                     {
-                        channelId = await Program.RedisDb.StringGetAsync($"discord_stream_bot:ChannelNameToId:{channelName}");
-                    }
-                    else
-                    {
-                        try
+                        channelId = db.YoutubeChannelNameToId.SingleOrDefault((x) => x.ChannelName == channelName)?.ChannelId;
+
+                        if (string.IsNullOrEmpty(channelId))
                         {
-                            channelId = await GetChannelIdByUrlAsync($"https://www.youtube.com/{type}/{channelName}");
-                            await Program.RedisDb.StringSetAsync($"discord_stream_bot:ChannelNameToId:{channelName}", channelId);
-                        }
-                        catch (UriFormatException)
-                        {
-                            Log.Error($"GetChannelIdAsync-GetChannelIdByUrlAsync: {channelUrl}");
-                            throw;
-                        }
-                        catch (Exception ex)
-                        {
-                            Log.Error(channelUrl);
-                            Log.Error(ex.ToString());
-                            throw;
+                            try
+                            {
+                                channelId = await GetChannelIdByUrlAsync($"https://www.youtube.com/{type}/{channelName}");
+                                db.YoutubeChannelNameToId.Add(new DataBase.Table.YoutubeChannelNameToId() { ChannelName = channelName, ChannelId = channelId });
+                                await db.SaveChangesAsync();
+                            }
+                            catch (UriFormatException)
+                            {
+                                Log.Error($"GetChannelIdAsync-GetChannelIdByUrlAsync: {channelUrl}");
+                                throw;
+                            }
+                            catch (Exception ex)
+                            {
+                                Log.Error(channelUrl);
+                                Log.Error(ex.ToString());
+                                throw;
+                            }
                         }
                     }
                 }

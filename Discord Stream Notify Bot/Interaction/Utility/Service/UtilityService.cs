@@ -2,7 +2,7 @@
 {
     public class UtilityService : IInteractionService
     {
-        public UtilityService(DiscordSocketClient client) 
+        public UtilityService(DiscordSocketClient client)
         {
             client.ModalSubmitted += async modal =>
             {
@@ -23,7 +23,7 @@
                                 .AddField("訊息", message)
                                 .AddField("聯繫方式", contactMethod);
 
-                            var componentBuilder  = new ComponentBuilder()
+                            var componentBuilder = new ComponentBuilder()
                                 .WithButton("發送回覆", $"send-reply-to-user:{modal.User.Id}", ButtonStyle.Success);
 
                             await Program.ApplicatonOwner.SendMessageAsync(embed: embedBuilder.Build(), components: componentBuilder.Build());

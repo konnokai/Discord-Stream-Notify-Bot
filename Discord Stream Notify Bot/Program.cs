@@ -1,4 +1,5 @@
-﻿using Discord.Commands;
+﻿using Discord;
+using Discord.Commands;
 using Discord.Interactions;
 using Discord_Stream_Notify_Bot.Command;
 using Discord_Stream_Notify_Bot.DataBase.Table;
@@ -73,6 +74,26 @@ namespace Discord_Stream_Notify_Bot
                 RedisDb = Redis.GetDatabase();
 
                 Log.Info("Redis已連線");
+
+                var redisKeyList = Redis.GetServer(Redis.GetEndPoints(true).First()).Keys(0, pattern: $"discord_stream_bot:ChannelNameToId:*", cursor: 0, pageSize: 2500);
+                if (redisKeyList.Any())
+                {
+                    Log.Info("執行 ChannelNameToId 轉移");
+
+                    using (var db = DataBase.DBContext.GetDbContext())
+                    {
+                        foreach (var item in redisKeyList)
+                        {
+                            var channelName = item.ToString().Split(':')[2];
+                            string channelId = RedisDb.StringGetDelete(item);
+                            db.YoutubeChannelNameToId.Add(new YoutubeChannelNameToId() { ChannelName = channelName, ChannelId = channelId });
+                        }
+
+                        db.SaveChanges();
+                    }
+
+                    Log.New("轉移完成!");
+                }
 
                 if (RedisSub.Publish(new RedisChannel("youtube.test", RedisChannel.PatternMode.Literal), "nope") != 0)
                 {

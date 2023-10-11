@@ -2,7 +2,6 @@
 using Discord_Stream_Notify_Bot.Command.Attribute;
 using Discord_Stream_Notify_Bot.DataBase;
 using Discord_Stream_Notify_Bot.DataBase.Table;
-using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using System.Text.RegularExpressions;
 
 namespace Discord_Stream_Notify_Bot.Command.Youtube
@@ -363,7 +362,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                 catch (Exception ex)
                 {
                     Log.Error(ex, "FixNijisanjiDatabase");
-                }               
+                }
             }
         }
 
