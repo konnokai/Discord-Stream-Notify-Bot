@@ -47,6 +47,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
         private readonly DiscordSocketClient _client;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly EmojiService _emojiService;
+        private readonly ConcurrentDictionary<string, byte> _endLiveBag = new();
         private string callbackUrl;
 
         public YoutubeStreamService(DiscordSocketClient client, IHttpClientFactory httpClientFactory, BotConfig botConfig, EmojiService emojiService)
@@ -131,6 +132,12 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     {
                         Log.Info($"{channel} - {videoId}");
 
+                        if (_endLiveBag.ContainsKey(videoId))
+                        {
+                            Log.Warn("重複通知，略過");
+                            return;
+                        }
+
                         var item = await GetVideoAsync(videoId.ToString()).ConfigureAwait(false);
                         if (item == null)
                         {
@@ -144,6 +151,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                             Log.Warn("還沒關台");
                             return;
                         }
+
+                        _endLiveBag.TryAdd(videoId, 1);
 
                         var startTime = DateTime.Parse(item.LiveStreamingDetails.ActualStartTimeRaw);
                         var endTime = DateTime.Parse(item.LiveStreamingDetails.ActualEndTimeRaw);
@@ -166,9 +175,75 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     }
                 });
 
+                Program.RedisSub.Subscribe(new RedisChannel("youtube.memberonly", RedisChannel.PatternMode.Literal), async (channel, videoId) =>
+                {
+                    Log.Info($"{channel} - {videoId}");
+
+                    if (_endLiveBag.ContainsKey(videoId))
+                    {
+                        Log.Warn("重複通知，略過");
+                        return;
+                    }
+
+                    using (var db = DataBase.DBContext.GetDbContext())
+                    {
+                        try
+                        {
+                            if (Extensions.HasStreamVideoByVideoId(videoId))
+                            {
+                                var streamVideo = Extensions.GetStreamVideoByVideoId(videoId);
+                                var item = await GetVideoAsync(videoId).ConfigureAwait(false);
+
+                                if (item == null)
+                                {
+                                    Log.Warn($"{videoId} Delete");
+                                    await Program.RedisSub.PublishAsync(new RedisChannel("youtube.deletestream", RedisChannel.PatternMode.Literal), videoId);
+                                    return;
+                                }
+
+                                if (string.IsNullOrEmpty(item.LiveStreamingDetails.ActualEndTimeRaw))
+                                {
+                                    Log.Warn("還沒關台");
+                                    return;
+                                }
+
+                                _endLiveBag.TryAdd(videoId, 1);
+
+                                var startTime = DateTime.Parse(item.LiveStreamingDetails.ActualStartTimeRaw);
+                                var endTime = DateTime.Parse(item.LiveStreamingDetails.ActualEndTimeRaw);
+
+                                EmbedBuilder embedBuilder = new EmbedBuilder();
+                                embedBuilder.WithErrorColor()
+                                .WithTitle(streamVideo.VideoTitle)
+                                .WithDescription(Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}"))
+                                .WithImageUrl($"https://i.ytimg.com/vi/{streamVideo.VideoId}/maxresdefault.jpg")
+                                .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
+                                .AddField("直播狀態", "已關台並變更為會限影片")
+                                .AddField("直播時間", $"{endTime.Subtract(startTime):hh'時'mm'分'ss'秒'}")
+                                .AddField("關台時間", endTime.ConvertDateTimeToDiscordMarkdown());
+
+                                if (Program.ApplicatonOwner != null) await Program.ApplicatonOwner.SendMessageAsync("已關台並變更為會限影片", false, embedBuilder.Build()).ConfigureAwait(false);
+                                await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.End).ConfigureAwait(false);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Error($"Record-MemberOnly {ex}");
+                        }
+                    }
+                });
+
                 Program.RedisSub.Subscribe(new RedisChannel("youtube.deletestream", RedisChannel.PatternMode.Literal), async (channel, videoId) =>
                 {
                     Log.Info($"{channel} - {videoId}");
+
+                    if (_endLiveBag.ContainsKey(videoId))
+                    {
+                        Log.Warn("重複通知，略過");
+                        return;
+                    }
+
+                    _endLiveBag.TryAdd(videoId, 1);
 
                     using (var db = DataBase.DBContext.GetDbContext())
                     {
@@ -196,59 +271,17 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     }
                 });
 
-                Program.RedisSub.Subscribe(new RedisChannel("youtube.memberonly", RedisChannel.PatternMode.Literal), async (channel, videoId) =>
-                {
-                    Log.Info($"{channel} - {videoId}");
-
-                    using (var db = DataBase.DBContext.GetDbContext())
-                    {
-                        try
-                        {
-                            if (Extensions.HasStreamVideoByVideoId(videoId))
-                            {
-                                var streamVideo = Extensions.GetStreamVideoByVideoId(videoId);
-                                var item = await GetVideoAsync(videoId).ConfigureAwait(false);
-
-                                if (item == null)
-                                {
-                                    Log.Warn($"{videoId} Delete");
-                                    await Program.RedisSub.PublishAsync(new RedisChannel("youtube.deletestream", RedisChannel.PatternMode.Literal), videoId);
-                                    return;
-                                }
-
-                                if (string.IsNullOrEmpty(item.LiveStreamingDetails.ActualEndTimeRaw))
-                                {
-                                    Log.Warn("還沒關台");
-                                    return;
-                                }
-
-                                var startTime = DateTime.Parse(item.LiveStreamingDetails.ActualStartTimeRaw);
-                                var endTime = DateTime.Parse(item.LiveStreamingDetails.ActualEndTimeRaw);
-
-                                EmbedBuilder embedBuilder = new EmbedBuilder();
-                                embedBuilder.WithErrorColor()
-                                .WithTitle(streamVideo.VideoTitle)
-                                .WithDescription(Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}"))
-                                .WithImageUrl($"https://i.ytimg.com/vi/{streamVideo.VideoId}/maxresdefault.jpg")
-                                .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
-                                .AddField("直播狀態", "已關台並變更為會限影片")
-                                .AddField("直播時間", $"{endTime.Subtract(startTime):hh'時'mm'分'ss'秒'}")
-                                .AddField("關台時間", endTime.ConvertDateTimeToDiscordMarkdown());
-
-                                if (Program.ApplicatonOwner != null) await Program.ApplicatonOwner.SendMessageAsync("已關台並變更為會限影片", false, embedBuilder.Build()).ConfigureAwait(false);
-                                await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.End).ConfigureAwait(false);
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            Log.Error($"Record-MemberOnly {ex}");
-                        }
-                    }
-                });
-
                 Program.RedisSub.Subscribe(new RedisChannel("youtube.unarchived", RedisChannel.PatternMode.Literal), async (channel, videoId) =>
                 {
                     Log.Info($"{channel} - {videoId}");
+
+                    if (_endLiveBag.ContainsKey(videoId))
+                    {
+                        Log.Warn("重複通知，略過");
+                        return;
+                    }
+
+                    _endLiveBag.TryAdd(videoId, 1);
 
                     using (var db = DataBase.DBContext.GetDbContext())
                     {
