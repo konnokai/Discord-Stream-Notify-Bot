@@ -879,6 +879,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             string channelId;
 
             channelUrl = channelUrl.Replace("https://m.youtube.com", "https://www.youtube.com");
+            channelUrl = channelUrl.Split('?')[0]; // 移除網址上的參數
 
             Regex regexOldFormat = new Regex(@"(http[s]{0,1}://){0,1}(www\.){0,1}(?'Host'[^/]+)/(?'Type'[^/]+)/(?'ChannelName'[\w%\-]+)");
             Regex regexNewFormat = new Regex(@"(http[s]{0,1}://){0,1}(www\.){0,1}(?'Host'[^/]+)/@(?'CustomId'[^/]+)");
