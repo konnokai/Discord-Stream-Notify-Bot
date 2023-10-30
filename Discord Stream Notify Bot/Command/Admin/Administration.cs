@@ -239,15 +239,15 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
                     var youtubeChannelSpiders = db.YoutubeChannelSpider.Where((x) => x.GuildId == gid);
                     if (youtubeChannelSpiders.Any())
                     {
-                        result += $"設定的 YouTube 爬蟲: \n```{string.Join('\n', youtubeChannelSpiders.Select((x) => $"{x.ChannelTitle}: {x.ChannelId}"))}";
+                        result += $"設定的 YouTube 爬蟲: \n```{string.Join('\n', youtubeChannelSpiders.Select((x) => $"{x.ChannelTitle}: {x.ChannelId}"))}```";
                     }
 
-                    var channelList = db.NoticeYoutubeStreamChannel.Where((x) => x.GuildId == guild.Id);
-                    if (channelList.Any())
+                    var youtubechannelList = db.NoticeYoutubeStreamChannel.Where((x) => x.GuildId == guild.Id);
+                    if (youtubechannelList.Any())
                     {
                         List<string> channelListResult = new List<string>();
 
-                        foreach (var item in channelList)
+                        foreach (var item in youtubechannelList)
                         {
                             var noticeChannel = guild.GetChannel(item.DiscordChannelId);
 
@@ -257,13 +257,37 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
                                 channelListResult.Add($"(不存在) {item.DiscordChannelId}: {item.NoticeStreamChannelId}");
                         }
 
-                        result += $"設定通知的頻道: \n```{string.Join('\n', channelListResult)}```\n";
+                        result += $"設定 YouTube 通知的頻道: \n```{string.Join('\n', channelListResult)}```\n";
                     }
 
                     var memberChcekList = db.GuildYoutubeMemberConfig.Where((x) => x.GuildId == guild.Id);
                     if (memberChcekList.Any())
                     {
                         result += $"設定會限的頻道: \n```{string.Join('\n', memberChcekList.Select((x) => $"{x.MemberCheckChannelTitle}: {x.MemberCheckGrantRoleId}"))}```";
+                    }
+
+                    var twitterSpiders = db.TwitterSpaecSpider.Where((x) => x.GuildId == gid);
+                    if (twitterSpiders.Any())
+                    {
+                        result += $"設定的 Twitter 爬蟲: \n```{string.Join('\n', twitterSpiders.Select((x) => $"{x.UserName}: {x.UserScreenName}"))}```";
+                    }
+
+                    var twitterChannelList = db.NoticeTwitterSpaceChannel.Where((x) => x.GuildId == guild.Id);
+                    if (twitterChannelList.Any())
+                    {
+                        List<string> channelListResult = new List<string>();
+
+                        foreach (var item in twitterChannelList)
+                        {
+                            var noticeChannel = guild.GetChannel(item.DiscordChannelId);
+
+                            if (noticeChannel != null)
+                                channelListResult.Add($"{noticeChannel}: {item.NoticeTwitterSpaceUserScreenName}");
+                            else
+                                channelListResult.Add($"(不存在) {item.DiscordChannelId}: {item.NoticeTwitterSpaceUserScreenName}");
+                        }
+
+                        result += $"設定 Twitter 通知的頻道: \n```{string.Join('\n', channelListResult)}```\n";
                     }
 
                     await Context.Channel.SendConfirmAsync(result).ConfigureAwait(false);
