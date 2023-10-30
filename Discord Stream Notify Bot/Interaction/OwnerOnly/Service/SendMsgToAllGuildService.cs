@@ -157,7 +157,7 @@
                             Log.Error($"{ex}");
                         }
 
-                        await button.SendConfirmAsync("已於通知頻道發送完成", true);
+                        await button.Channel.SendMessageAsync("已於通知頻道發送完成");
                         db.SaveChanges();
 
                         try
@@ -232,7 +232,7 @@
                             Log.Error($"{ex}");
                         }
 
-                        await button.SendConfirmAsync("已於會限驗證紀錄頻道發送完成", true);
+                        await button.Channel.SendMessageAsync("已於會限驗證紀錄頻道發送完成");
                         db.SaveChanges();
                     }
                 }
