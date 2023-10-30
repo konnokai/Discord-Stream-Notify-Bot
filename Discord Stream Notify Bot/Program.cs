@@ -225,6 +225,7 @@ namespace Discord_Stream_Notify_Bot
             };
             #endregion
 
+#if DEBUG || RELEASE
             Log.Info("登入中...");
 
             try
@@ -244,6 +245,7 @@ namespace Discord_Stream_Notify_Bot
             Log.Info("登入成功!");
 
             UptimeKumaClient.Init(botConfig.UptimeKumaPushUrl, _client);
+#endif
 
             #region 初始化互動指令系統
             var interactionServices = new ServiceCollection()

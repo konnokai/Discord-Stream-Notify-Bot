@@ -14,11 +14,14 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug_API|Any CPU = Debug_API|Any CPU
 		Debug_DontRegisterCommand|Any CPU = Debug_DontRegisterCommand|Any CPU
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A3022865-83A3-4A54-AB3D-E4589F705146}.Debug_API|Any CPU.ActiveCfg = Debug_API|Any CPU
+		{A3022865-83A3-4A54-AB3D-E4589F705146}.Debug_API|Any CPU.Build.0 = Debug_API|Any CPU
 		{A3022865-83A3-4A54-AB3D-E4589F705146}.Debug_DontRegisterCommand|Any CPU.ActiveCfg = Debug_DontRegisterCommand|Any CPU
 		{A3022865-83A3-4A54-AB3D-E4589F705146}.Debug_DontRegisterCommand|Any CPU.Build.0 = Debug_DontRegisterCommand|Any CPU
 		{A3022865-83A3-4A54-AB3D-E4589F705146}.Debug|Any CPU.ActiveCfg = Debug|Any CPU

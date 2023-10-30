@@ -9,31 +9,44 @@ namespace Discord_Stream_Notify_Bot.HttpClients
     // https://blog.ailand.date/2021/05/12/how-to-crawl-twitter-with-graphql/
     public class TwitterClient
     {
-        private readonly Dictionary<string, (string QueryId, string FeatureSwitches)> _apiQueryData = new();
-        private readonly HttpClient _httpClient;
+        private readonly BotConfig _botConfig;
+        private readonly HttpClient _graphQLClient;
         private readonly HttpClientHandler _handler;
+        private readonly Dictionary<string, (string QueryId, string FeatureSwitches)> _apiQueryData = new();
 
         public TwitterClient(HttpClient httpClient, BotConfig botConfig)
         {
-            httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", "AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs=1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA");
-            httpClient.DefaultRequestHeaders.Add("UserAgent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36");
-            httpClient.DefaultRequestHeaders.Add("Referer", "https://twitter.com/");
-            httpClient.DefaultRequestHeaders.Add("ContentType", "application/json");
+            _botConfig = botConfig;
 
-            _httpClient = httpClient;
             _handler = new HttpClientHandler();
             _handler.CookieContainer = new CookieContainer();
-            _handler.CookieContainer.Add(new Cookie("auth_token", botConfig.TwitterAuthToken, "/", ".twitter.com"));
+            _handler.CookieContainer.Add(new Cookie("auth_token", _botConfig.TwitterAuthToken, "/", ".twitter.com"));
+            _handler.CookieContainer.Add(new Cookie("ct0", _botConfig.TwitterCSRFToken, "/", ".twitter.com"));
+
+            _graphQLClient = new HttpClient(_handler, false);
+            _graphQLClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", "AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs=1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA");
+            _graphQLClient.DefaultRequestHeaders.Add("UserAgent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36");
+            _graphQLClient.DefaultRequestHeaders.Add("ContentType", "application/json");
+            _graphQLClient.DefaultRequestHeaders.Add("X-Csrf-Token", _botConfig.TwitterCSRFToken); // ct0 跟 csrf token 是一樣的
         }
 
         public async Task<string> GetGusetTokenAsync()
         {
             try
             {
-                var data = await _httpClient.PostAsync("https://api.twitter.com/1.1/guest/activate.json", null);
-                Regex regex = new Regex(@"""(\d{19})""");
-                var guestToken = regex.Match(await data.Content.ReadAsStringAsync()).Groups[1].Value;
-                return guestToken;
+                using (var httpClient = new HttpClient(_handler, false))
+                {
+                    httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", "AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs=1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA");
+                    httpClient.DefaultRequestHeaders.Add("UserAgent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36");
+                    httpClient.DefaultRequestHeaders.Add("Referer", "https://twitter.com/");
+                    httpClient.DefaultRequestHeaders.Add("ContentType", "application/json");
+                    httpClient.DefaultRequestHeaders.Add("X-Csrf-Token", _botConfig.TwitterCSRFToken);
+
+                    var data = await httpClient.PostAsync("https://api.twitter.com/1.1/guest/activate.json", null);
+                    Regex regex = new Regex(@"""(\d{19})""");
+                    var guestToken = regex.Match(await data.Content.ReadAsStringAsync()).Groups[1].Value;
+                    return guestToken;
+                }
             }
             catch
             {
@@ -49,10 +62,10 @@ namespace Discord_Stream_Notify_Bot.HttpClients
                 httpClient.DefaultRequestHeaders.Add("Referer", "https://twitter.com/");
                 var web = await httpClient.GetStringAsync("https://twitter.com");
 
-                Regex regex = new Regex(@"api:""([^""]+)""");
+                Regex regex = new Regex(@"main.([^""]+).js");
                 var match = regex.Match(web);
                 if (!match.Success)
-                    throw new Exception("GetQueryIdAndFeatureSwitchesAsync-Get API version error");
+                    throw new Exception("GetQueryIdAndFeatureSwitchesAsync-Get Main version error");
 
                 string type = "client-web";
                 if (web.Contains("-legacy"))
@@ -61,7 +74,7 @@ namespace Discord_Stream_Notify_Bot.HttpClients
                 _apiQueryData.Clear();
                 regex = new Regex("{queryId:\"([^\"]+)\",operationName:\"([^\"]+)\",operationType:\"([^\"]+)\",metadata:{featureSwitches:\\[([^\\]]+)", RegexOptions.None);
 
-                string mainJsText = await httpClient.GetStringAsync($"https://abs.twimg.com/responsive-web/{type}/api.{match.Groups[1].Value}a.js");
+                string mainJsText = await httpClient.GetStringAsync($"https://abs.twimg.com/responsive-web/{type}/{match}");
                 var queryList = regex.Matches(mainJsText);
                 foreach (Match item in queryList)
                 {
@@ -71,9 +84,9 @@ namespace Discord_Stream_Notify_Bot.HttpClients
                     _apiQueryData.Add(item.Groups[2].Value, new(queryId, featureSwitches));
                 }
 
-                _httpClient.DefaultRequestHeaders.Remove("x-guest-token");
+                _graphQLClient.DefaultRequestHeaders.Remove("x-guest-token");
                 string guestToken = await GetGusetTokenAsync();
-                _httpClient.DefaultRequestHeaders.Add("x-guest-token", guestToken);
+                _graphQLClient.DefaultRequestHeaders.Add("x-guest-token", guestToken);
 
                 Log.Info("NewTwitterAPIQueryData Found!");
                 Log.Info($"Total QueryData: {_apiQueryData.Count}");
@@ -101,7 +114,7 @@ namespace Discord_Stream_Notify_Bot.HttpClients
             try
             {
                 string url = $"https://twitter.com/i/api/graphql/{_apiQueryData["UserByScreenName"].QueryId}/UserByScreenName?variables={variables}&features={_apiQueryData["UserByScreenName"].FeatureSwitches}";
-                return JsonConvert.DeserializeObject<TwitterUserJson>(await _httpClient.GetStringAsync(url));
+                return JsonConvert.DeserializeObject<TwitterUserJson>(await _graphQLClient.GetStringAsync(url));
             }
             catch (HttpRequestException httpEx) when (httpEx.Message.Contains("40") && !isRefresh)
             {
@@ -125,7 +138,7 @@ namespace Discord_Stream_Notify_Bot.HttpClients
                 httpClient.DefaultRequestHeaders.Add("Referer", "https://twitter.com/");
                 httpClient.DefaultRequestHeaders.Add("ContentType", "application/json");
                 // https://blog.nest.moe/posts/how-to-crawl-twitter-with-graphql/#csrf-token
-                httpClient.DefaultRequestHeaders.Add("x-csrf-token", DateTimeOffset.UtcNow.ToString().ToMD5());
+                httpClient.DefaultRequestHeaders.Add("X-Csrf-Token", DateTimeOffset.UtcNow.ToString().ToMD5());
 
                 try
                 {
@@ -168,6 +181,7 @@ namespace Discord_Stream_Notify_Bot.HttpClients
 
         public async Task<JToken> GetTwitterSpaceMetadataAsync(string spaceId, bool isRefresh = false)
         {
+
             if (!_apiQueryData.ContainsKey("AudioSpaceById"))
                 await GetQueryIdAndFeatureSwitchesAsync();
 
@@ -178,21 +192,20 @@ namespace Discord_Stream_Notify_Bot.HttpClients
             {
                 id = spaceId,
                 isMetatagsQuery = false,
-                withDownvotePerspective = false,
-                withReactionsMetadata = false,
-                withReactionsPerspective = false,
-                withReplays = true
+                withReplays = true,
+                withListeners = true,
             }));
 
             try
             {
                 string url = $"https://twitter.com/i/api/graphql/{_apiQueryData["AudioSpaceById"].QueryId}/AudioSpaceById?variables={variables}&features={_apiQueryData["AudioSpaceById"].FeatureSwitches}";
-                return JObject.Parse(await _httpClient.GetStringAsync(url))["data"]["audioSpace"]["metadata"];
+                return JObject.Parse(await _graphQLClient.GetStringAsync(url))["data"]["audioSpace"]["metadata"];
             }
             catch (HttpRequestException httpEx) when (httpEx.Message.Contains("40") && !isRefresh)
             {
                 await GetQueryIdAndFeatureSwitchesAsync();
                 return await GetTwitterSpaceMetadataAsync(spaceId, true);
+                throw;
             }
             catch (Exception)
             {
@@ -205,7 +218,7 @@ namespace Discord_Stream_Notify_Bot.HttpClients
             try
             {
                 string url = $"https://twitter.com/i/api/1.1/live_video_stream/status/{mediaKey}";
-                return JObject.Parse(await _httpClient.GetStringAsync(url))["source"]["location"].ToString();
+                return JObject.Parse(await _graphQLClient.GetStringAsync(url))["source"]["location"].ToString();
             }
             catch (Exception)
             {

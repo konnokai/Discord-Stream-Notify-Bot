@@ -10,6 +10,7 @@ public class BotConfig
     public ulong TestSlashCommandGuildId { get; set; } = 0;
     public string TwitcastingRecordPath { get; set; } = "";
     public string TwitterAuthToken { get; set; } = "";
+    public string TwitterCSRFToken { get; set; } = "";
     public string TwitterSpaceRecordPath { get; set; } = "";
     public string WebHookUrl { get; set; } = "";
     public string RedisTokenKey { get; set; } = "";
@@ -70,6 +71,7 @@ public class BotConfig
             TestSlashCommandGuildId = config.TestSlashCommandGuildId;
             TwitcastingRecordPath = config.TwitcastingRecordPath;
             TwitterAuthToken = config.TwitterAuthToken;
+            TwitterCSRFToken = config.TwitterCSRFToken;
             TwitterSpaceRecordPath = config.TwitterSpaceRecordPath;
             GoogleClientId = config.GoogleClientId;
             GoogleClientSecret = config.GoogleClientSecret;

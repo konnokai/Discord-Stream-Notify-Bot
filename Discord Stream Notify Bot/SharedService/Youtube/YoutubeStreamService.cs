@@ -63,12 +63,14 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             callbackUrl = botConfig.PubSubCallbackUrl;
             _emojiService = emojiService;
 
+#if RELEASE
             try
             {
                 //Todo: 自定義化
                 noticeRecordChannel = _client.GetGuild(738734668882640938).GetTextChannel(805134765191462942);
             }
             catch { }
+#endif
 
             if (Program.Redis != null)
             {
@@ -588,15 +590,15 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 Task.Run(async () => await GetOrCreateNijisanjiLiverListAsync(item));
             }
 
+#if !RELEASE
+            return;
+#endif
+
             holoSchedule = new Timer(async (objState) => await HoloScheduleAsync(), null, TimeSpan.FromSeconds(15), TimeSpan.FromMinutes(5));
 
             nijisanjiSchedule = new Timer(async (objState) => await NijisanjiScheduleAsync(), null, TimeSpan.FromSeconds(10), TimeSpan.FromMinutes(5));
 
             otherSchedule = new Timer(async (objState) => await OtherScheduleAsync(), null, TimeSpan.FromSeconds(20), TimeSpan.FromMinutes(5));
-
-#if DEBUG || DEBUG_DONTREGISTERCOMMAND
-            return;
-#endif
 
             checkScheduleTime = new Timer(async (objState) =>
             {

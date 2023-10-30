@@ -17,7 +17,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
         }
 
         [RequireContext(ContextType.Guild)]
-        [RequireGuildMemberCount(500)]
+        [RequireGuildMemberCount(1000)]
         [RequireUserPermission(GuildPermission.Administrator, Group = "bot_owner")]
         [RequireOwner(Group = "bot_owner")]
         [CommandSummary("新增推特語音空間爬蟲\n" +

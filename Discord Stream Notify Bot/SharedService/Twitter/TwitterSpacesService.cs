@@ -21,9 +21,9 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
 
         public TwitterSpacesService(DiscordSocketClient client, TwitterClient twitterClient, BotConfig botConfig, EmojiService emojiService)
         {
-            if (string.IsNullOrWhiteSpace(botConfig.TwitterAuthToken))
+            if (string.IsNullOrWhiteSpace(botConfig.TwitterAuthToken) || string.IsNullOrWhiteSpace(botConfig.TwitterCSRFToken))
             {
-                Log.Warn($"{nameof(BotConfig.TwitterAuthToken)}遺失，無法運行推特類功能");
+                Log.Warn($"{nameof(BotConfig.TwitterAuthToken)} 或 {nameof(BotConfig.TwitterCSRFToken)} 遺失，無法運行推特類功能");
                 IsEnbale = false;
                 return;
             }
@@ -35,7 +35,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
             if (string.IsNullOrEmpty(twitterSpaceRecordPath)) twitterSpaceRecordPath = Program.GetDataFilePath("");
             if (!twitterSpaceRecordPath.EndsWith(Program.GetPlatformSlash())) twitterSpaceRecordPath += Program.GetPlatformSlash();
 
-#if DEBUG || DEBUG_DONTREGISTERCOMMAND
+#if !RELEASE && !DEBUG_API
             return;
 #endif
 
@@ -112,7 +112,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                                 }
                                 db.SaveChanges();
                             }
-                            catch (System.Net.Http.HttpRequestException httpEx) when (httpEx.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+                            catch (HttpRequestException httpEx) when (httpEx.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
                             {
                                 Log.Error($"Prepare-Spaces: 429錯誤");
                             }
@@ -126,7 +126,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                 }
                 catch (Exception ex) { Log.Error($"Spaces-Timer: {ex}"); }
                 finally { isRuning = false; }
-            }, null, TimeSpan.FromSeconds(30), TimeSpan.FromMinutes(2));
+            }, null, TimeSpan.FromSeconds(5), TimeSpan.FromMinutes(1));
         }
 
         public async Task<Result> GetTwitterUserAsync(string userScreenName)
@@ -162,7 +162,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
 
         private async Task SendSpaceMessageAsync(Result userModel, DataBase.Table.TwitterSpace twitterSpace, bool isRecord = false)
         {
-#if DEBUG || DEBUG_DONTREGISTERCOMMAND
+#if !RELEASE
             Log.New($"推特空間開台通知: {twitterSpace.UserScreenName} - {twitterSpace.SpaecTitle}");
 #else
             using (var db = DataBase.DBContext.GetDbContext())

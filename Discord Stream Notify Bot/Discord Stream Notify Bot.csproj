@@ -5,7 +5,7 @@
     <TargetFramework>net6.0</TargetFramework>
     <RootNamespace>Discord_Stream_Notify_Bot</RootNamespace>
 	<DebugType>portable</DebugType>
-	<Configurations>Debug;Release;Debug_DontRegisterCommand</Configurations>
+	<Configurations>Debug;Release;Debug_DontRegisterCommand;Debug_API</Configurations>
   </PropertyGroup>
 
   <ItemGroup>
@@ -72,6 +72,10 @@
 	</PropertyGroup>
 	
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+	  <DebugType>embedded</DebugType>
+	</PropertyGroup>
+	
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug_API|AnyCPU'">
 	  <DebugType>embedded</DebugType>
 	</PropertyGroup>
 	
