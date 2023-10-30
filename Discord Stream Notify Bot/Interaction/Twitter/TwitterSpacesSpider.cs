@@ -146,7 +146,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                 return;
             }
 
-            userScreenName = userScreenName.Replace("@", "").ToLower();
+            userScreenName = userScreenName.Replace("@", "");
 
             using (var db = DataBase.DBContext.GetDbContext())
             {
