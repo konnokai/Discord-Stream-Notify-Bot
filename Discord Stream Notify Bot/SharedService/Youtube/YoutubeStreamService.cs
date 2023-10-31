@@ -346,6 +346,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                 Program.RedisSub.Subscribe(new RedisChannel("youtube.addstream", RedisChannel.PatternMode.Literal), async (channel, videoId) =>
                 {
+                    videoId = GetVideoId(videoId);
                     Log.Info($"{channel} - (手動新增) {videoId}");
 
                     try
