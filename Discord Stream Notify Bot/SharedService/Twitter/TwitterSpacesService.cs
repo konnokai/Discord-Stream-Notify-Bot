@@ -126,7 +126,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                 }
                 catch (Exception ex) { Log.Error($"Spaces-Timer: {ex}"); }
                 finally { isRuning = false; }
-            }, null, TimeSpan.FromSeconds(5), TimeSpan.FromMinutes(1));
+            }, null, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(90));
         }
 
         public async Task<Result> GetTwitterUserAsync(string userScreenName)
