@@ -9,17 +9,17 @@
 
 自行運行所需環境與參數
 -
-1. .NET Core 6.0 Runtime 或 SDK ([微軟網址](https://dotnet.microsoft.com/en-us/download/dotnet/.0))
+1. .NET Core 6.0 Runtime 或 SDK ([微軟網址](https://dotnet.microsoft.com/en-us/download/dotnet/6.0))
 2. Redis Server ([Windows 下載網址](https://github.com/MicrosoftArchive/redis)，Linux 可直接透過 apt 或 yum 安裝)
 3. Discord Bot Token ([Discord Dev網址](https://discord.com/developers/applications))
 4. Discord Channel WebHook (做紀錄用)
 5. Google Console的API金鑰並確保已於程式庫開啟 Youtube Data API v3 ([Google Console網址](https://console.cloud.google.com/apis/library/youtube.googleapis.com))
-6. Twitter AuthToken，這需要從已登入的 Twitter 帳號中，由欄位名稱為 `auth_token` 的網頁 Cookie 來獲得 (如不需要推特語音通知則不需要)
-7. 錄影功能需搭配隔壁 [Youtube Stream Record](https://github.com/konnokai/youtube-stream-record) 使用 (如無搭配錄影的話則不會有關台通知，且不能即時的通知開台*)
+6. Twitter AuthToken & CSRFToken，這需要從已登入的 Twitter 帳號中，由欄位名稱為 `auth_token` 和 `ct0` 的網頁 Cookie 來獲得 (如不需要推特語音通知則不需要)
+7. 錄影功能需搭配隔壁 [Youtube Stream Record](https://github.com/konnokai/YoutubeStreamRecord) 使用 (如無搭配錄影的話則不會有關台通知，且不能即時的通知開台*)
 8. Discord & Google 的 OAuth Client ID 跟 Client Secret，用於 YouTube 會限驗證，需搭配 [網站後端](https://github.com/konnokai/Discord-Stream-Bot-Backend) 使用
 9. PubSubCallbackUrl，搭配上面的網站後端做YT影片上傳接收使用，當有新爬蟲時小幫手會自動註冊，網址格式為: `https://[後端域名]/NotificationCallback` ([Google PubSubHubbub](https://pubsubhubbub.appspot.com))
 10. Uptime Kuma Push 監測器的網址，如果不需要上線監測則可為空，需搭配 [Uptime Kuma](https://github.com/louislam/uptime-kuma) 使用
-11. [ffmpeg](https://ffmpeg.org/download.html), [streamlink](https://streamlink.github.io/install.html)，原則上不裝的話就只是不會錄影 (裝完記得確認PATH環境變數是否有設定正確的路徑)
+11. [ffmpeg](https://ffmpeg.org/download.html), [streamlink](https://streamlink.github.io/install.html)，原則上不裝的話就只是不會錄影 (裝完記得確認 PATH 環境變數是否有設定正確的路徑)
 
 備註
 -
@@ -31,7 +31,7 @@
 
 建置&測試環境
 - 
-- Visual Studio 2022 17.5.1
+- Visual Studio 2022 17.7.6
 - .NET SDK 6.0.14
 - Windows 10 & 11 Pro
 - Debian 11
