@@ -344,6 +344,44 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     }
                 });
 
+                Program.RedisSub.Subscribe(new RedisChannel("youtube.addstream", RedisChannel.PatternMode.Literal), async (channel, videoId) =>
+                {
+                    Log.Info($"{channel} - (手動新增) {videoId}");
+
+                    try
+                    {
+                        using (var db = DataBase.DBContext.GetDbContext())
+                        {
+                            if (!addNewStreamVideo.ContainsKey(videoId) && !Extensions.HasStreamVideoByVideoId(videoId))
+                            {
+                                var item = await GetVideoAsync(videoId).ConfigureAwait(false);
+                                if (item == null)
+                                {
+                                    Log.Warn($"{videoId} Delete");
+                                    return;
+                                }
+
+                                try
+                                {
+                                    await AddOtherDataAsync(item);
+                                }
+                                catch (Exception ex)
+                                {
+                                    Log.Error(ex, $"PubSub-AddStream: {item.Id}");
+                                }
+                            }
+                            else
+                            {
+                                Log.Warn($"{videoId} 已存在，略過");
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error($"PubSub-AddStream {ex}");
+                    }
+                });
+
                 Program.RedisSub.Subscribe(new RedisChannel("youtube.pubsub.CreateOrUpdate", RedisChannel.PatternMode.Literal), async (channel, youtubeNotificationJson) =>
                 {
                     YoutubePubSubNotification youtubePubSubNotification = JsonConvert.DeserializeObject<YoutubePubSubNotification>(youtubeNotificationJson.ToString());
