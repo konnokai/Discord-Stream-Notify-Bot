@@ -169,27 +169,30 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                 List<Data> datas = new List<Data>();
                 NijisanjiStreamJson nijisanjiStreamJson = null;
-                try
+
+                for (int i = -1; i <= 1; i++)
                 {
-                    for (int i = -1; i <= 1; i++)
+                    try
                     {
                         string result = await httpClient.GetStringAsync($"https://www.nijisanji.jp/api/streams?day_offset={i}");
                         if (result.Contains("ERROR</h1>"))
-                        {
-                            Program.isNijisanjiChannelSpider = false;
-                            Log.Warn("NijisanjiScheduleAsync: CloudFront回傳錯誤，略過");
-                            return;
-                        }
+                            continue;
+
                         nijisanjiStreamJson = JsonConvert.DeserializeObject<NijisanjiStreamJson>(result);
                         datas.AddRange(nijisanjiStreamJson.Included);
                         datas.AddRange(nijisanjiStreamJson.Data);
                     }
+                    catch (Exception ex)
+                    {
+                        if (!ex.Message.Contains("EOF or 0 bytes") && !ex.Message.Contains("504") && !ex.Message.Contains("500"))
+                            Log.Error(ex, $"NijisanjiScheduleAsync-GetData: {i}");
+                    }
                 }
-                catch (Exception ex)
+
+                if (!datas.Any())
                 {
+                    Log.Warn("NijisanjiScheduleAsync: 直播清單無資料");
                     Program.isNijisanjiChannelSpider = false;
-                    if (!ex.Message.Contains("EOF or 0 bytes") && !ex.Message.Contains("504") && !ex.Message.Contains("500"))
-                        Log.Error($"NijisanjiScheduleAsync: {ex}");
                     return;
                 }
 
