@@ -602,23 +602,29 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 Log.Info("已建立Redis訂閱");
             }
 
+            List<string> recordChannelId = new();
+            using (var db = DataBase.DBContext.GetDbContext())
+            {
+                if (db.RecordYoutubeChannel.Any())
+                    recordChannelId = db.RecordYoutubeChannel.Select((x) => x.YoutubeChannelId).ToList();
+            }
             using (var db = DataBase.HoloVideoContext.GetDbContext())
             {
-                foreach (var streamVideo in db.Video.Where((x) => x.ScheduledStartTime > DateTime.Now && !x.IsPrivate))
+                foreach (var streamVideo in db.Video.Where((x) => x.ScheduledStartTime > DateTime.Now && (!x.IsPrivate || recordChannelId.Any((channelId) => x.ChannelId == channelId))))
                 {
                     StartReminder(streamVideo, DataBase.Table.Video.YTChannelType.Holo);
                 }
             }
             using (var db = DataBase.NijisanjiVideoContext.GetDbContext())
             {
-                foreach (var streamVideo in db.Video.Where((x) => x.ScheduledStartTime > DateTime.Now && !x.IsPrivate))
+                foreach (var streamVideo in db.Video.Where((x) => x.ScheduledStartTime > DateTime.Now && (!x.IsPrivate || recordChannelId.Any((channelId) => x.ChannelId == channelId))))
                 {
                     StartReminder(streamVideo, DataBase.Table.Video.YTChannelType.Nijisanji);
                 }
             }
             using (var db = DataBase.OtherVideoContext.GetDbContext())
             {
-                foreach (var streamVideo in db.Video.Where((x) => x.ScheduledStartTime > DateTime.Now && !x.IsPrivate))
+                foreach (var streamVideo in db.Video.Where((x) => x.ScheduledStartTime > DateTime.Now && (!x.IsPrivate || recordChannelId.Any((channelId) => x.ChannelId == channelId))))
                 {
                     StartReminder(streamVideo, DataBase.Table.Video.YTChannelType.Other);
                 }
@@ -656,6 +662,20 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     Log.Error($"CheckScheduleTime-TryRemove: {ex}");
                 }
 
+                List<string> recordChannelId = new();
+                try
+                {
+                    using (var db = DataBase.DBContext.GetDbContext())
+                    {
+                        if (db.RecordYoutubeChannel.Any())
+                            recordChannelId = db.RecordYoutubeChannel.Select((x) => x.YoutubeChannelId).ToList();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Error($"CheckScheduleTime-GetRecordYoutubeChannel: {ex}");
+                }
+
                 int changeVideoNum = 0;
                 for (int i = 0; i < Reminders.Count; i += 50)
                 {
@@ -679,6 +699,13 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                 // 如果viderResult內沒有該VideoId直播的話，則判定該直播已刪除
                                 if (!videoResult.Items.Any((x) => x.Id == reminder.Key))
                                 {
+                                    // 如果是錄影頻道的話則忽略
+                                    if (recordChannelId.Any((x) => x == reminder.Value.StreamVideo.ChannelId))
+                                    {
+                                        Log.Warn($"CheckScheduleTime-VideoResult-{reminder.Key}: 錄影頻道已刪除直播，略過");
+                                        continue;
+                                    }
+
                                     Log.Warn($"CheckScheduleTime-VideoResult-{reminder.Key}: 已刪除直播");
 
                                     EmbedBuilder embedBuilder = new EmbedBuilder();
