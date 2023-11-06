@@ -1,10 +1,11 @@
 ﻿由 <@284989733229297664>(konnokai) 製作
 
 可以幫你處理以下功能
-1. 通知直播待機所建立/開台/關台(部分頻道)
-2. 影片上傳通知(非主要功能)
+1. YouTube 通知直播待機所建立/開台/關台(部分頻道)
+2. YouTube 影片上傳通知(非主要功能)
 3. YouTube 會限驗證並自動授予用戶組
-4. Twitcasting 開始通知
+4. TwitterSpace 開台通知
+5. Twitcasting 開台通知
 
 __**其他特殊功能**__
 部分頻道會有錄影，可以使用 `/youtube now-record-channel` 跟 `/youtube list-record-channel` 查詢
