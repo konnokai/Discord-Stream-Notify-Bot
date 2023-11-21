@@ -186,6 +186,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     {
                         if (!ex.Message.Contains("EOF or 0 bytes") && !ex.Message.Contains("504") && !ex.Message.Contains("500"))
                             Log.Error(ex, $"NijisanjiScheduleAsync-GetData: {i}");
+                        // 也許是因為遇到 500 相關錯誤才導致檢測卡住 :thinking:
+                        continue;
                     }
                 }
 
@@ -291,9 +293,10 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                             if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo))
                             {
-                                // 在想需不需要先檢查是否已過開台時間再發送尚未開台通知
-                                // 不過考量到上面有 on_air 狀態檢測，應該是不用?
-                                if (!isFirst2434) await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.NewStream).ConfigureAwait(false);
+                                // 會遇到尚未開台但已過開始時間的情況，所以還是先判定開始時間大於現在時間後再傳送新直播通知
+                                if (!isFirst2434 && item.Attributes.StartAt > DateTime.Now) 
+                                    await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.NewStream).ConfigureAwait(false);
+
                                 StartReminder(streamVideo, streamVideo.ChannelType);
                             }
                         }
