@@ -42,7 +42,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
         public bool IsRecord { get; set; } = true;
         public YouTubeService yt;
 
-        private Timer holoSchedule, nijisanjiSchedule, otherSchedule, checkScheduleTime, saveDateBase, subscribePubSub/*, checkHoloNowStream, holoScheduleEmoji*/;
+        private Timer holoSchedule, nijisanjiSchedule, otherSchedule, checkScheduleTime, saveDateBase, subscribePubSub, reScheduleTime/*, checkHoloNowStream, holoScheduleEmoji*/;
         private readonly SocketTextChannel noticeRecordChannel;
         private readonly DiscordSocketClient _client;
         private readonly IHttpClientFactory _httpClientFactory;
@@ -602,33 +602,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 Log.Info("已建立Redis訂閱");
             }
 
-            List<string> recordChannelId = new();
-            using (var db = DataBase.DBContext.GetDbContext())
-            {
-                if (db.RecordYoutubeChannel.Any())
-                    recordChannelId = db.RecordYoutubeChannel.Select((x) => x.YoutubeChannelId).ToList();
-            }
-            using (var db = DataBase.HoloVideoContext.GetDbContext())
-            {
-                foreach (var streamVideo in db.Video.Where((x) => x.ScheduledStartTime > DateTime.Now && (!x.IsPrivate || recordChannelId.Any((channelId) => x.ChannelId == channelId))))
-                {
-                    StartReminder(streamVideo, DataBase.Table.Video.YTChannelType.Holo);
-                }
-            }
-            using (var db = DataBase.NijisanjiVideoContext.GetDbContext())
-            {
-                foreach (var streamVideo in db.Video.Where((x) => x.ScheduledStartTime > DateTime.Now && (!x.IsPrivate || recordChannelId.Any((channelId) => x.ChannelId == channelId))))
-                {
-                    StartReminder(streamVideo, DataBase.Table.Video.YTChannelType.Nijisanji);
-                }
-            }
-            using (var db = DataBase.OtherVideoContext.GetDbContext())
-            {
-                foreach (var streamVideo in db.Video.Where((x) => x.ScheduledStartTime > DateTime.Now && (!x.IsPrivate || recordChannelId.Any((channelId) => x.ChannelId == channelId))))
-                {
-                    StartReminder(streamVideo, DataBase.Table.Video.YTChannelType.Other);
-                }
-            }
+            reScheduleTime = new Timer((objState) => ReScheduleReminder(), null, TimeSpan.FromSeconds(5), TimeSpan.FromDays(1));
 
             foreach (var item in new string[] { "nijisanji", "nijisanjien", "virtuareal" })
             {

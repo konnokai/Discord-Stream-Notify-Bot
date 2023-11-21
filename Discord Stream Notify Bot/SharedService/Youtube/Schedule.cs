@@ -1,6 +1,7 @@
 ﻿using Discord_Stream_Notify_Bot.Interaction;
 using Discord_Stream_Notify_Bot.SharedService.Youtube.Json;
 using HtmlAgilityPack;
+using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json.Linq;
 using System.Data;
 using System.Text.RegularExpressions;
@@ -13,6 +14,37 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
         private static Dictionary<string, DataBase.Table.Video> addNewStreamVideo = new();
         private static HashSet<string> newStreamList = new();
         private bool isFirstHolo = true, isFirst2434 = true, isFirstOther = true;
+
+        private void ReScheduleReminder()
+        {
+            List<string> recordChannelId = new();
+            using (var db = DataBase.DBContext.GetDbContext())
+            {
+                if (db.RecordYoutubeChannel.Any())
+                    recordChannelId = db.RecordYoutubeChannel.AsNoTracking().Select((x) => x.YoutubeChannelId).ToList();
+            }
+            using (var db = DataBase.HoloVideoContext.GetDbContext())
+            {
+                foreach (var streamVideo in db.Video.AsNoTracking().Where((x) => x.ScheduledStartTime > DateTime.Now && (!x.IsPrivate || recordChannelId.Any((channelId) => x.ChannelId == channelId))))
+                {
+                    StartReminder(streamVideo, DataBase.Table.Video.YTChannelType.Holo);
+                }
+            }
+            using (var db = DataBase.NijisanjiVideoContext.GetDbContext())
+            {
+                foreach (var streamVideo in db.Video.AsNoTracking().Where((x) => x.ScheduledStartTime > DateTime.Now && (!x.IsPrivate || recordChannelId.Any((channelId) => x.ChannelId == channelId))))
+                {
+                    StartReminder(streamVideo, DataBase.Table.Video.YTChannelType.Nijisanji);
+                }
+            }
+            using (var db = DataBase.OtherVideoContext.GetDbContext())
+            {
+                foreach (var streamVideo in db.Video.AsNoTracking().Where((x) => x.ScheduledStartTime > DateTime.Now && (!x.IsPrivate || recordChannelId.Any((channelId) => x.ChannelId == channelId))))
+                {
+                    StartReminder(streamVideo, DataBase.Table.Video.YTChannelType.Other);
+                }
+            }
+        }
 
         private async Task HoloScheduleAsync()
         {
