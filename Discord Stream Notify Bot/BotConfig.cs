@@ -16,6 +16,8 @@ public class BotConfig
     public string RedisTokenKey { get; set; } = "";
     public string PubSubCallbackUrl { get; set; } = "";
     public string UptimeKumaPushUrl { get; set; } = "";
+    public ulong DetectGuildId {  get; set; } = 0;
+    public ulong DetectCategoryId { get; set; } = 0;
 
     public void InitBotConfig()
     {
@@ -78,6 +80,8 @@ public class BotConfig
             RedisOption = config.RedisOption;
             RedisTokenKey = config.RedisTokenKey;
             UptimeKumaPushUrl = config.UptimeKumaPushUrl;
+            DetectGuildId = config.DetectGuildId;
+            DetectCategoryId = config.DetectCategoryId;
 
             if (string.IsNullOrWhiteSpace(config.RedisTokenKey) || string.IsNullOrWhiteSpace(RedisTokenKey))
             {

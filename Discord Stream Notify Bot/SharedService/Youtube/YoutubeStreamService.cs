@@ -70,6 +70,24 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 noticeRecordChannel = _client.GetGuild(738734668882640938).GetTextChannel(805134765191462942);
             }
             catch { }
+
+            if (botConfig.DetectGuildId != 0 && botConfig.DetectCategoryId != 0)
+            {
+                _client.ChannelCreated += async (channel) =>
+                {
+                    if (channel is not IVoiceChannel voiceChannel)
+                        return;
+
+                    if (voiceChannel.GuildId != botConfig.DetectGuildId)
+                        return;
+
+                    if (voiceChannel.CategoryId != botConfig.DetectCategoryId)
+                        return;
+
+                    await Program.ApplicatonOwner.SendMessageAsync($"`{voiceChannel.Guild}` 建立了新頻道 `{voiceChannel}`");
+                    return;
+                };
+            }
 #endif
 
             if (Program.Redis != null)
