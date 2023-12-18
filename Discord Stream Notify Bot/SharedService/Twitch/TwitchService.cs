@@ -21,7 +21,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
         private readonly DiscordSocketClient _client;
         private readonly Lazy<TwitchAPI> _twitchApi;
         private readonly Timer _timer;
-        private string twitchRecordPath;
+        private string twitchRecordPath, twitchOAuthToken;
         private bool isRuning = false;
         private HashSet<string> hashSet = new();
 
@@ -34,6 +34,15 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                 return;
             }
 
+            if (string.IsNullOrEmpty(botConfig.TwitchCookieAuthToken) || botConfig.TwitchCookieAuthToken.Length != 30)
+            {
+                Log.Warn($"{nameof(botConfig.TwitchCookieAuthToken)} 遺失或是字元非 30 字");
+                Log.Warn($"請參考 https://streamlink.github.io/cli/plugins/twitch.html#authentication 後設定到 {nameof(botConfig.TwitchCookieAuthToken)}");
+            }
+            else
+            {
+                twitchOAuthToken = botConfig.TwitchCookieAuthToken;
+            }
             twitchRecordPath = botConfig.TwitchRecordPath;
             if (string.IsNullOrEmpty(twitchRecordPath)) twitchRecordPath = Program.GetDataFilePath("");
             if (!twitchRecordPath.EndsWith(Program.GetPlatformSlash())) twitchRecordPath += Program.GetPlatformSlash();
@@ -304,6 +313,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
             }
 
             string procArgs = $"streamlink --twitch-disable-ads https://twitch.tv/{twitchStream.UserLogin} best --output \"{twitchRecordPath}[{twitchStream.UserLogin}]{twitchStream.StreamStartAt:yyyyMMdd} - {twitchStream.StreamId}.ts\"";
+            if (!string.IsNullOrEmpty(twitchOAuthToken))
+                procArgs += $" \"--twitch-api-header=Authorization=OAuth {twitchOAuthToken}\"";
             try
             {
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) Process.Start("tmux", $"new-window -d -n \"Twitch {twitchStream.UserLogin}\" {procArgs}");
