@@ -6,8 +6,10 @@ using static Discord_Stream_Notify_Bot.Interaction.Twitter.TwitterSpaces;
 namespace Discord_Stream_Notify_Bot.Interaction.Twitter
 {
     [EnabledInDm(false)]
-    [Group("twitter-spider", "Twiiter Space爬蟲設定")]
+    [RequireContext(ContextType.Guild)]
+    [RequireUserPermission(GuildPermission.Administrator)]
     [DefaultMemberPermissions(GuildPermission.Administrator)]
+    [Group("twitter-spider", "Twiiter Space 爬蟲設定")]
     public class TwitterSpacesSpider : TopLevelModule<SharedService.Twitter.TwitterSpacesService>
     {
         private readonly DiscordSocketClient _client;
@@ -16,15 +18,12 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
             _client = client;
         }
 
-        [RequireContext(ContextType.Guild)]
-        [RequireGuildMemberCount(1000)]
-        [RequireUserPermission(GuildPermission.Administrator, Group = "bot_owner")]
-        [RequireOwner(Group = "bot_owner")]
+        [RequireGuildMemberCount(500)]
         [CommandSummary("新增推特語音空間爬蟲\n" +
             "(請使用@後面的使用者名稱來新增)\n\n" +
-           "**禁止新增非VTuber的推主**\n" +
+           "**禁止新增非 VTuber 的推主**\n" +
             "每個伺服器可新增最多五個頻道爬蟲\n" +
-            "伺服器需大於500人才可使用\n" +
+            "伺服器需大於 500 人才可使用\n" +
             "未來會根據情況增減可新增的頻道數量\n" +
             "如有任何需要請向擁有者詢問\n")]
         [CommandExample("LaplusDarknesss", "@inui_toko")]
@@ -39,7 +38,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                 return;
             }
 
-            if (!_service.IsEnbale)
+            if (!_service.IsEnable)
             {
                 await Context.Interaction.SendErrorAsync("此Bot的Twitter功能已關閉，請向擁有者確認", true).ConfigureAwait(false);
                 return;
@@ -65,7 +64,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
 
                     try
                     {
-                        guild = item.GuildId == 0 ? "Bot擁有者" : $"{_client.GetGuild(item.GuildId).Name}";
+                        guild = item.GuildId == 0 ? "Bot 擁有者" : $"{_client.GetGuild(item.GuildId).Name}";
                     }
                     catch (Exception)
                     {
@@ -131,11 +130,8 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
             }
         }
 
-        [RequireContext(ContextType.Guild)]
         [CommandSummary("移除推特語音空間爬蟲\n" +
            "爬蟲必須由本伺服器新增才可移除")]
-        [RequireUserPermission(GuildPermission.Administrator, Group = "bot_owner")]
-        [RequireOwner(Group = "bot_owner")]
         [CommandExample("LaplusDarknesss", "@inui_toko")]
         [SlashCommand("remove", "移除推特語音空間爬蟲")]
         public async Task RemoveSpider([Summary("推特使用者名稱"), Autocomplete(typeof(GuildTwitterSpaceSpiderAutocompleteHandler))] string userScreenName)
@@ -180,7 +176,6 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
             }
         }
 
-        [RequireContext(ContextType.Guild)]
         [SlashCommand("list", "顯示推特語音空間爬蟲")]
         public async Task ListSpider([Summary("頁數")] int page = 0)
         {
@@ -189,7 +184,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
             using (var db = DataBase.DBContext.GetDbContext())
             {
                 var list = db.TwitterSpaecSpider.Where((x) => !x.IsWarningUser).Select((x) => Format.Url(x.UserScreenName, $"https://twitter.com/{x.UserScreenName}") +
-                    $" 由 `" + (x.GuildId == 0 ? "Bot擁有者" : (_client.GetGuild(x.GuildId) != null ? _client.GetGuild(x.GuildId).Name : "已退出的伺服器")) + "` 新增");
+                    $" 由 `" + (x.GuildId == 0 ? "Bot 擁有者" : (_client.GetGuild(x.GuildId) != null ? _client.GetGuild(x.GuildId).Name : "已退出的伺服器")) + "` 新增");
                 int warningChannelNum = db.TwitterSpaecSpider.Count((x) => x.IsWarningUser);
 
                 await Context.SendPaginatedConfirmAsync(page, page =>

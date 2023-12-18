@@ -326,7 +326,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                             if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo))
                             {
                                 // 會遇到尚未開台但已過開始時間的情況，所以還是先判定開始時間大於現在時間後再傳送新直播通知
-                                if (!isFirst2434 && item.Attributes.StartAt > DateTime.Now) 
+                                if (!isFirst2434 && item.Attributes.StartAt > DateTime.Now)
                                     await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.NewStream).ConfigureAwait(false);
 
                                 StartReminder(streamVideo, streamVideo.ChannelType);

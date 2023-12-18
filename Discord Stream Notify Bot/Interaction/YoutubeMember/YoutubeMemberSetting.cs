@@ -5,9 +5,11 @@ using Discord_Stream_Notify_Bot.SharedService.YoutubeMember;
 
 namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
 {
-    [Group("member-set", "YouTube會限驗證設定")]
-    [DefaultMemberPermissions(GuildPermission.Administrator)]
     [EnabledInDm(false)]
+    [RequireContext(ContextType.Guild)]
+    [RequireUserPermission(GuildPermission.Administrator)]
+    [DefaultMemberPermissions(GuildPermission.Administrator)]
+    [Group("member-set", "YouTube 會限驗證設定")]
     public class YoutubeMemberSetting : TopLevelModule<YoutubeMemberService>
     {
         private readonly DiscordSocketClient _client;
@@ -70,16 +72,13 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
         }
 
         [SlashCommand("set-notice-member-status-channel", "設定會限驗證狀態紀錄頻道")]
-        [RequireContext(ContextType.Guild)]
-        [RequireUserPermission(GuildPermission.Administrator, Group = "bot_owner")]
-        [RequireOwner(Group = "bot_owner")]
         public async Task SetNoticeMemberStatusChannel([Summary("紀錄頻道")] ITextChannel textChannel)
         {
             await DeferAsync(true);
 
-            if (!_service.Enable)
+            if (!_service.IsEnable)
             {
-                await Context.Interaction.SendErrorAsync($"該Bot未啟用會限驗證系統，請向 {Program.ApplicatonOwner} 確認", true);
+                await Context.Interaction.SendErrorAsync($"該 Bot 未啟用會限驗證系統，請向 {Program.ApplicatonOwner} 確認", true);
                 return;
             }
 
@@ -113,21 +112,18 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
             }
         }
 
-        [SlashCommand("add-member-check", "新增會限驗證頻道")]
+        [RequireGuildMemberCount(500)]
         [CommandSummary("新增會限驗證頻道，目前可上限為20個頻道\n" +
            "如新增同個頻道則可變更要授予的用戶組\n" +
            "伺服器需大於500人才可使用\n" +
            "如有任何需要請向擁有者詢問")]
-        [RequireContext(ContextType.Guild)]
-        [RequireUserPermission(GuildPermission.Administrator, Group = "bot_owner")]
-        [RequireOwner(Group = "bot_owner")]
         [CommandExample("https://www.youtube.com/channel/UCR6qhsLpn62WVxCBK1dkLow @peeps🕊")]
-        [RequireGuildMemberCount(500)]
+        [SlashCommand("add-member-check", "新增會限驗證頻道")]
         public async Task AddMemberCheckAsync([Summary("頻道連結")] string url, [Summary("用戶組Id")] IRole role)
         {
-            if (!_service.Enable)
+            if (!_service.IsEnable)
             {
-                await Context.Interaction.SendErrorAsync($"該Bot未啟用會限驗證系統，請向 {Program.ApplicatonOwner} 確認");
+                await Context.Interaction.SendErrorAsync($"該 Bot 未啟用會限驗證系統，請向 {Program.ApplicatonOwner} 確認");
                 return;
             }
 
@@ -140,7 +136,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
 
             if (role == Context.Guild.EveryoneRole)
             {
-                await Context.Interaction.SendErrorAsync("不可設定everyone用戶組，這用戶組每個人都有了你怎麼還會想設定?");
+                await Context.Interaction.SendErrorAsync("不可設定 everyone 用戶組，這用戶組每個人都有了你怎麼還會想設定?");
                 return;
             }
 
@@ -166,7 +162,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
 
                     if (db.GuildYoutubeMemberConfig.Count((x) => x.GuildId == Context.Guild.Id) > 20)
                     {
-                        await Context.Interaction.SendErrorAsync($"此伺服器已使用20個頻道做為會限驗證用\n" +
+                        await Context.Interaction.SendErrorAsync($"此伺服器已使用 20 個頻道做為會限驗證用\n" +
                             $"請移除未使用到的頻道來繼續新增驗證頻道", true);
                         return;
                     }
@@ -243,12 +239,9 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
             }
         }
 
-        [SlashCommand("remove-member-check", "移除會限驗證頻道")]
         [CommandSummary("移除會限驗證頻道")]
-        [RequireContext(ContextType.Guild)]
-        [RequireUserPermission(GuildPermission.Administrator, Group = "bot_owner")]
-        [RequireOwner(Group = "bot_owner")]
         [CommandExample("https://www.youtube.com/channel/UCR6qhsLpn62WVxCBK1dkLow")]
+        [SlashCommand("remove-member-check", "移除會限驗證頻道")]
         public async Task RemoveMemberCheckAsync([Summary("頻道連結"), Autocomplete(typeof(GuildYoutubeMemberCheckChannelIdAutocompleteHandler))] string url)
         {
             await DeferAsync(true);
@@ -291,10 +284,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
             }
         }
 
-
         [SlashCommand("list-checked-member", "顯示現在已成功驗證的成員清單")]
-        [RequireContext(ContextType.Guild)]
-        [RequireUserPermission(GuildPermission.Administrator)]
         public async Task ListCheckedMemberAsync([Summary("頁數")] int page = 1)
         {
             using (var db = DataBase.DBContext.GetDbContext())

@@ -12,7 +12,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
 {
     public partial class YoutubeMemberService : IInteractionService
     {
-        public bool Enable { get; private set; } = true;
+        public bool IsEnable { get; private set; } = true;
 
         Timer checkMemberShipOnlyVideoId, checkOldMemberStatus, checkNewMemberStatus;
         YoutubeStreamService _streamService;
@@ -29,7 +29,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
             if (string.IsNullOrEmpty(_botConfig.GoogleClientId) || string.IsNullOrEmpty(_botConfig.GoogleClientSecret))
             {
                 Log.Warn($"{nameof(BotConfig.GoogleClientId)} 或 {nameof(BotConfig.GoogleClientSecret)} 空白，無法使用會限驗證系統");
-                Enable = false;
+                IsEnable = false;
                 return;
             }
 
@@ -52,7 +52,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                     if (!ulong.TryParse(value.ToString(), out userId))
                         return;
 
-                    Log.Info($"接收到Redis的Revoke請求: {userId}");
+                    Log.Info($"接收到 Redis 的 Revoke 請求: {userId}");
 
                     await RemoveMemberCheckFromDbAsync(userId);
                 }
@@ -80,14 +80,14 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
 
                         if (!ulong.TryParse(customId[2], out ulong guildId))
                         {
-                            await component.SendErrorAsync("GuildId無效，請向孤之界回報此問題", true);
+                            await component.SendErrorAsync("GuildId 無效，請向孤之界回報此問題", true);
                             Log.Error(JsonConvert.SerializeObject(component));
                             return;
                         }
 
                         if (!ulong.TryParse(customId[3], out ulong userId))
                         {
-                            await component.SendErrorAsync("UserId無效，請向孤之界回報此問題", true);
+                            await component.SendErrorAsync("UserId 無效，請向孤之界回報此問題", true);
                             Log.Error(JsonConvert.SerializeObject(component));
                             return;
                         }
@@ -125,7 +125,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                             await DisableSelectMenuAsync(component, $"已選擇 {component.Data.Values.Count} 個頻道");
                         }
 
-                        await component.SendConfirmAsync("已記錄至資料庫，請稍等至多5分鐘讓Bot驗證\n請確認已開啟本伺服器的 `允許來自伺服器成員的私人訊息` ，以避免收不到通知", true, true);
+                        await component.SendConfirmAsync("已記錄至資料庫，請稍等至多 5 分鐘讓 Bot 驗證\n請確認已開啟本伺服器的 `允許來自伺服器成員的私人訊息` ，以避免收不到通知", true, true);
                     }
                 }
                 catch (Exception ex)
@@ -163,7 +163,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                 string revokeToken = token.RefreshToken ?? token.AccessToken;
                 await flow.RevokeTokenAsync(discordUserId, revokeToken, CancellationToken.None);
 
-                Log.Info($"{discordUserId} 已解除Google憑證");
+                Log.Info($"{discordUserId} 已解除 Google 憑證");
                 await RemoveMemberCheckFromDbAsync(ulong.Parse(discordUserId));
             }
             catch (Exception ex)
@@ -182,11 +182,11 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
 
                 if (!db.YoutubeMemberCheck.Any((x) => x.UserId == userId))
                 {
-                    Log.Info($"接收到Remove請求但不存在於資料庫內: {userId}");
+                    Log.Info($"接收到 Remove 請求但不存在於資料庫內: {userId}");
                     return;
                 }
 
-                Log.Info($"接收到Remove請求: {userId}");
+                Log.Info($"接收到 Remove 請求: {userId}");
 
                 var youtubeMembers = db.YoutubeMemberCheck.Where((x) => x.UserId == userId);
                 var guildYoutubeMemberConfigs = db.GuildYoutubeMemberConfig.Where((x) => youtubeMembers.Any((x2) => x2.GuildId == x.GuildId));
@@ -298,7 +298,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                     var guildConfig = db.GuildConfig.FirstOrDefault((x) => x.GuildId == item.GuildId);
                     if (guildConfig == null)
                     {
-                        Log.Warn($"SendMsgToLogChannelAsync: {item.GuildId} 無GuildConfig");
+                        Log.Warn($"SendMsgToLogChannelAsync: {item.GuildId} 無 GuildConfig");
                         db.GuildConfig.Add(new GuildConfig { GuildId = guild.Id });
                         db.GuildYoutubeMemberConfig.Remove(item);
 
@@ -352,7 +352,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
         private async Task<UserCredential> GetUserCredentialAsync(string discordUserId, TokenResponse token)
         {
             if (string.IsNullOrEmpty(token.RefreshToken))
-                throw new NullReferenceException("RefreshToken空白");
+                throw new NullReferenceException("RefreshToken 空白");
 
             var credential = new UserCredential(flow, discordUserId, token);
 
@@ -364,7 +364,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                     {
                         if (!await credential.RefreshTokenAsync(CancellationToken.None))
                         {
-                            Log.Warn($"{discordUserId} AccessToken無法刷新");
+                            Log.Warn($"{discordUserId} AccessToken 無法刷新");
                             await flow.DataStore.DeleteAsync<TokenResponse>(discordUserId);
                             credential = null;
                         }
@@ -378,7 +378,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                     }
                     else
                     {
-                        Log.Warn($"{discordUserId} AccessToken發生未知錯誤");
+                        Log.Warn($"{discordUserId} AccessToken 發生未知錯誤");
                         Log.Warn($"{ex.Message}");
                     }
                     await flow.DataStore.DeleteAsync<TokenResponse>(discordUserId);

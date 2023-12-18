@@ -110,7 +110,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
                 return;
             }
 
-            if (!_service.IsEnbale)
+            if (!_service.IsEnable)
             {
                 await Context.Channel.SendErrorAsync("此Bot的Twitter功能已關閉，請向擁有者確認").ConfigureAwait(false);
                 return;

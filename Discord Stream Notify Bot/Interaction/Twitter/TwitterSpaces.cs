@@ -4,7 +4,11 @@ using Discord_Stream_Notify_Bot.Interaction.Attribute;
 
 namespace Discord_Stream_Notify_Bot.Interaction.Twitter
 {
+    [EnabledInDm(false)]
+    [RequireContext(ContextType.Guild)]
     [Group("twitter-space", "推特語音空間")]
+    [RequireUserPermission(GuildPermission.ManageMessages)]
+    [DefaultMemberPermissions(GuildPermission.ManageMessages)]
     public class TwitterSpaces : TopLevelModule<SharedService.Twitter.TwitterSpacesService>
     {
         private readonly DiscordSocketClient _client;
@@ -120,10 +124,6 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
             _client = client;
         }
 
-        [EnabledInDm(false)]
-        [RequireContext(ContextType.Guild)]
-        [RequireUserPermission(GuildPermission.ManageMessages, Group = "bot_owner")]
-        [RequireOwner(Group = "bot_owner")]
         [CommandSummary("新增推特語音空間開台通知的頻道\n" +
             "請使用@後面的使用者名稱來新增\n" +
             "可以使用`/twitter-space list`查詢有哪些頻道\n")]
@@ -137,9 +137,9 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                 return;
             }
 
-            if (!_service.IsEnbale)
+            if (!_service.IsEnable)
             {
-                await Context.Interaction.SendErrorAsync("此Bot的Twitter功能已關閉，請向擁有者確認");
+                await Context.Interaction.SendErrorAsync("此 Bot 的 Twitter 功能已關閉，請向 Bot 擁有者確認");
                 return;
             }
 
@@ -173,7 +173,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
             {
                 await Context.Interaction.SendErrorAsync($"`{userScreenName}` 不存在此使用者\n" +
                     $"這不是 Twitch 直播通知!!!!!!\n" +
-                    "請確認名稱是否正確，若正確請向Bot擁有者回報", true).ConfigureAwait(false);
+                    "請確認名稱是否正確，若正確請向 Bot 擁有者回報", true).ConfigureAwait(false);
                 return;
             }
 
@@ -202,10 +202,6 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
             }
         }
 
-        [EnabledInDm(false)]
-        [RequireContext(ContextType.Guild)]
-        [RequireUserPermission(GuildPermission.ManageMessages, Group = "bot_owner")]
-        [RequireOwner(Group = "bot_owner")]
         [CommandSummary("移除推特語音空間通知的頻道\n" +
              "請使用@後面的使用者名稱來移除")]
         [CommandExample("LaplusDarknesss", "@inui_toko")]
@@ -243,8 +239,6 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
             }
         }
 
-        [EnabledInDm(false)]
-        [RequireContext(ContextType.Guild)]
         [SlashCommand("list", "顯示現在已加入推特語音空間通知的頻道")]
         public async Task ListChannel([Summary("頁數")] int page = 0)
         {
@@ -267,10 +261,6 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
             }
         }
 
-        [EnabledInDm(false)]
-        [RequireContext(ContextType.Guild)]
-        [RequireUserPermission(GuildPermission.ManageMessages | GuildPermission.MentionEveryone, Group = "bot_owner")]
-        [RequireOwner(Group = "bot_owner")]
         [RequireBotPermission(GuildPermission.MentionEveryone)]
         [CommandSummary("設定通知訊息\n" +
             "不輸入通知訊息的話則會關閉通知訊息\n" +
@@ -283,12 +273,6 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
             if (string.IsNullOrWhiteSpace(userScreenName))
             {
                 await Context.Interaction.SendErrorAsync("使用者名稱不可空白").ConfigureAwait(false);
-                return;
-            }
-
-            if (!_service.IsEnbale)
-            {
-                await Context.Interaction.SendErrorAsync("此Bot的Twitter功能已關閉，請向擁有者確認").ConfigureAwait(false);
                 return;
             }
 
@@ -323,8 +307,6 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
             }
         }
 
-        [EnabledInDm(false)]
-        [RequireContext(ContextType.Guild)]
         [SlashCommand("list-message", "列出已設定的推特語音空間通知訊息")]
         public async Task ListMessage([Summary("頁數")] int page = 0)
         {
@@ -346,7 +328,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                         await Context.SendPaginatedConfirmAsync(page, (page) =>
                         {
                             EmbedBuilder embedBuilder = new EmbedBuilder().WithOkColor().WithTitle("推特語音空間通知訊息清單")
-                                .WithDescription("如果沒訊息的話就代表沒設定\n不用擔心會Tag到用戶組，Embed不會有Ping的反應");
+                                .WithDescription("如果沒訊息的話就代表沒設定\n不用擔心會 Tag 到用戶組，Embed 不會有 Ping 的反應");
 
                             foreach (var item in dic.Skip(page * 10).Take(10))
                             {

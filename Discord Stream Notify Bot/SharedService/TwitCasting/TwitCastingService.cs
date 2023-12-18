@@ -26,7 +26,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitcasting
             if (string.IsNullOrEmpty(twitcastingRecordPath)) twitcastingRecordPath = Program.GetDataFilePath("");
             if (!twitcastingRecordPath.EndsWith(Program.GetPlatformSlash())) twitcastingRecordPath += Program.GetPlatformSlash();
             _emojiService = emojiService;
-            _timer = new Timer(async (obj) => { await TimerHandel(obj); },
+            _timer = new Timer(async (obj) => { await TimerHandel(); },
                 null, TimeSpan.FromSeconds(15), TimeSpan.FromMinutes(1));
         }
 
@@ -66,7 +66,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitcasting
             }
         }
 
-        private async Task TimerHandel(object stats)
+        private async Task TimerHandel()
         {
             if (isRuning) return; isRuning = true;
 

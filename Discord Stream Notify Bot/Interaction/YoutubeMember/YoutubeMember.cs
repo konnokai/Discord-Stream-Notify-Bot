@@ -3,19 +3,19 @@ using Discord_Stream_Notify_Bot.SharedService.YoutubeMember;
 
 namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
 {
-    [Group("member", "YouTube會限驗證相關指令")]
+    [Group("member", "YouTube 會限驗證相關指令")]
     public class YoutubeMember : TopLevelModule<YoutubeMemberService>
     {
-        [SlashCommand("check", "確認是否已到網站登入綁定")]
-        [RequireContext(ContextType.Guild)]
         [EnabledInDm(false)]
+        [RequireContext(ContextType.Guild)]
+        [SlashCommand("check", "確認是否已到網站登入綁定")]
         public async Task CheckAsync()
         {
             await DeferAsync(true);
 
-            if (!_service.Enable)
+            if (!_service.IsEnable)
             {
-                await Context.Interaction.SendErrorAsync($"該Bot未啟用會限驗證系統，請向 {Program.ApplicatonOwner} 確認", true);
+                await Context.Interaction.SendErrorAsync($"該 Bot 未啟用會限驗證系統，請向 {Program.ApplicatonOwner} 確認", true);
                 return;
             }
 
@@ -30,13 +30,13 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
 
                 if (guildYoutubeMemberConfigs.Any((x) => string.IsNullOrEmpty(x.MemberCheckChannelTitle) || x.MemberCheckVideoId == "-"))
                 {
-                    await Context.Interaction.SendErrorAsync($"尚有無法檢測的頻道，請等待五分鐘Bot初始化完後重新執行此指令", true);
+                    await Context.Interaction.SendErrorAsync($"尚有無法檢測的頻道，請等待五分鐘 Bot 初始化完後重新執行此指令", true);
                     return;
                 }
 
                 if (!await _service.IsExistUserTokenAsync(Context.User.Id.ToString()))
                 {
-                    await Context.Interaction.SendErrorAsync($"請先到 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 登入Discord以及Google\n登入完後再輸入一次本指令", true);
+                    await Context.Interaction.SendErrorAsync($"請先到 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 登入 Discord 以及 Google\n登入完後再輸入一次本指令", true);
                     return;
                 }
 
@@ -76,9 +76,9 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
             }
         }
 
-        [SlashCommand("cancel-member-check", "取消本伺服器的會限驗證，會一併移除會限驗證用戶組")]
-        [RequireContext(ContextType.Guild)]
         [EnabledInDm(false)]
+        [RequireContext(ContextType.Guild)]
+        [SlashCommand("cancel-member-check", "取消本伺服器的會限驗證，會一併移除會限驗證用戶組")]
         public async Task CancelMemberCheckAsync()
         {
             await DeferAsync(true);
@@ -122,9 +122,9 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
         {
             await DeferAsync(true);
 
-            if (!_service.Enable)
+            if (!_service.IsEnable)
             {
-                await Context.Interaction.SendErrorAsync($"該Bot未啟用會限驗證系統，請向 {Program.ApplicatonOwner} 確認", true);
+                await Context.Interaction.SendErrorAsync($"該 Bot 未啟用會限驗證系統，請向 {Program.ApplicatonOwner} 確認", true);
                 return;
             }
 
@@ -145,8 +145,8 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
                     }
                     catch (NullReferenceException nullEx)
                     {
-                        await Context.Interaction.SendErrorAsync($"已解除綁定但無法取消Google端授權\n" +
-                           $"請到 {Format.Url("Google安全性", "https://myaccount.google.com/permissions")} 移除 `直播小幫手會限確認` 的應用程式存取權", true, true);
+                        await Context.Interaction.SendErrorAsync($"已解除綁定但無法取消 Google 端授權\n" +
+                           $"請到 {Format.Url("Google 安全性", "https://myaccount.google.com/permissions")} 移除 `直播小幫手會限確認` 的應用程式存取權", true, true);
                         Log.Warn($"RevokeTokenNull: {nullEx.Message} ({Context.User.Id})");
                     }
                     catch (Exception)
@@ -161,9 +161,9 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
             }
         }
 
-        [SlashCommand("list-can-check-channel", "顯示現在可供驗證的會限頻道清單")]
-        [RequireContext(ContextType.Guild)]
         [EnabledInDm(false)]
+        [RequireContext(ContextType.Guild)]
+        [SlashCommand("list-can-check-channel", "顯示現在可供驗證的會限頻道清單")]
         public async Task ListCheckChannel()
         {
             using (var db = DataBase.DBContext.GetDbContext())
@@ -177,7 +177,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
 
                 if (guildYoutubeMemberConfigs.Any((x) => string.IsNullOrEmpty(x.MemberCheckChannelTitle) || x.MemberCheckVideoId == "-"))
                 {
-                    await Context.Interaction.SendErrorAsync($"尚有無法檢測的頻道，請等待五分鐘Bot初始化完後重新執行此指令");
+                    await Context.Interaction.SendErrorAsync($"尚有無法檢測的頻道，請等待五分鐘 Bot 初始化完後重新執行此指令");
                     return;
                 }
 
@@ -188,14 +188,14 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
             }
         }
 
-        [SlashCommand("show-my-youtube-account", "顯示現在綁定的Youtube帳號")]
+        [SlashCommand("show-my-youtube-account", "顯示現在綁定的 Youtube 帳號")]
         public async Task ShowYoutubeAccountAsync()
         {
             await DeferAsync(true);
 
-            if (!_service.Enable)
+            if (!_service.IsEnable)
             {
-                await Context.Interaction.SendErrorAsync($"該Bot未啟用會限驗證系統，請向 {Program.ApplicatonOwner} 確認", true);
+                await Context.Interaction.SendErrorAsync($"該 Bot 未啟用會限驗證系統，請向 {Program.ApplicatonOwner} 確認", true);
                 return;
             }
 
@@ -209,24 +209,24 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
                 switch (nullEx.Message)
                 {
                     case "userId":
-                        await Context.Interaction.SendErrorAsync("UserId錯誤", true);
+                        await Context.Interaction.SendErrorAsync("UserId 錯誤", true);
                         break;
                     case "token":
                     case "userCert":
                     case "channel":
-                        await Context.Interaction.SendErrorAsync("錯誤，請確認是否已到網站上綁定或此Google帳號存在Youtube頻道", true);
+                        await Context.Interaction.SendErrorAsync("錯誤，請確認是否已到網站上綁定或此 Google 帳號存在 Youtube 頻道", true);
                         break;
                     default:
-                        await Context.Interaction.SendErrorAsync("錯誤，請確認是否已到網站上綁定或此Google帳號存在Youtube頻道\n" +
-                            "如有疑問請向`孤之界`詢問", true);
+                        await Context.Interaction.SendErrorAsync($"錯誤，請確認是否已到網站上綁定或此 Google 帳號存在 Youtube 頻道\n" +
+                            $"如有疑問請向 `{Program.ApplicatonOwner}` 詢問", true);
                         Log.Error(nullEx.ToString());
                         break;
                 }
             }
             catch (Exception ex)
             {
-                await Context.Interaction.SendErrorAsync("錯誤，請確認是否已到網站上綁定或此Google帳號存在Youtube頻道\n" +
-                    "如有疑問請向`孤之界`詢問", true);
+                await Context.Interaction.SendErrorAsync($"錯誤，請確認是否已到網站上綁定或此 Google 帳號存在 Youtube 頻道\n" +
+                    $"如有疑問請向 `{Program.ApplicatonOwner}` 詢問", true);
                 Log.Error(ex.ToString());
             }
         }

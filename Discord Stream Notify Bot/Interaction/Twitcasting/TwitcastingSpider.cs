@@ -3,7 +3,9 @@ using Discord_Stream_Notify_Bot.Interaction.Attribute;
 
 namespace Discord_Stream_Notify_Bot.Interaction.Twitcasting
 {
-    [Group("twitcasting-spider", "Twitcasting爬蟲設定")]
+    [RequireContext(ContextType.Guild)]
+    [Group("twitcasting-spider", "Twitcasting 爬蟲設定")]
+    [RequireUserPermission(GuildPermission.Administrator)]
     [DefaultMemberPermissions(GuildPermission.Administrator)]
     public class TwitcastingSpider : TopLevelModule<SharedService.Twitcasting.TwitcastingService>
     {
@@ -118,7 +120,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitcasting
                         var user = button.Message.Embeds.First().Fields.FirstOrDefault((x) => x.Name == "執行者").Value;
                         var embed = new EmbedBuilder()
                             .WithOkColor()
-                            .WithTitle("已新增Twitcasting頻道爬蟲")
+                            .WithTitle("已新增 Twitcasting 頻道爬蟲")
                             .AddField("頻道", Format.Url(twitcastingSpider.ChannelTitle, $"https://twitcasting.tv/{twitcastingSpider.ChannelId}"), false)
                             .AddField("伺服器", guild, false)
                             .AddField("執行者", user, false)
@@ -153,16 +155,13 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitcasting
             };
         }
 
-        [RequireContext(ContextType.Guild)]
-        [RequireUserPermission(GuildPermission.Administrator, Group = "bot_owner")]
-        [RequireOwner(Group = "bot_owner")]
         [RequireGuildMemberCount(500)]
-        [CommandSummary("新增新增Twitcasting頻道檢測爬蟲\n" +
-           "伺服器需大於500人才可使用\n" +
+        [CommandSummary("新增 Twitcasting 頻道檢測爬蟲\n" +
+           "伺服器需大於 500 人才可使用\n" +
            "未來會根據情況增減可新增的頻道數量\n" +
            "如有任何需要請向擁有者詢問")]
         [CommandExample("nana_kaguraaa", "https://twitcasting.tv/nana_kaguraaa")]
-        [SlashCommand("add", "新增Twitcasting頻道檢測爬蟲")]
+        [SlashCommand("add", "新增 Twitcasting 頻道檢測爬蟲")]
         public async Task AddChannelSpider([Summary("頻道網址")] string channelUrl)
         {
             await DeferAsync(true).ConfigureAwait(false);
@@ -170,8 +169,8 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitcasting
             var channelData = await _service.GetChannelIdAndTitleAsync(channelUrl);
             if (string.IsNullOrEmpty(channelData.ChannelTitle))
             {
-                await Context.Interaction.SendErrorAsync("錯誤，Twitcasting找不到該使用者的名稱\n" +
-                    "請確認網址是否正確，若正確請向Bot擁有者回報", true);
+                await Context.Interaction.SendErrorAsync("錯誤，Twitcasting 找不到該使用者的名稱\n" +
+                    "請確認網址是否正確，若正確請向 Bot 擁有者回報", true);
                 return;
             }
 
@@ -196,8 +195,8 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitcasting
                             await (await Program.ApplicatonOwner.CreateDMChannelAsync())
                                 .SendMessageAsync(embed: new EmbedBuilder()
                                     .WithOkColor()
-                                    .WithTitle("已更新Twitcasting爬蟲的持有伺服器")
-                                    .AddField("頻道", Format.Url(item.ChannelTitle, $"https://www.youtube.com/channel/{channelData.ChannelId}"), false)
+                                    .WithTitle("已更新 Twitcasting 爬蟲的持有伺服器")
+                                    .AddField("頻道", Format.Url(item.ChannelTitle, $"https://twitcasting.tv/{channelData.ChannelId}"), false)
                                     .AddField("原伺服器", Context.Guild.Id, false)
                                     .AddField("新伺服器", $"{Context.Guild.Name} ({Context.Guild.Id})", false).Build());
                         }
@@ -216,7 +215,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitcasting
 
                 if (db.TwitcastingSpider.Count((x) => x.GuildId == Context.Guild.Id) >= 5)
                 {
-                    await Context.Interaction.SendErrorAsync($"此伺服器已設定五個Twitcasting爬蟲頻道，請移除後再試\n" +
+                    await Context.Interaction.SendErrorAsync($"此伺服器已設定五個 Twitcasting 爬蟲頻道，請移除後再試\n" +
                         $"如有特殊需求請向Bot擁有者詢問", true).ConfigureAwait(false);
                     return;
                 }
@@ -235,7 +234,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitcasting
                 {
                     await (await Program.ApplicatonOwner.CreateDMChannelAsync()).SendMessageAsync(embed: new EmbedBuilder()
                             .WithOkColor()
-                            .WithTitle("已新增Twitcasting頻道爬蟲")
+                            .WithTitle("已新增 Twitcasting 頻道爬蟲")
                             .AddField("頻道", Format.Url(channelData.ChannelTitle, $"https://twitcasting.tv/{channelData.ChannelId}"), false)
                             .AddField("伺服器", spider.GuildId != 0 ? $"{Context.Guild.Name} ({Context.Guild.Id})" : "擁有者", false)
                             .AddField("執行者", $"{Context.User.Username} ({Context.User.Id})", false)
@@ -249,13 +248,10 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitcasting
             }
         }
 
-        [RequireContext(ContextType.Guild)]
-        [RequireUserPermission(GuildPermission.Administrator, Group = "bot_owner")]
-        [RequireOwner(Group = "bot_owner")]
-        [CommandSummary("移除Twitcasting頻道檢測爬蟲\n" +
+        [CommandSummary("移除 Twitcasting 頻道檢測爬蟲\n" +
             "爬蟲必須由本伺服器新增才可移除")]
         [CommandExample("nana_kaguraaa", "https://twitcasting.tv/nana_kaguraaa")]
-        [SlashCommand("remove", "移除非兩大箱的頻道檢測爬蟲")]
+        [SlashCommand("remove", "移除 Twitcasting 頻道檢測爬蟲")]
         public async Task RemoveChannelSpider([Summary("頻道網址"), Autocomplete(typeof(GuildTwitcastingSpiderAutocompleteHandler))] string channelUrl)
         {
             await DeferAsync(true).ConfigureAwait(false);
@@ -263,8 +259,8 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitcasting
             var channelData = await _service.GetChannelIdAndTitleAsync(channelUrl);
             if (string.IsNullOrEmpty(channelData.ChannelTitle))
             {
-                await Context.Interaction.SendErrorAsync("錯誤，Twitcasting找不到該使用者的名稱\n" +
-                    "請確認網址是否正確，若正確請向Bot擁有者回報", true);
+                await Context.Interaction.SendErrorAsync("錯誤，Twitcasting 找不到該使用者的名稱\n" +
+                    "請確認網址是否正確，若正確請向 Bot 擁有者回報", true);
                 return;
             }
 
@@ -291,7 +287,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitcasting
             {
                 await (await Program.ApplicatonOwner.CreateDMChannelAsync()).SendMessageAsync(embed: new EmbedBuilder()
                     .WithErrorColor()
-                    .WithTitle("已移除Twitcasting頻道爬蟲")
+                    .WithTitle("已移除 Twitcasting 頻道爬蟲")
                     .AddField("頻道", Format.Url(channelData.ChannelTitle, $"https://twitcasting.tv/{channelData.ChannelId}"), false)
                     .AddField("伺服器", $"{Context.Guild.Name} ({Context.Guild.Id})", false)
                     .AddField("執行者", $"{Context.User.Username} ({Context.User.Id})", false).Build());
@@ -299,7 +295,6 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitcasting
             catch (Exception ex) { Log.Error(ex.ToString()); }
         }
 
-        [RequireContext(ContextType.Guild)]
         [SlashCommand("list", "顯示已加入爬蟲檢測的頻道")]
         public async Task ListChannelSpider([Summary("頁數")] int page = 0)
         {
@@ -307,22 +302,21 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitcasting
 
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                var list = db.TwitcastingSpider.Where((x) => !x.IsWarningUser).Select((x) => Format.Url(x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}") +
-                    $" 由 `" + (x.GuildId == 0 ? "Bot擁有者" : (_client.GetGuild(x.GuildId) != null ? _client.GetGuild(x.GuildId).Name : "已退出的伺服器")) + "` 新增");
+                var list = db.TwitcastingSpider.Where((x) => !x.IsWarningUser).Select((x) => Format.Url(x.ChannelTitle, $"https://twitcasting.tv/{x.ChannelId}") +
+                    $" 由 `" + (x.GuildId == 0 ? "Bot 擁有者" : (_client.GetGuild(x.GuildId) != null ? _client.GetGuild(x.GuildId).Name : "已退出的伺服器")) + "` 新增");
                 int warningChannelNum = db.TwitcastingSpider.Count((x) => x.IsWarningUser);
 
                 await Context.SendPaginatedConfirmAsync(page, page =>
                 {
                     return new EmbedBuilder()
                         .WithOkColor()
-                        .WithTitle("Twitcasting直播爬蟲清單")
+                        .WithTitle("Twitcasting 直播爬蟲清單")
                         .WithDescription(string.Join('\n', list.Skip(page * 20).Take(20)))
                         .WithFooter($"{Math.Min(list.Count(), (page + 1) * 20)} / {list.Count()}個頻道 ({warningChannelNum}個非認可的爬蟲)");
                 }, list.Count(), 10, false).ConfigureAwait(false);
             }
         }
 
-        [RequireContext(ContextType.Guild)]
         [SlashCommand("list-not-trusted", "顯示已加入但為警告狀態的爬蟲檢測頻道 (本清單可能內含中之人或前世的頻道)")]
         public async Task ListNotTrustedChannelSpider([Summary("頁數")] int page = 0)
         {
@@ -330,14 +324,14 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitcasting
 
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                var list = db.TwitcastingSpider.Where((x) => x.IsWarningUser).Select((x) => Format.Url(x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}") +
-                    $" 由 `" + (x.GuildId == 0 ? "Bot擁有者" : (_client.GetGuild(x.GuildId) != null ? _client.GetGuild(x.GuildId).Name : "已退出的伺服器")) + "` 新增");
+                var list = db.TwitcastingSpider.Where((x) => x.IsWarningUser).Select((x) => Format.Url(x.ChannelTitle, $"https://twitcasting.tv/{x.ChannelId}") +
+                    $" 由 `" + (x.GuildId == 0 ? "Bot 擁有者" : (_client.GetGuild(x.GuildId) != null ? _client.GetGuild(x.GuildId).Name : "已退出的伺服器")) + "` 新增");
 
                 await Context.SendPaginatedConfirmAsync(page, page =>
                 {
                     return new EmbedBuilder()
                         .WithOkColor()
-                        .WithTitle("非認可的爬蟲清單")
+                        .WithTitle("警告的爬蟲清單")
                         .WithDescription(string.Join('\n', list.Skip(page * 20).Take(20)))
                         .WithFooter($"{Math.Min(list.Count(), (page + 1) * 20)} / {list.Count()}個頻道");
                 }, list.Count(), 10, false, true).ConfigureAwait(false);

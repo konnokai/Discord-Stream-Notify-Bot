@@ -8,7 +8,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
 {
     public class TwitterSpacesService : IInteractionService
     {
-        public bool IsEnbale { get; private set; } = true;
+        public bool IsEnable { get; private set; } = true;
 
         private readonly DiscordSocketClient _client;
         private readonly EmojiService _emojiService;
@@ -24,7 +24,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
             if (string.IsNullOrWhiteSpace(botConfig.TwitterAuthToken) || string.IsNullOrWhiteSpace(botConfig.TwitterCSRFToken))
             {
                 Log.Warn($"{nameof(BotConfig.TwitterAuthToken)} 或 {nameof(BotConfig.TwitterCSRFToken)} 遺失，無法運行推特類功能");
-                IsEnbale = false;
+                IsEnable = false;
                 return;
             }
 
@@ -35,7 +35,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
             if (string.IsNullOrEmpty(twitterSpaceRecordPath)) twitterSpaceRecordPath = Program.GetDataFilePath("");
             if (!twitterSpaceRecordPath.EndsWith(Program.GetPlatformSlash())) twitterSpaceRecordPath += Program.GetPlatformSlash();
 
-#if !RELEASE && !DEBUG_API
+#if !RELEASE
             return;
 #endif
 
