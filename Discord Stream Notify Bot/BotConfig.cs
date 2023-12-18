@@ -2,22 +2,33 @@
 
 public class BotConfig
 {
+    public string RedisOption { get; set; } = "127.0.0.1,syncTimeout=3000";
+    public string RedisTokenKey { get; set; } = "";
+    public string UptimeKumaPushUrl { get; set; } = "";
+
+    public ulong DetectGuildId { get; set; } = 0;
+    public ulong DetectCategoryId { get; set; } = 0;
     public string DiscordToken { get; set; } = "";
+    public ulong TestSlashCommandGuildId { get; set; } = 0;
+    public string WebHookUrl { get; set; } = "";
+
     public string GoogleApiKey { get; set; } = "";
     public string GoogleClientId { get; set; } = "";
     public string GoogleClientSecret { get; set; } = "";
-    public string RedisOption { get; set; } = "127.0.0.1,syncTimeout=3000";
-    public ulong TestSlashCommandGuildId { get; set; } = 0;
+    public string PubSubCallbackUrl { get; set; } = "";
+
     public string TwitcastingRecordPath { get; set; } = "";
+
+    // https://streamlink.github.io/cli/plugins/twitch.html#authentication
+    // 先放著，未來可能會用到
+    public string TwitchCookieAuthToken { get; set; } = "";
+    public string TwitchClientId { get; set; } = "";
+    public string TwitchClientSecret { get; set; } = "";
+    public string TwitchRecordPath { get; set; } = "";
+
     public string TwitterAuthToken { get; set; } = "";
     public string TwitterCSRFToken { get; set; } = "";
     public string TwitterSpaceRecordPath { get; set; } = "";
-    public string WebHookUrl { get; set; } = "";
-    public string RedisTokenKey { get; set; } = "";
-    public string PubSubCallbackUrl { get; set; } = "";
-    public string UptimeKumaPushUrl { get; set; } = "";
-    public ulong DetectGuildId {  get; set; } = 0;
-    public ulong DetectCategoryId { get; set; } = 0;
 
     public void InitBotConfig()
     {
@@ -72,6 +83,10 @@ public class BotConfig
             GoogleApiKey = config.GoogleApiKey;
             TestSlashCommandGuildId = config.TestSlashCommandGuildId;
             TwitcastingRecordPath = config.TwitcastingRecordPath;
+            TwitchCookieAuthToken = config.TwitchCookieAuthToken;
+            TwitchClientId = config.TwitchClientId;
+            TwitchClientSecret = config.TwitchClientSecret;
+            TwitchRecordPath = config.TwitchRecordPath;
             TwitterAuthToken = config.TwitterAuthToken;
             TwitterCSRFToken = config.TwitterCSRFToken;
             TwitterSpaceRecordPath = config.TwitterSpaceRecordPath;

@@ -176,6 +176,17 @@ namespace Discord_Stream_Notify_Bot.Interaction
             return channelId;
         }
 
+        public static string GetTwitchChannelTitleByChannelId(this DataBase.DBContext dBContext, string userLogin)
+        {
+            userLogin = userLogin.Trim();
+
+            TwitchSpider twitchSpider;
+            if ((twitchSpider = dBContext.TwitchSpider.FirstOrDefault((x) => x.UserLogin == userLogin)) != null)
+                return twitchSpider.UserName;
+
+            return userLogin;
+        }
+
         public static string GetTwitterUserNameByUserScreenName(this DataBase.DBContext dBContext, string userScreenName)
         {
             userScreenName = userScreenName.Trim();

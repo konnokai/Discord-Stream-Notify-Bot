@@ -1,5 +1,4 @@
-﻿using Discord;
-using Discord.Commands;
+﻿using Discord.Commands;
 using Discord.Interactions;
 using Discord_Stream_Notify_Bot.Command;
 using Discord_Stream_Notify_Bot.DataBase.Table;
@@ -64,6 +63,8 @@ namespace Discord_Stream_Notify_Bot
             using (var db = DataBase.NotVTuberVideoContext.GetDbContext())
                 db.Database.EnsureCreated();
             using (var db = DataBase.TwitcastingStreamContext.GetDbContext())
+                db.Database.EnsureCreated();
+            using (var db = DataBase.TwitchStreamContext.GetDbContext())
                 db.Database.EnsureCreated();
 
             try
