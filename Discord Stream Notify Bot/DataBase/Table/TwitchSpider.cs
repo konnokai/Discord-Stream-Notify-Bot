@@ -5,6 +5,7 @@ namespace Discord_Stream_Notify_Bot.DataBase.Table
     public class TwitchSpider
     {
         [Key]
+        public string UserId { get; set; }
         public string UserLogin { get; set; }
         public string UserName { get; set; }
         public string ProfileImageUrl { get; set; } = "";

@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Discord_Stream_Notify_Bot.Migrations.TwitchStream
 {
     [DbContext(typeof(TwitchStreamContext))]
-    [Migration("20231218033305_Init")]
+    [Migration("20231219020129_Init")]
     partial class Init
     {
         /// <inheritdoc />
@@ -32,13 +32,19 @@ namespace Discord_Stream_Notify_Bot.Migrations.TwitchStream
                     b.Property<string>("GameName")
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime>("StartTime")
+                    b.Property<string>("StreamId")
                         .HasColumnType("TEXT");
 
-                    b.Property<ulong>("StreamId")
-                        .HasColumnType("INTEGER");
+                    b.Property<DateTime>("StreamStartAt")
+                        .HasColumnType("TEXT");
 
-                    b.Property<string>("Title")
+                    b.Property<string>("StreamTitle")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ThumbnailUrl")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UserId")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("UserLogin")

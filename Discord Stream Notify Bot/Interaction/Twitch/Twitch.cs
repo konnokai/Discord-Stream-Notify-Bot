@@ -23,7 +23,9 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
                     if (!db.NoticeTwitchStreamChannels.Any((x) => x.GuildId == context.Guild.Id))
                         return AutocompletionResult.FromSuccess();
 
-                    var channelIdList = db.NoticeTwitchStreamChannels.Where((x) => x.GuildId == context.Guild.Id).Select((x) => new KeyValuePair<string, string>(db.GetTwitchChannelTitleByChannelId(x.NoticeTwitchUserLogin), x.NoticeTwitchUserLogin));
+                    var channelIdList = db.NoticeTwitchStreamChannels
+                        .Where((x) => x.GuildId == context.Guild.Id)
+                        .Select((x) => new KeyValuePair<string, string>(db.GetTwitchUserNameByUserId(x.NoticeTwitchUserId), x.NoticeTwitchUserId));
 
                     var channelIdList2 = new Dictionary<string, string>();
                     try
@@ -101,7 +103,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
                 return;
             }
 
-            var userData = await _service.GetUserAsync(_service.GetUserLoginByUrl(twitchUrl));
+            var userData = await _service.GetUserAsync(twitchUserLogin: _service.GetUserLoginByUrl(twitchUrl));
             if (userData == null)
             {
                 await Context.Interaction.SendErrorAsync("錯誤，Twitch 使用者資料獲取失敗\n" +
@@ -111,7 +113,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
 
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                var noticeTwitchStreamChannel = db.NoticeTwitchStreamChannels.FirstOrDefault((x) => x.GuildId == Context.Guild.Id && x.NoticeTwitchUserLogin == userData.Login);
+                var noticeTwitchStreamChannel = db.NoticeTwitchStreamChannels.FirstOrDefault((x) => x.GuildId == Context.Guild.Id && x.NoticeTwitchUserId == userData.Id);
                 if (noticeTwitchStreamChannel != null)
                 {
                     if (await PromptUserConfirmAsync($"`{userData.DisplayName}` 已在直播通知清單內，是否覆蓋設定?").ConfigureAwait(false))
@@ -125,10 +127,10 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
                 else
                 {
                     string addString = "";
-                    if (!db.TwitchSpider.Any((x) => x.UserLogin == userData.Login))
+                    if (!db.TwitchSpider.Any((x) => x.UserId == userData.Id))
                         addString += $"\n\n(注意: 該頻道未加入爬蟲清單\n如長時間無通知請使用 `/help get-command-help twitch-spider add` 查看說明並加入爬蟲)";
 
-                    db.NoticeTwitchStreamChannels.Add(new NoticeTwitchStreamChannel() { GuildId = Context.Guild.Id, DiscordChannelId = textChannel.Id, NoticeTwitchUserLogin = userData.Login });
+                    db.NoticeTwitchStreamChannels.Add(new NoticeTwitchStreamChannel() { GuildId = Context.Guild.Id, DiscordChannelId = textChannel.Id, NoticeTwitchUserId = userData.Id });
                     await Context.Interaction.SendConfirmAsync($"已將 `{userData.DisplayName}` 加入到Twitch通知頻道清單內{addString}", true, true).ConfigureAwait(false);
                 }
 
@@ -138,22 +140,22 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
 
         [CommandExample("margaretnorth", "https://twitch.tv/margaretnorth")]
         [SlashCommand("remove", "移除 Twitch 直播通知的頻道")]
-        public async Task RemoveChannel([Summary("頻道網址"), Autocomplete(typeof(GuildNoticeTwitchChannelIdAutocompleteHandler))] string twitchLogin)
+        public async Task RemoveChannel([Summary("頻道名稱", "userName"), Autocomplete(typeof(GuildNoticeTwitchChannelIdAutocompleteHandler))] string twitchId)
         {
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                var noticeTwitchStreamChannel = db.NoticeTwitchStreamChannels.FirstOrDefault((x) => x.GuildId == Context.Guild.Id && x.NoticeTwitchUserLogin == twitchLogin);
+                var noticeTwitchStreamChannel = db.NoticeTwitchStreamChannels.FirstOrDefault((x) => x.GuildId == Context.Guild.Id && x.NoticeTwitchUserId == twitchId);
 
                 if (noticeTwitchStreamChannel == null)
                 {
-                    await Context.Interaction.SendErrorAsync($"並未設定 `{twitchLogin}` 的直播通知...", true).ConfigureAwait(false);
+                    await Context.Interaction.SendErrorAsync($"並未設定 `{twitchId}` 的直播通知...", true).ConfigureAwait(false);
                 }
                 else
                 {
                     db.NoticeTwitchStreamChannels.Remove(noticeTwitchStreamChannel);
                     db.SaveChanges();
 
-                    await Context.Interaction.SendConfirmAsync($"已移除 `{db.GetTwitchChannelTitleByChannelId(twitchLogin)}`", false, true).ConfigureAwait(false);
+                    await Context.Interaction.SendConfirmAsync($"已移除 `{db.GetTwitchUserNameByUserId(twitchId)}`", false, true).ConfigureAwait(false);
                 }
             }
         }
@@ -164,7 +166,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
             using (var db = DataBase.DBContext.GetDbContext())
             {
                 var list = Queryable.Where(db.NoticeTwitchStreamChannels, (x) => x.GuildId == Context.Guild.Id)
-                    .Select((x) => $"`{db.GetTwitchChannelTitleByChannelId(x.NoticeTwitchUserLogin)}` => <#{x.DiscordChannelId}>").ToList();
+                    .Select((x) => $"`{db.GetTwitchUserNameByUserId(x.NoticeTwitchUserId)}` => <#{x.DiscordChannelId}>").ToList();
                 if (!list.Any()) { await Context.Interaction.SendErrorAsync("Twitch 直播通知清單為空").ConfigureAwait(false); return; }
 
                 await Context.SendPaginatedConfirmAsync(page, page =>
@@ -185,17 +187,17 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
             "(考慮到有伺服器需 Ping 特定用戶組的情況，故 Bot 需提及所有身分組權限)")]
         [CommandExample("margaretnorth 開台啦", "https://twitch.tv/margaretnorth 開台啦")]
         [SlashCommand("set-message", "設定通知訊息")]
-        public async Task SetMessage([Summary("頻道網址"), Autocomplete(typeof(GuildNoticeTwitchChannelIdAutocompleteHandler))] string twitchLogin, [Summary("通知訊息")] string message = "")
+        public async Task SetMessage([Summary("頻道名稱", "userName"), Autocomplete(typeof(GuildNoticeTwitchChannelIdAutocompleteHandler))] string twitchId, [Summary("通知訊息")] string message = "")
         {
             await DeferAsync(true).ConfigureAwait(false);
 
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                var noticeTwitchStreamChannel = db.NoticeTwitchStreamChannels.FirstOrDefault((x) => x.GuildId == Context.Guild.Id && x.NoticeTwitchUserLogin == twitchLogin);
+                var noticeTwitchStreamChannel = db.NoticeTwitchStreamChannels.FirstOrDefault((x) => x.GuildId == Context.Guild.Id && x.NoticeTwitchUserId == twitchId);
                 if (noticeTwitchStreamChannel == null) // 邏輯上不會發生但還是寫一下
                 {
-                    await Context.Interaction.SendErrorAsync($"並未設定 `{twitchLogin}` 的 Twitch 直播通知\n" +
-                        $"請先使用 `/twitch add {twitchLogin}` 新增通知後再設定通知訊息", true).ConfigureAwait(false);
+                    await Context.Interaction.SendErrorAsync($"並未設定 `{twitchId}` 的 Twitch 直播通知\n" +
+                        $"請先使用 `/twitch add {twitchId}` 新增通知後再設定通知訊息", true).ConfigureAwait(false);
                 }
                 else
                 {
@@ -203,8 +205,8 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
                     db.NoticeTwitchStreamChannels.Update(noticeTwitchStreamChannel);
                     db.SaveChanges();
 
-                    if (message != "") await Context.Interaction.SendConfirmAsync($"已設定 `{twitchLogin}` 的 Twitch 直播通知訊息為:\n{message}", true, true).ConfigureAwait(false);
-                    else await Context.Interaction.SendConfirmAsync($"已取消 `{twitchLogin}` 的 Twitch 直播通知訊息", true, true).ConfigureAwait(false);
+                    if (message != "") await Context.Interaction.SendConfirmAsync($"已設定 `{db.GetTwitchUserNameByUserId(twitchId)}` 的 Twitch 直播通知訊息為:\n{message}", true, true).ConfigureAwait(false);
+                    else await Context.Interaction.SendConfirmAsync($"已取消 `{db.GetTwitchUserNameByUserId(twitchId)}` 的 Twitch 直播通知訊息", true, true).ConfigureAwait(false);
                 }
             }
         }
@@ -222,7 +224,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
                     foreach (var item in noticeTwitchStreamChannels)
                     {
                         string message = string.IsNullOrWhiteSpace(item.StartStreamMessage) ? "無" : item.StartStreamMessage;
-                        dic.Add(db.GetTwitchChannelTitleByChannelId(item.NoticeTwitchUserLogin), message);
+                        dic.Add(db.GetTwitchUserNameByUserId(item.NoticeTwitchUserId), message);
                     }
 
                     try

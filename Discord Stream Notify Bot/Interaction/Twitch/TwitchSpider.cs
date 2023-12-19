@@ -59,7 +59,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
                     List<AutocompleteResult> results = new();
                     foreach (var item in channelList2)
                     {
-                        results.Add(new AutocompleteResult(item.UserName, item.UserLogin));
+                        results.Add(new AutocompleteResult(item.UserName, item.UserId));
                     }
 
                     return AutocompletionResult.FromSuccess(results.Take(25));
@@ -89,7 +89,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
                     }
 
                     using var db = DataBase.DBContext.GetDbContext();
-                    var twitchSpider = db.TwitchSpider.FirstOrDefault((x) => x.UserLogin == buttonData[2]);
+                    var twitchSpider = db.TwitchSpider.FirstOrDefault((x) => x.UserId == buttonData[2]);
                     if (twitchSpider == null)
                     {
                         await button.SendErrorAsync("找不到此按鈕的頻道，可能已被移除", true, false);
@@ -167,7 +167,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
         {
             await DeferAsync(true).ConfigureAwait(false);
 
-            var userData = await _service.GetUserAsync(_service.GetUserLoginByUrl(twitchUrl));
+            var userData = await _service.GetUserAsync(twitchUserLogin: _service.GetUserLoginByUrl(twitchUrl));
             if (userData == null)
             {
                 await Context.Interaction.SendErrorAsync("錯誤，Twitch 使用者資料獲取失敗\n" +
@@ -177,9 +177,9 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
 
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                if (db.TwitchSpider.Any((x) => x.UserLogin == userData.Login))
+                if (db.TwitchSpider.Any((x) => x.UserId == userData.Id))
                 {
-                    var item = db.TwitchSpider.FirstOrDefault((x) => x.UserLogin == userData.Login);
+                    var item = db.TwitchSpider.FirstOrDefault((x) => x.UserId == userData.Id);
                     bool isGuildExist = true;
                     string guild = "";
 
@@ -224,6 +224,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
                 var spider = new DataBase.Table.TwitchSpider()
                 {
                     GuildId = Context.Guild.Id,
+                    UserId = userData.Id,
                     UserLogin = userData.Login,
                     UserName = userData.DisplayName,
                     ProfileImageUrl = userData.ProfileImageUrl,
@@ -250,8 +251,8 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
                             .AddField("頻道狀態", "普通", true)
                             .AddField("頻道錄影", "關閉", true).Build(),
                         components: new ComponentBuilder()
-                            .WithButton("切換頻道狀態", $"spider_twitch:warning:{userData.Login}", ButtonStyle.Danger)
-                            .WithButton("切換頻道錄影", $"spider_twitch:record:{userData.Login}", ButtonStyle.Success).Build());
+                            .WithButton("切換頻道狀態", $"spider_twitch:warning:{userData.Id}", ButtonStyle.Danger)
+                            .WithButton("切換頻道錄影", $"spider_twitch:record:{userData.Id}", ButtonStyle.Success).Build());
                 }
                 catch (Exception ex) { Log.Error(ex.ToString()); }
             }
@@ -261,26 +262,26 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
             "爬蟲必須由本伺服器新增才可移除")]
         [CommandExample("margaretnorth", "https://twitch.tv/margaretnorth")]
         [SlashCommand("remove", "移除 Twitch 頻道爬蟲")]
-        public async Task RemoveChannelSpider([Summary("頻道網址"), Autocomplete(typeof(GuildTwitchSpiderAutocompleteHandler))] string twitchLogin)
+        public async Task RemoveChannelSpider([Summary("頻道網址", "userName"), Autocomplete(typeof(GuildTwitchSpiderAutocompleteHandler))] string twitchId)
         {
             await DeferAsync(true).ConfigureAwait(false);
 
             DataBase.Table.TwitchSpider twitchSpider = null;
             using (var db = DataBase.DBContext.GetDbContext())
             {
-                if (!db.TwitchSpider.Any((x) => x.UserLogin == twitchLogin))
+                if (!db.TwitchSpider.Any((x) => x.UserId == twitchId))
                 {
-                    await Context.Interaction.SendErrorAsync($"並未設定 `{twitchLogin}` 頻道檢測爬蟲...", true).ConfigureAwait(false);
+                    await Context.Interaction.SendErrorAsync($"並未設定 `{twitchId}` 頻道檢測爬蟲...", true).ConfigureAwait(false);
                     return;
                 }
 
-                if (Context.Interaction.User.Id != Program.ApplicatonOwner.Id && !db.TwitchSpider.Any((x) => x.UserLogin == twitchLogin && x.GuildId == Context.Guild.Id))
+                if (Context.Interaction.User.Id != Program.ApplicatonOwner.Id && !db.TwitchSpider.Any((x) => x.UserId == twitchId && x.GuildId == Context.Guild.Id))
                 {
                     await Context.Interaction.SendErrorAsync($"該頻道爬蟲並非本伺服器新增，無法移除", true).ConfigureAwait(false);
                     return;
                 }
 
-                twitchSpider = db.TwitchSpider.First((x) => x.UserLogin == twitchLogin);
+                twitchSpider = db.TwitchSpider.First((x) => x.UserId == twitchId);
                 db.TwitchSpider.Remove(twitchSpider);
                 db.SaveChanges();
             }
@@ -292,7 +293,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
                 await (await Program.ApplicatonOwner.CreateDMChannelAsync()).SendMessageAsync(embed: new EmbedBuilder()
                     .WithErrorColor()
                     .WithTitle("已移除 Twitch 頻道爬蟲")
-                    .AddField("頻道", Format.Url(twitchSpider?.UserName, $"https://twitch.tv/{twitchLogin}"), false)
+                    .AddField("頻道", Format.Url(twitchSpider?.UserName, $"https://twitch.tv/{twitchSpider.UserLogin}"), false)
                     .AddField("伺服器", $"{Context.Guild.Name} ({Context.Guild.Id})", false)
                     .AddField("執行者", $"{Context.User.Username} ({Context.User.Id})", false).Build());
             }

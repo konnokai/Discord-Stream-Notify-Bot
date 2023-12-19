@@ -16,12 +16,14 @@ namespace Discord_Stream_Notify_Bot.Migrations.TwitchStream
                 {
                     Id = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
-                    StreamId = table.Column<ulong>(type: "INTEGER", nullable: false),
-                    Title = table.Column<string>(type: "TEXT", nullable: true),
-                    StartTime = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    StreamId = table.Column<string>(type: "TEXT", nullable: true),
+                    StreamTitle = table.Column<string>(type: "TEXT", nullable: true),
+                    StreamStartAt = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    UserId = table.Column<string>(type: "TEXT", nullable: true),
                     UserLogin = table.Column<string>(type: "TEXT", nullable: true),
                     UserName = table.Column<string>(type: "TEXT", nullable: true),
                     GameName = table.Column<string>(type: "TEXT", nullable: true),
+                    ThumbnailUrl = table.Column<string>(type: "TEXT", nullable: true),
                     DateAdded = table.Column<DateTime>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>

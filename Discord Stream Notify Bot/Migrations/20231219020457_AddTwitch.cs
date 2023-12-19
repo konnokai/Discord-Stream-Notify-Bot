@@ -18,7 +18,7 @@ namespace Discord_Stream_Notify_Bot.Migrations
                         .Annotation("Sqlite:Autoincrement", true),
                     GuildId = table.Column<ulong>(type: "INTEGER", nullable: false),
                     DiscordChannelId = table.Column<ulong>(type: "INTEGER", nullable: false),
-                    NoticeTwitchUserLogin = table.Column<string>(type: "TEXT", nullable: true),
+                    NoticeTwitchUserId = table.Column<string>(type: "TEXT", nullable: true),
                     StartStreamMessage = table.Column<string>(type: "TEXT", nullable: true),
                     DateAdded = table.Column<DateTime>(type: "TEXT", nullable: true)
                 },
@@ -31,7 +31,8 @@ namespace Discord_Stream_Notify_Bot.Migrations
                 name: "TwitchSpider",
                 columns: table => new
                 {
-                    UserLogin = table.Column<string>(type: "TEXT", nullable: false),
+                    UserId = table.Column<string>(type: "TEXT", nullable: false),
+                    UserLogin = table.Column<string>(type: "TEXT", nullable: true),
                     UserName = table.Column<string>(type: "TEXT", nullable: true),
                     ProfileImageUrl = table.Column<string>(type: "TEXT", nullable: true),
                     OfflineImageUrl = table.Column<string>(type: "TEXT", nullable: true),
@@ -42,7 +43,7 @@ namespace Discord_Stream_Notify_Bot.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_TwitchSpider", x => x.UserLogin);
+                    table.PrimaryKey("PK_TwitchSpider", x => x.UserId);
                 });
         }
 

@@ -4,7 +4,7 @@
     {
         public ulong GuildId { get; set; }
         public ulong DiscordChannelId { get; set; }
-        public string NoticeTwitchUserLogin { get; set; }
+        public string NoticeTwitchUserId { get; set; }
         public string StartStreamMessage { get; set; } = "";
     }
 }

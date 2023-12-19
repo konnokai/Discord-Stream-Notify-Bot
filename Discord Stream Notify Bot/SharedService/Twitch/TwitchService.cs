@@ -79,8 +79,15 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
             return url;
         }
 
-        public async Task<User> GetUserAsync(string twitchUserLogin)
+        public async Task<User> GetUserAsync(string twitchUserId = "", string twitchUserLogin = "")
         {
+            List<string> userId = null, userLogin = null;
+            if (!string.IsNullOrEmpty(twitchUserId))
+                userId = new List<string> { twitchUserId };
+            else if (!string.IsNullOrEmpty(twitchUserLogin))
+                userLogin = new List<string> { twitchUserLogin };
+            else throw new ArgumentException("兩者參數不可同時為空");
+
             try
             {
                 string accessToken = await _twitchApi.Value.Auth.GetAccessTokenAsync();
@@ -91,7 +98,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                     return null;
                 }
 
-                var users = await _twitchApi.Value.Helix.Users.GetUsersAsync(logins: new List<string>() { twitchUserLogin }, accessToken: accessToken);
+
+                var users = await _twitchApi.Value.Helix.Users.GetUsersAsync(userId, userLogin, accessToken: accessToken);
                 return users.Users.FirstOrDefault();
             }
             catch (Exception ex)
@@ -132,7 +140,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
             }
         }
 
-        public async Task<IReadOnlyList<Stream>> GetNowStreamsAsync(params string[] twitchUserLogins)
+        public async Task<IReadOnlyList<Stream>> GetNowStreamsAsync(params string[] twitchUserIds)
         {
             try
             {
@@ -145,9 +153,9 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                 }
 
                 List<Stream> result = new();
-                foreach (var item in twitchUserLogins.Chunk(100))
+                foreach (var item in twitchUserIds.Chunk(100))
                 {
-                    var streams = await _twitchApi.Value.Helix.Streams.GetStreamsAsync(first: 100, userLogins: new List<string>(twitchUserLogins), accessToken: accessToken);
+                    var streams = await _twitchApi.Value.Helix.Streams.GetStreamsAsync(first: 100, userIds: new List<string>(twitchUserIds), accessToken: accessToken);
                     if (streams.Streams.Any())
                     {
                         result.AddRange(streams.Streams);
@@ -173,9 +181,9 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
 
             try
             {
-                foreach (var twitchSpiders in db.TwitchSpider.Distinct((x) => x.UserLogin).Chunk(100))
+                foreach (var twitchSpiders in db.TwitchSpider.Distinct((x) => x.UserId).Chunk(100))
                 {
-                    var streams = await GetNowStreamsAsync(twitchSpiders.Select((x) => x.UserLogin).ToArray());
+                    var streams = await GetNowStreamsAsync(twitchSpiders.Select((x) => x.UserId).ToArray());
                     if (!streams.Any())
                         continue;
 
@@ -189,9 +197,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                         if (twitchStreamDb.TwitchStreams.Any((x) => x.StreamId == stream.Id))
                             continue;
 
-                        var twitchSpider = twitchSpiders.Single((x) => x.UserLogin == stream.UserLogin);
-
-                        var userData = await GetUserAsync(twitchSpider.UserLogin);
+                        var twitchSpider = twitchSpiders.Single((x) => x.UserId == stream.UserId);
+                        var userData = await GetUserAsync(twitchUserId: twitchSpider.UserId);
                         twitchSpider.OfflineImageUrl = userData.OfflineImageUrl;
                         twitchSpider.ProfileImageUrl = userData.ProfileImageUrl;
                         twitchSpider.UserName = userData.DisplayName;
@@ -205,6 +212,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                                 StreamTitle = stream.Title,
                                 GameName = stream.GameName,
                                 ThumbnailUrl = stream.ThumbnailUrl.Replace("{width}", "854").Replace("{height}", "480"),
+                                UserId = stream.UserId,
                                 UserLogin = stream.UserLogin,
                                 UserName = stream.UserName,
                                 StreamStartAt = stream.StartedAt
@@ -236,12 +244,12 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
 
         private async Task SendStreamMessageAsync(TwitchStream twitchStream, TwitchSpider twitchSpider, bool isRecord = false)
         {
-#if DEBUG || DEBUG_DONTREGISTERCOMMAND
+#if DEBUG_DONTREGISTERCOMMAND
             Log.New($"Twitch 開台通知: {twitchStream.UserName} - {twitchStream.StreamTitle}");
 #else
             using (var db = DBContext.GetDbContext())
             {
-                var noticeGuildList = db.NoticeTwitchStreamChannels.Where((x) => x.NoticeTwitchUserLogin == twitchStream.UserLogin).ToList();
+                var noticeGuildList = db.NoticeTwitchStreamChannels.Where((x) => x.NoticeTwitchUserId == twitchStream.UserId).ToList();
                 Log.New($"發送 Twitch 開台通知 ({noticeGuildList.Count}): {twitchStream.UserName} - {twitchStream.StreamTitle}");
 
                 EmbedBuilder embedBuilder = new EmbedBuilder()

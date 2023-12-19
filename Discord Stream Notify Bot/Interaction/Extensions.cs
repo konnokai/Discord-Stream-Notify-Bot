@@ -176,15 +176,15 @@ namespace Discord_Stream_Notify_Bot.Interaction
             return channelId;
         }
 
-        public static string GetTwitchChannelTitleByChannelId(this DataBase.DBContext dBContext, string userLogin)
+        public static string GetTwitchUserNameByUserId(this DataBase.DBContext dBContext, string userId)
         {
-            userLogin = userLogin.Trim();
+            userId = userId.Trim();
 
             TwitchSpider twitchSpider;
-            if ((twitchSpider = dBContext.TwitchSpider.FirstOrDefault((x) => x.UserLogin == userLogin)) != null)
+            if ((twitchSpider = dBContext.TwitchSpider.FirstOrDefault((x) => x.UserId == userId)) != null)
                 return twitchSpider.UserName;
 
-            return userLogin;
+            return userId;
         }
 
         public static string GetTwitterUserNameByUserScreenName(this DataBase.DBContext dBContext, string userScreenName)

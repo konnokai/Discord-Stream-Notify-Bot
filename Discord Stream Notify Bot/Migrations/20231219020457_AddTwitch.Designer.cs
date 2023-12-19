@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Discord_Stream_Notify_Bot.Migrations
 {
     [DbContext(typeof(DBContext))]
-    [Migration("20231218075433_AddTwitch")]
+    [Migration("20231219020457_AddTwitch")]
     partial class AddTwitch
     {
         /// <inheritdoc />
@@ -133,7 +133,7 @@ namespace Discord_Stream_Notify_Bot.Migrations
                     b.Property<ulong>("GuildId")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("NoticeTwitchUserLogin")
+                    b.Property<string>("NoticeTwitchUserId")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("StartStreamMessage")
@@ -258,7 +258,7 @@ namespace Discord_Stream_Notify_Bot.Migrations
 
             modelBuilder.Entity("Discord_Stream_Notify_Bot.DataBase.Table.TwitchSpider", b =>
                 {
-                    b.Property<string>("UserLogin")
+                    b.Property<string>("UserId")
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime?>("DateAdded")
@@ -279,10 +279,13 @@ namespace Discord_Stream_Notify_Bot.Migrations
                     b.Property<string>("ProfileImageUrl")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("UserLogin")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("UserName")
                         .HasColumnType("TEXT");
 
-                    b.HasKey("UserLogin");
+                    b.HasKey("UserId");
 
                     b.ToTable("TwitchSpider");
                 });
