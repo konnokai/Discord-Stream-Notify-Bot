@@ -260,7 +260,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                         {
                                             await logChannel.SendErrorMessageAsync(member.UserId, guildYoutubeMemberConfig.MemberCheckChannelTitle, "會員已過期");
                                             await member.UserId.SendErrorMessageAsync($"您在 `{guild.Name}` 的 `{guildYoutubeMemberConfig.MemberCheckChannelTitle}` 會限資格已失效\n" +
-                                                $"如要取消驗證請到 `{guildYoutubeMemberConfig.MemberCheckChannelTitle}` 上輸入 `/member cancel-member-check`\n" +
+                                                $"如要取消驗證請到 `{guild.Name}` 上輸入 `/member cancel-member-check`\n" +
                                                 $"如要重新驗證會員請於購買會員後再次於伺服器執行 `/member check`", logChannel);
                                         }
                                         else
@@ -268,7 +268,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                             await logChannel.SendErrorMessageAsync(member.UserId, guildYoutubeMemberConfig.MemberCheckChannelTitle, "無會員");
                                             await member.UserId.SendErrorMessageAsync($"無法在 `{guild.Name}` 的 `{guildYoutubeMemberConfig.MemberCheckChannelTitle}` 上存取會限資格\n" +
                                                 $"請先使用 `/member show-youtube-account` 確認綁定的頻道是否正確，並確認已購買會員\n" +
-                                                $"如要取消驗證請到 `{guildYoutubeMemberConfig.MemberCheckChannelTitle}` 上輸入 `/member cancel-member-check`\n" +
+                                                $"如要取消驗證請到 `{guild.Name}` 上輸入 `/member cancel-member-check`\n" +
                                                 $"若都正確請向 `{Program.ApplicatonOwner}` 確認問題", logChannel);
                                         }
                                         continue;
