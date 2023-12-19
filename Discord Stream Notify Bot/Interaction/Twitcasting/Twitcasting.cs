@@ -122,7 +122,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitcasting
                     if (!db.TwitcastingSpider.Any((x) => x.ChannelId == channelData.ChannelId))
                         addString += $"\n\n(注意: 該頻道未加入爬蟲清單\n如長時間無通知請使用 `/help get-command-help twitcasting-spider add` 查看說明並加入爬蟲)";
                     db.NoticeTwitcastingStreamChannels.Add(new NoticeTwitcastingStreamChannel() { GuildId = Context.Guild.Id, DiscordChannelId = textChannel.Id, ChannelId = channelData.ChannelId });
-                    await Context.Interaction.SendConfirmAsync($"已將 `{channelData.ChannelTitle}` 加入到Twitcasting通知頻道清單內{addString}", true, true).ConfigureAwait(false);
+                    await Context.Interaction.SendConfirmAsync($"已將 `{channelData.ChannelTitle}` 加入到 Twitcasting 通知頻道清單內{addString}", true, true).ConfigureAwait(false);
                 }
 
                 db.SaveChanges();
@@ -180,7 +180,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitcasting
                         .WithOkColor()
                         .WithTitle("Twitcasting 直播通知清單")
                         .WithDescription(string.Join('\n', list.Skip(page * 20).Take(20)))
-                        .WithFooter($"{Math.Min(list.Count, (page + 1) * 20)} / {list.Count}個頻道");
+                        .WithFooter($"{Math.Min(list.Count, (page + 1) * 20)} / {list.Count} 個頻道");
                 }, list.Count, 20, false);
             }
         }

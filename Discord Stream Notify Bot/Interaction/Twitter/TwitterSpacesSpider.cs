@@ -26,7 +26,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
             "伺服器需大於 500 人才可使用\n" +
             "未來會根據情況增減可新增的頻道數量\n" +
             "如有任何需要請向擁有者詢問\n")]
-        [CommandExample("LaplusDarknesss", "@inui_toko")]
+        [CommandExample("margaretthebox", "@inui_toko")]
         [SlashCommand("add", "新增推特語音空間爬蟲")]
         public async Task AddSpider([Summary("推特使用者名稱")] string userScreenName)
         {
@@ -132,7 +132,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
 
         [CommandSummary("移除推特語音空間爬蟲\n" +
            "爬蟲必須由本伺服器新增才可移除")]
-        [CommandExample("LaplusDarknesss", "@inui_toko")]
+        [CommandExample("margaretthebox", "@inui_toko")]
         [SlashCommand("remove", "移除推特語音空間爬蟲")]
         public async Task RemoveSpider([Summary("推特使用者名稱"), Autocomplete(typeof(GuildTwitterSpaceSpiderAutocompleteHandler))] string userScreenName)
         {
@@ -193,7 +193,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                         .WithOkColor()
                         .WithTitle("推特語音空間爬蟲清單")
                         .WithDescription(string.Join('\n', list.Skip(page * 10).Take(10)))
-                        .WithFooter($"{Math.Min(list.Count(), (page + 1) * 10)} / {list.Count()}個使用者 ({warningChannelNum}個隱藏的警告使用者)");
+                        .WithFooter($"{Math.Min(list.Count(), (page + 1) * 10)} / {list.Count()} 個使用者 ({warningChannelNum} 個隱藏的警告使用者)");
                 }, list.Count(), 10, false).ConfigureAwait(false);
             }
         }

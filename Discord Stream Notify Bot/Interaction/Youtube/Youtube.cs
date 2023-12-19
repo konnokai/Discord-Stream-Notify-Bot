@@ -192,7 +192,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             catch (Exception ex)
             {
                 Log.Error(ex.Message + "r\n" + ex.StackTrace);
-                await Context.Interaction.SendErrorAsync("不明的錯誤，請向Bot擁有者回報", true);
+                await Context.Interaction.SendErrorAsync("不明的錯誤，請向 Bot 擁有者回報", true);
             }
         }
 
@@ -231,12 +231,13 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
         [RequireContext(ContextType.Guild)]
         [RequireBotPermission(GuildPermission.ManageGuild)]
         [DefaultMemberPermissions(GuildPermission.ManageGuild)]
-        [RequireUserPermission(GuildPermission.ManageGuild, Group = "ManageGuild")]
+        [RequireUserPermission(GuildPermission.ManageGuild)]
         [CommandSummary("設定伺服器橫幅使用指定頻道的最新影片(直播)縮圖\n" +
             "若未輸入頻道網址則關閉本設定\n\n" +
             "Bot需要有管理伺服器權限\n" +
             "且伺服器需有 Boost Lv2 才可使用本設定\n" +
             "(此功能依賴直播通知，請確保設定的頻道在兩大箱或是爬蟲清單內)")]
+        [CommandExample("https://www.youtube.com/@margaretnorth")]
         [SlashCommand("set-banner-change", "設定伺服器橫幅使用指定頻道的最新影片(直播)縮圖")]
         public async Task SetBannerChange([Summary("頻道網址")] string channelUrl = "")
         {
@@ -320,7 +321,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             "(可以使用 `/youtube-spider list` 查詢有哪些頻道)\n" +
             "輸入 `all` 通知全部 `Holo + 2434 + 非兩大箱` 的直播\n" +
             "(all 選項會覆蓋所有的通知設定，請注意)")]
-        [CommandExample("https://www.youtube.com/channel/UCdn5BQ06XqgXoAxIhbqw5Rg", "all", "2434")]
+        [CommandExample("https://www.youtube.com/@margaretnorth", "all", "2434")]
         [SlashCommand("add", "新增YouTube直播開台通知的頻道")]
         public async Task AddTextChannel([Summary("頻道網址")] string channelUrl, [Summary("發送通知的頻道", "文字頻道或公告頻道")] IChannel channel)
         {
@@ -454,7 +455,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             "輸入2434移除全部 `彩虹社成員` 的直播通知\n" +
             "輸入other移除部分 `非兩大箱` 的直播通知\n" +
             "輸入all移除全部 `Holo + 2434 + 非兩大箱` 的直播通知")]
-        [CommandExample("https://www.youtube.com/channel/UCdn5BQ06XqgXoAxIhbqw5Rg", "all", "2434")]
+        [CommandExample("https://www.youtube.com/@margaretnorth", "all", "2434")]
         [SlashCommand("remove", "移除YouTube直播開台通知的頻道")]
         public async Task RemoveChannel([Summary("頻道網址"), Autocomplete(typeof(GuildNoticeYoutubeChannelIdAutocompleteHandler))] string channelUrl)
         {
@@ -588,10 +589,10 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             "ChangeTime: 變更直播時間\n" +
             "Delete: 刪除直播\n\n" +
             "(考慮到有伺服器需Ping特定用戶組的情況，故 Bot 需提及所有身分組權限)")]
-        [CommandExample("UCXRlIK3Cw_TJIQC5kSJJQMg start @通知用的用戶組 阿床開台了",
+        [CommandExample("margaretnorth start @通知用的用戶組 瑪麗開台啦",
             "holo newstream @某人 新待機所建立",
             "UCUKD-uaobj9jiqB-VXt71mA newstream -",
-            "UCXRlIK3Cw_TJIQC5kSJJQMg end")]
+            "UCbh7KHPMgYGgpISdbF6l0Kw end")]
         [SlashCommand("set-message", "設定 YouTube 通知訊息")]
         public async Task SetMessage([Summary("頻道網址"), Autocomplete(typeof(GuildNoticeYoutubeChannelIdAutocompleteHandler))] string channelUrl, [Summary("通知類型")] SharedService.Youtube.YoutubeStreamService.NoticeType noticeType, [Summary("通知訊息")] string message = "")
         {

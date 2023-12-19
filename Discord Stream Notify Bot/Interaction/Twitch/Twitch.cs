@@ -131,7 +131,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
                         addString += $"\n\n(注意: 該頻道未加入爬蟲清單\n如長時間無通知請使用 `/help get-command-help twitch-spider add` 查看說明並加入爬蟲)";
 
                     db.NoticeTwitchStreamChannels.Add(new NoticeTwitchStreamChannel() { GuildId = Context.Guild.Id, DiscordChannelId = textChannel.Id, NoticeTwitchUserId = userData.Id });
-                    await Context.Interaction.SendConfirmAsync($"已將 `{userData.DisplayName}` 加入到Twitch通知頻道清單內{addString}", true, true).ConfigureAwait(false);
+                    await Context.Interaction.SendConfirmAsync($"已將 `{userData.DisplayName}` 加入到 Twitch 通知頻道清單內{addString}", true, true).ConfigureAwait(false);
                 }
 
                 db.SaveChanges();

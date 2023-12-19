@@ -333,7 +333,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitcasting
                         .WithOkColor()
                         .WithTitle("警告的爬蟲清單")
                         .WithDescription(string.Join('\n', list.Skip(page * 20).Take(20)))
-                        .WithFooter($"{Math.Min(list.Count(), (page + 1) * 20)} / {list.Count()}個頻道");
+                        .WithFooter($"{Math.Min(list.Count(), (page + 1) * 20)} / {list.Count()} 個頻道");
                 }, list.Count(), 10, false, true).ConfigureAwait(false);
             }
         }

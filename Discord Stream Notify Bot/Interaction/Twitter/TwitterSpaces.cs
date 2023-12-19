@@ -127,7 +127,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
         [CommandSummary("新增推特語音空間開台通知的頻道\n" +
             "請使用@後面的使用者名稱來新增\n" +
             "可以使用`/twitter-space list`查詢有哪些頻道\n")]
-        [CommandExample("LaplusDarknesss", "@inui_toko")]
+        [CommandExample("margaretthebox", "@inui_toko")]
         [SlashCommand("add", "新增推特語音空間開台通知的頻道")]
         public async Task AddChannel([Summary("推特使用者名稱")] string userScreenName, [Summary("發送通知的頻道")] IChannel channel)
         {
@@ -204,7 +204,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
 
         [CommandSummary("移除推特語音空間通知的頻道\n" +
              "請使用@後面的使用者名稱來移除")]
-        [CommandExample("LaplusDarknesss", "@inui_toko")]
+        [CommandExample("margaretthebox", "@inui_toko")]
         [SlashCommand("remove", "移除推特語音空間開台通知的頻道")]
         public async Task RemoveChannel([Summary("推特使用者名稱"), Autocomplete(typeof(GuildNoticeTwitterSpaceIdAutocompleteHandler))] string userScreenName)
         {
@@ -256,7 +256,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                         .WithOkColor()
                         .WithTitle("推特語音空間通知清單")
                         .WithDescription(string.Join('\n', twitterSpaceList.Skip(page * 20).Take(20)))
-                        .WithFooter($"{Math.Min(twitterSpaceList.Count, (page + 1) * 20)} / {twitterSpaceList.Count}個使用者");
+                        .WithFooter($"{Math.Min(twitterSpaceList.Count, (page + 1) * 20)} / {twitterSpaceList.Count} 個使用者");
                 }, twitterSpaceList.Count, 20, false);
             }
         }
@@ -266,7 +266,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
             "不輸入通知訊息的話則會關閉通知訊息\n" +
             "需先新增直播通知後才可設定通知訊息(`/help get-command-help twitter-space add`)\n\n" +
             "(考慮到有伺服器需Ping特定用戶組的情況，故Bot需提及所有身分組權限)")]
-        [CommandExample("LaplusDarknesss", "LaplusDarknesss @直播通知 總帥突襲開語音啦")]
+        [CommandExample("margaretthebox", "margaretthebox @直播通知 大小姐開語音啦")]
         [SlashCommand("set-message", "設定通知訊息")]
         public async Task SetMessage([Summary("推特使用者名稱"), Autocomplete(typeof(GuildNoticeTwitterSpaceIdAutocompleteHandler))] string userScreenName, [Summary("通知訊息")] string message = "")
         {
@@ -370,7 +370,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                             .WithOkColor()
                             .WithTitle("推特語音空間記錄清單")
                             .WithDescription(string.Join('\n', nowRecordList.Skip(page * 20).Take(20)))
-                            .WithFooter($"{Math.Min(nowRecordList.Count, (page + 1) * 20)} / {nowRecordList.Count}個使用者 ({warningUserNum}個隱藏的警告頻道)");
+                            .WithFooter($"{Math.Min(nowRecordList.Count, (page + 1) * 20)} / {nowRecordList.Count} 個使用者 ({warningUserNum} 個隱藏的警告頻道)");
                     }, nowRecordList.Count, 20, false);
                 }
                 else
