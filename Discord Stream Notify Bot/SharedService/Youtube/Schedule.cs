@@ -121,7 +121,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                 Log.New($"(已開台) | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
 
                                 if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo) && item.Snippet.LiveBroadcastContent == "live")
-                                    ReminderTimerAction(streamVideo);
+                                    await ReminderTimerActionAsync(streamVideo);
                             }
                             else if (!string.IsNullOrEmpty(item.LiveStreamingDetails.ScheduledStartTimeRaw)) //尚未開台的直播
                             {
@@ -278,6 +278,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         }
                     }
 
+                    Log.Info($"Nijisanji Id: {videoId}");
                     if (streamVideo == null)
                     {
                         var video = await GetVideoAsync(videoId);
@@ -734,7 +735,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 Log.New($"(已開台) | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
 
                 if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo) && item.Snippet.LiveBroadcastContent == "live" && !isFromRNRS)
-                    ReminderTimerAction(streamVideo);
+                    await ReminderTimerActionAsync(streamVideo);
             }
             else if (!string.IsNullOrEmpty(item.LiveStreamingDetails.ScheduledStartTimeRaw)) // 尚未開台的直播
             {

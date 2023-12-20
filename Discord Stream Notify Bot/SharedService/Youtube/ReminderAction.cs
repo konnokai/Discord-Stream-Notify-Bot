@@ -16,11 +16,11 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                 if (ts <= TimeSpan.Zero)
                 {
-                    ReminderTimerAction(streamVideo);
+                    Task.Run(async () => { await ReminderTimerActionAsync(streamVideo); });
                 }
                 else
                 {
-                    var remT = new Timer(ReminderTimerAction, streamVideo, Math.Max(1000, (long)ts.TotalMilliseconds), Timeout.Infinite);
+                    var remT = new Timer(async (obj) => { await ReminderTimerActionAsync(streamVideo); }, streamVideo, Math.Max(1000, (long)ts.TotalMilliseconds), Timeout.Infinite);
 
                     if (!Reminders.TryAdd(streamVideo.VideoId, new ReminderItem() { StreamVideo = streamVideo, Timer = remT, ChannelType = channelType }))
                     {
@@ -35,7 +35,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             }
         }
 
-        private async void ReminderTimerAction(object rObj)
+        private async Task ReminderTimerActionAsync(object rObj)
         {
             var streamVideo = (DataBase.Table.Video)rObj;
 

@@ -1,6 +1,7 @@
 ﻿using Discord_Stream_Notify_Bot.DataBase;
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.Interaction;
+using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
@@ -194,7 +195,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
 
                         hashSet.Add(stream.Id);
 
-                        if (twitchStreamDb.TwitchStreams.Any((x) => x.StreamId == stream.Id))
+                        if (twitchStreamDb.TwitchStreams.AsNoTracking().Any((x) => x.StreamId == stream.Id))
                             continue;
 
                         var twitchSpider = twitchSpiders.Single((x) => x.UserId == stream.UserId);

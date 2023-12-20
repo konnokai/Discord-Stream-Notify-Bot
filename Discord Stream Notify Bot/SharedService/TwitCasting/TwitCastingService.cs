@@ -2,6 +2,7 @@
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.HttpClients;
 using Discord_Stream_Notify_Bot.Interaction;
+using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
@@ -84,7 +85,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitcasting
                         if (hashSet.Contains(data.Movie.Id))
                             continue;
 
-                        if (twitcastingDb.TwitcastingStreams.Any((x) => x.StreamId == data.Movie.Id))
+                        if (twitcastingDb.TwitcastingStreams.AsNoTracking().Any((x) => x.StreamId == data.Movie.Id))
                         {
                             hashSet.Add(data.Movie.Id);
                             continue;

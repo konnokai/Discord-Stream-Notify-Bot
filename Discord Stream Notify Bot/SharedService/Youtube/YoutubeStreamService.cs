@@ -627,10 +627,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 Task.Run(async () => await GetOrCreateNijisanjiLiverListAsync(item));
             }
 
-#if !RELEASE
-            return;
-#endif
-
             holoSchedule = new Timer(async (objState) => await HoloScheduleAsync(), null, TimeSpan.FromSeconds(15), TimeSpan.FromMinutes(5));
 
             nijisanjiSchedule = new Timer(async (objState) => await NijisanjiScheduleAsync(), null, TimeSpan.FromSeconds(10), TimeSpan.FromMinutes(5));
@@ -640,6 +636,10 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             checkScheduleTime = new Timer(async (objState) => await CheckScheduleTime(), null, TimeSpan.FromMinutes(15), TimeSpan.FromMinutes(15));
 
             saveDateBase = new Timer((objState) => SaveDateBase(), null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(3));
+
+#if !RELEASE
+            return;
+#endif
 
             subscribePubSub = new Timer((objState) => SubscribePubSub(), null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(30));
         }
