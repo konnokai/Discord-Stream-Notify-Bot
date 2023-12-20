@@ -64,7 +64,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
             });
 
             _timer = new Timer(async (obj) => { await TimerHandel(); },
-                null, TimeSpan.FromSeconds(15), TimeSpan.FromMinutes(1));
+                null, TimeSpan.FromSeconds(15), TimeSpan.FromSeconds(30));
         }
 
         public string GetUserLoginByUrl(string url)
