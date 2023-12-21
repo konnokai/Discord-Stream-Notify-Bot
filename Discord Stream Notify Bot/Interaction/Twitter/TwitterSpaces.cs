@@ -19,7 +19,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
             {
                 return await Task.Run(() =>
                 {
-                    using var db = DataBase.DBContext.GetDbContext();
+                    using var db = DataBase.MainDbContext.GetDbContext();
                     if (!db.NoticeTwitterSpaceChannel.Any((x) => x.GuildId == context.Guild.Id))
                         return AutocompletionResult.FromSuccess();
 
@@ -69,7 +69,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
             {
                 return await Task.Run(() =>
                 {
-                    using var db = DataBase.DBContext.GetDbContext();
+                    using var db = DataBase.MainDbContext.GetDbContext();
                     IQueryable<TwitterSpaecSpider> channelList;
 
                     if (autocompleteInteraction.User.Id == Program.ApplicatonOwner.Id)
@@ -177,7 +177,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                 return;
             }
 
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DataBase.MainDbContext.GetDbContext())
             {
                 var noticeTwitterSpaceChannel = db.NoticeTwitterSpaceChannel.FirstOrDefault((x) => x.GuildId == Context.Guild.Id && x.NoticeTwitterSpaceUserId == user.RestId);
 
@@ -216,7 +216,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
 
             userScreenName = userScreenName.Replace("@", "").ToLower();
 
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DataBase.MainDbContext.GetDbContext())
             {
                 if (!db.NoticeTwitterSpaceChannel.Any((x) => x.GuildId == Context.Guild.Id))
                 {
@@ -242,7 +242,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
         [SlashCommand("list", "顯示現在已加入推特語音空間通知的頻道")]
         public async Task ListChannel([Summary("頁數")] int page = 0)
         {
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DataBase.MainDbContext.GetDbContext())
             {
                 var list = db.NoticeTwitterSpaceChannel.Where((x) => x.GuildId == Context.Guild.Id)
                 .Select((x) => new KeyValuePair<string, ulong>(x.NoticeTwitterSpaceUserScreenName, x.DiscordChannelId)).ToList();
@@ -285,7 +285,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                 return;
             }
 
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DataBase.MainDbContext.GetDbContext())
             {
                 if (db.NoticeTwitterSpaceChannel.Any((x) => x.GuildId == Context.Guild.Id && x.NoticeTwitterSpaceUserId == user.RestId))
                 {
@@ -310,7 +310,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
         [SlashCommand("list-message", "列出已設定的推特語音空間通知訊息")]
         public async Task ListMessage([Summary("頁數")] int page = 0)
         {
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DataBase.MainDbContext.GetDbContext())
             {
                 if (db.NoticeTwitterSpaceChannel.Any((x) => x.GuildId == Context.Guild.Id))
                 {
@@ -356,7 +356,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
         {
             if (page < 0) page = 0;
 
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DataBase.MainDbContext.GetDbContext())
             {
                 var nowRecordList = db.TwitterSpaecSpider.Where((x) => x.IsRecord && !x.IsWarningUser).Select((x) => $"{x.UserName} ({Format.Url($"{x.UserScreenName}", $"https://twitter.com/{x.UserScreenName}")})").ToList();
                 int warningUserNum = db.TwitterSpaecSpider.Count((x) => x.IsWarningUser);

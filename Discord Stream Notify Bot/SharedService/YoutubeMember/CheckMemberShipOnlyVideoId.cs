@@ -9,7 +9,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
         //https://github.com/member-gentei/member-gentei/blob/90f62385f554eb4c02ed8732e15061b9dd1dd6d0/gentei/apis/youtube.go#L100
         private async void CheckMemberShipOnlyVideoId(object stats)
         {
-            using (var db = DBContext.GetDbContext())
+            using (var db = MainDbContext.GetDbContext())
             {
                 List<GuildYoutubeMemberConfig> needRemoveList = new();
                 foreach (var item in db.GuildYoutubeMemberConfig.Where((x) => !string.IsNullOrEmpty(x.MemberCheckChannelId) && x.MemberCheckChannelId.Length == 24 && (x.MemberCheckVideoId == "-" || string.IsNullOrEmpty(x.MemberCheckChannelTitle))).Distinct((x) => x.MemberCheckChannelId))

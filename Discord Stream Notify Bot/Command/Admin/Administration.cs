@@ -226,7 +226,7 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
                             $"擁有者Id: {guild.OwnerId}\n" +
                             $"人數: {guild.MemberCount}\n";
 
-                using (var db = DataBase.DBContext.GetDbContext())
+                using (var db = DataBase.MainDbContext.GetDbContext())
                 {
                     var guildConfig = db.GuildConfig.FirstOrDefault((x) => x.GuildId == gid);
                     if (guildConfig != null && guildConfig.LogMemberStatusChannelId != 0)

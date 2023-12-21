@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Discord_Stream_Notify_Bot.Migrations
 {
-    [DbContext(typeof(DBContext))]
+    [DbContext(typeof(MainDbContext))]
     [Migration("20220518164304_AddMultiMemberCheck")]
     partial class AddMultiMemberCheck
     {

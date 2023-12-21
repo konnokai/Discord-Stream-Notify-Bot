@@ -29,7 +29,7 @@ namespace Discord_Stream_Notify_Bot.Interaction
 
         public static DataBase.Table.Video.YTChannelType GetProductionType(this DataBase.Table.Video streamVideo)
         {
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DataBase.MainDbContext.GetDbContext())
             {
                 DataBase.Table.Video.YTChannelType type;
                 var channel = db.YoutubeChannelOwnedType.AsNoTracking().FirstOrDefault((x) => x.ChannelId == streamVideo.ChannelId);
@@ -134,7 +134,7 @@ namespace Discord_Stream_Notify_Bot.Interaction
             return false;
         }
 
-        public static string GetYoutubeChannelTitleByChannelId(this DataBase.DBContext dBContext, string channelId)
+        public static string GetYoutubeChannelTitleByChannelId(this DataBase.MainDbContext dBContext, string channelId)
         {
             channelId = channelId.Trim();
 
@@ -152,7 +152,7 @@ namespace Discord_Stream_Notify_Bot.Interaction
             return channelId;
         }
 
-        public static string GetNotVTuberChannelTitleByChannelId(this DataBase.DBContext dBContext, string channelId)
+        public static string GetNotVTuberChannelTitleByChannelId(this DataBase.MainDbContext dBContext, string channelId)
         {
             channelId = channelId.Trim();
 
@@ -166,7 +166,7 @@ namespace Discord_Stream_Notify_Bot.Interaction
             return channelId;
         }
 
-        public static string GetTwitcastingChannelTitleByChannelId(this DataBase.DBContext dBContext, string channelId)
+        public static string GetTwitcastingChannelTitleByChannelId(this DataBase.MainDbContext dBContext, string channelId)
         {
             channelId = channelId.Trim();
 
@@ -177,7 +177,7 @@ namespace Discord_Stream_Notify_Bot.Interaction
             return channelId;
         }
 
-        public static string GetTwitchUserNameByUserId(this DataBase.DBContext dBContext, string userId)
+        public static string GetTwitchUserNameByUserId(this DataBase.MainDbContext dBContext, string userId)
         {
             userId = userId.Trim();
 
@@ -188,7 +188,7 @@ namespace Discord_Stream_Notify_Bot.Interaction
             return userId;
         }
 
-        public static string GetTwitterUserNameByUserScreenName(this DataBase.DBContext dBContext, string userScreenName)
+        public static string GetTwitterUserNameByUserScreenName(this DataBase.MainDbContext dBContext, string userScreenName)
         {
             userScreenName = userScreenName.Trim();
             var twitterSpaecSpider = dBContext.TwitterSpaecSpider.AsNoTracking().FirstOrDefault((x) => x.UserScreenName.ToLower() == userScreenName.ToLower());
@@ -198,7 +198,7 @@ namespace Discord_Stream_Notify_Bot.Interaction
                 return userScreenName;
         }
 
-        public static bool IsTwitterUserInDb(this DataBase.DBContext dBContext, string userId)
+        public static bool IsTwitterUserInDb(this DataBase.MainDbContext dBContext, string userId)
             => dBContext.TwitterSpaecSpider.AsNoTracking().Any((x) => x.UserId == userId);
 
         public static Task SendConfirmAsync(this IDiscordInteraction di, string des, bool isFollowerup = false, bool ephemeral = false)

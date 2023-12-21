@@ -16,7 +16,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             {
                 return await Task.Run(() =>
                 {
-                    using var db = DataBase.DBContext.GetDbContext();
+                    using var db = DataBase.MainDbContext.GetDbContext();
                     if (!db.NoticeYoutubeStreamChannel.Any((x) => x.GuildId == context.Guild.Id))
                         return AutocompletionResult.FromSuccess();
 
@@ -72,7 +72,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
         [SlashCommand("list-record-channel", "顯示直播記錄頻道")]
         public async Task ListRecordChannel([Summary("頁數")] int page = 0)
         {
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DataBase.MainDbContext.GetDbContext())
             {
                 if (db.RecordYoutubeChannel.Any())
                 {
@@ -173,7 +173,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                     result.AddRange((await yt.ExecuteAsync().ConfigureAwait(false)).Items);
                 }
 
-                using (var db = DataBase.DBContext.GetDbContext())
+                using (var db = DataBase.MainDbContext.GetDbContext())
                 {
                     result = result.OrderBy((x) => x.LiveStreamingDetails.ScheduledStartTimeDateTimeOffset).ToList();
                     await Context.SendPaginatedConfirmAsync(page, (act) =>
@@ -241,7 +241,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
         [SlashCommand("set-banner-change", "設定伺服器橫幅使用指定頻道的最新影片(直播)縮圖")]
         public async Task SetBannerChange([Summary("頻道網址")] string channelUrl = "")
         {
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DataBase.MainDbContext.GetDbContext())
             {
                 if (channelUrl == "")
                 {
@@ -364,7 +364,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                 return;
             }
 
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DataBase.MainDbContext.GetDbContext())
             {
                 var noticeYoutubeStreamChannel = db.NoticeYoutubeStreamChannel.FirstOrDefault((x) => x.GuildId == Context.Guild.Id && x.NoticeStreamChannelId == channelId);
 
@@ -477,7 +477,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                 return;
             }
 
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DataBase.MainDbContext.GetDbContext())
             {
                 if (!db.NoticeYoutubeStreamChannel.Any((x) => x.GuildId == Context.Guild.Id))
                 {
@@ -534,7 +534,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
         [SlashCommand("list", "顯示現在已加入通知清單的 YouTube 直播頻道")]
         public async Task ListChannel([Summary("頁數")] int page = 0)
         {
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DataBase.MainDbContext.GetDbContext())
             {
                 var list = Queryable.Where(db.NoticeYoutubeStreamChannel, (x) => x.GuildId == Context.Guild.Id)
                 .Select((x) => new KeyValuePair<string, ulong>(x.NoticeStreamChannelId, x.DiscordChannelId)).ToList();
@@ -614,7 +614,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                 return;
             }
 
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DataBase.MainDbContext.GetDbContext())
             {
                 if (db.NoticeYoutubeStreamChannel.Any((x) => x.GuildId == Context.Guild.Id && x.NoticeStreamChannelId == channelId))
                 {
@@ -675,7 +675,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
         [SlashCommand("list-message", "列出已設定的通知訊息")]
         public async Task ListMessage([Summary("頁數")] int page = 0)
         {
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DataBase.MainDbContext.GetDbContext())
             {
                 if (db.NoticeYoutubeStreamChannel.Any((x) => x.GuildId == Context.Guild.Id))
                 {

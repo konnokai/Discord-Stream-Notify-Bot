@@ -72,7 +72,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
             var description = $"{Format.Url(video.Snippet.Title, $"https://www.youtube.com/watch?v={videoId}")}\n" +
                     $"{Format.Url(video.Snippet.ChannelTitle, $"https://www.youtube.com/channel/{video.Snippet.ChannelId}")}";
 
-            using var db = DBContext.GetDbContext();
+            using var db = MainDbContext.GetDbContext();
             if (!db.HasStreamVideoByVideoId(videoId))
                 await _service.AddOtherDataAsync(video, true);
 
@@ -125,7 +125,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                 return;
             }
 
-            using (var db = DBContext.GetDbContext())
+            using (var db = MainDbContext.GetDbContext())
             {
                 if (db.RecordYoutubeChannel.Any((x) => x.YoutubeChannelId == channelId))
                 {
@@ -173,7 +173,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                 return;
             }
 
-            using (var db = DBContext.GetDbContext())
+            using (var db = MainDbContext.GetDbContext())
             {
                 if (!db.RecordYoutubeChannel.Any((x) => x.YoutubeChannelId == channelId))
                 {
@@ -201,7 +201,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
         {
             await Context.Channel.TriggerTypingAsync().ConfigureAwait(false);
 
-            using (var db = DBContext.GetDbContext())
+            using (var db = MainDbContext.GetDbContext())
             {
                 var nowRecordList = db.RecordYoutubeChannel.Select((x) => x.YoutubeChannelId).ToList();
 
@@ -317,7 +317,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                 return;
             }
 
-            using (var db = DBContext.GetDbContext())
+            using (var db = MainDbContext.GetDbContext())
             {
                 var channel = db.YoutubeChannelOwnedType.FirstOrDefault((x) => x.ChannelId == channelId);
                 if (channel == null)

@@ -18,7 +18,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
         private void ReScheduleReminder()
         {
             List<string> recordChannelId = new();
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DataBase.MainDbContext.GetDbContext())
             {
                 if (db.RecordYoutubeChannel.Any())
                     recordChannelId = db.RecordYoutubeChannel.AsNoTracking().Select((x) => x.YoutubeChannelId).ToList();
@@ -384,7 +384,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             Dictionary<string, List<string>> otherVideoDic = new Dictionary<string, List<string>>();
             var addVideoIdList = new List<string>();
 
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DataBase.MainDbContext.GetDbContext())
             {
                 var channelList = db.YoutubeChannelSpider.Where((x) => db.RecordYoutubeChannel.Any((x2) => x.ChannelId == x2.YoutubeChannelId));
                 using var httpClient = _httpClientFactory.CreateClient();
@@ -520,7 +520,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             List<string> recordChannelId = new();
             try
             {
-                using (var db = DataBase.DBContext.GetDbContext())
+                using (var db = DataBase.MainDbContext.GetDbContext())
                 {
                     if (db.RecordYoutubeChannel.Any())
                         recordChannelId = db.RecordYoutubeChannel.Select((x) => x.YoutubeChannelId).ToList();

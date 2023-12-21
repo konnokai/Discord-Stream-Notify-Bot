@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Discord_Stream_Notify_Bot.DataBase
 {
-    public class DBContext : DbContext
+    public class MainDbContext : DbContext
     {
         public DbSet<BannerChange> BannerChange { get; set; }
         public DbSet<GuildConfig> GuildConfig { get; set; }
@@ -23,15 +23,15 @@ namespace Discord_Stream_Notify_Bot.DataBase
         public DbSet<YoutubeMemberCheck> YoutubeMemberCheck { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder options)
-            => options.UseSqlite($"Data Source={Program.GetDataFilePath("DataBase.db")}")
+            => options.UseSqlite($"Data Source={Program.GetDataFilePath("Database.db")}")
 #if DEBUG || DEBUG_DONTREGISTERCOMMAND
             //.LogTo((act) => System.IO.File.AppendAllText("DbTrackerLog.txt", act), Microsoft.Extensions.Logging.LogLevel.Information)
 #endif
             .EnableSensitiveDataLogging();
 
-        public static DBContext GetDbContext()
+        public static MainDbContext GetDbContext()
         {
-            var context = new DBContext();
+            var context = new MainDbContext();
             context.Database.SetCommandTimeout(60);
             var conn = context.Database.GetDbConnection();
             conn.Open();

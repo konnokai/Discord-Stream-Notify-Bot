@@ -16,7 +16,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
             bool isOldCheck = (bool)stats;
             int totalCheckMemberCount = 0, totalIsMemberCount = 0;
 
-            using (var db = DBContext.GetDbContext())
+            using (var db = MainDbContext.GetDbContext())
             {
                 var needCheckList = db.GuildYoutubeMemberConfig.Where((x) => !string.IsNullOrEmpty(x.MemberCheckChannelId) && !string.IsNullOrEmpty(x.MemberCheckChannelTitle) && x.MemberCheckVideoId != "-");
                 if (isOldCheck && needCheckList.Any())

@@ -17,7 +17,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
             {
                 return await Task.Run(() =>
                 {
-                    using var db = DataBase.DBContext.GetDbContext();
+                    using var db = DataBase.MainDbContext.GetDbContext();
                     IQueryable<DataBase.Table.TwitchSpider> channelList;
 
                     if (autocompleteInteraction.User.Id == Program.ApplicatonOwner.Id)
@@ -88,7 +88,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
                         return;
                     }
 
-                    using var db = DataBase.DBContext.GetDbContext();
+                    using var db = DataBase.MainDbContext.GetDbContext();
                     var twitchSpider = db.TwitchSpider.FirstOrDefault((x) => x.UserId == buttonData[2]);
                     if (twitchSpider == null)
                     {
@@ -175,7 +175,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
                 return;
             }
 
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DataBase.MainDbContext.GetDbContext())
             {
                 if (db.TwitchSpider.Any((x) => x.UserId == userData.Id))
                 {
@@ -267,7 +267,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
             await DeferAsync(true).ConfigureAwait(false);
 
             DataBase.Table.TwitchSpider twitchSpider = null;
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DataBase.MainDbContext.GetDbContext())
             {
                 if (!db.TwitchSpider.Any((x) => x.UserId == twitchId))
                 {
@@ -305,7 +305,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
         {
             if (page < 0) page = 0;
 
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DataBase.MainDbContext.GetDbContext())
             {
                 var list = db.TwitchSpider.Where((x) => !x.IsWarningUser).Select((x) => Format.Url(x.UserName, $"https://twitch.tv/{x.UserLogin}") +
                     $" 由 `" + (x.GuildId == 0 ? "Bot擁有者" : (_client.GetGuild(x.GuildId) != null ? _client.GetGuild(x.GuildId).Name : "已退出的伺服器")) + "` 新增");
@@ -327,7 +327,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
         {
             if (page < 0) page = 0;
 
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DataBase.MainDbContext.GetDbContext())
             {
                 var list = db.TwitchSpider.Where((x) => x.IsWarningUser).Select((x) => Format.Url(x.UserName, $"https://twitch.tv/{x.UserLogin}") +
                     $" 由 `" + (x.GuildId == 0 ? "Bot擁有者" : (_client.GetGuild(x.GuildId) != null ? _client.GetGuild(x.GuildId).Name : "已退出的伺服器")) + "` 新增");

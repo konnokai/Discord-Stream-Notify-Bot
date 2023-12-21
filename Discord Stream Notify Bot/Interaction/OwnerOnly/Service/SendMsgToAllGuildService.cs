@@ -85,7 +85,7 @@
                 {
                     isSending = true;
 
-                    using (var db = DataBase.DBContext.GetDbContext())
+                    using (var db = DataBase.MainDbContext.GetDbContext())
                     {
                         List<KeyValuePair<ulong, ulong>> list = db.NoticeYoutubeStreamChannel
                             .Distinct((x) => x.GuildId)

@@ -131,7 +131,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 #if RELEASE
                     try
                     {
-                        using (var db = DataBase.DBContext.GetDbContext())
+                        using (var db = DataBase.MainDbContext.GetDbContext())
                         {
                             if (CanRecord(db, streamVideo))
                             {
@@ -257,7 +257,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
         private async Task SendStreamMessageAsync(string videolId, EmbedBuilder embedBuilder, NoticeType noticeType)
         {
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DataBase.MainDbContext.GetDbContext())
             {
                 DataBase.Table.Video streamVideo = Extensions.GetStreamVideoByVideoId(videolId);
 
@@ -319,7 +319,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             }
 
             List<NoticeYoutubeStreamChannel> noticeGuildList = new List<NoticeYoutubeStreamChannel>();
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DataBase.MainDbContext.GetDbContext())
             {
                 try
                 {

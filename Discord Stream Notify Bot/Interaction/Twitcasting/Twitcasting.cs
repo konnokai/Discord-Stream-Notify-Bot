@@ -18,7 +18,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitcasting
             {
                 return await Task.Run(() =>
                 {
-                    using var db = DataBase.DBContext.GetDbContext();
+                    using var db = DataBase.MainDbContext.GetDbContext();
                     if (!db.NoticeTwitcastingStreamChannels.Any((x) => x.GuildId == context.Guild.Id))
                         return AutocompletionResult.FromSuccess();
 
@@ -103,7 +103,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitcasting
                 return;
             }
 
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DataBase.MainDbContext.GetDbContext())
             {
                 var noticeTwitcastingStreamChannel = db.NoticeTwitcastingStreamChannels.FirstOrDefault((x) => x.GuildId == Context.Guild.Id && x.ChannelId == channelData.ChannelId);
                 if (noticeTwitcastingStreamChannel != null)
@@ -143,7 +143,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitcasting
                 return;
             }
 
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DataBase.MainDbContext.GetDbContext())
             {
                 if (!db.NoticeTwitcastingStreamChannels.Any((x) => x.GuildId == Context.Guild.Id))
                 {
@@ -168,7 +168,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitcasting
         [SlashCommand("list", "顯示現在已加入通知清單的 Twitcasting 直播頻道")]
         public async Task ListChannel([Summary("頁數")] int page = 0)
         {
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DataBase.MainDbContext.GetDbContext())
             {
                 var list = Queryable.Where(db.NoticeTwitcastingStreamChannels, (x) => x.GuildId == Context.Guild.Id)
                 .Select((x) => $"`{db.GetTwitcastingChannelTitleByChannelId(x.ChannelId)}` => <#{x.DiscordChannelId}>").ToList();
@@ -204,7 +204,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitcasting
                 return;
             }
 
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DataBase.MainDbContext.GetDbContext())
             {
                 if (db.NoticeTwitcastingStreamChannels.Any((x) => x.GuildId == Context.Guild.Id && x.ChannelId == channelData.ChannelId))
                 {
@@ -228,7 +228,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitcasting
         [SlashCommand("list-message", "列出已設定的 Twitcasting 直播通知訊息")]
         public async Task ListMessage([Summary("頁數")] int page = 0)
         {
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DataBase.MainDbContext.GetDbContext())
             {
                 if (db.NoticeTwitcastingStreamChannels.Any((x) => x.GuildId == Context.Guild.Id))
                 {

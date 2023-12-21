@@ -73,7 +73,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                     if (customId.Length <= 2 || customId[0] != "member")
                         await component.RespondAsync("選單錯誤");
 
-                    using DBContext db = DBContext.GetDbContext();
+                    using MainDbContext db = MainDbContext.GetDbContext();
                     if (customId[1] == "check" && customId.Length == 4)
                     {
                         await component.DeferAsync(true);
@@ -178,7 +178,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
         {
             try
             {
-                using var db = DBContext.GetDbContext();
+                using var db = MainDbContext.GetDbContext();
 
                 if (!db.YoutubeMemberCheck.Any((x) => x.UserId == userId))
                 {
@@ -279,7 +279,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
 
         private async Task SendMsgToLogChannelAsync(string checkChannelId, string msg, bool isNeedRemove = true, bool isNeedSendToOwner = true)
         {
-            using var db = DBContext.GetDbContext();
+            using var db = MainDbContext.GetDbContext();
 
             foreach (var item in db.GuildYoutubeMemberConfig.Where((x) => x.MemberCheckChannelId == checkChannelId))
             {
@@ -356,7 +356,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
 
             var credential = new UserCredential(flow, discordUserId, token);
 
-            using (var db = DBContext.GetDbContext())
+            using (var db = MainDbContext.GetDbContext())
             {
                 try
                 {

@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Discord_Stream_Notify_Bot.Migrations
 {
-    [DbContext(typeof(DBContext))]
+    [DbContext(typeof(MainDbContext))]
     [Migration("20220909081029_RenameMemberCheckFidleName")]
     partial class RenameMemberCheckFidleName
     {

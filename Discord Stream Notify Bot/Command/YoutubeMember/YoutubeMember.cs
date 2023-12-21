@@ -18,7 +18,7 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
         [RequireOwner]
         public async Task ListAllGuildCheckedMemberAsync(int page = 0)
         {
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DataBase.MainDbContext.GetDbContext())
             {
                 var guildYoutubeMemberConfigs = db.GuildYoutubeMemberConfig.Where((x) => !string.IsNullOrEmpty(x.MemberCheckChannelTitle) && x.MemberCheckVideoId != "-");
                 if (!guildYoutubeMemberConfigs.Any())
@@ -79,7 +79,7 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
 
             try
             {
-                using (var db = DataBase.DBContext.GetDbContext())
+                using (var db = DataBase.MainDbContext.GetDbContext())
                 {
                     var guildYoutubeMemberConfigs = db.GuildYoutubeMemberConfig.Where((x) => x.MemberCheckChannelId == channelId);
                     if (!guildYoutubeMemberConfigs.Any())

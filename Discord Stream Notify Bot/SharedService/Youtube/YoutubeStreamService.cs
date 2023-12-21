@@ -205,7 +205,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         return;
                     }
 
-                    using (var db = DataBase.DBContext.GetDbContext())
+                    using (var db = DataBase.MainDbContext.GetDbContext())
                     {
                         try
                         {
@@ -265,7 +265,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                     _endLiveBag.TryAdd(videoId, 1);
 
-                    using (var db = DataBase.DBContext.GetDbContext())
+                    using (var db = DataBase.MainDbContext.GetDbContext())
                     {
                         try
                         {
@@ -303,7 +303,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                     _endLiveBag.TryAdd(videoId, 1);
 
-                    using (var db = DataBase.DBContext.GetDbContext())
+                    using (var db = DataBase.MainDbContext.GetDbContext())
                     {
                         try
                         {
@@ -335,7 +335,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     Log.Info($"{channel} - {videoId}");
                     IsRecord = false;
 
-                    using (var db = DataBase.DBContext.GetDbContext())
+                    using (var db = DataBase.MainDbContext.GetDbContext())
                     {
                         try
                         {
@@ -369,7 +369,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                     try
                     {
-                        using (var db = DataBase.DBContext.GetDbContext())
+                        using (var db = DataBase.MainDbContext.GetDbContext())
                         {
                             if (!addNewStreamVideo.ContainsKey(videoId) && !Extensions.HasStreamVideoByVideoId(videoId))
                             {
@@ -407,7 +407,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                     try
                     {
-                        using (var db = DataBase.DBContext.GetDbContext())
+                        using (var db = DataBase.MainDbContext.GetDbContext())
                         {
                             if (!addNewStreamVideo.ContainsKey(youtubePubSubNotification.VideoId) && !Extensions.HasStreamVideoByVideoId(youtubePubSubNotification.VideoId))
                             {
@@ -479,7 +479,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                     try
                     {
-                        using (var db = DataBase.DBContext.GetDbContext())
+                        using (var db = DataBase.MainDbContext.GetDbContext())
                         {
                             if (Extensions.HasStreamVideoByVideoId(youtubePubSubNotification.VideoId))
                             {
@@ -508,7 +508,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                 Program.RedisSub.Subscribe(new RedisChannel("youtube.pubsub.NeedRegister", RedisChannel.PatternMode.Literal), async (channel, channelId) =>
                 {
-                    using (var db = DataBase.DBContext.GetDbContext())
+                    using (var db = DataBase.MainDbContext.GetDbContext())
                     {
                         if (db.YoutubeChannelSpider.Any((x) => x.ChannelId == channelId.ToString()))
                         {
@@ -726,7 +726,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             }
         }
 
-        private bool CanRecord(DataBase.DBContext db, DataBase.Table.Video streamVideo) =>
+        private bool CanRecord(DataBase.MainDbContext db, DataBase.Table.Video streamVideo) =>
              IsRecord && db.RecordYoutubeChannel.Any((x) => x.YoutubeChannelId.Trim() == streamVideo.ChannelId.Trim());
 
         public async Task<string> GetChannelIdAsync(string channelUrl)
@@ -761,7 +761,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             {
                 string channelName = matchNewFormat.Groups["CustomId"].Value;
 
-                using (var db = DataBase.DBContext.GetDbContext())
+                using (var db = DataBase.MainDbContext.GetDbContext())
                 {
                     channelId = db.YoutubeChannelNameToId.SingleOrDefault((x) => x.ChannelName == channelName)?.ChannelId;
 
@@ -804,7 +804,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 {
                     string channelName = WebUtility.UrlDecode(matchOldFormat.Groups["ChannelName"].Value);
 
-                    using (var db = DataBase.DBContext.GetDbContext())
+                    using (var db = DataBase.MainDbContext.GetDbContext())
                     {
                         channelId = db.YoutubeChannelNameToId.SingleOrDefault((x) => x.ChannelName == channelName)?.ChannelId;
 
@@ -933,7 +933,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
         private async void SubscribePubSub()
         {
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DataBase.MainDbContext.GetDbContext())
             {
                 foreach (var item in db.YoutubeChannelSpider.Where((x) => x.LastSubscribeTime < DateTime.Now.AddDays(-7)))
                 {

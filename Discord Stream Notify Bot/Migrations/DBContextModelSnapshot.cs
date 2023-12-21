@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Discord_Stream_Notify_Bot.Migrations
 {
-    [DbContext(typeof(DBContext))]
+    [DbContext(typeof(MainDbContext))]
     partial class DBContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)

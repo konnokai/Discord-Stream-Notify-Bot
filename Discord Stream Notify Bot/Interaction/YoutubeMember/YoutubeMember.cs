@@ -19,7 +19,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
                 return;
             }
 
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DataBase.MainDbContext.GetDbContext())
             {
                 var guildYoutubeMemberConfigs = db.GuildYoutubeMemberConfig.Where((x) => x.GuildId == Context.Guild.Id);
                 if (!guildYoutubeMemberConfigs.Any())
@@ -83,7 +83,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
         {
             await DeferAsync(true);
 
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DataBase.MainDbContext.GetDbContext())
             {
                 try
                 {
@@ -128,7 +128,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
                 return;
             }
 
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DataBase.MainDbContext.GetDbContext())
             {
                 if (await _service.IsExistUserTokenAsync(Context.User.Id.ToString()))
                 {
@@ -166,7 +166,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
         [SlashCommand("list-can-check-channel", "顯示現在可供驗證的會限頻道清單")]
         public async Task ListCheckChannel()
         {
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DataBase.MainDbContext.GetDbContext())
             {
                 var guildYoutubeMemberConfigs = db.GuildYoutubeMemberConfig.Where((x) => x.GuildId == Context.Guild.Id);
                 if (!guildYoutubeMemberConfigs.Any())

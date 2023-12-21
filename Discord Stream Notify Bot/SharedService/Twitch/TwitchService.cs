@@ -178,7 +178,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
             isRuning = true;
 
             using var twitchStreamDb = TwitchStreamContext.GetDbContext();
-            using var db = DBContext.GetDbContext();
+            using var db = MainDbContext.GetDbContext();
 
             try
             {
@@ -248,7 +248,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
 #if DEBUG_DONTREGISTERCOMMAND
             Log.New($"Twitch 開台通知: {twitchStream.UserName} - {twitchStream.StreamTitle}");
 #else
-            using (var db = DBContext.GetDbContext())
+            using (var db = MainDbContext.GetDbContext())
             {
                 var noticeGuildList = db.NoticeTwitchStreamChannels.Where((x) => x.NoticeTwitchUserId == twitchStream.UserId).ToList();
                 Log.New($"發送 Twitch 開台通知 ({noticeGuildList.Count}): {twitchStream.UserName} - {twitchStream.StreamTitle}");

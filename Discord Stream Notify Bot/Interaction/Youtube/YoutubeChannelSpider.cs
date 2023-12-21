@@ -17,7 +17,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             {
                 return await Task.Run(() =>
                 {
-                    using var db = DataBase.DBContext.GetDbContext();
+                    using var db = DataBase.MainDbContext.GetDbContext();
                     IQueryable<DataBase.Table.YoutubeChannelSpider> channelList;
 
                     if (autocompleteInteraction.User.Id == Program.ApplicatonOwner.Id)
@@ -88,7 +88,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                         return;
                     }
 
-                    using var db = DataBase.DBContext.GetDbContext();
+                    using var db = DataBase.MainDbContext.GetDbContext();
                     var youtubeChannelSpider = db.YoutubeChannelSpider.FirstOrDefault((x) => x.ChannelId == buttonData[2]);
                     if (youtubeChannelSpider == null)
                     {
@@ -207,7 +207,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                 return;
             }
 
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DataBase.MainDbContext.GetDbContext())
             {
                 bool isTwoBox = false;
                 using (var Holodb = DataBase.HoloVideoContext.GetDbContext())
@@ -320,7 +320,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                 return;
             }
 
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DataBase.MainDbContext.GetDbContext())
             {
                 if (!db.YoutubeChannelSpider.Any((x) => x.ChannelId == channelId))
                 {
@@ -356,7 +356,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
         {
             if (page < 0) page = 0;
 
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DataBase.MainDbContext.GetDbContext())
             {
                 var list = db.YoutubeChannelSpider.Where((x) => x.IsTrustedChannel).Select((x) => Format.Url(x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}") +
                     $" 由 `" + (x.GuildId == 0 ? "Bot 擁有者" : (_client.GetGuild(x.GuildId) != null ? _client.GetGuild(x.GuildId).Name : "已退出的伺服器")) + "` 新增");
@@ -378,7 +378,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
         {
             if (page < 0) page = 0;
 
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DataBase.MainDbContext.GetDbContext())
             {
                 var list = db.YoutubeChannelSpider.Where((x) => !x.IsTrustedChannel).Select((x) => Format.Url(x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}") +
                     $" 由 `" + (x.GuildId == 0 ? "Bot 擁有者" : (_client.GetGuild(x.GuildId) != null ? _client.GetGuild(x.GuildId).Name : "已退出的伺服器")) + "` 新增");

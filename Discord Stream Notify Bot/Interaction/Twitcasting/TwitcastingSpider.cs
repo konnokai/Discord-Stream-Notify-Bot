@@ -16,7 +16,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitcasting
             {
                 return await Task.Run(() =>
                 {
-                    using var db = DataBase.DBContext.GetDbContext();
+                    using var db = DataBase.MainDbContext.GetDbContext();
                     IQueryable<DataBase.Table.TwitcastingSpider> channelList;
 
                     if (autocompleteInteraction.User.Id == Program.ApplicatonOwner.Id)
@@ -87,7 +87,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitcasting
                         return;
                     }
 
-                    using var db = DataBase.DBContext.GetDbContext();
+                    using var db = DataBase.MainDbContext.GetDbContext();
                     var twitcastingSpider = db.TwitcastingSpider.FirstOrDefault((x) => x.ChannelId == buttonData[2]);
                     if (twitcastingSpider == null)
                     {
@@ -174,7 +174,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitcasting
                 return;
             }
 
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DataBase.MainDbContext.GetDbContext())
             {
                 if (db.TwitcastingSpider.Any((x) => x.ChannelId == channelData.ChannelId))
                 {
@@ -264,7 +264,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitcasting
                 return;
             }
 
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DataBase.MainDbContext.GetDbContext())
             {
                 if (!db.TwitcastingSpider.Any((x) => x.ChannelId == channelData.ChannelId))
                 {
@@ -300,7 +300,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitcasting
         {
             if (page < 0) page = 0;
 
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DataBase.MainDbContext.GetDbContext())
             {
                 var list = db.TwitcastingSpider.Where((x) => !x.IsWarningUser).Select((x) => Format.Url(x.ChannelTitle, $"https://twitcasting.tv/{x.ChannelId}") +
                     $" 由 `" + (x.GuildId == 0 ? "Bot 擁有者" : (_client.GetGuild(x.GuildId) != null ? _client.GetGuild(x.GuildId).Name : "已退出的伺服器")) + "` 新增");
@@ -322,7 +322,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitcasting
         {
             if (page < 0) page = 0;
 
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DataBase.MainDbContext.GetDbContext())
             {
                 var list = db.TwitcastingSpider.Where((x) => x.IsWarningUser).Select((x) => Format.Url(x.ChannelTitle, $"https://twitcasting.tv/{x.ChannelId}") +
                     $" 由 `" + (x.GuildId == 0 ? "Bot 擁有者" : (_client.GetGuild(x.GuildId) != null ? _client.GetGuild(x.GuildId).Name : "已退出的伺服器")) + "` 新增");

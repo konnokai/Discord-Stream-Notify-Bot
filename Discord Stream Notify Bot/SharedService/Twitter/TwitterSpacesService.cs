@@ -44,7 +44,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                 if (isRuning) return; isRuning = true;
                 try
                 {
-                    using (var db = DataBase.DBContext.GetDbContext())
+                    using (var db = DataBase.MainDbContext.GetDbContext())
                     {
                         var userList = db.TwitterSpaecSpider.Select((x) => x.UserId).ToArray();
 
@@ -142,7 +142,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
 
         private bool IsRecordSpace(DataBase.Table.TwitterSpace twitterSpace)
         {
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DataBase.MainDbContext.GetDbContext())
             {
                 var item = db.TwitterSpaecSpider.FirstOrDefault((x) => x.UserId == twitterSpace.UserId);
                 if (item == null)
@@ -165,7 +165,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
 #if !RELEASE
             Log.New($"推特空間開台通知: {twitterSpace.UserScreenName} - {twitterSpace.SpaecTitle}");
 #else
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DataBase.MainDbContext.GetDbContext())
             {
                 var noticeGuildList = db.NoticeTwitterSpaceChannel.Where((x) => x.NoticeTwitterSpaceUserId == twitterSpace.UserId).ToList();
                 Log.New($"發送推特空間開台通知 ({noticeGuildList.Count}): {twitterSpace.UserScreenName} - {twitterSpace.SpaecTitle}");

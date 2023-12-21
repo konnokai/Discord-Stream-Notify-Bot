@@ -52,7 +52,7 @@ namespace Discord_Stream_Notify_Bot
             if (!Directory.Exists(Path.GetDirectoryName(GetDataFilePath(""))))
                 Directory.CreateDirectory(Path.GetDirectoryName(GetDataFilePath("")));
 
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DataBase.MainDbContext.GetDbContext())
                 db.Database.EnsureCreated();
             using (var db = DataBase.HoloVideoContext.GetDbContext())
                 db.Database.EnsureCreated();
@@ -81,7 +81,7 @@ namespace Discord_Stream_Notify_Bot
                 {
                     Log.Info("執行 ChannelNameToId 轉移");
 
-                    using (var db = DataBase.DBContext.GetDbContext())
+                    using (var db = DataBase.MainDbContext.GetDbContext())
                     {
                         foreach (var item in redisKeyList)
                         {
@@ -144,7 +144,7 @@ namespace Discord_Stream_Notify_Bot
                 ApplicatonOwner = (await _client.GetApplicationInfoAsync()).Owner;
                 isConnect = true;
 
-                using (var db = DataBase.DBContext.GetDbContext())
+                using (var db = DataBase.MainDbContext.GetDbContext())
                 {
                     foreach (var guild in _client.Guilds)
                     {
@@ -161,7 +161,7 @@ namespace Discord_Stream_Notify_Bot
             {
                 try
                 {
-                    using (var db = DataBase.DBContext.GetDbContext())
+                    using (var db = DataBase.MainDbContext.GetDbContext())
                     {
                         GuildConfig guildConfig;
                         if ((guildConfig = db.GuildConfig.FirstOrDefault(x => x.GuildId == guild.Id)) != null)
@@ -386,7 +386,7 @@ namespace Discord_Stream_Notify_Bot
 
             _client.JoinedGuild += (guild) =>
             {
-                using (var db = DataBase.DBContext.GetDbContext())
+                using (var db = DataBase.MainDbContext.GetDbContext())
                 {
                     if (!db.GuildConfig.Any(x => x.GuildId == guild.Id))
                     {

@@ -17,7 +17,7 @@ namespace Discord_Stream_Notify_Bot.Command
         public static string GetProductionName(this DataBase.Table.Video.YTChannelType channelType) =>
                 channelType == DataBase.Table.Video.YTChannelType.Holo ? "Hololive" : channelType == DataBase.Table.Video.YTChannelType.Nijisanji ? "彩虹社" : "其他";
 
-        public static bool HasStreamVideoByVideoId(this DataBase.DBContext dBContext, string videoId)
+        public static bool HasStreamVideoByVideoId(this DataBase.MainDbContext dBContext, string videoId)
         {
             videoId = videoId.Trim();
 

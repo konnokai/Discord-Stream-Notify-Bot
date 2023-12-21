@@ -27,7 +27,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
             {
                 return await Task.Run(() =>
                 {
-                    using var db = DataBase.DBContext.GetDbContext();
+                    using var db = DataBase.MainDbContext.GetDbContext();
                     if (!db.GuildYoutubeMemberConfig.Any((x) => x.GuildId == context.Guild.Id))
                         return AutocompletionResult.FromSuccess();
 
@@ -82,7 +82,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
                 return;
             }
 
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DataBase.MainDbContext.GetDbContext())
             {
                 var permissions = Context.Guild.GetUser(_client.CurrentUser.Id).GetPermissions(textChannel);
                 if (!permissions.ViewChannel || !permissions.SendMessages)
@@ -140,7 +140,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
                 return;
             }
 
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DataBase.MainDbContext.GetDbContext())
             {
                 try
                 {
@@ -246,7 +246,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
         {
             await DeferAsync(true);
 
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DataBase.MainDbContext.GetDbContext())
             {
                 try
                 {
@@ -287,7 +287,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
         [SlashCommand("list-checked-member", "顯示現在已成功驗證的成員清單")]
         public async Task ListCheckedMemberAsync([Summary("頁數")] int page = 1)
         {
-            using (var db = DataBase.DBContext.GetDbContext())
+            using (var db = DataBase.MainDbContext.GetDbContext())
             {
                 var youtubeMemberChecks = db.YoutubeMemberCheck.Where((x) => x.GuildId == Context.Guild.Id && x.IsChecked);
                 if (!youtubeMemberChecks.Any())

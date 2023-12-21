@@ -72,7 +72,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitcasting
             if (isRuning) return; isRuning = true;
 
             using var twitcastingDb = TwitcastingStreamContext.GetDbContext();
-            using (var db = DBContext.GetDbContext())
+            using (var db = MainDbContext.GetDbContext())
             {
                 try
                 {
@@ -154,7 +154,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitcasting
 #if DEBUG || DEBUG_DONTREGISTERCOMMAND
             Log.New($"Twitcasting開台通知: {twitcastingStream.ChannelTitle} - {twitcastingStream.StreamTitle} (isPrivate: {isPrivate})");
 #else
-            using (var db = DBContext.GetDbContext())
+            using (var db = MainDbContext.GetDbContext())
             {
                 var noticeGuildList = db.NoticeTwitcastingStreamChannels.Where((x) => x.ChannelId == twitcastingStream.ChannelId).ToList();
                 Log.New($"發送Twitcasting開台通知 ({noticeGuildList.Count}): {twitcastingStream.ChannelTitle} - {twitcastingStream.StreamTitle} (私人直播: {isPrivate})");

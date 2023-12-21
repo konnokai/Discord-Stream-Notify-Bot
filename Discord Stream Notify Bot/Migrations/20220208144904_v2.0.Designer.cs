@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Discord_Stream_Notify_Bot.Migrations
 {
-    [DbContext(typeof(DBContext))]
+    [DbContext(typeof(MainDbContext))]
     [Migration("20220208144904_v2.0")]
     partial class v20
     {
