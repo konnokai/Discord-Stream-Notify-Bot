@@ -140,8 +140,48 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
             checkOldMemberStatus = new Timer(new TimerCallback(async (obj) => await CheckMemberShip(obj)), true, TimeSpan.FromSeconds(Math.Round(Convert.ToDateTime($"{DateTime.Now.AddDays(1):yyyy/MM/dd 04:00:00}").Subtract(DateTime.Now).TotalSeconds)), TimeSpan.FromDays(1));
             checkNewMemberStatus = new Timer(new TimerCallback(async (obj) => await CheckMemberShip(obj)), false, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(5));
 
+            Task.Run(async () =>
+            {
+                try
+                {
+                    var redisKeyList = Program.Redis.GetServer(Program.Redis.GetEndPoints(true).First()).Keys(1, pattern: $"Google.Apis.Auth.OAuth2.Responses.TokenResponse:*", cursor: 0, pageSize: 20000);
+                    if (redisKeyList.Any())
+                    {
+                        Log.Info("開始儲存 Youtube Member Access Token");
+
+                        using var db = MainDbContext.GetDbContext();
+                        var redisDb = Program.Redis.GetDatabase(1);
+
+                        foreach (var item in redisKeyList)
+                        {
+                            var userId = ulong.Parse(item.ToString().Split(':')[1]);
+                            var value = await redisDb.StringGetAsync(item);
+                            var youtubeMemberAccessToken = db.YoutubeMemberAccessToken.SingleOrDefault((x) => x.DiscordUserId == userId);
+                            if (youtubeMemberAccessToken == null)
+                            {
+                                youtubeMemberAccessToken = new YoutubeMemberAccessToken { DiscordUserId = userId, EncryptedAccessToken = value };
+                                db.YoutubeMemberAccessToken.Add(youtubeMemberAccessToken);
+                            }
+                            else
+                            {
+                                youtubeMemberAccessToken.EncryptedAccessToken = value;
+                                db.YoutubeMemberAccessToken.Update(youtubeMemberAccessToken);
+                            }
+                        }
+
+                        await db.SaveChangesAsync();
+
+                        Log.Info("儲存 Youtube Member Access Token 完成");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex, "儲存 Youtube Member Access Token 失敗");
+                }
+            });
+
             Program.RedisSub.Publish(new RedisChannel("member.syncRedisToken", RedisChannel.PatternMode.Literal), _botConfig.RedisTokenKey);
-            Log.Info("已同步Redis Token");
+            Log.Info("已同步 Redis Token");
         }
 
         public async Task<bool> IsExistUserTokenAsync(string discordUserId)
@@ -169,7 +209,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
             catch (Exception ex)
             {
                 await flow.DeleteTokenAsync(discordUserId, CancellationToken.None);
-                Log.Error($"RevokeToken: {ex}");
+                Log.Error(ex, "RevokeToken");
                 throw;
             }
         }
@@ -182,7 +222,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
 
                 if (!db.YoutubeMemberCheck.Any((x) => x.UserId == userId))
                 {
-                    Log.Info($"接收到 Remove 請求但不存在於資料庫內: {userId}");
+                    Log.Warn($"接收到 Remove 請求但不存在於資料庫內: {userId}");
                     return;
                 }
 
@@ -200,12 +240,16 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                     }
                 }
 
+                var youtubeMemberAccessToken = db.YoutubeMemberAccessToken.FirstOrDefault((x) => x.DiscordUserId == userId);
+                if (youtubeMemberAccessToken != null)
+                    db.YoutubeMemberAccessToken.Remove(youtubeMemberAccessToken);
+
                 db.YoutubeMemberCheck.RemoveRange(youtubeMembers);
                 db.SaveChanges();
             }
             catch (Exception ex)
             {
-                Log.Error($"AfterRevokeUserCertAsync: {ex}");
+                Log.Error(ex, "AfterRevokeUserCertAsync");
                 throw;
             }
         }
@@ -258,8 +302,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                 .WithDisabled(true);
 
             var newComponent = new ComponentBuilder()
-                        .WithSelectMenu(selectMenuBuilder)
-                        .Build();
+                .WithSelectMenu(selectMenuBuilder)
+                .Build();
 
             try
             {
@@ -326,7 +370,10 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                         }
                     }
 
-                    var embed = new EmbedBuilder().WithErrorColor().WithDescription(msg).Build();
+                    var embed = new EmbedBuilder()
+                        .WithErrorColor()
+                        .WithDescription(msg)
+                        .Build();
 
                     if (isNeedSendToOwner)
                     {
@@ -356,34 +403,31 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
 
             var credential = new UserCredential(flow, discordUserId, token);
 
-            using (var db = MainDbContext.GetDbContext())
+            try
             {
-                try
+                if (token.IsExpired(Google.Apis.Util.SystemClock.Default))
                 {
-                    if (token.IsExpired(Google.Apis.Util.SystemClock.Default))
+                    if (!await credential.RefreshTokenAsync(CancellationToken.None))
                     {
-                        if (!await credential.RefreshTokenAsync(CancellationToken.None))
-                        {
-                            Log.Warn($"{discordUserId} AccessToken 無法刷新");
-                            await flow.DataStore.DeleteAsync<TokenResponse>(discordUserId);
-                            credential = null;
-                        }
+                        Log.Warn($"{discordUserId} AccessToken 無法刷新");
+                        await flow.DataStore.DeleteAsync<TokenResponse>(discordUserId);
+                        credential = null;
                     }
                 }
-                catch (Exception ex)
+            }
+            catch (Exception ex)
+            {
+                if (ex.Message.ToLower().Contains("token has been expired or revoked"))
                 {
-                    if (ex.Message.ToLower().Contains("token has been expired or revoked"))
-                    {
-                        Log.Warn($"{discordUserId} 已取消授權");
-                    }
-                    else
-                    {
-                        Log.Warn($"{discordUserId} AccessToken 發生未知錯誤");
-                        Log.Warn($"{ex.Message}");
-                    }
-                    await flow.DataStore.DeleteAsync<TokenResponse>(discordUserId);
-                    credential = null;
+                    Log.Warn($"{discordUserId} 已取消授權");
                 }
+                else
+                {
+                    Log.Error(ex, $"{discordUserId} AccessToken 發生未知錯誤");
+                }
+
+                await flow.DataStore.DeleteAsync<TokenResponse>(discordUserId);
+                credential = null;
             }
 
             return credential;

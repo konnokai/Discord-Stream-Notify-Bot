@@ -20,6 +20,7 @@ namespace Discord_Stream_Notify_Bot.DataBase
         public DbSet<YoutubeChannelNameToId> YoutubeChannelNameToId { get; set; }
         public DbSet<YoutubeChannelOwnedType> YoutubeChannelOwnedType { get; set; }
         public DbSet<YoutubeChannelSpider> YoutubeChannelSpider { get; set; }
+        public DbSet<YoutubeMemberAccessToken> YoutubeMemberAccessToken { get; set; }
         public DbSet<YoutubeMemberCheck> YoutubeMemberCheck { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder options)
