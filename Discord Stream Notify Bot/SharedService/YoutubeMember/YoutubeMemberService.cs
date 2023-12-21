@@ -125,7 +125,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                             await DisableSelectMenuAsync(component, $"已選擇 {component.Data.Values.Count} 個頻道");
                         }
 
-                        await component.SendConfirmAsync("已記錄至資料庫，請稍等至多 5 分鐘讓 Bot 驗證\n請確認已開啟本伺服器的 `允許來自伺服器成員的私人訊息` ，以避免收不到通知", true, true);
+                        await component.SendConfirmAsync("已記錄至資料庫，請稍等至多 5 分鐘讓 Bot 驗證\n請確認已開啟本伺服器的 `允許來自伺服器成員的私人訊息`，以避免收不到通知", true, true);
                     }
                 }
                 catch (Exception ex)
