@@ -78,7 +78,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                 {
                     var list = new List<string>();
 
-                    foreach (var item in db.RecordYoutubeChannel.Chunk(50))
+                    foreach (var item in db.RecordYoutubeChannel.ToList().Chunk(50))
                     {
                         list.AddRange(await _service.GetChannelTitle(item.Select((x) => x.YoutubeChannelId), true));
                     }
