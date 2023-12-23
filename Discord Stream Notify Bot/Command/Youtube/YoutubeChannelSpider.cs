@@ -146,6 +146,10 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
 
                     await Context.Channel.SendConfirmAsync($"已設定 {channel.ChannelTitle} 為`" + (channel.IsTrustedChannel ? "已" : "未") + "`認可頻道").ConfigureAwait(false);
                 }
+                else
+                {
+                    await Context.Channel.SendErrorAsync($"尚未設定 {channelId} 的爬蟲").ConfigureAwait(false);
+                }
             }
         }
     }
