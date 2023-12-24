@@ -416,9 +416,12 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                 DataBase.Table.Video streamVideo;
                                 var youtubeChannelSpider = db.YoutubeChannelSpider.FirstOrDefault((x) => x.ChannelId == youtubePubSubNotification.ChannelId);
 
+                                // 這邊要拿 2434 的資料庫，確認接進來的頻道 Id 是不是 2434 的
                                 using var db2 = DataBase.NijisanjiVideoContext.GetDbContext();
 
-                                if (db.RecordYoutubeChannel.Any((x) => x.YoutubeChannelId == youtubePubSubNotification.ChannelId) || db2.Video.Any((x) => x.ChannelId == youtubePubSubNotification.ChannelId) || (youtubeChannelSpider != null && youtubeChannelSpider.IsTrustedChannel))
+                                if (db.RecordYoutubeChannel.Any((x) => x.YoutubeChannelId == youtubePubSubNotification.ChannelId) // 錄影頻道一律允許
+                                    || db2.Video.Any((x) => x.ChannelId == youtubePubSubNotification.ChannelId) || // 可能是 2434 的頻道，允許
+                                    (youtubeChannelSpider != null && youtubeChannelSpider.IsTrustedChannel)) // 否則就確認這是不是允許的爬蟲
                                 {
                                     var item = await GetVideoAsync(youtubePubSubNotification.VideoId).ConfigureAwait(false);
                                     if (item == null)
