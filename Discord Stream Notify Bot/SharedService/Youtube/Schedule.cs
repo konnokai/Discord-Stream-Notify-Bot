@@ -594,6 +594,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                             var item = videoResult.Items.First((x) => x.Id == reminder.Key);
 
+                            // 可能是有調整到排程導致 API 回傳無資料，很少見但真的會遇到
                             if (item.LiveStreamingDetails == null || string.IsNullOrEmpty(item.LiveStreamingDetails.ScheduledStartTimeRaw))
                             {
                                 Reminders.TryRemove(reminder.Key, out var reminderItem);
@@ -604,11 +605,11 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                 .WithDescription(Format.Url(reminder.Value.StreamVideo.ChannelTitle, $"https://www.youtube.com/channel/{reminder.Value.StreamVideo.ChannelId}"))
                                 .WithImageUrl($"https://i.ytimg.com/vi/{reminder.Key}/maxresdefault.jpg")
                                 .WithUrl($"https://www.youtube.com/watch?v={reminder.Key}")
-                                .AddField("直播狀態", "無開始時間")
-                                .AddField("開台時間", reminder.Value.StreamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
+                                .AddField("直播狀態", "直播排程資料遺失")
+                                .AddField("原先預定開台時間", reminder.Value.StreamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
 
                                 if (Program.ApplicatonOwner != null) await Program.ApplicatonOwner.SendMessageAsync(null, false, embedBuilder.Build()).ConfigureAwait(false);
-                                //await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.Start).ConfigureAwait(false);
+                                await SendStreamMessageAsync(reminder.Value.StreamVideo, embedBuilder, NoticeType.Start).ConfigureAwait(false);
                                 continue;
                             }
 
