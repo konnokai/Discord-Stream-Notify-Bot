@@ -258,7 +258,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                     .WithDescription(Format.Url($"{twitchStream.UserName}", $"https://twitch.tv/{twitchStream.UserLogin}"))
                     .WithUrl($"https://twitch.tv/{twitchStream.UserLogin}")
                     .WithThumbnailUrl(twitchSpider.ProfileImageUrl)
-                    .WithImageUrl(twitchStream.ThumbnailUrl);
+                    .WithImageUrl($"{twitchStream.ThumbnailUrl}?t={DateTime.Now.ToFileTime()}"); // 新增參數避免預覽圖被 Discord 快取
 
                 if (!string.IsNullOrEmpty(twitchStream.GameName)) embedBuilder.AddField("遊戲", twitchStream.GameName, true);
 
