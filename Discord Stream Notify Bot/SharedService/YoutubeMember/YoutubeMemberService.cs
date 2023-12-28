@@ -417,9 +417,10 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
             }
             catch (Exception ex)
             {
-                if (ex.Message.ToLower().Contains("token has been expired or revoked"))
+                if (ex.Message.ToLower().Contains("token has been expired or revoked") ||
+                    ex.Message.ToLower().Contains("invalid_grant"))
                 {
-                    Log.Warn($"{discordUserId} 已取消授權");
+                    Log.Warn($"{discordUserId} AccessToken 已取消授權");
                 }
                 else
                 {
