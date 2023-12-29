@@ -17,7 +17,7 @@ public class BotConfig
     public string GoogleClientSecret { get; set; } = "";
     public string PubSubCallbackUrl { get; set; } = "";
 
-    public string TwitcastingRecordPath { get; set; } = "";
+    public string TwitCastingRecordPath { get; set; } = "";
 
     // https://streamlink.github.io/cli/plugins/twitch.html#authentication
     // 先放著，未來可能會用到
@@ -82,7 +82,7 @@ public class BotConfig
             PubSubCallbackUrl = config.PubSubCallbackUrl;
             GoogleApiKey = config.GoogleApiKey;
             TestSlashCommandGuildId = config.TestSlashCommandGuildId;
-            TwitcastingRecordPath = config.TwitcastingRecordPath;
+            TwitCastingRecordPath = config.TwitCastingRecordPath;
             TwitchCookieAuthToken = config.TwitchCookieAuthToken;
             TwitchClientId = config.TwitchClientId;
             TwitchClientSecret = config.TwitchClientSecret;

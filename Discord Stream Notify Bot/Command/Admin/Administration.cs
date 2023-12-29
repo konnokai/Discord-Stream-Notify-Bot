@@ -124,10 +124,10 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
         [RequireOwner]
         public async Task DieAsync()
         {
-            Program.isDisconnect = true;
-            Program.isHoloChannelSpider = false;
-            Program.isNijisanjiChannelSpider = false;
-            Program.isOtherChannelSpider = false;
+            Program.IsDisconnect = true;
+            Program.IsHoloChannelSpider = false;
+            Program.IsNijisanjiChannelSpider = false;
+            Program.IsOtherChannelSpider = false;
             await Context.Channel.SendConfirmAsync("關閉中");
         }
 

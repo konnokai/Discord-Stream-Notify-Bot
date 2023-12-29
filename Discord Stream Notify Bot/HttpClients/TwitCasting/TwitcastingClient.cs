@@ -3,7 +3,7 @@ using System.Net.Http.Json;
 
 namespace Discord_Stream_Notify_Bot.HttpClients
 {
-    public class TwitcastingClient
+    public class TwitCastingClient
     {
         private readonly HttpClient _httpClient;
 
@@ -11,7 +11,7 @@ namespace Discord_Stream_Notify_Bot.HttpClients
         private readonly string _streamServerUrl = "https://twitcasting.tv/streamserver.php";
         private readonly string _happyTokenUrl = "https://twitcasting.tv/happytoken.php";
 
-        public TwitcastingClient(HttpClient httpClient)
+        public TwitCastingClient(HttpClient httpClient)
         {
             _httpClient = httpClient;
         }
@@ -34,7 +34,7 @@ namespace Discord_Stream_Notify_Bot.HttpClients
             }
             catch (Exception ex)
             {
-                Log.Error($"TwitcastingClient.GetBackendStreamDataAsync: {ex}");
+                Log.Error($"TwitCastingClient.GetBackendStreamDataAsync: {ex}");
                 return null;
             }
         }
@@ -61,13 +61,13 @@ namespace Discord_Stream_Notify_Bot.HttpClients
 
                 return data != null && !string.IsNullOrEmpty(data.Token) ? data.Token : string.Empty;
             }
-            catch (HttpRequestException httpEx) when (httpEx.Message.ToLower().Contains("forbidden"))
+            catch (HttpRequestException httpEx) when (httpEx.StatusCode == System.Net.HttpStatusCode.Forbidden)
             {
                 return "403";
             }
             catch (Exception ex)
             {
-                Log.Error($"TwitcastingClient.GetHappyTokenAsync: {ex}");
+                Log.Error($"TwitCastingClient.GetHappyTokenAsync: {ex}");
                 return null;
             }
         }
@@ -95,7 +95,7 @@ namespace Discord_Stream_Notify_Bot.HttpClients
             }
             catch (Exception ex)
             {
-                Log.Error($"TwitcastingClient.GetFrontendStreamStatusDataAsync: {ex}");
+                Log.Error($"TwitCastingClient.GetFrontendStreamStatusDataAsync: {ex}");
                 return null;
             }
         }
@@ -123,7 +123,7 @@ namespace Discord_Stream_Notify_Bot.HttpClients
             }
             catch (Exception ex)
             {
-                Log.Error($"TwitcastingClient.GetStreamStartAtAsync: {ex}");
+                Log.Error($"TwitCastingClient.GetStreamStartAtAsync: {ex}");
                 return DateTime.Now;
             }
         }

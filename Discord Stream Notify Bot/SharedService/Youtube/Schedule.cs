@@ -48,9 +48,9 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
         private async Task HoloScheduleAsync()
         {
-            if (Program.isHoloChannelSpider || Program.isDisconnect) return;
+            if (Program.IsHoloChannelSpider || Program.IsDisconnect) return;
             //Log.Info("Holo影片清單整理開始");
-            Program.isHoloChannelSpider = true;
+            Program.IsHoloChannelSpider = true;
 
             try
             {
@@ -172,7 +172,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     Log.Error($"HoloStream: {ex}");
             }
 
-            Program.isHoloChannelSpider = false; isFirstHolo = false;
+            Program.IsHoloChannelSpider = false; isFirstHolo = false;
             //Log.Info("Holo影片清單整理完成");
         }
 
@@ -187,7 +187,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
         // KR跟ID沒看到網站有請求
         private async Task NijisanjiScheduleAsync()
         {
-            if (Program.isNijisanjiChannelSpider || Program.isDisconnect)
+            if (Program.IsNijisanjiChannelSpider || Program.IsDisconnect)
             {
                 Log.Error("彩虹社影片清單整理已取消");
                 return;
@@ -196,7 +196,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
             try
             {
-                Program.isNijisanjiChannelSpider = true;
+                Program.IsNijisanjiChannelSpider = true;
                 using var httpClient = _httpClientFactory.CreateClient();
 
                 List<Data> datas = new List<Data>();
@@ -226,7 +226,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 if (!datas.Any())
                 {
                     Log.Warn("NijisanjiScheduleAsync: 直播清單無資料");
-                    Program.isNijisanjiChannelSpider = false;
+                    Program.IsNijisanjiChannelSpider = false;
                     return;
                 }
 
@@ -350,7 +350,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 Log.Error($"NijisanjiScheduleAsync: {ex}");
             }
 
-            Program.isNijisanjiChannelSpider = false; isFirst2434 = false;
+            Program.IsNijisanjiChannelSpider = false; isFirst2434 = false;
             //Log.Info("彩虹社影片清單整理完成");
         }
 
@@ -360,7 +360,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
         // https://docs.microsoft.com/en-us/dotnet/standard/collections/thread-safe/blockingcollection-overview
         private async Task OtherScheduleAsync()
         {
-            if (Program.isOtherChannelSpider || Program.isDisconnect) return;
+            if (Program.IsOtherChannelSpider || Program.IsDisconnect) return;
 
 #if RELEASE
             try
@@ -380,7 +380,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 #endif
 
             await Program.RedisDb.StringSetAsync("youtube.otherStart", "0", TimeSpan.FromMinutes(4));
-            Program.isOtherChannelSpider = true;
+            Program.IsOtherChannelSpider = true;
             Dictionary<string, List<string>> otherVideoDic = new Dictionary<string, List<string>>();
             var addVideoIdList = new List<string>();
 
@@ -394,7 +394,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 Log.Info($"突襲開台檢測開始: {channelList.Count()} 個頻道");
                 foreach (var item in channelList)
                 {
-                    if (Program.isDisconnect) break;
+                    if (Program.IsDisconnect) break;
 
                     try
                     {
@@ -468,7 +468,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                 for (int i = 0; i < addVideoIdList.Count; i += 50)
                 {
-                    if (Program.isDisconnect) break;
+                    if (Program.IsDisconnect) break;
 
                     IEnumerable<Video> videos;
                     try
@@ -478,7 +478,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     catch (Exception ex)
                     {
                         Log.Error($"OtherSchedule-GetVideosAsync: {ex}");
-                        Program.isOtherChannelSpider = false;
+                        Program.IsOtherChannelSpider = false;
                         return;
                     }
 
@@ -496,7 +496,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 }
             }
 
-            Program.isOtherChannelSpider = false; isFirstOther = false;
+            Program.IsOtherChannelSpider = false; isFirstOther = false;
             //Log.Info("其他勢影片清單整理完成");
         }
 
@@ -800,7 +800,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
             try
             {
-                if (!Program.isHoloChannelSpider && addNewStreamVideo.Any((x) => x.Value.ChannelType == DataBase.Table.Video.YTChannelType.Holo))
+                if (!Program.IsHoloChannelSpider && addNewStreamVideo.Any((x) => x.Value.ChannelType == DataBase.Table.Video.YTChannelType.Holo))
                 {
                     using (var db = DataBase.HoloVideoContext.GetDbContext())
                     {
@@ -825,7 +825,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     }
                 }
 
-                if (!Program.isNijisanjiChannelSpider && addNewStreamVideo.Any((x) => x.Value.ChannelType == DataBase.Table.Video.YTChannelType.Nijisanji))
+                if (!Program.IsNijisanjiChannelSpider && addNewStreamVideo.Any((x) => x.Value.ChannelType == DataBase.Table.Video.YTChannelType.Nijisanji))
                 {
                     using (var db = DataBase.NijisanjiVideoContext.GetDbContext())
                     {
@@ -850,7 +850,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     }
                 }
 
-                if (!Program.isOtherChannelSpider && addNewStreamVideo.Any((x) => x.Value.ChannelType == DataBase.Table.Video.YTChannelType.Other))
+                if (!Program.IsOtherChannelSpider && addNewStreamVideo.Any((x) => x.Value.ChannelType == DataBase.Table.Video.YTChannelType.Other))
                 {
                     using (var db = DataBase.OtherVideoContext.GetDbContext())
                     {

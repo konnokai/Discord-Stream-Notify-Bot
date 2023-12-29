@@ -3,20 +3,20 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Discord_Stream_Notify_Bot.DataBase
 {
-    public class TwitcastingStreamContext : DbContext
+    public class TwitCastingStreamContext : DbContext
     {
-        public DbSet<TwitcastingStream> TwitcastingStreams { get; set; }
+        public DbSet<TwitCastingStream> TwitCastingStreams { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder options)
-            => options.UseSqlite($"Data Source={Program.GetDataFilePath("TwitcastingStreamDb.db")}")
+            => options.UseSqlite($"Data Source={Program.GetDataFilePath("TwitCastingStreamDb.db")}")
 #if DEBUG || DEBUG_DONTREGISTERCOMMAND
-            //.LogTo((act) => System.IO.File.AppendAllText("TwitcastingVideoDbTrackerLog.txt", act), Microsoft.Extensions.Logging.LogLevel.Information)
+            //.LogTo((act) => System.IO.File.AppendAllText("TwitCastingVideoDbTrackerLog.txt", act), Microsoft.Extensions.Logging.LogLevel.Information)
 #endif
             .EnableSensitiveDataLogging();
 
-        public static TwitcastingStreamContext GetDbContext()
+        public static TwitCastingStreamContext GetDbContext()
         {
-            var context = new TwitcastingStreamContext();
+            var context = new TwitCastingStreamContext();
             context.Database.SetCommandTimeout(60);
             var conn = context.Database.GetDbConnection();
             conn.Open();

@@ -2,7 +2,7 @@
 
 #nullable disable
 
-namespace Discord_Stream_Notify_Bot.Migrations.TwitcastingStream
+namespace Discord_Stream_Notify_Bot.Migrations.TwitCastingStream
 {
     public partial class DateAdded : Migration
     {
@@ -10,7 +10,7 @@ namespace Discord_Stream_Notify_Bot.Migrations.TwitcastingStream
         {
             migrationBuilder.AddColumn<DateTime>(
                 name: "DateAdded",
-                table: "TwitcastingStreams",
+                table: "TwitCastingStreams",
                 type: "TEXT",
                 nullable: true);
         }
@@ -19,7 +19,7 @@ namespace Discord_Stream_Notify_Bot.Migrations.TwitcastingStream
         {
             migrationBuilder.DropColumn(
                 name: "DateAdded",
-                table: "TwitcastingStreams");
+                table: "TwitCastingStreams");
         }
     }
 }

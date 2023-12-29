@@ -40,7 +40,7 @@ namespace Discord_Stream_Notify_Bot.Migrations
 
             migrationBuilder.AddColumn<DateTime>(
                 name: "DateAdded",
-                table: "TwitcastingSpider",
+                table: "TwitCastingSpider",
                 type: "TEXT",
                 nullable: true);
 
@@ -64,7 +64,7 @@ namespace Discord_Stream_Notify_Bot.Migrations
 
             migrationBuilder.AddColumn<DateTime>(
                 name: "DateAdded",
-                table: "NoticeTwitcastingStreamChannels",
+                table: "NoticeTwitCastingStreamChannels",
                 type: "TEXT",
                 nullable: true);
 
@@ -111,7 +111,7 @@ namespace Discord_Stream_Notify_Bot.Migrations
 
             migrationBuilder.DropColumn(
                 name: "DateAdded",
-                table: "TwitcastingSpider");
+                table: "TwitCastingSpider");
 
             migrationBuilder.DropColumn(
                 name: "DateAdded",
@@ -127,7 +127,7 @@ namespace Discord_Stream_Notify_Bot.Migrations
 
             migrationBuilder.DropColumn(
                 name: "DateAdded",
-                table: "NoticeTwitcastingStreamChannels");
+                table: "NoticeTwitCastingStreamChannels");
 
             migrationBuilder.DropColumn(
                 name: "DateAdded",

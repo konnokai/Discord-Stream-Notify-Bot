@@ -1,6 +1,6 @@
 ﻿namespace Discord_Stream_Notify_Bot.DataBase.Table
 {
-    public class TwitcastingStream : DbEntity
+    public class TwitCastingStream : DbEntity
     {
         public string ChannelId { get; set; }
         public string ChannelTitle { get; set; }

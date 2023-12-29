@@ -7,17 +7,17 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace Discord_Stream_Notify_Bot.Migrations.TwitcastingStream
+namespace Discord_Stream_Notify_Bot.Migrations.TwitCastingStream
 {
-    [DbContext(typeof(TwitcastingStreamContext))]
-    partial class TwitcastingStreamContextModelSnapshot : ModelSnapshot
+    [DbContext(typeof(TwitCastingStreamContext))]
+    partial class TwitCastingStreamContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "6.0.5");
 
-            modelBuilder.Entity("Discord_Stream_Notify_Bot.DataBase.Table.TwitcastingStream", b =>
+            modelBuilder.Entity("Discord_Stream_Notify_Bot.DataBase.Table.TwitCastingStream", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -49,7 +49,7 @@ namespace Discord_Stream_Notify_Bot.Migrations.TwitcastingStream
 
                     b.HasKey("Id");
 
-                    b.ToTable("TwitcastingStreams");
+                    b.ToTable("TwitCastingStreams");
                 });
 #pragma warning restore 612, 618
         }

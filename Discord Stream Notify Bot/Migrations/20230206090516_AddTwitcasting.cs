@@ -4,12 +4,12 @@
 
 namespace Discord_Stream_Notify_Bot.Migrations
 {
-    public partial class AddTwitcasting : Migration
+    public partial class AddTwitCasting : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "NoticeTwitcastingStreamChannels",
+                name: "NoticeTwitCastingStreamChannels",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "INTEGER", nullable: false)
@@ -21,11 +21,11 @@ namespace Discord_Stream_Notify_Bot.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_NoticeTwitcastingStreamChannels", x => x.Id);
+                    table.PrimaryKey("PK_NoticeTwitCastingStreamChannels", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
-                name: "TwitcastingSpider",
+                name: "TwitCastingSpider",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "INTEGER", nullable: false)
@@ -38,17 +38,17 @@ namespace Discord_Stream_Notify_Bot.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_TwitcastingSpider", x => x.Id);
+                    table.PrimaryKey("PK_TwitCastingSpider", x => x.Id);
                 });
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "NoticeTwitcastingStreamChannels");
+                name: "NoticeTwitCastingStreamChannels");
 
             migrationBuilder.DropTable(
-                name: "TwitcastingSpider");
+                name: "TwitCastingSpider");
         }
     }
 }

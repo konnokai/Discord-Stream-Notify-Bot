@@ -91,7 +91,7 @@ namespace Discord_Stream_Notify_Bot.Migrations
                     b.ToTable("GuildYoutubeMemberConfig");
                 });
 
-            modelBuilder.Entity("Discord_Stream_Notify_Bot.DataBase.Table.NoticeTwitcastingStreamChannel", b =>
+            modelBuilder.Entity("Discord_Stream_Notify_Bot.DataBase.Table.NoticeTwitCastingStreamChannel", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -114,7 +114,7 @@ namespace Discord_Stream_Notify_Bot.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("NoticeTwitcastingStreamChannels");
+                    b.ToTable("NoticeTwitCastingStreamChannels");
                 });
 
             modelBuilder.Entity("Discord_Stream_Notify_Bot.DataBase.Table.NoticeTwitterSpaceChannel", b =>
@@ -200,7 +200,7 @@ namespace Discord_Stream_Notify_Bot.Migrations
                     b.ToTable("RecordYoutubeChannel");
                 });
 
-            modelBuilder.Entity("Discord_Stream_Notify_Bot.DataBase.Table.TwitcastingSpider", b =>
+            modelBuilder.Entity("Discord_Stream_Notify_Bot.DataBase.Table.TwitCastingSpider", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -226,7 +226,7 @@ namespace Discord_Stream_Notify_Bot.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("TwitcastingSpider");
+                    b.ToTable("TwitCastingSpider");
                 });
 
             modelBuilder.Entity("Discord_Stream_Notify_Bot.DataBase.Table.TwitterSpace", b =>

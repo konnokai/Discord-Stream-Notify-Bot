@@ -5,7 +5,7 @@
 2. YouTube 影片上傳通知(非主要功能)
 3. YouTube 會限驗證並自動授予用戶組
 4. TwitterSpace 開台通知
-5. Twitcasting 開台通知
+5. TwitCasting 開台通知
 
 __**其他特殊功能**__
 部分頻道會有錄影，可以使用 `/youtube now-record-channel` 跟 `/youtube list-record-channel` 查詢
