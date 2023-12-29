@@ -165,6 +165,12 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
         [SlashCommand("add", "新增 Twitch 頻道爬蟲")]
         public async Task AddChannelSpider([Summary("頻道網址")] string twitchUrl)
         {
+            if (!_service.IsEnable)
+            {
+                await Context.Interaction.SendErrorAsync("此 Bot 的 Twitch 功能已關閉，請向 Bot 擁有者確認").ConfigureAwait(false);
+                return;
+            }
+
             await DeferAsync(true).ConfigureAwait(false);
 
             var userData = await _service.GetUserAsync(twitchUserLogin: _service.GetUserLoginByUrl(twitchUrl));
