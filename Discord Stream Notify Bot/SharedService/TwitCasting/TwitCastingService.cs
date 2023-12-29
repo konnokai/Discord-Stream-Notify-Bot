@@ -1,6 +1,7 @@
 ﻿using Discord_Stream_Notify_Bot.DataBase;
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.HttpClients;
+using Discord_Stream_Notify_Bot.HttpClients.TwitCasting;
 using Discord_Stream_Notify_Bot.Interaction;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
@@ -16,8 +17,9 @@ namespace Discord_Stream_Notify_Bot.SharedService.TwitCasting
         private readonly DiscordSocketClient _client;
         private readonly TwitCastingClient _twitcastingClient;
         private readonly EmojiService _emojiService;
-        private readonly Timer _timer;
+        private readonly Timer _refreshCategoriesTimer, _refreshNowStreamTimer;
 
+        private List<Category> categories;
         private string twitcastingRecordPath = "";
         private bool isRuning = false;
 
@@ -38,7 +40,19 @@ namespace Discord_Stream_Notify_Bot.SharedService.TwitCasting
             if (string.IsNullOrEmpty(twitcastingRecordPath)) twitcastingRecordPath = Program.GetDataFilePath("");
             if (!twitcastingRecordPath.EndsWith(Program.GetPlatformSlash())) twitcastingRecordPath += Program.GetPlatformSlash();
 
-            _timer = new Timer(async (obj) => { await TimerHandel(); },
+            _refreshCategoriesTimer = new Timer(async (obj) =>
+            {
+                try
+                {
+                    categories = await _twitcastingClient.GetCategoriesAsync();
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex, "TwitCasting 分類獲取失敗");
+                }
+            }, null, TimeSpan.FromSeconds(3), TimeSpan.FromMinutes(30));
+
+            _refreshNowStreamTimer = new Timer(async (obj) => { await TimerHandel(); },
                 null, TimeSpan.FromSeconds(15), TimeSpan.FromMinutes(1));
         }
 
@@ -120,7 +134,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.TwitCasting
                                 StreamId = data.Movie.Id,
                                 StreamTitle = streamData.Movie.Title ?? "無標題",
                                 StreamSubTitle = streamData.Movie.Subtitle,
-                                Category = streamData.Movie.Category,
+                                Category = GetCategorieNameById(streamData.Movie.Category),
                                 ThumbnailUrl = streamData.Movie.LargeThumbnail,
                                 StreamStartAt = UnixTimeStampToDateTime(streamData.Movie.Created)
                             };
@@ -250,6 +264,23 @@ namespace Discord_Stream_Notify_Bot.SharedService.TwitCasting
             DateTime dateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
             dateTime = dateTime.AddSeconds(unixTimeStamp).ToLocalTime();
             return dateTime;
+        }
+
+        private string GetCategorieNameById(string categorieId)
+        {
+            string result = categorieId;
+
+            if (categories != null && categories.Any())
+            {
+                foreach (var item in categories)
+                {
+                    var subCategory = item.SubCategories.FirstOrDefault((x) => x.Id == categorieId);
+                    if (subCategory != null)
+                        result = subCategory.Name;
+                }
+            }
+
+            return result;
         }
     }
 }
