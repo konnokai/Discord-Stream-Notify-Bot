@@ -7,8 +7,6 @@ namespace Discord_Stream_Notify_Bot.HttpClients
 {
     public class TwitCastingClient
     {
-        private const string API_URL = "https://apiv2.twitcasting.tv";
-
         private readonly HttpClient _httpClient;
         private readonly HttpClient? _apiHttpClient;
 
@@ -24,6 +22,7 @@ namespace Discord_Stream_Notify_Bot.HttpClients
                 _twitCastingAccessToken = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{botConfig.TwitCastingClientId}:{botConfig.TwitCastingClientSecret}"));
 
                 _apiHttpClient = new HttpClient();
+                _apiHttpClient.BaseAddress = new Uri("https://apiv2.twitcasting.tv/");
                 _apiHttpClient.DefaultRequestHeaders.Add("Accept", $"application/json");
                 _apiHttpClient.DefaultRequestHeaders.Add("Authorization", $"Basic {_twitCastingAccessToken}");
                 _apiHttpClient.DefaultRequestHeaders.Add("X-Api-Version", $"2.0");
@@ -42,7 +41,7 @@ namespace Discord_Stream_Notify_Bot.HttpClients
 
             try
             {
-                var json = await _apiHttpClient.GetStringAsync($"{API_URL}/categories?lang=ja");
+                var json = await _apiHttpClient.GetStringAsync($"categories?lang=ja");
                 var data = JsonConvert.DeserializeObject<CategoriesJson>(json);
                 return data?.Categories;
             }
@@ -92,7 +91,7 @@ namespace Discord_Stream_Notify_Bot.HttpClients
 
             try
             {
-                var json = await _apiHttpClient.GetStringAsync($"{API_URL}/movies/{movieId}");
+                var json = await _apiHttpClient.GetStringAsync($"movies/{movieId}");
                 var data = JsonConvert.DeserializeObject<GetMovieInfoResponse>(json);
                 return data;
             }
