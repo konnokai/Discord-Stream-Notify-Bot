@@ -245,7 +245,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
 
         private async Task SendStreamMessageAsync(TwitchStream twitchStream, TwitchSpider twitchSpider, bool isRecord = false)
         {
-#if DEBUG_DONTREGISTERCOMMAND
+#if DEBUG || DEBUG_DONTREGISTERCOMMAND
             Log.New($"Twitch 開台通知: {twitchStream.UserName} - {twitchStream.StreamTitle}");
 #else
             using (var db = MainDbContext.GetDbContext())
