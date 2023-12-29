@@ -321,7 +321,7 @@ namespace Discord_Stream_Notify_Bot
                 if (commandCount != iService.GetService<InteractionHandler>().CommandCount.ToString())
                 {
 #if DEBUG
-                    if (botConfig.TestSlashCommandGuildId == 0 || _client.GetGuild(botConfig.TestSlashCommandGuildId) == null)
+                    if (botConfig.TestSlashCommandGuildId == 0 || client.GetGuild(botConfig.TestSlashCommandGuildId) == null)
                         Log.Warn("未設定測試Slash指令的伺服器或伺服器不存在，略過");
                     else
                     {
