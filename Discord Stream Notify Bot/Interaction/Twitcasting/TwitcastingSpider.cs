@@ -164,6 +164,12 @@ namespace Discord_Stream_Notify_Bot.Interaction.TwitCasting
         [SlashCommand("add", "新增 TwitCasting 頻道檢測爬蟲")]
         public async Task AddChannelSpider([Summary("頻道網址")] string channelUrl)
         {
+            if (!_service.IsEnable)
+            {
+                await Context.Interaction.SendErrorAsync("此 Bot 的 TwitCasting 功能已關閉，請向 Bot 擁有者確認").ConfigureAwait(false);
+                return;
+            }
+
             await DeferAsync(true).ConfigureAwait(false);
 
             var channelData = await _service.GetChannelIdAndTitleAsync(channelUrl);

@@ -17,6 +17,8 @@ public class BotConfig
     public string GoogleClientSecret { get; set; } = "";
     public string PubSubCallbackUrl { get; set; } = "";
 
+    public string TwitCastingClientId { get; set; } = "";
+    public string TwitCastingClientSecret { get; set; } = "";
     public string TwitCastingRecordPath { get; set; } = "";
 
     // https://streamlink.github.io/cli/plugins/twitch.html#authentication
@@ -82,6 +84,8 @@ public class BotConfig
             PubSubCallbackUrl = config.PubSubCallbackUrl;
             GoogleApiKey = config.GoogleApiKey;
             TestSlashCommandGuildId = config.TestSlashCommandGuildId;
+            TwitCastingClientId = config.TwitCastingClientId;
+            TwitCastingClientSecret = config.TwitCastingClientSecret;
             TwitCastingRecordPath = config.TwitCastingRecordPath;
             TwitchCookieAuthToken = config.TwitchCookieAuthToken;
             TwitchClientId = config.TwitchClientId;

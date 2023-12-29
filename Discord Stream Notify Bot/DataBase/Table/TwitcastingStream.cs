@@ -8,6 +8,7 @@
         public string StreamTitle { get; set; } = "";
         public string StreamSubTitle { get; set; } = "";
         public string Category { get; set; } = "";
+        public string ThumbnailUrl { get; set; } = "";
         public DateTime StreamStartAt { get; set; } = DateTime.Now;
     }
 }

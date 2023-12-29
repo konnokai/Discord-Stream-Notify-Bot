@@ -71,6 +71,12 @@ namespace Discord_Stream_Notify_Bot.Interaction.TwitCasting
         [SlashCommand("add", "新增 TwitCasting 直播通知的頻道")]
         public async Task AddChannel([Summary("頻道網址")] string channelUrl, [Summary("發送通知的頻道")] IChannel channel)
         {
+            if (!_service.IsEnable)
+            {
+                await Context.Interaction.SendErrorAsync("此 Bot 的 TwitCasting 功能已關閉，請向 Bot 擁有者確認").ConfigureAwait(false);
+                return;
+            }
+
             await DeferAsync(true).ConfigureAwait(false);
 
             if (channel.GetChannelType() != ChannelType.Text && channel.GetChannelType() != ChannelType.News)

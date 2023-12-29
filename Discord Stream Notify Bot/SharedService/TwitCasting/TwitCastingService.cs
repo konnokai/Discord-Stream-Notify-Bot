@@ -10,6 +10,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.TwitCasting
 {
     public class TwitCastingService : IInteractionService
     {
+        public bool IsEnable { get; private set; } = true;
+
         private readonly HashSet<int> hashSet = new HashSet<int>();
         private readonly DiscordSocketClient _client;
         private readonly TwitCastingClient _twitcastingClient;
@@ -21,12 +23,21 @@ namespace Discord_Stream_Notify_Bot.SharedService.TwitCasting
 
         public TwitCastingService(DiscordSocketClient client, TwitCastingClient twitcastingClient, BotConfig botConfig, EmojiService emojiService)
         {
+            if (string.IsNullOrEmpty(botConfig.TwitCastingClientId) || string.IsNullOrEmpty(botConfig.TwitCastingClientSecret))
+            {
+                Log.Warn($"{nameof(botConfig.TwitCastingClientId)} 或 {nameof(botConfig.TwitCastingClientSecret)} 遺失，無法運行 TwitCasting 類功能");
+                IsEnable = false;
+                return;
+            }
+
             _client = client;
             _twitcastingClient = twitcastingClient;
+            _emojiService = emojiService;
+
             twitcastingRecordPath = botConfig.TwitCastingRecordPath;
             if (string.IsNullOrEmpty(twitcastingRecordPath)) twitcastingRecordPath = Program.GetDataFilePath("");
             if (!twitcastingRecordPath.EndsWith(Program.GetPlatformSlash())) twitcastingRecordPath += Program.GetPlatformSlash();
-            _emojiService = emojiService;
+
             _timer = new Timer(async (obj) => { await TimerHandel(); },
                 null, TimeSpan.FromSeconds(15), TimeSpan.FromMinutes(1));
         }
@@ -95,48 +106,28 @@ namespace Discord_Stream_Notify_Bot.SharedService.TwitCasting
                         {
                             hashSet.Add(data.Movie.Id);
 
-                            var streamToken = await _twitcastingClient.GetHappyTokenAsync(data.Movie.Id);
-                            if (string.IsNullOrEmpty(streamToken))
-                            {
-                                Log.Error($"TwitCastingService-GetHappyTokenError: {item.ChannelId} / {data.Movie.Id}");
-                                continue;
-                            }
-                            else if (streamToken == "403") // 回傳 403 代表該直播有密碼，拿不到後續的資料所以僅需回傳有人開台就好
-                            {
-                                var needPasswordTwitCastingStream = new TwitCastingStream()
-                                {
-                                    ChannelId = item.ChannelId,
-                                    ChannelTitle = item.ChannelTitle,
-                                    StreamId = data.Movie.Id,
-                                    StreamTitle = "(私人直播)"
-                                };
-                                twitcastingDb.TwitCastingStreams.Add(needPasswordTwitCastingStream);
-                                await SendStreamMessageAsync(needPasswordTwitCastingStream, true, false);
-                                continue;
-                            }
-
-                            var streamData = await _twitcastingClient.GetStreamStatusDataAsync(data.Movie.Id, streamToken);
+                            var streamData = await _twitcastingClient.GetMovieInfoAsync(data.Movie.Id);
                             if (streamData == null)
                             {
-                                Log.Error($"TwitCastingService-GetStreamStatusDataAsync: {item.ChannelId} / {data.Movie.Id}");
+                                Log.Error($"TwitCastingService-GetMovieInfoAsync: {item.ChannelId} / {data.Movie.Id}");
                                 continue;
                             }
 
-                            var startAt = await _twitcastingClient.GetStreamStartAtAsync(data.Movie.Id, streamToken);
                             var twitcastingStream = new TwitCastingStream()
                             {
                                 ChannelId = item.ChannelId,
                                 ChannelTitle = item.ChannelTitle,
                                 StreamId = data.Movie.Id,
                                 StreamTitle = streamData.Movie.Title ?? "無標題",
-                                StreamSubTitle = streamData.Movie.Telop,
-                                Category = streamData.Movie.Category?.Name,
-                                StreamStartAt = startAt
+                                StreamSubTitle = streamData.Movie.Subtitle,
+                                Category = streamData.Movie.Category,
+                                ThumbnailUrl = streamData.Movie.LargeThumbnail,
+                                StreamStartAt = UnixTimeStampToDateTime(streamData.Movie.Created)
                             };
 
                             twitcastingDb.TwitCastingStreams.Add(twitcastingStream);
 
-                            await SendStreamMessageAsync(twitcastingStream, false, item.IsRecord && RecordTwitCasting(twitcastingStream));
+                            await SendStreamMessageAsync(twitcastingStream, streamData.Movie.IsProtected, !streamData.Movie.IsProtected && item.IsRecord && RecordTwitCasting(twitcastingStream));
                         }
                         catch (Exception ex) { Log.Error($"TwitCastingService-GetData {item.ChannelId}: {ex}"); }
 
@@ -151,7 +142,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.TwitCasting
 
         private async Task SendStreamMessageAsync(TwitCastingStream twitcastingStream, bool isPrivate = false, bool isRecord = false)
         {
-#if DEBUG || DEBUG_DONTREGISTERCOMMAND
+#if DEBUG_DONTREGISTERCOMMAND
             Log.New($"TwitCasting 開台通知: {twitcastingStream.ChannelTitle} - {twitcastingStream.StreamTitle} (isPrivate: {isPrivate})");
 #else
             using (var db = MainDbContext.GetDbContext())
@@ -163,6 +154,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.TwitCasting
                     .WithTitle(twitcastingStream.StreamTitle)
                     .WithDescription(Format.Url($"{twitcastingStream.ChannelTitle}", $"https://twitcasting.tv/{twitcastingStream.ChannelId}"))
                     .WithUrl($"https://twitcasting.tv/{twitcastingStream.ChannelId}/movie/{twitcastingStream.StreamId}")
+                    .WithImageUrl(twitcastingStream.ThumbnailUrl)
                     .AddField("需要密碼的私人直播", isPrivate ? "是" : "否", true);
 
                 if (!string.IsNullOrEmpty(twitcastingStream.StreamSubTitle)) embedBuilder.AddField("副標題", twitcastingStream.StreamSubTitle, true);
@@ -248,6 +240,16 @@ namespace Discord_Stream_Notify_Bot.SharedService.TwitCasting
                 Log.Error(ex, "RecordTwitCasting 失敗，請確認是否已安裝 StreamLink");
                 return false;
             }
+        }
+
+
+        // https://stackoverflow.com/questions/249760/how-can-i-convert-a-unix-timestamp-to-datetime-and-vice-versa
+        private static DateTime UnixTimeStampToDateTime(double unixTimeStamp)
+        {
+            // Unix timestamp is seconds past epoch
+            DateTime dateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+            dateTime = dateTime.AddSeconds(unixTimeStamp).ToLocalTime();
+            return dateTime;
         }
     }
 }
