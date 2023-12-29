@@ -3,6 +3,7 @@ using System;
 using Discord_Stream_Notify_Bot.DataBase;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Discord_Stream_Notify_Bot.Migrations.TwitCastingStream
 {
     [DbContext(typeof(TwitCastingStreamContext))]
-    partial class TwitCastingStreamContextModelSnapshot : ModelSnapshot
+    [Migration("20231229040806_AddThumbnailUrl")]
+    partial class AddThumbnailUrl
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "7.0.14");
