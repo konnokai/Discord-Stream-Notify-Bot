@@ -97,13 +97,14 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                     if (logChannel == null)
                     {
                         Log.Warn($"{guildYoutubeMemberConfig.GuildId} 無紀錄頻道");
+                        db.GuildYoutubeMemberConfig.RemoveRange(db.GuildYoutubeMemberConfig.Where((x) => x.GuildId == guildYoutubeMemberConfig.GuildId));
                         continue;
                     }
 
                     var role = guild.GetRole(guildYoutubeMemberConfig.MemberCheckGrantRoleId);
                     if (role == null)
                     {
-                        await logChannel.SendMessageAsync($"{Format.Url(guildYoutubeMemberConfig.MemberCheckChannelId, $"https://www.youtube.com/channel/{guildYoutubeMemberConfig.MemberCheckChannelId}")} 的會限用戶組Id不存在，請重新設定");
+                        await logChannel.SendMessageAsync($"{Format.Url(guildYoutubeMemberConfig.MemberCheckChannelId, $"https://www.youtube.com/channel/{guildYoutubeMemberConfig.MemberCheckChannelId}")} 的會限用戶組 Id 不存在，請重新設定");
                         Log.Warn($"{guildYoutubeMemberConfig.GuildId} / {guildYoutubeMemberConfig.MemberCheckChannelId} RoleId 不存在 {guildYoutubeMemberConfig.MemberCheckGrantRoleId}");
                         db.GuildYoutubeMemberConfig.Remove(guildYoutubeMemberConfig);
                         continue;
