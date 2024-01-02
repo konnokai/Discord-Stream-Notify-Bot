@@ -1,11 +1,10 @@
-# Discord Stream Notify Bot [點我邀請到你的 Discord 內](https://discordapp.com/api/oauth2/authorize?client_id=758222559392432160&permissions=2416143425&scope=bot%20applications.commands)
+# 直播小幫手 [點我邀請到你的 Discord 內](https://discordapp.com/api/oauth2/authorize?client_id=758222559392432160&permissions=2416143425&scope=bot%20applications.commands)
+
+![Discord-Stream-Notify-Bot](https://socialify.git.ci/konnokai/Discord-Stream-Notify-Bot/image?description=1&descriptionEditable=%E4%B8%80%E5%80%8B%E5%8F%AF%E4%BB%A5%E8%AE%93%E4%BD%A0%E5%9C%A8%20Discord%20%E4%B8%8A%E9%80%9A%E7%9F%A5%20Vtuber%20%E7%9B%B4%E6%92%AD%E7%9A%84%E5%B0%8F%E5%B9%AB%E6%89%8B&font=Inter&language=1&name=1&owner=1&pattern=Plus&stargazers=1&theme=Auto)
 
 [![Website dcbot.konnokai.me](https://img.shields.io/website-up-down-green-red/http/dcbot.konnokai.me/stream.svg)](http://dcbot.konnokai.me/stream)
 [![GitHub commits](https://badgen.net/github/commits/konnokai/Discord-Stream-Notify-Bot)](https://GitHub.com/konnokai/Discord-Stream-Notify-Bot/commit/)
 [![GitHub latest commit](https://badgen.net/github/last-commit/konnokai/Discord-Stream-Notify-Bot)](https://GitHub.com/konnokai/Discord-Stream-Notify-Bot/commit/)
-[![GitHub stars](https://badgen.net/github/stars/konnokai/Discord-Stream-Notify-Bot)](https://GitHub.com/konnokai/Discord-Stream-Notify-Bot/)
-
-一個可以讓你在 Discord 上通知 Vtuber 直播的小幫手
 
 自行運行所需環境與參數
 -
