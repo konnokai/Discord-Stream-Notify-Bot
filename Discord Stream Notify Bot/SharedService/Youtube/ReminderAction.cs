@@ -301,7 +301,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
         private async Task SendStreamMessageAsync(DataBase.Table.Video streamVideo, EmbedBuilder embedBuilder, NoticeType noticeType)
         {
-            if (!Program.isConnect)
+            if (!Program.IsConnect)
                 return;
 
             string type;

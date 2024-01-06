@@ -417,9 +417,10 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
             }
             catch (Exception ex)
             {
-                if (ex.Message.ToLower().Contains("token has been expired or revoked"))
+                if (ex.Message.ToLower().Contains("token has been expired or revoked") ||
+                    ex.Message.ToLower().Contains("invalid_grant"))
                 {
-                    Log.Warn($"{discordUserId} 已取消授權");
+                    Log.Warn($"{discordUserId} AccessToken 已取消授權");
                 }
                 else
                 {
@@ -464,11 +465,11 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
         //    }
         //}
 
-        public static async Task<IUserMessage> SendConfirmMessageAsync(this ITextChannel tc, ulong userId, EmbedBuilder embedBuilder)
+        public static async Task<IUserMessage> SendConfirmMessageAsync(this ITextChannel tc, DiscordSocketClient client, ulong userId, EmbedBuilder embedBuilder)
         {
             try
             {
-                var user = await Program._client.Rest.GetUserAsync(userId);
+                var user = await client.Rest.GetUserAsync(userId);
                 if (user == null)
                     return await tc.SendMessageAsync(embed: embedBuilder.WithOkColor().Build(), options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
                 else
@@ -478,7 +479,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
             {
                 Log.Warn("SendConfirmMessageAsync: Discord 503 錯誤，嘗試重發...");
                 await Task.Delay(3000);
-                return await SendConfirmMessageAsync(tc, userId, embedBuilder);
+                return await SendConfirmMessageAsync(tc, client, userId, embedBuilder);
             }
             catch (Exception ex)
             {
@@ -500,11 +501,11 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
             }
         }
 
-        public static async Task<IUserMessage> SendErrorMessageAsync(this ITextChannel tc, ulong userId, string channelTitle, string status)
+        public static async Task<IUserMessage> SendErrorMessageAsync(this ITextChannel tc, DiscordSocketClient client, ulong userId, string channelTitle, string status)
         {
             try
             {
-                var user = await Program._client.Rest.GetUserAsync(userId);
+                var user = await client.Rest.GetUserAsync(userId);
                 if (user == null)
                     return await tc.SendMessageAsync(embed: new EmbedBuilder().WithErrorColor().AddField("檢查頻道", channelTitle).AddField("狀態", status).Build(), options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
                 else
@@ -514,7 +515,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
             {
                 Log.Warn("SendErrorMessageAsync: Discord 503 錯誤，嘗試重發...");
                 await Task.Delay(3000);
-                return await SendErrorMessageAsync(tc, userId, channelTitle, status);
+                return await SendErrorMessageAsync(tc, client, userId, channelTitle, status);
             }
             catch (Exception ex)
             {
@@ -523,9 +524,9 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
             }
         }
 
-        public static async Task SendConfirmMessageAsync(this ulong userId, string text, ITextChannel tc)
+        public static async Task SendConfirmMessageAsync(this ulong userId, DiscordSocketClient client, string text, ITextChannel tc)
         {
-            var user = await Program._client.Rest.GetUserAsync(userId) as IUser;
+            var user = await client.Rest.GetUserAsync(userId) as IUser;
             if (user == null)
             {
                 Log.Warn($"找不到使用者 {userId}");
@@ -559,9 +560,9 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
             }
         }
 
-        public static async Task SendErrorMessageAsync(this ulong userId, string text, ITextChannel tc)
+        public static async Task SendErrorMessageAsync(this ulong userId, DiscordSocketClient client, string text, ITextChannel tc)
         {
-            var user = await Program._client.Rest.GetUserAsync(userId) as IUser;
+            var user = await client.Rest.GetUserAsync(userId) as IUser;
             if (user == null)
             {
                 Log.Warn($"找不到使用者 {userId}");

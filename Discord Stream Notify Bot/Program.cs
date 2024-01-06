@@ -16,27 +16,33 @@ namespace Discord_Stream_Notify_Bot
 {
     public class Program
     {
-        public static string VERSION => GetLinkerTime(Assembly.GetEntryAssembly());
+        public static Stopwatch StopWatch { get; private set; } = new Stopwatch();
+        public static string Version => GetLinkerTime(Assembly.GetEntryAssembly());
+
         public static ConnectionMultiplexer Redis { get; set; }
         public static ISubscriber RedisSub { get; set; }
         public static IDatabase RedisDb { get; set; }
 
         public static IUser ApplicatonOwner { get; private set; } = null;
-        public static DiscordSocketClient _client;
-        public static BotPlayingStatus Status = BotPlayingStatus.Guild;
-        public static Stopwatch stopWatch = new Stopwatch();
-        public static bool isConnect = false, isDisconnect = false, isNeedRegisterAppCommand = false;
-        public static bool isHoloChannelSpider = false, isNijisanjiChannelSpider = false, isOtherChannelSpider = false;
-        static Timer timerUpdateStatus;
-        static BotConfig botConfig = new();
+        public static BotPlayingStatus Status { get; set; } = BotPlayingStatus.Guild;
+
+        public static bool IsConnect { get; set; } = false;
+        public static bool IsDisconnect { get; set; } = false;
+        public static bool IsHoloChannelSpider { get; set; } = false;
+        public static bool IsNijisanjiChannelSpider { get; set; } = false;
+        public static bool IsOtherChannelSpider { get; set; } = false;
+
+        private static DiscordSocketClient client;
+        private static Timer timerUpdateStatus;
+        private static BotConfig botConfig = new();
 
         public enum BotPlayingStatus { Guild, Member, Stream, StreamCount, Info }
 
         static void Main(string[] args)
         {
-            stopWatch.Start();
+            StopWatch.Start();
 
-            Log.Info(VERSION + " 初始化中");
+            Log.Info(Version + " 初始化中");
             Console.OutputEncoding = System.Text.Encoding.UTF8;
             Console.CancelKeyPress += Console_CancelKeyPress;
 
@@ -62,7 +68,7 @@ namespace Discord_Stream_Notify_Bot
                 db.Database.EnsureCreated();
             using (var db = DataBase.NotVTuberVideoContext.GetDbContext())
                 db.Database.EnsureCreated();
-            using (var db = DataBase.TwitcastingStreamContext.GetDbContext())
+            using (var db = DataBase.TwitCastingStreamContext.GetDbContext())
                 db.Database.EnsureCreated();
             using (var db = DataBase.TwitchStreamContext.GetDbContext())
                 db.Database.EnsureCreated();
@@ -119,7 +125,7 @@ namespace Discord_Stream_Notify_Bot
 
         public async Task MainAsync()
         {
-            _client = new DiscordSocketClient(new DiscordSocketConfig
+            client = new DiscordSocketClient(new DiscordSocketConfig
             {
                 LogLevel = LogSeverity.Verbose,
                 ConnectionTimeout = int.MaxValue,
@@ -134,19 +140,19 @@ namespace Discord_Stream_Notify_Bot
             });
 
             #region 初始化Discord設定與事件
-            _client.Log += Log.LogMsg;
+            client.Log += Log.LogMsg;
 
-            _client.Ready += async () =>
+            client.Ready += async () =>
             {
-                stopWatch.Start();
+                StopWatch.Start();
                 timerUpdateStatus.Change(0, 15 * 60 * 1000);
 
-                ApplicatonOwner = (await _client.GetApplicationInfoAsync()).Owner;
-                isConnect = true;
+                ApplicatonOwner = (await client.GetApplicationInfoAsync()).Owner;
+                IsConnect = true;
 
                 using (var db = DataBase.MainDbContext.GetDbContext())
                 {
-                    foreach (var guild in _client.Guilds)
+                    foreach (var guild in client.Guilds)
                     {
                         if (!db.GuildConfig.Any(x => x.GuildId == guild.Id))
                         {
@@ -157,7 +163,7 @@ namespace Discord_Stream_Notify_Bot
                 }
             };
 
-            _client.LeftGuild += (guild) =>
+            client.LeftGuild += (guild) =>
             {
                 try
                 {
@@ -231,8 +237,8 @@ namespace Discord_Stream_Notify_Bot
 
             try
             {
-                await _client.LoginAsync(TokenType.Bot, botConfig.DiscordToken);
-                await _client.StartAsync();
+                await client.LoginAsync(TokenType.Bot, botConfig.DiscordToken);
+                await client.StartAsync();
             }
             catch (Exception ex)
             {
@@ -241,11 +247,11 @@ namespace Discord_Stream_Notify_Bot
             }
 
             do { await Task.Delay(200); }
-            while (!isConnect);
+            while (!IsConnect);
 
             Log.Info("登入成功!");
 
-            UptimeKumaClient.Init(botConfig.UptimeKumaPushUrl, _client);
+            UptimeKumaClient.Init(botConfig.UptimeKumaPushUrl, client);
 #endif
 
             #region 初始化互動指令系統
@@ -254,9 +260,9 @@ namespace Discord_Stream_Notify_Bot
                 .AddSingleton<SharedService.Twitter.TwitterSpacesService>()
                 .AddSingleton<SharedService.Youtube.YoutubeStreamService>()
                 .AddSingleton<SharedService.YoutubeMember.YoutubeMemberService>()
-                .AddSingleton(_client)
+                .AddSingleton(client)
                 .AddSingleton(botConfig)
-                .AddSingleton(new InteractionService(_client, new InteractionServiceConfig()
+                .AddSingleton(new InteractionService(client, new InteractionServiceConfig()
                 {
                     AutoServiceScopes = true,
                     UseCompiledLambda = true,
@@ -272,7 +278,7 @@ namespace Discord_Stream_Notify_Bot
                 .AddPolicyHandler(HttpPolicyExtensions
                     .HandleTransientHttpError()
                     .RetryAsync(3));
-            interactionServices.AddHttpClient<TwitcastingClient>()
+            interactionServices.AddHttpClient<TwitCastingClient>()
                 .AddPolicyHandler(HttpPolicyExtensions
                     .HandleTransientHttpError()
                     .RetryAsync(3));
@@ -288,7 +294,7 @@ namespace Discord_Stream_Notify_Bot
                 .AddSingleton(iService.GetService<SharedService.Twitter.TwitterSpacesService>())
                 .AddSingleton(iService.GetService<SharedService.Youtube.YoutubeStreamService>())
                 .AddSingleton(iService.GetService<SharedService.YoutubeMember.YoutubeMemberService>())
-                .AddSingleton(_client)
+                .AddSingleton(client)
                 .AddSingleton(botConfig)
                 .AddSingleton(new CommandService(new CommandServiceConfig()
                 {
@@ -315,7 +321,7 @@ namespace Discord_Stream_Notify_Bot
                 if (commandCount != iService.GetService<InteractionHandler>().CommandCount.ToString())
                 {
 #if DEBUG
-                    if (botConfig.TestSlashCommandGuildId == 0 || _client.GetGuild(botConfig.TestSlashCommandGuildId) == null)
+                    if (botConfig.TestSlashCommandGuildId == 0 || client.GetGuild(botConfig.TestSlashCommandGuildId) == null)
                         Log.Warn("未設定測試Slash指令的伺服器或伺服器不存在，略過");
                     else
                     {
@@ -336,7 +342,7 @@ namespace Discord_Stream_Notify_Bot
 #elif RELEASE
                     try
                     {
-                        if (botConfig.TestSlashCommandGuildId != 0 && _client.GetGuild(botConfig.TestSlashCommandGuildId) != null)
+                        if (botConfig.TestSlashCommandGuildId != 0 && client.GetGuild(botConfig.TestSlashCommandGuildId) != null)
                         {
                             var result = await interactionService.RemoveModulesFromGuildAsync(botConfig.TestSlashCommandGuildId, interactionService.Modules.Where((x) => !x.DontAutoRegister).ToArray());
                             Log.Info($"({botConfig.TestSlashCommandGuildId}) 已移除測試指令，剩餘指令: {string.Join(", ", result.Select((x) => x.Name))}");
@@ -346,7 +352,7 @@ namespace Discord_Stream_Notify_Bot
                             foreach (var item in interactionService.Modules.Where((x) => x.Preconditions.Any((x) => x is Interaction.Attribute.RequireGuildAttribute)))
                             {
                                 var guildId = ((Interaction.Attribute.RequireGuildAttribute)item.Preconditions.FirstOrDefault((x) => x is Interaction.Attribute.RequireGuildAttribute)).GuildId;
-                                var guild = _client.GetGuild(guildId.Value);
+                                var guild = client.GetGuild(guildId.Value);
 
                                 if (guild == null)
                                 {
@@ -371,7 +377,7 @@ namespace Discord_Stream_Notify_Bot
                     {
                         Log.Error("取得指令數量失敗，請確認Redis伺服器是否可以存取");
                         Log.Error(ex.Message);
-                        isDisconnect = true;
+                        IsDisconnect = true;
                     }
 #endif
                 }
@@ -380,11 +386,11 @@ namespace Discord_Stream_Notify_Bot
             {
                 Log.Error("註冊Slash指令失敗，關閉中...");
                 Log.Error(ex.ToString());
-                isDisconnect = true;
+                IsDisconnect = true;
             }
             #endregion
 
-            _client.JoinedGuild += (guild) =>
+            client.JoinedGuild += (guild) =>
             {
                 using (var db = DataBase.MainDbContext.GetDbContext())
                 {
@@ -402,27 +408,27 @@ namespace Discord_Stream_Notify_Bot
             Log.Info("已初始化完成!");
 
             do { await Task.Delay(1000); }
-            while (!isDisconnect);
+            while (!IsDisconnect);
 
-            while (isHoloChannelSpider || isNijisanjiChannelSpider || isOtherChannelSpider)
+            while (IsHoloChannelSpider || IsNijisanjiChannelSpider || IsOtherChannelSpider)
             {
                 List<string> str = new List<string>();
 
-                if (isHoloChannelSpider) str.Add("Holo");
-                if (isNijisanjiChannelSpider) str.Add("Nijisanji");
-                if (isOtherChannelSpider) str.Add("Other");
+                if (IsHoloChannelSpider) str.Add("Holo");
+                if (IsNijisanjiChannelSpider) str.Add("Nijisanji");
+                if (IsOtherChannelSpider) str.Add("Other");
 
                 Log.Info($"等待 {string.Join(", ", str)} 完成");
                 await Task.Delay(5000);
             }
 
-            await _client.StopAsync();
+            await client.StopAsync();
             SharedService.Youtube.YoutubeStreamService.SaveDateBase();
         }
 
         private static void TimerHandler(object state)
         {
-            if (isDisconnect) return;
+            if (IsDisconnect) return;
 
             ChangeStatus();
         }
@@ -434,13 +440,13 @@ namespace Discord_Stream_Notify_Bot
                 switch (Status)
                 {
                     case BotPlayingStatus.Guild:
-                        await _client.SetCustomStatusAsync($"在 {_client.Guilds.Count} 個伺服器");
+                        await client.SetCustomStatusAsync($"在 {client.Guilds.Count} 個伺服器");
                         Status = BotPlayingStatus.Member;
                         break;
                     case BotPlayingStatus.Member:
                         try
                         {
-                            await _client.SetCustomStatusAsync($"服務 {_client.Guilds.Sum((x) => x.MemberCount)} 個成員");
+                            await client.SetCustomStatusAsync($"服務 {client.Guilds.Sum((x) => x.MemberCount)} 個成員");
                             Status = BotPlayingStatus.Info;
                         }
                         catch (Exception) { Status = BotPlayingStatus.Stream; ChangeStatus(); }
@@ -466,7 +472,7 @@ namespace Discord_Stream_Notify_Bot
                                     break;
                             }
                             var item = list[new Random().Next(0, list.Count)];
-                            await _client.SetGameAsync(item.VideoTitle, $"https://www.youtube.com/watch?v={item.VideoId}", ActivityType.Streaming);
+                            await client.SetGameAsync(item.VideoTitle, $"https://www.youtube.com/watch?v={item.VideoId}", ActivityType.Streaming);
                         }
                         catch (Exception ex)
                         {
@@ -477,10 +483,10 @@ namespace Discord_Stream_Notify_Bot
                         break;
                     case BotPlayingStatus.StreamCount:
                         Status = BotPlayingStatus.Info;
-                        await _client.SetCustomStatusAsync($"看了 {Utility.GetDbStreamCount()} 個直播");
+                        await client.SetCustomStatusAsync($"看了 {Utility.GetDbStreamCount()} 個直播");
                         break;
                     case BotPlayingStatus.Info:
-                        await _client.SetCustomStatusAsync("去看你的直播啦");
+                        await client.SetCustomStatusAsync("去看你的直播啦");
                         Status = BotPlayingStatus.Guild;
                         break;
                 }
@@ -495,7 +501,7 @@ namespace Discord_Stream_Notify_Bot
 
         private static void Console_CancelKeyPress(object sender, ConsoleCancelEventArgs e)
         {
-            isDisconnect = true;
+            IsDisconnect = true;
             e.Cancel = true;
         }
 

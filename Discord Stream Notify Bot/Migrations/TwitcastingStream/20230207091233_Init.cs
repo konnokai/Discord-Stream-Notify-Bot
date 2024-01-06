@@ -2,14 +2,14 @@
 
 #nullable disable
 
-namespace Discord_Stream_Notify_Bot.Migrations.TwitcastingStream
+namespace Discord_Stream_Notify_Bot.Migrations.TwitCastingStream
 {
     public partial class Init : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "TwitcastingStreams",
+                name: "TwitCastingStreams",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "INTEGER", nullable: false)
@@ -24,14 +24,14 @@ namespace Discord_Stream_Notify_Bot.Migrations.TwitcastingStream
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_TwitcastingStreams", x => x.Id);
+                    table.PrimaryKey("PK_TwitCastingStreams", x => x.Id);
                 });
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "TwitcastingStreams");
+                name: "TwitCastingStreams");
         }
     }
 }

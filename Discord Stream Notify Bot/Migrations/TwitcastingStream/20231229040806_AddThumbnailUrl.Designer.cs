@@ -11,13 +11,14 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Discord_Stream_Notify_Bot.Migrations.TwitCastingStream
 {
     [DbContext(typeof(TwitCastingStreamContext))]
-    [Migration("20230207091233_Init")]
-    partial class Init
+    [Migration("20231229040806_AddThumbnailUrl")]
+    partial class AddThumbnailUrl
     {
+        /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "6.0.5");
+            modelBuilder.HasAnnotation("ProductVersion", "7.0.14");
 
             modelBuilder.Entity("Discord_Stream_Notify_Bot.DataBase.Table.TwitCastingStream", b =>
                 {
@@ -34,6 +35,9 @@ namespace Discord_Stream_Notify_Bot.Migrations.TwitCastingStream
                     b.Property<string>("ChannelTitle")
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime?>("DateAdded")
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("StreamId")
                         .HasColumnType("INTEGER");
 
@@ -44,6 +48,9 @@ namespace Discord_Stream_Notify_Bot.Migrations.TwitCastingStream
                         .HasColumnType("TEXT");
 
                     b.Property<string>("StreamTitle")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ThumbnailUrl")
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");

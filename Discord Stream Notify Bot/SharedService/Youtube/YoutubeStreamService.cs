@@ -519,7 +519,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                             if (await PostSubscribeRequestAsync(channelId.ToString()))
                             {
-                                Log.Info($"已重新註冊YT PubSub: {youtubeChannelSpider.ChannelTitle} ({channelId})");
+                                Log.Info($"已重新註冊 YT PubSub: {youtubeChannelSpider.ChannelTitle} ({channelId})");
                                 youtubeChannelSpider.LastSubscribeTime = DateTime.Now;
                                 db.Update(youtubeChannelSpider);
                                 db.SaveChanges();
@@ -527,7 +527,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         }
                         else
                         {
-                            Log.Error($"後端通知須重新註冊但資料庫無該ChannelId的資料: {channelId}");
+                            Log.Error($"後端通知須重新註冊但資料庫無該 ChannelId 的資料: {channelId}");
                         }
                     }
                 });
@@ -620,7 +620,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 //});
                 #endregion
 
-                Log.Info("已建立Redis訂閱");
+                Log.Info("已建立 Redis 訂閱");
             }
 
             reScheduleTime = new Timer((objState) => ReScheduleReminder(), null, TimeSpan.FromSeconds(5), TimeSpan.FromDays(1));
@@ -679,7 +679,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 {
                     NijisanjiLiverContents.Add(item);
                 }
-                Log.New($"GetOrCreateNijisanjiLiverListAsync: {affiliation}已刷新");
+                Log.New($"GetOrCreateNijisanjiLiverListAsync: {affiliation} 已刷新");
             }
             catch (Exception ex)
             {
@@ -760,48 +760,18 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             Regex regexNewFormat = new Regex(@"(http[s]{0,1}://){0,1}(www\.){0,1}(?'Host'[^/]+)/@(?'CustomId'[^/]+)");
             Match matchOldFormat = regexOldFormat.Match(channelUrl);
             Match matchNewFormat = regexNewFormat.Match(channelUrl);
-            if (matchNewFormat.Success)
-            {
-                string channelName = matchNewFormat.Groups["CustomId"].Value;
-
-                using (var db = DataBase.MainDbContext.GetDbContext())
-                {
-                    channelId = db.YoutubeChannelNameToId.SingleOrDefault((x) => x.ChannelName == channelName)?.ChannelId;
-
-                    if (string.IsNullOrEmpty(channelId))
-                    {
-                        try
-                        {
-                            channelId = await GetChannelIdByUrlAsync($"https://www.youtube.com/@{channelName}");
-                            db.YoutubeChannelNameToId.Add(new DataBase.Table.YoutubeChannelNameToId() { ChannelName = channelName, ChannelId = channelId });
-                            await db.SaveChangesAsync();
-                        }
-                        catch (UriFormatException)
-                        {
-                            Log.Error($"GetChannelIdAsync-GetChannelIdByUrlAsync: {channelUrl}");
-                            throw;
-                        }
-                        catch (Exception ex)
-                        {
-                            Log.Error(channelUrl);
-                            Log.Error(ex.ToString());
-                            throw;
-                        }
-                    }
-                }
-            }
-            else if (matchOldFormat.Success)
+            if (matchOldFormat.Success)
             {
                 string host = matchOldFormat.Groups["Host"].Value.ToLower();
                 if (host != "youtube.com")
-                    throw new FormatException("錯誤，請確認是否輸入YouTube頻道網址");
+                    throw new FormatException("錯誤，請確認是否輸入 YouTube 頻道網址");
 
                 string type = matchOldFormat.Groups["Type"].Value.ToLower();
                 if (type == "channel")
                 {
                     channelId = matchOldFormat.Groups["ChannelName"].Value;
-                    if (!channelId.StartsWith("UC")) throw new FormatException("錯誤，頻道Id格式不正確");
-                    if (channelId.Length != 24) throw new FormatException("錯誤，頻道Id字元數不正確");
+                    if (!channelId.StartsWith("UC")) throw new FormatException("錯誤，頻道 Id 格式不正確");
+                    if (channelId.Length != 24) throw new FormatException("錯誤，頻道 Id 字元數不正確");
                 }
                 else if (type == "c" || type == "user")
                 {
@@ -835,7 +805,37 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 }
                 else throw new FormatException("錯誤，網址格式不正確");
             }
-            else throw new FormatException("錯誤，請確認是否輸入YouTube頻道網址");
+            else
+            {
+                string channelName = channelUrl.Replace("@", "");
+                if (matchNewFormat.Success)
+                    channelName = matchNewFormat.Groups["CustomId"].Value;
+
+                using (var db = DataBase.MainDbContext.GetDbContext())
+                {
+                    channelId = db.YoutubeChannelNameToId.SingleOrDefault((x) => x.ChannelName == channelName)?.ChannelId;
+
+                    if (string.IsNullOrEmpty(channelId))
+                    {
+                        try
+                        {
+                            channelId = await GetChannelIdByUrlAsync($"https://www.youtube.com/@{channelName}");
+                            db.YoutubeChannelNameToId.Add(new DataBase.Table.YoutubeChannelNameToId() { ChannelName = channelName, ChannelId = channelId });
+                            await db.SaveChangesAsync();
+                        }
+                        catch (UriFormatException)
+                        {
+                            Log.Error($"GetChannelIdAsync-GetChannelIdByUrlAsync-UriFormatException: {channelUrl}");
+                            throw;
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Error(ex, $"GetChannelIdAsync-GetChannelIdByUrlAsync-Exception: {channelUrl}");
+                            throw;
+                        }
+                    }
+                }
+            }
 
             return channelId;
         }
@@ -896,7 +896,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             Regex regex = new Regex(@"(?:https?:)?(?:\/\/)?(?:[0-9A-Z-]+\.)?(?:youtu\.be\/|youtube(?:-nocookie)?\.com\S*?[^\w\s-])(?'VideoId'[\w-]{11})(?=[^\w-]|$)(?![?=&+%\w.-]*(?:['""][^<>]*>|<\/a>))[?=&+%\w.-]*"); //https://regex101.com/r/OY96XI/1
             Match match = regex.Match(videoUrl);
             if (!match.Success)
-                throw new UriFormatException("錯誤，請確認是否輸入YouTube影片網址");
+                throw new UriFormatException("錯誤，請確認是否輸入 YouTube 影片網址");
 
             return match.Groups["VideoId"].Value;
         }
@@ -942,7 +942,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 {
                     if (await PostSubscribeRequestAsync(item.ChannelId))
                     {
-                        Log.Info($"已註冊YT PubSub: {item.ChannelTitle} ({item.ChannelId})");
+                        Log.Info($"已註冊 YT PubSub: {item.ChannelTitle} ({item.ChannelId})");
                         item.LastSubscribeTime = DateTime.Now;
                         db.Update(item);
                     }
@@ -979,7 +979,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 var result = response.StatusCode == HttpStatusCode.Accepted;
                 if (!result)
                 {
-                    Log.Error($"{channelId} PubSub註冊失敗");
+                    Log.Error($"{channelId} PubSub 註冊失敗");
                     Log.Error(response.StatusCode + " - " + await response.Content.ReadAsStringAsync());
                     return false;
                 }
@@ -987,7 +987,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             }
             catch (Exception ex)
             {
-                Log.Error($"{channelId} PubSub註冊失敗");
+                Log.Error($"{channelId} PubSub 註冊失敗");
                 Log.Error(ex.ToString());
                 return false;
             }

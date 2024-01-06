@@ -166,12 +166,12 @@ namespace Discord_Stream_Notify_Bot.Interaction
             return channelId;
         }
 
-        public static string GetTwitcastingChannelTitleByChannelId(this DataBase.MainDbContext dBContext, string channelId)
+        public static string GetTwitCastingChannelTitleByChannelId(this DataBase.MainDbContext dBContext, string channelId)
         {
             channelId = channelId.Trim();
 
-            TwitcastingSpider twitcastingSpider;
-            if ((twitcastingSpider = dBContext.TwitcastingSpider.AsNoTracking().FirstOrDefault((x) => x.ChannelId == channelId)) != null)
+            TwitCastingSpider twitcastingSpider;
+            if ((twitcastingSpider = dBContext.TwitCastingSpider.AsNoTracking().FirstOrDefault((x) => x.ChannelId == channelId)) != null)
                 return twitcastingSpider.ChannelTitle;
 
             return channelId;

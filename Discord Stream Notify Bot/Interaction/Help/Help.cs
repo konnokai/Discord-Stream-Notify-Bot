@@ -112,7 +112,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Help
             if (string.IsNullOrWhiteSpace(module))
             {
                 EmbedBuilder embed = new EmbedBuilder().WithOkColor().WithFooter("輸入 `/help get-all-modules` 取得所有的模組");
-                embed.Title = "直播小幫手 建置版本" + Program.VERSION;
+                embed.Title = "直播小幫手 建置版本" + Program.Version;
 #if DEBUG || DEBUG_DONTREGISTERCOMMAND
                 embed.Title += " (測試版)";
 #endif

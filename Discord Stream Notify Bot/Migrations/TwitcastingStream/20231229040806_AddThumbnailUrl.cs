@@ -4,21 +4,24 @@
 
 namespace Discord_Stream_Notify_Bot.Migrations.TwitCastingStream
 {
-    public partial class DateAdded : Migration
+    /// <inheritdoc />
+    public partial class AddThumbnailUrl : Migration
     {
+        /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<DateTime>(
-                name: "DateAdded",
+            migrationBuilder.AddColumn<string>(
+                name: "ThumbnailUrl",
                 table: "TwitCastingStreams",
                 type: "TEXT",
                 nullable: true);
         }
 
+        /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropColumn(
-                name: "DateAdded",
+                name: "ThumbnailUrl",
                 table: "TwitCastingStreams");
         }
     }
