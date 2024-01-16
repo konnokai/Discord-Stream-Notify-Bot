@@ -24,7 +24,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                         bool isCheck = false;
                         do
                         {
-                            if (videoList.Count == 0)
+                            if (!videoList.Any())
                             {
                                 await Program.ApplicatonOwner.SendMessageAsync($"{item.MemberCheckChannelId} 無任何可檢測的會限影片!");
                                 await SendMsgToLogChannelAsync(item.MemberCheckChannelId, $"{item.MemberCheckChannelId} 無會限影片，請等待該頻道主有新的會限影片且可留言時再使用會限驗證功能\n" +
@@ -40,7 +40,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
 
                             try
                             {
-                                var commentResult = await ct.ExecuteAsync().ConfigureAwait(false);
+                                _ = await ct.ExecuteAsync().ConfigureAwait(false);
                             }
                             catch (Exception ex)
                             {
@@ -63,8 +63,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                 }
                                 else
                                 {
-                                    Log.Error($"{item.MemberCheckChannelId} 新會限影片檢查錯誤");
-                                    Log.Error(ex.Message);
+                                    Log.Error(ex, $"{item.MemberCheckChannelId} 新會限影片檢查錯誤");
 
                                     foreach (var item2 in db.GuildYoutubeMemberConfig.Where((x) => x.MemberCheckChannelId == item.MemberCheckChannelId))
                                     {
@@ -87,7 +86,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                             needRemoveList.Add(item);
                             continue;
                         }
-                        else Log.Warn($"CheckMemberShipOnlyVideoId: {item.GuildId} / {item.MemberCheckChannelId}\n{ex.Message}");
+                        else Log.Warn($"CheckMemberShipOnlyVideoId: {item.GuildId} / {item.MemberCheckChannelId}\n{ex}");
                     }
                     finally
                     {
@@ -112,7 +111,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                     }
                     catch (Exception ex)
                     {
-                        Log.Warn($"CheckMemberShipOnlyChannelName: {item.GuildId} / {item.MemberCheckChannelId}\n{ex.Message}");
+                        Log.Warn($"CheckMemberShipOnlyChannelName: {item.GuildId} / {item.MemberCheckChannelId}\n{ex}");
                     }
                     finally
                     {
@@ -126,7 +125,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                 }
                 catch (Exception ex)
                 {
-                    Log.Error($"CheckMemberShipOnlyVideoId-RemoveRange: {ex}");
+                    Log.Error(ex, $"CheckMemberShipOnlyVideoId-RemoveRange");
                     await (await Program.ApplicatonOwner.CreateDMChannelAsync()).SendErrorMessageAsync($"CheckMemberShipOnlyVideoId-RemoveRange: {ex}");
                 }
 
@@ -136,7 +135,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                 }
                 catch (Exception ex)
                 {
-                    Log.Error($"CheckMemberShipOnlyVideoId-SaveChanges: {ex}");
+                    Log.Error(ex, $"CheckMemberShipOnlyVideoId-SaveChanges");
                     await (await Program.ApplicatonOwner.CreateDMChannelAsync()).SendErrorMessageAsync($"CheckMemberShipOnlyVideoId-SaveChanges: {ex}");
                 }
             }
