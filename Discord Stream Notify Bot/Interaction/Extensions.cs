@@ -139,7 +139,7 @@ namespace Discord_Stream_Notify_Bot.Interaction
             channelId = channelId.Trim();
 
             YoutubeChannelSpider youtubeChannelSpider;
-            if ((youtubeChannelSpider = dBContext.YoutubeChannelSpider.FirstOrDefault((x) => x.ChannelId == channelId)) != null)
+            if ((youtubeChannelSpider = dBContext.YoutubeChannelSpider.AsNoTracking().FirstOrDefault((x) => x.ChannelId == channelId)) != null)
                 return youtubeChannelSpider.ChannelTitle;
 
             using (var db = DataBase.HoloVideoContext.GetDbContext())
