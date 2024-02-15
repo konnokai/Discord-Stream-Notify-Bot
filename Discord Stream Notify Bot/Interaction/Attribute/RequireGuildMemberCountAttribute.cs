@@ -16,10 +16,13 @@ namespace Discord_Stream_Notify_Bot.Interaction.Attribute
         {
             if (context.Interaction.User.Id == Program.ApplicatonOwner.Id) return Task.FromResult(PreconditionResult.FromSuccess());
 
-            if (((SocketGuild)context.Guild).MemberCount >= GuildMemberCount) return Task.FromResult(PreconditionResult.FromSuccess());
-            else return Task.FromResult(PreconditionResult.FromError($"伺服器人數小於 {GuildMemberCount} 人，不可使用本指令\n" +
-                $"此指令要求伺服器人數須大於等於 {GuildMemberCount} 人\n" +
-                $"如有需要請聯繫 Bot 擁有者處理 (你可使用 `/utility send-message-to-bot-owner` 對擁有者發送訊息)"));
+            var memberCount = ((SocketGuild)context.Guild).MemberCount;
+            if (memberCount >= GuildMemberCount) return Task.FromResult(PreconditionResult.FromSuccess());
+            else return Task.FromResult(PreconditionResult.FromError($"此伺服器不可使用本指令\n" +
+                $"指令要求伺服器人數: `{GuildMemberCount}` 人\n" +
+                $"目前 Bot 所取得的伺服器人數: `{memberCount}` 人\n" +
+                $"由於快取的關係，可能會遇到伺服器人數錯誤的問題\n" +
+                $"如有任何需要請聯繫 Bot 擁有者處理 (你可使用 `/utility send-message-to-bot-owner` 對擁有者發送訊息)"));
         }
     }
 }
