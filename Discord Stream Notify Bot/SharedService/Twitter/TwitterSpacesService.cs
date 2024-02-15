@@ -80,7 +80,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                                         }
                                         catch (Exception ex)
                                         {
-                                            Log.Error($"GetTwitterSpaceMasterUrl: {item.SpaceId}\n{ex}");
+                                            Log.Error(ex, $"GetTwitterSpaceMasterUrl: {item.SpaceId}");
                                             hashSet.Add(item.SpaceId);
                                             continue;
                                         }
@@ -114,17 +114,17 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                             }
                             catch (HttpRequestException httpEx) when (httpEx.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
                             {
-                                Log.Error($"Prepare-Spaces: 429錯誤");
+                                Log.Warn($"Prepare-Spaces: 429錯誤");
                             }
                             catch (Exception ex)
                             {
                                 if (!ex.Message.Contains("503") && !ex.Message.Contains("temporarily unavailable"))
-                                    Log.Error($"Prepare-Spaces: {ex}");
+                                    Log.Error(ex, "Prepare-Spaces");
                             }
                         }
                     }
                 }
-                catch (Exception ex) { Log.Error($"Spaces-Timer: {ex}"); }
+                catch (Exception ex) { Log.Error(ex, "Spaces-Timer"); }
                 finally { isRuning = false; }
             }, null, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(90));
         }

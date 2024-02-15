@@ -2,7 +2,7 @@
 {
     public class AdministrationService : ICommandService
     {
-        private DiscordSocketClient _Client;
+        private readonly DiscordSocketClient _Client;
 
         public AdministrationService(DiscordSocketClient client)
         {

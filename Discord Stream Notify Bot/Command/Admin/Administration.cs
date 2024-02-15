@@ -38,8 +38,8 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
                     await Context.Channel.SendConfirmAsync(string.Format("找不到 {0} 狀態", stats));
                     return;
             }
+
             Program.ChangeStatus();
-            return;
         }
 
         [RequireContext(ContextType.DM)]
@@ -56,12 +56,10 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
                 foreach (var item in _client.Guilds.Skip(cur * 5).Take(5))
                 {
                     int totalMember = item.MemberCount;
-                    bool isBotOwnerInGuild = item.GetUser(Program.ApplicatonOwner.Id) != null;
 
                     embedBuilder.AddField(item.Name, "Id: " + item.Id +
                         "\nOwner Id: " + item.OwnerId +
-                        "\n人數: " + totalMember.ToString() +
-                        "\nBot擁有者是否在該伺服器: " + (isBotOwnerInGuild ? "是" : "否"));
+                        "\n人數: " + totalMember.ToString());
                 }
 
                 return embedBuilder;
@@ -80,8 +78,6 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
                 var guild = _client.GetGuild(guildId);
                 if (guild != null)
                 {
-                    bool isBotOwnerInGuild = guild.GetUser(Program.ApplicatonOwner.Id) != null;
-
                     var embed = new EmbedBuilder().WithOkColor().AddField(guild.Name,
                         $"Id: {guild.Id}\n" +
                         $"擁有者Id: {guild.OwnerId}\n" +
@@ -93,7 +89,7 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
             }
 
             var list = _client.Guilds.Where((x) => x.Name.Contains(keyword, StringComparison.InvariantCultureIgnoreCase));
-            if (list.Count() == 0)
+            if (!list.Any())
             {
                 await Context.Channel.SendErrorAsync("該關鍵字無伺服器");
                 return;
@@ -141,7 +137,10 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
 
             var guild = _client.GetGuild(gid);
             if (guild == null)
+            {
                 await Context.Channel.SendErrorAsync("伺服器不存在");
+                return;
+            }
 
             try { await guild.LeaveAsync(); }
             catch (Exception) { await Context.Channel.SendErrorAsync("失敗，請確認Id是否正確"); return; }
