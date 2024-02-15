@@ -304,18 +304,18 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                             $"至 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 重新登入並再次於伺服器執行 `/member check`", logChannel);
                                         continue;
                                     }
-                                    else if (ex.Message.ToLower().Contains("500") || ex.Message.ToLower().Contains("badgateway"))
+                                    else if (ex.Message.ToLower().Contains("500") || ex.Message.ToLower().Contains("badgateway") || ex.Message.ToLower().Contains("internalservererror"))
                                     {
                                         Log.Error($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {member.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 的會限資格取得失敗: 500 內部錯誤");
 
-                                        await logChannel.SendErrorMessageAsync(_client, member.UserId, guildYoutubeMemberConfig.MemberCheckChannelTitle, "Google內部錯誤，等待下次重新檢查");
+                                        await logChannel.SendErrorMessageAsync(_client, member.UserId, guildYoutubeMemberConfig.MemberCheckChannelTitle, "Google 內部錯誤，等待下次重新檢查");
                                         continue;
                                     }
                                     else if (ex.Message.ToLower().Contains("bad req") || ex.Message.ToLower().Contains("badrequest"))
                                     {
                                         Log.Error($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {member.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 的會限資格取得失敗: 400 錯誤");
 
-                                        await logChannel.SendErrorMessageAsync(_client, member.UserId, guildYoutubeMemberConfig.MemberCheckChannelTitle, "400錯誤，等待下次重新檢查");
+                                        await logChannel.SendErrorMessageAsync(_client, member.UserId, guildYoutubeMemberConfig.MemberCheckChannelTitle, "400 錯誤，等待下次重新檢查");
                                         continue;
                                     }
                                     else if (ex.Message.ToLower().Contains("quotaexceeded"))
@@ -336,7 +336,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                         Log.Error(ex.ToString());
 
                                         await logChannel.SendErrorMessageAsync(_client, member.UserId, guildYoutubeMemberConfig.MemberCheckChannelTitle, "不明的錯誤");
-                                        await member.UserId.SendErrorMessageAsync(_client, $"無法驗證您的帳號，可能是Google內部錯誤\n請向 {Program.ApplicatonOwner} 確認問題", logChannel);
+                                        await member.UserId.SendErrorMessageAsync(_client, $"無法驗證您的帳號，可能是 Google 內部錯誤\n請向 {Program.ApplicatonOwner} 確認問題", logChannel);
                                         continue;
                                     }
                                 }

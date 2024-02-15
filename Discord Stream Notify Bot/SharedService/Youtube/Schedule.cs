@@ -218,7 +218,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     {
                         if (!ex.Message.Contains("EOF or 0 bytes") && !ex.Message.Contains("504") && !ex.Message.Contains("500"))
                             Log.Error(ex, $"NijisanjiScheduleAsync-GetData: {i}");
-                        // 也許是因為遇到 500 相關錯誤才導致檢測卡住 :thinking:
                         continue;
                     }
                 }
