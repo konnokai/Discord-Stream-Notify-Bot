@@ -141,14 +141,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                     {
                                         Log.Info($"已發送錄影請求: {streamVideo.VideoId}");
                                         isRecord = true;
-
-                                        if (noticeRecordChannel != null)
-                                        {
-                                            await noticeRecordChannel.SendMessageAsync(embeds: new Embed[] { new EmbedBuilder().WithOkColor()
-                                                .WithDescription($"{Format.Url(streamVideo.VideoTitle, $"https://www.youtube.com/watch?v={streamVideo.VideoId}")}\n" +
-                                                $"{Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}")}\n\n" +
-                                                $"youtube_{streamVideo.ChannelId}_{streamVideo.ScheduledStartTime:yyyyMMdd_HHmmss}_{streamVideo.VideoId}.ts").Build() });
-                                        }
                                     }
                                     else Log.Warn($"Redis Sub頻道不存在，請開啟錄影工具: {streamVideo.VideoId}");
                                 }
@@ -456,7 +448,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
             return await pBreaker.ExecuteAsync(async () =>
              {
-                 var video = yt.Videos.List("snippet,liveStreamingDetails");
+                 var video = YouTubeService.Videos.List("snippet,liveStreamingDetails");
                  video.Id = videoId;
                  var videoResult = await video.ExecuteAsync().ConfigureAwait(false);
                  if (videoResult.Items.Count == 0) return null;
@@ -477,7 +469,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
             return await pBreaker.ExecuteAsync(async () =>
             {
-                var video = yt.Videos.List("snippet,liveStreamingDetails");
+                var video = YouTubeService.Videos.List("snippet,liveStreamingDetails");
                 video.Id = string.Join(',', videoIds);
                 var videoResult = await video.ExecuteAsync().ConfigureAwait(false);
                 if (videoResult.Items.Count == 0) return null;

@@ -75,7 +75,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                     for (int i = 0; i < idList.Count; i += 50)
                     {
-                        var video = yt.Videos.List("snippet,liveStreamingDetails");
+                        var video = YouTubeService.Videos.List("snippet,liveStreamingDetails");
                         video.Id = string.Join(",", idList.Skip(i).Take(50));
                         var videoResult = await video.ExecuteAsync().ConfigureAwait(false);
                         foreach (var item in videoResult.Items)
@@ -399,7 +399,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     {
                         if (item.ChannelTitle == null)
                         {
-                            var ytChannel = yt.Channels.List("snippet");
+                            var ytChannel = YouTubeService.Channels.List("snippet");
                             ytChannel.Id = item.ChannelId;
                             item.ChannelTitle = (await ytChannel.ExecuteAsync().ConfigureAwait(false)).Items[0].Snippet.Title;
                             db.YoutubeChannelSpider.Update(item);
@@ -542,7 +542,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         break;
                     }
 
-                    var video = yt.Videos.List("snippet,liveStreamingDetails");
+                    var video = YouTubeService.Videos.List("snippet,liveStreamingDetails");
                     video.Id = string.Join(",", remindersList.Select((x) => x.Key));
                     var videoResult = await video.ExecuteAsync(); // 如果直播被刪除的話該直播Id不會回傳資訊，但API會返回200狀態
 

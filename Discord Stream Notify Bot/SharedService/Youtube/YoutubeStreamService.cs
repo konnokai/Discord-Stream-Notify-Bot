@@ -40,37 +40,30 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
         public ConcurrentBag<NijisanjiLiverJson> NijisanjiLiverContents { get; } = new ConcurrentBag<NijisanjiLiverJson>();
         public ConcurrentDictionary<string, ReminderItem> Reminders { get; } = new ConcurrentDictionary<string, ReminderItem>();
         public bool IsRecord { get; set; } = true;
-        public YouTubeService yt;
+        public YouTubeService YouTubeService { get; set; }
 
         private Timer holoSchedule, nijisanjiSchedule, otherSchedule, checkScheduleTime, saveDateBase, subscribePubSub, reScheduleTime/*, checkHoloNowStream, holoScheduleEmoji*/;
-        private readonly SocketTextChannel noticeRecordChannel;
         private readonly DiscordSocketClient _client;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly EmojiService _emojiService;
         private readonly ConcurrentDictionary<string, byte> _endLiveBag = new();
-        private string callbackUrl;
+        private readonly string _callbackUrl;
 
         public YoutubeStreamService(DiscordSocketClient client, IHttpClientFactory httpClientFactory, BotConfig botConfig, EmojiService emojiService)
         {
             _client = client;
             _httpClientFactory = httpClientFactory;
-            yt = new YouTubeService(new BaseClientService.Initializer
+
+            YouTubeService = new YouTubeService(new BaseClientService.Initializer
             {
                 ApplicationName = "DiscordStreamBot",
                 ApiKey = botConfig.GoogleApiKey,
             });
 
-            callbackUrl = botConfig.PubSubCallbackUrl;
+            _callbackUrl = botConfig.PubSubCallbackUrl;
             _emojiService = emojiService;
 
 #if RELEASE
-            try
-            {
-                //Todo: 自定義化
-                noticeRecordChannel = _client.GetGuild(738734668882640938).GetTextChannel(805134765191462942);
-            }
-            catch { }
-
             if (botConfig.DetectGuildId != 0 && botConfig.DetectCategoryId != 0)
             {
                 _client.ChannelCreated += async (channel) =>
@@ -710,7 +703,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         break;
                 }
 
-                var video = yt.Videos.List("snippet");
+                var video = YouTubeService.Videos.List("snippet");
                 video.Id = string.Join(",", idList);
                 var videoResult = await video.ExecuteAsync().ConfigureAwait(false);
 
@@ -905,7 +898,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
         {
             try
             {
-                var channel = yt.Channels.List("snippet");
+                var channel = YouTubeService.Channels.List("snippet");
                 channel.Id = channelId;
                 var response = await channel.ExecuteAsync().ConfigureAwait(false);
                 return response.Items[0].Snippet.Title;
@@ -921,7 +914,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
         {
             try
             {
-                var channel = yt.Channels.List("snippet");
+                var channel = YouTubeService.Channels.List("snippet");
                 channel.Id = string.Join(",", channelId);
                 var response = await channel.ExecuteAsync().ConfigureAwait(false);
                 if (formatUrl) return response.Items.Select((x) => Format.Url(x.Snippet.Title, $"https://www.youtube.com/channel/{x.Id}")).ToList();
@@ -967,7 +960,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 {
                     { "hub.mode", subscribe ? "subscribe" : "unsubscribe" },
                     { "hub.topic", $"https://www.youtube.com/xml/feeds/videos.xml?channel_id={channelId}" },
-                    { "hub.callback", callbackUrl },
+                    { "hub.callback", _callbackUrl },
                     { "hub.verify", "async" },
                     { "hub.secret", guid },
                     { "hub.verify_token", guid },

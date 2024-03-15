@@ -370,7 +370,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
         {
             try
             {
-                var channel = _service.yt.Channels.List("snippet");
+                var channel = _service.YouTubeService.Channels.List("snippet");
                 channel.Id = channelId;
                 var response = await channel.ExecuteAsync().ConfigureAwait(false);
                 return response.Items[0].Snippet.Title;
@@ -386,7 +386,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
         {
             try
             {
-                var channel = _service.yt.Channels.List("snippet");
+                var channel = _service.YouTubeService.Channels.List("snippet");
                 channel.Id = string.Join(",", channelId);
                 var response = await channel.ExecuteAsync().ConfigureAwait(false);
                 return response.Items.Select((x) => Format.Url(x.Snippet.Title, $"https://www.youtube.com/channel/{x.Id}")).ToList();

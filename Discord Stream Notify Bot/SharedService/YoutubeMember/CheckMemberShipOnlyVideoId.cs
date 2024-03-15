@@ -16,7 +16,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                 {
                     try
                     {
-                        var s = _streamService.yt.PlaylistItems.List("snippet");
+                        var s = _streamService.YouTubeService.PlaylistItems.List("snippet");
                         s.PlaylistId = item.MemberCheckChannelId.Replace("UC", "UUMO");
                         var result = await s.ExecuteAsync().ConfigureAwait(false);
                         var videoList = result.Items.ToList();
@@ -35,7 +35,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
 
                             var videoSnippet = videoList[new Random().Next(0, videoList.Count)];
                             var videoId = videoSnippet.Snippet.ResourceId.VideoId;
-                            var ct = _streamService.yt.CommentThreads.List("snippet");
+                            var ct = _streamService.YouTubeService.CommentThreads.List("snippet");
                             ct.VideoId = videoId;
 
                             try
@@ -95,7 +95,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
 
                     try
                     {
-                        var c = _streamService.yt.Channels.List("snippet");
+                        var c = _streamService.YouTubeService.Channels.List("snippet");
                         c.Id = item.MemberCheckChannelId;
                         var channelResult = await c.ExecuteAsync();
                         var channel = channelResult.Items.First();

@@ -2,8 +2,8 @@
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.Interaction.Attribute;
 using Discord_Stream_Notify_Bot.SharedService.Youtube;
-using Video = Google.Apis.YouTube.v3.Data.Video;
 using Microsoft.EntityFrameworkCore;
+using Video = Google.Apis.YouTube.v3.Data.Video;
 
 namespace Discord_Stream_Notify_Bot.Interaction.Youtube
 {
@@ -116,7 +116,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
 
             try
             {
-                var yt = _service.yt.Videos.List("Snippet");
+                var yt = _service.YouTubeService.Videos.List("Snippet");
                 yt.Id = string.Join(',', newRecordStreamList);
                 var result = (await yt.ExecuteAsync().ConfigureAwait(false)).Items.ToList();
 
@@ -170,7 +170,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
 
                 for (int i = 0; i < _service.Reminders.Count; i += 50)
                 {
-                    var yt = _service.yt.Videos.List("snippet,liveStreamingDetails");
+                    var yt = _service.YouTubeService.Videos.List("snippet,liveStreamingDetails");
                     yt.Id = string.Join(',', _service.Reminders.Keys.Skip(i).Take(50));
                     result.AddRange((await yt.ExecuteAsync().ConfigureAwait(false)).Items);
                 }
@@ -551,7 +551,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                     {
                         try
                         {
-                            var channel = _service.yt.Channels.List("snippet");
+                            var channel = _service.YouTubeService.Channels.List("snippet");
                             channel.Id = string.Join(",", ytChannelList.Skip(i).Take(50));
                             var response = await channel.ExecuteAsync().ConfigureAwait(false);
                             channelTitleList.AddRange(response.Items.Select((x) => $"{x.Id} / {x.Snippet.Title} => <#{list.Find((x2) => x2.Key == x.Id).Value}>"));
@@ -682,7 +682,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                         result = $"已清除 `{channelTitle}` 的 `{noticeTypeString}` 通知訊息";
                     }
 
-                    await Context.Interaction.SendConfirmAsync(result , true, true).ConfigureAwait(false);
+                    await Context.Interaction.SendConfirmAsync(result, true, true).ConfigureAwait(false);
                 }
                 else
                 {
