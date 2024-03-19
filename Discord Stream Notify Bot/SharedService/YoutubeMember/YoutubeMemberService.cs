@@ -405,7 +405,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
 
             try
             {
-                if (token.IsExpired(Google.Apis.Util.SystemClock.Default))
+                if (token.IsStale)
                 {
                     if (!await credential.RefreshTokenAsync(CancellationToken.None))
                     {

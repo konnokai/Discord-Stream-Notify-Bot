@@ -3,7 +3,6 @@ using Discord_Stream_Notify_Bot.Interaction.Attribute;
 
 namespace Discord_Stream_Notify_Bot.Interaction.Twitch
 {
-    [EnabledInDm(false)]
     [RequireContext(ContextType.Guild)]
     [Group("twitch-spider", "Twitch 爬蟲設定")]
     [RequireUserPermission(GuildPermission.Administrator)]

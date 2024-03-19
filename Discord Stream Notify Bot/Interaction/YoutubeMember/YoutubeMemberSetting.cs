@@ -5,7 +5,6 @@ using Discord_Stream_Notify_Bot.SharedService.YoutubeMember;
 
 namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
 {
-    [EnabledInDm(false)]
     [RequireContext(ContextType.Guild)]
     [RequireUserPermission(GuildPermission.Administrator)]
     [DefaultMemberPermissions(GuildPermission.Administrator)]

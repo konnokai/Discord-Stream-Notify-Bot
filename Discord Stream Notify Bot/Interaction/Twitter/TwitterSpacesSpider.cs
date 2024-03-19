@@ -5,7 +5,6 @@ using static Discord_Stream_Notify_Bot.Interaction.Twitter.TwitterSpaces;
 
 namespace Discord_Stream_Notify_Bot.Interaction.Twitter
 {
-    [EnabledInDm(false)]
     [RequireContext(ContextType.Guild)]
     [RequireUserPermission(GuildPermission.Administrator)]
     [DefaultMemberPermissions(GuildPermission.Administrator)]

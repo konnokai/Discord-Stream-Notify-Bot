@@ -4,7 +4,6 @@ using Discord_Stream_Notify_Bot.Interaction.Attribute;
 
 namespace Discord_Stream_Notify_Bot.Interaction.Twitter
 {
-    [EnabledInDm(false)]
     [RequireContext(ContextType.Guild)]
     [Group("twitter-space", "推特語音空間")]
     [RequireUserPermission(GuildPermission.ManageMessages)]
@@ -129,7 +128,8 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
             "可以使用`/twitter-space list`查詢有哪些頻道\n")]
         [CommandExample("margaretthebox", "@inui_toko")]
         [SlashCommand("add", "新增推特語音空間開台通知的頻道")]
-        public async Task AddChannel([Summary("推特使用者名稱")] string userScreenName, [Summary("發送通知的頻道")] IChannel channel)
+        public async Task AddChannel([Summary("推特使用者名稱")] string userScreenName,
+            [Summary("發送通知的頻道"), ChannelTypes(ChannelType.Text, ChannelType.News)] IChannel channel)
         {
             if (string.IsNullOrWhiteSpace(userScreenName))
             {
@@ -144,12 +144,6 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
             }
 
             await DeferAsync(true).ConfigureAwait(false);
-
-            if (channel.GetChannelType() != ChannelType.Text && channel.GetChannelType() != ChannelType.News)
-            {
-                await Context.Interaction.SendErrorAsync($"`{channel}` 非可接受的頻道類型，僅可接受文字頻道或公告頻道", true);
-                return;
-            }
 
             var textChannel = channel as IGuildChannel;
 

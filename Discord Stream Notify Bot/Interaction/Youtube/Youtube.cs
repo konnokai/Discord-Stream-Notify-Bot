@@ -67,7 +67,6 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             _client = client;
         }
 
-        [EnabledInDm(false)]
         [RequireContext(ContextType.Guild)]
         [RequireUserPermission(GuildPermission.ManageMessages)]
         [DefaultMemberPermissions(GuildPermission.ManageMessages)]
@@ -99,10 +98,8 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             }
         }
 
-        [EnabledInDm(false)]
-        [RequireContext(ContextType.Guild)]
-        [RequireUserPermission(GuildPermission.ManageMessages)]
-        [DefaultMemberPermissions(GuildPermission.ManageMessages)]
+        [RequireOwner]
+        [DefaultMemberPermissions(GuildPermission.Administrator)]
         [SlashCommand("now-record-channel", "取得現在記錄直播的清單")]
         public async Task NowRecordChannel([Summary("頁數")] int page = 0)
         {
@@ -229,11 +226,10 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             }
         }
 
-        [EnabledInDm(false)]
         [RequireContext(ContextType.Guild)]
         [RequireBotPermission(GuildPermission.ManageGuild)]
-        [DefaultMemberPermissions(GuildPermission.ManageGuild)]
         [RequireUserPermission(GuildPermission.ManageGuild)]
+        [DefaultMemberPermissions(GuildPermission.ManageGuild)]
         [CommandSummary("設定伺服器橫幅使用指定頻道的最新影片(直播)縮圖\n" +
             "若未輸入頻道網址則關閉本設定\n\n" +
             "Bot需要有管理伺服器權限\n" +
@@ -311,32 +307,25 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             }
         }
 
-        [EnabledInDm(false)]
         [RequireContext(ContextType.Guild)]
         [RequireUserPermission(GuildPermission.ManageMessages)]
         [DefaultMemberPermissions(GuildPermission.ManageMessages)]
         [CommandSummary("新增直播開台通知的頻道\n" +
             "輸入 `holo` 通知全部 `Holo成員` 的直播\n" +
             "輸入 `2434` 通知全部 `彩虹社成員` 的直播\n" +
-            "(僅JP、EN跟VR的成員歸類在此選項內，如需其他成員建議先用 `/youtube-spider add` 設定)\n" +
+            "(僅JP、EN 跟 VR 的成員歸類在此選項內，如需其他成員建議先用 `/youtube-spider add` 設定)\n" +
             "輸入 `other` 通知部分 `非兩大箱` 的直播\n" +
             "(可以使用 `/youtube-spider list` 查詢有哪些頻道)\n" +
             "輸入 `all` 通知全部 `Holo + 2434 + 非兩大箱` 的直播\n" +
             "(all 選項會覆蓋所有的通知設定，請注意)")]
         [CommandExample("https://www.youtube.com/@margaretnorth", "all", "2434")]
         [SlashCommand("add", "新增YouTube直播開台通知的頻道")]
-        public async Task AddTextChannel([Summary("頻道網址")] string channelUrl, [Summary("發送通知的頻道", "文字頻道或公告頻道")] IChannel channel)
+        public async Task AddTextChannel([Summary("頻道網址")] string channelUrl,
+            [Summary("發送通知的頻道"), ChannelTypes(ChannelType.Text, ChannelType.News)] IChannel channel)
         {
             await DeferAsync(true).ConfigureAwait(false);
 
-            if (channel.GetChannelType() != ChannelType.Text && channel.GetChannelType() != ChannelType.News)
-            {
-                await Context.Interaction.SendErrorAsync($"`{channel}` 非可接受的頻道類型，僅可接受文字頻道或公告頻道", true);
-                return;
-            }
-
             var textChannel = channel as IGuildChannel;
-
             var permissions = Context.Guild.GetUser(_client.CurrentUser.Id).GetPermissions(textChannel);
             if (!permissions.ViewChannel || !permissions.SendMessages)
             {
@@ -448,7 +437,6 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             }
         }
 
-        [EnabledInDm(false)]
         [RequireContext(ContextType.Guild)]
         [RequireUserPermission(GuildPermission.ManageMessages)]
         [DefaultMemberPermissions(GuildPermission.ManageMessages)]
@@ -529,7 +517,6 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             }
         }
 
-        [EnabledInDm(false)]
         [RequireContext(ContextType.Guild)]
         [RequireUserPermission(GuildPermission.ManageMessages)]
         [DefaultMemberPermissions(GuildPermission.ManageMessages)]
@@ -574,7 +561,6 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             }
         }
 
-        [EnabledInDm(false)]
         [RequireContext(ContextType.Guild)]
         [RequireUserPermission(GuildPermission.ManageMessages | GuildPermission.MentionEveryone)]
         [DefaultMemberPermissions(GuildPermission.ManageMessages | GuildPermission.MentionEveryone)]
@@ -596,7 +582,9 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             "UCUKD-uaobj9jiqB-VXt71mA newstream -",
             "UCbh7KHPMgYGgpISdbF6l0Kw end")]
         [SlashCommand("set-message", "設定 YouTube 通知訊息")]
-        public async Task SetMessage([Summary("頻道網址"), Autocomplete(typeof(GuildNoticeYoutubeChannelIdAutocompleteHandler))] string channelUrl, [Summary("通知類型")] YoutubeStreamService.NoticeType noticeType, [Summary("通知訊息")] string message = "")
+        public async Task SetMessage([Summary("頻道網址"), Autocomplete(typeof(GuildNoticeYoutubeChannelIdAutocompleteHandler))] string channelUrl,
+            [Summary("通知類型")] YoutubeStreamService.NoticeType noticeType,
+            [Summary("通知訊息")] string message = "")
         {
             await DeferAsync(true).ConfigureAwait(false);
 
@@ -695,7 +683,6 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
         string GetCurrectMessage(string message)
             => message == "-" ? "(已關閉本類別的通知)" : message;
 
-        [EnabledInDm(false)]
         [RequireContext(ContextType.Guild)]
         [RequireUserPermission(GuildPermission.ManageMessages)]
         [DefaultMemberPermissions(GuildPermission.ManageMessages)]

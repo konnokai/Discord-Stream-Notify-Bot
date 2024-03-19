@@ -6,7 +6,6 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
     [Group("member", "YouTube 會限驗證相關指令")]
     public class YoutubeMember : TopLevelModule<YoutubeMemberService>
     {
-        [EnabledInDm(false)]
         [RequireContext(ContextType.Guild)]
         [SlashCommand("check", "確認是否已到網站登入綁定")]
         public async Task CheckAsync()
@@ -76,7 +75,6 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
             }
         }
 
-        [EnabledInDm(false)]
         [RequireContext(ContextType.Guild)]
         [SlashCommand("cancel-member-check", "取消本伺服器的會限驗證，會一併移除會限驗證用戶組")]
         public async Task CancelMemberCheckAsync()
@@ -161,7 +159,6 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
             }
         }
 
-        [EnabledInDm(false)]
         [RequireContext(ContextType.Guild)]
         [SlashCommand("list-can-check-channel", "顯示現在可供驗證的會限頻道清單")]
         public async Task ListCheckChannel()
