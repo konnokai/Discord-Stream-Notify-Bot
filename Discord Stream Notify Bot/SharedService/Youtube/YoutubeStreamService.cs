@@ -101,8 +101,9 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                             await Program.ApplicatonOwner.SendMessageAsync(msg);
                         }
                     }
-                    catch (Exception)
+                    catch (Exception ex)
                     {
+                        Log.Error(ex, "Send Message To Channel Error");
                         await Program.ApplicatonOwner.SendMessageAsync(msg);
                     }
                 };

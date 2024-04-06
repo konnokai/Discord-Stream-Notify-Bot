@@ -106,6 +106,9 @@ public class BotConfig
             UptimeKumaPushUrl = config.UptimeKumaPushUrl;
             DetectGuildId = config.DetectGuildId;
             DetectCategoryId = config.DetectCategoryId;
+            SendMessageGuildId = config.SendMessageGuildId;
+            SendMessageChannelId = config.SendMessageChannelId;
+            MentionRoleId = config.MentionRoleId;
 
             if (string.IsNullOrWhiteSpace(config.RedisTokenKey) || string.IsNullOrWhiteSpace(RedisTokenKey))
             {
