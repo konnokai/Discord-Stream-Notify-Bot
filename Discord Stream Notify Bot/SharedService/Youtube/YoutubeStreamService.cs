@@ -48,6 +48,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
         private readonly EmojiService _emojiService;
         private readonly ConcurrentDictionary<string, byte> _endLiveBag = new();
         private readonly string _callbackUrl;
+        private ITextChannel textChannel = null;
 
         public YoutubeStreamService(DiscordSocketClient client, IHttpClientFactory httpClientFactory, BotConfig botConfig, EmojiService emojiService)
         {
@@ -77,8 +78,33 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     if (voiceChannel.CategoryId != botConfig.DetectCategoryId)
                         return;
 
-                    await Program.ApplicatonOwner.SendMessageAsync($"`{voiceChannel.Guild}` 建立了新頻道 `{voiceChannel}`");
-                    return;
+                    string msg = $"`{voiceChannel.Guild}` 建立了新頻道 `{voiceChannel}`";
+
+                    try
+                    {
+                        if (botConfig.SendMessageGuildId != 0 && botConfig.SendMessageGuildId != 0)
+                        {
+                            if (textChannel == null)
+                            {
+                                textChannel = _client.GetGuild(botConfig.SendMessageGuildId).GetTextChannel(botConfig.SendMessageGuildId);
+                            }
+
+                            if (botConfig.MentionRoleId != 0)
+                            {
+                                msg = $"<@&{botConfig.MentionRoleId}> `{voiceChannel.Guild}` 建立了新頻道 `{voiceChannel}`";
+                            }
+
+                            await textChannel.SendMessageAsync(msg);
+                        }
+                        else
+                        {
+                            await Program.ApplicatonOwner.SendMessageAsync(msg);
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        await Program.ApplicatonOwner.SendMessageAsync(msg);
+                    }
                 };
             }
 #endif

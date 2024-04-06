@@ -8,6 +8,11 @@ public class BotConfig
 
     public ulong DetectGuildId { get; set; } = 0;
     public ulong DetectCategoryId { get; set; } = 0;
+
+    public ulong SendMessageGuildId { get; set; } = 0;
+    public ulong SendMessageChannelId { get; set; } = 0;
+    public ulong MentionRoleId { get; set; } = 0;
+
     public string DiscordToken { get; set; } = "";
     public ulong TestSlashCommandGuildId { get; set; } = 0;
     public string WebHookUrl { get; set; } = "";
