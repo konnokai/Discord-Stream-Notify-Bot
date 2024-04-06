@@ -82,11 +82,11 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                     try
                     {
-                        if (botConfig.SendMessageGuildId != 0 && botConfig.SendMessageGuildId != 0)
+                        if (botConfig.SendMessageGuildId != 0 && botConfig.SendMessageChannelId != 0)
                         {
                             if (textChannel == null)
                             {
-                                textChannel = _client.GetGuild(botConfig.SendMessageGuildId).GetTextChannel(botConfig.SendMessageGuildId);
+                                textChannel = _client.GetGuild(botConfig.SendMessageGuildId).GetTextChannel(botConfig.SendMessageChannelId);
                             }
 
                             if (botConfig.MentionRoleId != 0)
