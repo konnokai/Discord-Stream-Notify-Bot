@@ -1,4 +1,4 @@
-﻿由 <@284989733229297664>(konnokai) 製作
+﻿由 孤之界(konnokai) 製作
 
 可以幫你處理以下功能
 1. YouTube 通知直播待機所建立/開台/關台(部分頻道)
@@ -6,15 +6,16 @@
 3. YouTube 會限驗證並自動授予用戶組
 4. TwitterSpace 開台通知
 5. TwitCasting 開台通知
+6. Twitch 開台通知
 
 __**其他特殊功能**__
 部分頻道會有錄影，可以使用 `/youtube now-record-channel` 跟 `/youtube list-record-channel` 查詢
 如果伺服器 Boost 達 Lv2 的話可以使用 `/youtube set-banner-change 頻道網址`，設定伺服器橫幅使用指定頻道的最新影片(直播)縮圖
 (可用 `/help get-command-help set-banner-change` 查看詳情)
 
-邀請Bot後請開一個新的文字頻道做為直播通知用，並且開放Bot的讀取、發送訊息權限 (最好的做法是不要變更預設權限或直接給全權)
+邀請 Bot 後請開一個新的文字頻道做為直播通知用，並且開放 Bot 的讀取、發送訊息權限 (最好的做法是不要變更預設權限或直接給全權)
 設定可至 [此網頁](https://konnokai.notion.site/a4fff40bd95c4bec9edca5b78cdd5d37) 查看詳細說明
 
-[點此邀請BOT到新伺服器](https://discordapp.com/api/oauth2/authorize?client_id=758222559392432160&permissions=2416143425&scope=bot%20applications.commands)
+[點此邀請 Bot 到新伺服器](https://discordapp.com/api/oauth2/authorize?client_id=758222559392432160&permissions=2416143425&scope=bot%20applications.commands)
 
-有新功能想加入或任何建議可以到推特私訊 [孤之界(@Jun112561)](https://twitter.com/Jun112561) 討論
+有新功能想加入或任何建議可以到推特私訊 [孤之界(@Jun112561)](https://twitter.com/Jun112561) 或到 [GitHub](https://github.com/konnokai/Discord-Stream-Notify-Bot) 發 Issue 討論
