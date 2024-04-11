@@ -138,7 +138,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                                 Log.New($"(新直播) | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
 
-                                if (startTime > DateTime.Now && startTime < DateTime.Now.AddDays(7))
+                                if (startTime > DateTime.Now && startTime < DateTime.Now.AddDays(14))
                                 {
                                     EmbedBuilder embedBuilder = new EmbedBuilder();
                                     embedBuilder.WithErrorColor()
@@ -189,7 +189,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
         {
             if (Program.IsNijisanjiChannelSpider || Program.IsDisconnect)
             {
-                Log.Error("彩虹社影片清單整理已取消");
+                Log.Warn("彩虹社影片清單整理已取消");
                 return;
             }
             //Log.Info("彩虹社影片清單整理開始");
@@ -649,7 +649,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                                     Log.Info($"時間已更改 {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
 
-                                    if (startTime > DateTime.Now && startTime < DateTime.Now.AddDays(7))
+                                    if (startTime > DateTime.Now && startTime < DateTime.Now.AddDays(14))
                                     {
                                         EmbedBuilder embedBuilder = new EmbedBuilder();
                                         embedBuilder.WithErrorColor()
@@ -753,7 +753,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 streamVideo.ChannelType = streamVideo.GetProductionType();
                 Log.New($"(新直播) | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
 
-                if (startTime > DateTime.Now && startTime < DateTime.Now.AddDays(7))
+                if (startTime > DateTime.Now && startTime < DateTime.Now.AddDays(14))
                 {
                     EmbedBuilder embedBuilder = new EmbedBuilder();
                     embedBuilder.WithErrorColor()

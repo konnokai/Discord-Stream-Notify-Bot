@@ -8,7 +8,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
     {
         private void StartReminder(DataBase.Table.Video streamVideo, DataBase.Table.Video.YTChannelType channelType)
         {
-            if (streamVideo.ScheduledStartTime > DateTime.Now.AddDays(7)) return;
+            if (streamVideo.ScheduledStartTime > DateTime.Now.AddDays(14)) return;
 
             try
             {
