@@ -56,32 +56,17 @@ namespace Discord_Stream_Notify_Bot.HttpClients
 
         public async Task GetQueryIdAndFeatureSwitchesAsync()
         {
+            _apiQueryData.Clear();
+
             using (var httpClient = new HttpClient())
             {
                 httpClient.DefaultRequestHeaders.Add("UserAgent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36");
                 httpClient.DefaultRequestHeaders.Add("Referer", "https://twitter.com/");
                 var web = await httpClient.GetStringAsync("https://twitter.com");
 
-                Regex regex = new Regex(@"main.([^""]+).js");
-                var match = regex.Match(web);
-                if (!match.Success)
-                    throw new Exception("GetQueryIdAndFeatureSwitchesAsync-Get Main version error");
-
-                string type = "client-web";
-                if (web.Contains("-legacy"))
-                    type += "-legacy";
-
-                _apiQueryData.Clear();
-                regex = new Regex("{queryId:\"([^\"]+)\",operationName:\"([^\"]+)\",operationType:\"([^\"]+)\",metadata:{featureSwitches:\\[([^\\]]+)", RegexOptions.None);
-
-                string mainJsText = await httpClient.GetStringAsync($"https://abs.twimg.com/responsive-web/{type}/{match}");
-                var queryList = regex.Matches(mainJsText);
-                foreach (Match item in queryList)
+                foreach (var item in new string[] { "main", "modules.audio" })
                 {
-                    string queryId = item.Groups[1].Value;
-                    string featureSwitches = "{" + string.Join(',', item.Groups[4].Value.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select((x) => $"{x}:false")) + "}";
-                    featureSwitches = WebUtility.UrlEncode(featureSwitches);
-                    _apiQueryData.Add(item.Groups[2].Value, new(queryId, featureSwitches));
+                    await AddApiQueryDataAsync(httpClient, web, item);
                 }
 
                 _graphQLClient.DefaultRequestHeaders.Remove("x-guest-token");
@@ -93,6 +78,56 @@ namespace Discord_Stream_Notify_Bot.HttpClients
                 Log.Info($"AudioSpaceById QueryId: {_apiQueryData["AudioSpaceById"].QueryId}");
                 Log.Info($"UserByScreenName QueryId: {_apiQueryData["UserByScreenName"].QueryId}");
                 Log.Info($"GuestToken: {guestToken}");
+            }
+        }
+
+        private async Task AddApiQueryDataAsync(HttpClient httpClient, string webContext, string fileName)
+        {
+            try
+            {
+                if (fileName == "main")
+                {
+                    Regex mainRegex = new Regex(@"main.([^""]+).js");
+
+                    var match = mainRegex.Match(webContext);
+                    if (!match.Success)
+                        throw new Exception($"AddApiQueryDataAsync - Get {fileName} version error");
+
+                    fileName = match.ToString();
+                }
+                else
+                {
+                    Regex fileNameRegex = new Regex($@"""{fileName.Replace(".", "\\.")}"":""(\w+)""");
+
+                    var match = fileNameRegex.Match(webContext);
+                    if (!match.Success)
+                        throw new Exception($"AddApiQueryDataAsync - Get {fileName} version error");
+
+                    fileName = $"{fileName}.{match.Groups[1]}a.js";
+                }
+
+                string type = "client-web";
+                if (webContext.Contains("-legacy"))
+                    type += "-legacy";
+
+                Regex apiQueryRegex = new Regex("{queryId:\"([^\"]+)\",operationName:\"([^\"]+)\",operationType:\"([^\"]+)\",metadata:{featureSwitches:\\[([^\\]]+)", RegexOptions.None);
+
+                Log.Debug($"https://abs.twimg.com/responsive-web/{type}/{fileName}");
+
+                string mainJsText = await httpClient.GetStringAsync($"https://abs.twimg.com/responsive-web/{type}/{fileName}");
+                var queryList = apiQueryRegex.Matches(mainJsText);
+                foreach (Match item in queryList)
+                {
+                    string queryId = item.Groups[1].Value;
+                    string featureSwitches = "{" + string.Join(',', item.Groups[4].Value.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select((x) => $"{x}:false")) + "}";
+                    featureSwitches = WebUtility.UrlEncode(featureSwitches);
+                    _apiQueryData.Add(item.Groups[2].Value, new(queryId, featureSwitches));
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, $"AddApiQueryData - {fileName}");
+                throw;
             }
         }
 
