@@ -152,5 +152,47 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                 }
             }
         }
+
+        [RequireContext(ContextType.DM)]
+        [RequireOwner]
+        [Command("SetChannelSpiderGuildId")]
+        [Summary("設定頻道的伺服器 Id")]
+        [CommandExample("https://www.youtube.com/channel/UC0qt9BfrpQo-drjuPKl_vdA 0")]
+        [Alias("scsg")]
+        public async Task SetChannelSpiderGuildId([Summary("頻道網址")] string channelUrl = "", ulong guildId = 0)
+        {
+            string channelId = "";
+            try
+            {
+                channelId = await _service.GetChannelIdAsync(channelUrl).ConfigureAwait(false);
+            }
+            catch (FormatException fex)
+            {
+                await Context.Channel.SendErrorAsync(fex.Message);
+                return;
+            }
+            catch (ArgumentNullException)
+            {
+                await Context.Channel.SendErrorAsync("網址不可空白");
+                return;
+            }
+
+            using (var db = DataBase.MainDbContext.GetDbContext())
+            {
+                if (db.YoutubeChannelSpider.Any((x) => x.ChannelId == channelId))
+                {
+                    var channel = db.YoutubeChannelSpider.First((x) => x.ChannelId == channelId);
+                    channel.GuildId = guildId;
+                    db.YoutubeChannelSpider.Update(channel);
+                    db.SaveChanges();
+
+                    await Context.Channel.SendConfirmAsync($"已設定 {channel.ChannelTitle} 的 GuildId 為 `{guildId}`").ConfigureAwait(false);
+                }
+                else
+                {
+                    await Context.Channel.SendErrorAsync($"尚未設定 {channelId} 的爬蟲").ConfigureAwait(false);
+                }
+            }
+        }
     }
 }
