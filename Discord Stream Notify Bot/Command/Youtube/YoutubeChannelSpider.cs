@@ -18,17 +18,28 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
             {
                 try
                 {
+                    await Context.Channel.TriggerTypingAsync();
+
                     var list = new List<string>();
+                    var checkedGuildHashSet = new HashSet<ulong>();
                     foreach (var item in db.YoutubeChannelSpider.Where((x) => x.GuildId != 0))
                     {
+                        if (checkedGuildHashSet.Contains(item.GuildId))
+                            continue;
+
                         try
                         {
-                            // 很慢，想到再來加強
-                            await _client.Rest.GetGuildAsync(item.GuildId);
+                            var guild = _client.GetGuild(item.GuildId);
+                            if (guild == null)
+                                list.AddRange(db.YoutubeChannelSpider.Where((x) => x.GuildId == item.GuildId).Select((x) => Format.Url(x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}")));
                         }
-                        catch (Exception)
+                        catch (Exception ex)
                         {
-                            list.Add(Format.Url(item.ChannelTitle, $"https://www.youtube.com/channel/{item.ChannelId}"));
+                            Log.Error(ex, $"{item.ChannelTitle}: {item.GuildId}");
+                        }
+                        finally
+                        {
+                            checkedGuildHashSet.Add(item.GuildId);
                         }
                     }
 
@@ -44,8 +55,8 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                             .WithOkColor()
                             .WithTitle("死去的直播爬蟲清單")
                             .WithDescription(string.Join('\n', list.Skip(page * 10).Take(10)))
-                            .WithFooter($"{Math.Min(list.Count(), (page + 1) * 10)} / {list.Count()}個頻道");
-                    }, list.Count(), 10, false).ConfigureAwait(false);
+                            .WithFooter($"{Math.Min(list.Count(), (page + 1) * 10)} / {list.Count}個頻道");
+                    }, list.Count, 10, false).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
@@ -187,6 +198,47 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                     db.SaveChanges();
 
                     await Context.Channel.SendConfirmAsync($"已設定 {channel.ChannelTitle} 的 GuildId 為 `{guildId}`").ConfigureAwait(false);
+                }
+                else
+                {
+                    await Context.Channel.SendErrorAsync($"尚未設定 {channelId} 的爬蟲").ConfigureAwait(false);
+                }
+            }
+        }
+
+        [RequireContext(ContextType.DM)]
+        [RequireOwner]
+        [Command("RemoveChannelSpider")]
+        [Summary("移除頻道爬蟲")]
+        [CommandExample("https://www.youtube.com/channel/UC0qt9BfrpQo-drjuPKl_vdA")]
+        [Alias("rcs")]
+        public async Task RemoveChannelSpider([Summary("頻道網址")] string channelUrl = "")
+        {
+            string channelId = "";
+            try
+            {
+                channelId = await _service.GetChannelIdAsync(channelUrl).ConfigureAwait(false);
+            }
+            catch (FormatException fex)
+            {
+                await Context.Channel.SendErrorAsync(fex.Message);
+                return;
+            }
+            catch (ArgumentNullException)
+            {
+                await Context.Channel.SendErrorAsync("網址不可空白");
+                return;
+            }
+
+            using (var db = DataBase.MainDbContext.GetDbContext())
+            {
+                if (db.YoutubeChannelSpider.Any((x) => x.ChannelId == channelId))
+                {
+                    var channel = db.YoutubeChannelSpider.First((x) => x.ChannelId == channelId);
+                    db.YoutubeChannelSpider.Remove(channel);
+                    db.SaveChanges();
+
+                    await Context.Channel.SendConfirmAsync($"已移除 {channel.ChannelTitle} 的爬蟲").ConfigureAwait(false);
                 }
                 else
                 {
