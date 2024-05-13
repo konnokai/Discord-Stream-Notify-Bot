@@ -291,8 +291,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                             ChannelType = DataBase.Table.Video.YTChannelType.Nijisanji
                         };
 
-                        Log.Warn($"檢測到無Liver資料的頻道({videoId}): `{video.Snippet.ChannelTitle}` / {item.Attributes.Title}");
-                        Log.Warn("重新刷新Liver資料清單");
+                        Log.Warn($"檢測到無 Liver 資料的頻道({videoId}): `{video.Snippet.ChannelTitle}` / {item.Attributes.Title}");
+                        Log.Warn("重新刷新 Liver 資料清單");
 
                         NijisanjiLiverContents.Clear();
                         foreach (var affiliation in new string[] { "nijisanji", "nijisanjien", "virtuareal" })
@@ -374,7 +374,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             }
             catch
             {
-                Log.Error("Redis又死了zzz");
+                Log.Error("Redis 又死了zzz");
             }
 #endif
 
@@ -821,7 +821,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                             addNewStreamVideo.Remove(item.Key);
                         }
 
-                        Log.Info($"Holo資料庫已儲存: {db.SaveChanges()}筆");
+                        Log.Info($"Holo 資料庫已儲存: {db.SaveChanges()} 筆");
                     }
                 }
 
@@ -846,7 +846,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                             addNewStreamVideo.Remove(item.Key);
                         }
 
-                        Log.Info($"2434資料庫已儲存: {db.SaveChanges()}筆");
+                        Log.Info($"2434 資料庫已儲存: {db.SaveChanges()} 筆");
                     }
                 }
 
@@ -871,7 +871,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                             addNewStreamVideo.Remove(item.Key);
                         }
 
-                        Log.Info($"Other資料庫已儲存: {db.SaveChanges()}筆");
+                        Log.Info($"Other 資料庫已儲存: {db.SaveChanges()} 筆");
                     }
                 }
 
@@ -896,7 +896,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                             addNewStreamVideo.Remove(item.Key);
                         }
 
-                        Log.Info($"NotVTuber資料庫已儲存: {db.SaveChanges()}筆");
+                        Log.Info($"NotVTuber 資料庫已儲存: {db.SaveChanges()} 筆");
                     }
                 }
             }
@@ -905,7 +905,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 Log.Error($"SaveDateBase {ex}");
             }
 
-            if (saveNum != 0) Log.Info($"資料庫已儲存完畢: {saveNum}筆");
+            if (saveNum != 0) Log.Info($"資料庫已儲存完畢: {saveNum} 筆");
         }
     }
 }
