@@ -46,10 +46,27 @@ namespace Discord_Stream_Notify_Bot
             Console.OutputEncoding = System.Text.Encoding.UTF8;
             Console.CancelKeyPress += Console_CancelKeyPress;
 
-            AppDomain.CurrentDomain.UnhandledException += (sender, args) =>
+            // https://stackoverflow.com/q/5710148/15800522
+            AppDomain.CurrentDomain.UnhandledException += (sender, e) =>
             {
-                Exception e = (Exception)args.ExceptionObject;
-                Log.Error(e, "UnhandledException!!!!!!!!!!!!!!!!!!!!!");
+                StreamWriter sw;
+                DateTime dtLogFileCreated = DateTime.Now;
+                Exception ex;
+
+                try
+                {
+                    sw = new StreamWriter($"crash-{dtLogFileCreated:yyyyMMdd-hhmmss}.log");
+
+                    ex = (Exception)e.ExceptionObject;
+
+                    sw.WriteLine("### Server Crash ###");
+                    sw.WriteLine(ex.ToString());
+                    sw.Close();
+                }
+                finally
+                {
+                    Environment.Exit(1);
+                }
             };
 
             botConfig.InitBotConfig();
