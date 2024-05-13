@@ -49,19 +49,20 @@ namespace Discord_Stream_Notify_Bot
             // https://stackoverflow.com/q/5710148/15800522
             AppDomain.CurrentDomain.UnhandledException += (sender, e) =>
             {
-                StreamWriter sw;
                 DateTime dtLogFileCreated = DateTime.Now;
-                Exception ex;
+                Exception ex = (Exception)e.ExceptionObject;
+
+                Log.Error(ex, "UnhandledException");
 
                 try
                 {
-                    sw = new StreamWriter($"crash-{dtLogFileCreated:yyyyMMdd-hhmmss}.log");
-
-                    ex = (Exception)e.ExceptionObject;
-
-                    sw.WriteLine("### Server Crash ###");
-                    sw.WriteLine(ex.ToString());
-                    sw.Close();
+                    if (!Debugger.IsAttached)
+                    {
+                        StreamWriter sw = new StreamWriter($"{dtLogFileCreated:yyyy-MM-dd hh-mm-ss}_crash.log");
+                        sw.WriteLine("### Server Crash ###");
+                        sw.WriteLine(ex.ToString());
+                        sw.Close();
+                    }
                 }
                 finally
                 {
@@ -142,12 +143,12 @@ namespace Discord_Stream_Notify_Bot
 
         public async Task MainAsync()
         {
-            client = new DiscordSocketClient(new DiscordSocketConfig
+            client = new DiscordSocketClient(new DiscordSocketConfig()
             {
                 LogLevel = LogSeverity.Verbose,
                 ConnectionTimeout = int.MaxValue,
                 MessageCacheSize = 50,
-                // 因為沒有註冊事件，Discord .NET建議可移除這兩個沒用到的特權
+                // 因為沒有註冊事件，Discord .NET 建議可移除這兩個沒用到的特權
                 // https://dotblogs.com.tw/yc421206/2015/10/20/c_scharp_enum_of_flags
                 GatewayIntents = GatewayIntents.AllUnprivileged & ~GatewayIntents.GuildInvites & ~GatewayIntents.GuildScheduledEvents,
                 AlwaysDownloadDefaultStickers = false,

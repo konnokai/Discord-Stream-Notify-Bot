@@ -28,7 +28,7 @@ namespace Discord_Stream_Notify_Bot.Interaction
                 assembly: Assembly.GetEntryAssembly(),
                 services: _services);
 
-            #region 檢查指令是否符合Discord的Regex規範
+            #region 檢查指令是否符合 Discord 的 Regex 規範
 #if DEBUG || DEBUG_DONTREGISTERCOMMAND
             bool isError = false;
             Regex regex = new Regex(@"^[\w-]{1,32}$");
