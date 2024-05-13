@@ -1,7 +1,7 @@
 ﻿public static class UptimeKumaClient
 {
     static Timer timerUptimeKumaPush;
-    static DiscordSocketClient _client;
+    static DiscordSocketClient discordSocketClient;
     static HttpClient httpClient;
     static string uptimeKumaPushUrl;
     static bool isInit = false;
@@ -10,30 +10,30 @@
     {
         if (isInit)
             return false;
-        isInit = true;
 
         if (string.IsNullOrEmpty(uptimeKumaPushUrl))
         {
-            Log.Warn($"未設定{nameof(uptimeKumaPushUrl)}的網址，略過檢測");
+            Log.Warn($"未設定 {nameof(uptimeKumaPushUrl)} 的網址，略過檢測");
             return false;
         }
 
         httpClient = new HttpClient();
-        _client = discordSocketClient;
         UptimeKumaClient.uptimeKumaPushUrl = uptimeKumaPushUrl.Split('?')[0];
+        UptimeKumaClient.discordSocketClient = discordSocketClient;
 
         try
         {
             timerUptimeKumaPush = new Timer(async (state) => { await UptimeKumaTimerHandler(state); });
             timerUptimeKumaPush.Change(0, 30 * 1000);
 
-            Log.Info("已註冊Uptime Kuma狀態檢測");
+            Log.Info("已註冊 Uptime Kuma 狀態檢測");
         }
         catch (Exception ex)
         {
             Log.Error($"UptimeKumaClient: {ex}");
         }
 
+        isInit = true;
         return true;
     }
 
@@ -41,17 +41,17 @@
     {
         try
         {
-            string latency = _client.Latency.ToString() ?? "";
+            string latency = discordSocketClient.Latency.ToString() ?? "";
             var result = await httpClient.GetStringAsync($"{uptimeKumaPushUrl}?status=up&msg=OK&ping={latency}");
             if (result != "{\"ok\":true}")
             {
-                Log.Error("Uptime Kuma回傳錯誤");
+                Log.Error("Uptime Kuma 回傳錯誤");
                 Log.Error(result);
             }
         }
         catch (TaskCanceledException timeout)
         {
-            Log.Error($"UptimeKumaTimerHandler-Timeout: {timeout.Message}");
+            Log.Warn($"UptimeKumaTimerHandler-Timeout: {timeout.Message}");
         }
         catch (HttpRequestException requestEx)
         {
