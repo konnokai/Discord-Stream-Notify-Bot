@@ -45,6 +45,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
         private Timer holoSchedule, nijisanjiSchedule, otherSchedule, checkScheduleTime, saveDateBase, subscribePubSub, reScheduleTime/*, checkHoloNowStream, holoScheduleEmoji*/;
         private readonly DiscordSocketClient _client;
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly HttpClient _nijisanjiApiHttpClient;
         private readonly EmojiService _emojiService;
         private readonly ConcurrentDictionary<string, byte> _endLiveBag = new();
         private readonly string _callbackUrl;
@@ -54,6 +55,9 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
         {
             _client = client;
             _httpClientFactory = httpClientFactory;
+
+            _nijisanjiApiHttpClient = _httpClientFactory.CreateClient();
+            _nijisanjiApiHttpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
 
             YouTubeService = new YouTubeService(new BaseClientService.Initializer
             {
@@ -691,8 +695,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
             try
             {
-                var httpClient = _httpClientFactory.CreateClient();
-                var json = await httpClient.GetStringAsync($"https://www.nijisanji.jp/api/livers?limit=300&offset=0&orderKey=subscriber_count&order=desc&affiliation={affiliation}&locale=ja&includeAll=true&includeHidden=true");
+                var json = await _nijisanjiApiHttpClient.GetStringAsync($"https://www.nijisanji.jp/api/livers?limit=300&orderKey=subscriber_count&order=asc&affiliation={affiliation}&locale=ja&includeAll=true");
                 var liver = JsonConvert.DeserializeObject<List<NijisanjiLiverJson>>(json);
                 await Program.RedisDb.StringSetAsync($"youtube.nijisanji.liver.{affiliation}", JsonConvert.SerializeObject(liver), TimeSpan.FromDays(1));
                 foreach (var item in liver)

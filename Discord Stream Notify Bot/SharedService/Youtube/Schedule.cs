@@ -197,7 +197,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             try
             {
                 Program.IsNijisanjiChannelSpider = true;
-                using var httpClient = _httpClientFactory.CreateClient();
 
                 List<Data> datas = new List<Data>();
                 NijisanjiStreamJson nijisanjiStreamJson = null;
@@ -206,7 +205,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 {
                     try
                     {
-                        string result = await httpClient.GetStringAsync($"https://www.nijisanji.jp/api/streams?day_offset={i}");
+                        string result = await _nijisanjiApiHttpClient.GetStringAsync($"https://www.nijisanji.jp/api/streams?day_offset={i}");
                         if (result.Contains("ERROR</h1>"))
                             continue;
 
