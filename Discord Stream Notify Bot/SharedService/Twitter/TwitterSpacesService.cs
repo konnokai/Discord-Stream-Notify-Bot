@@ -35,13 +35,20 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
             if (string.IsNullOrEmpty(twitterSpaceRecordPath)) twitterSpaceRecordPath = Program.GetDataFilePath("");
             if (!twitterSpaceRecordPath.EndsWith(Program.GetPlatformSlash())) twitterSpaceRecordPath += Program.GetPlatformSlash();
 
-#if !RELEASE
+#if DEBUG_API
+            Task.Run(async () => await _twitterClient.GetQueryIdAndFeatureSwitchesAsync());
+            return;
+#elif !RELEASE
             return;
 #endif
 
             timer = new(async (stats) =>
             {
-                if (isRuning) return; isRuning = true;
+                if (isRuning)
+                    return;
+
+                isRuning = true;
+
                 try
                 {
                     using (var db = DataBase.MainDbContext.GetDbContext())

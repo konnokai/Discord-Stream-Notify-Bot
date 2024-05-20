@@ -1,4 +1,5 @@
 ﻿using Discord_Stream_Notify_Bot.HttpClients.Twitter;
+using HtmlAgilityPack;
 using Newtonsoft.Json.Linq;
 using System.Net;
 using System.Text;
@@ -58,15 +59,20 @@ namespace Discord_Stream_Notify_Bot.HttpClients
         {
             _apiQueryData.Clear();
 
-            using (var httpClient = new HttpClient())
+            CookieContainer cookies = new CookieContainer();
+            HttpClientHandler handler = new HttpClientHandler();
+            handler.CookieContainer = cookies;
+
+            using (var httpClient = new HttpClient(handler))
             {
-                httpClient.DefaultRequestHeaders.Add("UserAgent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36");
+                httpClient.DefaultRequestHeaders.Add("UserAgent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
                 httpClient.DefaultRequestHeaders.Add("Referer", "https://twitter.com/");
-                var web = await httpClient.GetStringAsync("https://twitter.com");
+
+                var webContext = await GetRealHomePageContextAsync(httpClient);
 
                 foreach (var item in new string[] { "main", "modules.audio" })
                 {
-                    await AddApiQueryDataAsync(httpClient, web, item);
+                    await AddApiQueryDataAsync(httpClient, webContext, item);
                 }
 
                 _graphQLClient.DefaultRequestHeaders.Remove("x-guest-token");
@@ -79,6 +85,45 @@ namespace Discord_Stream_Notify_Bot.HttpClients
                 Log.Info($"UserByScreenName QueryId: {_apiQueryData["UserByScreenName"].QueryId}");
                 Log.Info($"GuestToken: {guestToken}");
             }
+        }
+
+        private async Task<string> GetRealHomePageContextAsync(HttpClient httpClient)
+        {
+            var httpResponse = await httpClient.GetAsync("https://twitter.com");
+            var firstWebContext = await httpResponse.Content.ReadAsStringAsync();
+
+            string redirectUrl = "";
+            Regex regex = new Regex(@"document\.location\s*=\s*""(?'url'.+?)""");
+            Match match = Regex.Match(firstWebContext, @"document\.location\s*=\s*""(?'url'.+?)""");
+            if (match.Success)
+                redirectUrl = match.Groups["url"].Value;
+
+            if (string.IsNullOrEmpty(redirectUrl))
+                throw new NullReferenceException(redirectUrl);
+
+            httpResponse = await httpClient.GetAsync(redirectUrl);
+            HtmlDocument htmlDocument = new HtmlDocument();
+            htmlDocument.LoadHtml(await httpResponse.Content.ReadAsStringAsync());
+            var nodes = htmlDocument.DocumentNode.Descendants().Where((x) => x.Name == "input");
+
+            var formContent = new Dictionary<string, string>();
+            foreach (var node in nodes)
+            {
+                if (node.GetAttributeValue("type", "") != "hidden")
+                    continue;
+
+                string name = node.GetAttributeValue("name", "");
+                string value = node.GetAttributeValue("value", "");
+                if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(value))
+                    continue;
+
+                formContent.Add(name, value);
+            }
+
+            httpResponse = await httpClient.PostAsync("https://x.com/x/migrate", new FormUrlEncodedContent(formContent));
+            var readWebContext = await httpResponse.Content.ReadAsStringAsync();
+
+            return readWebContext;
         }
 
         private async Task AddApiQueryDataAsync(HttpClient httpClient, string webContext, string fileName)
