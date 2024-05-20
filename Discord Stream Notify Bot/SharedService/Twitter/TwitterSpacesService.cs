@@ -57,8 +57,13 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
 
                                 foreach (var item in spaces)
                                 {
-                                    if (hashSet.Contains(item.SpaceId)) continue;
-                                    if (db.TwitterSpace.Any((x) => x.SpaecId == item.SpaceId)) { hashSet.Add(item.SpaceId); continue; }
+                                    if (hashSet.Contains(item.SpaceId))
+                                        continue;
+
+                                    hashSet.Add(item.SpaceId);
+
+                                    if (db.TwitterSpace.Any((x) => x.SpaecId == item.SpaceId))
+                                        continue;
 
                                     try
                                     {
@@ -81,7 +86,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                                         catch (Exception ex)
                                         {
                                             Log.Error(ex, $"GetTwitterSpaceMasterUrl: {item.SpaceId}");
-                                            hashSet.Add(item.SpaceId);
                                             continue;
                                         }
 
@@ -91,7 +95,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                                             spaceData.SpaecTitle = $"語音空間 ({spaceData.SpaecActualStartTime:yyyy/MM/dd})";
 
                                         db.TwitterSpace.Add(spaceData);
-                                        hashSet.Add(item.SpaceId);
 
                                         if (IsRecordSpace(spaceData) && !string.IsNullOrEmpty(masterUrl))
                                         {
@@ -108,8 +111,12 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                                         }
                                         else await SendSpaceMessageAsync(userData, spaceData);
                                     }
-                                    catch (Exception ex) { Log.Error($"Spaces-Data {item.SpaceId}: {ex}"); }
+                                    catch (Exception ex)
+                                    {
+                                        Log.Error($"Spaces-Data {item.SpaceId}: {ex}");
+                                    }
                                 }
+
                                 db.SaveChanges();
                             }
                             catch (HttpRequestException httpEx) when (httpEx.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
@@ -126,7 +133,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                 }
                 catch (Exception ex) { Log.Error(ex, "Spaces-Timer"); }
                 finally { isRuning = false; }
-            }, null, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(90));
+            }, null, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(120));
         }
 
         public async Task<Result> GetTwitterUserAsync(string userScreenName)
