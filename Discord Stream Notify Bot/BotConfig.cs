@@ -8,10 +8,8 @@ public class BotConfig
 
     public ulong DetectGuildId { get; set; } = 0;
     public ulong DetectCategoryId { get; set; } = 0;
-
-    public ulong SendMessageGuildId { get; set; } = 0;
-    public ulong SendMessageChannelId { get; set; } = 0;
     public ulong MentionRoleId { get; set; } = 0;
+    public string SendMessageWebHookUrl { get; set; } = "";
 
     public string DiscordToken { get; set; } = "";
     public ulong TestSlashCommandGuildId { get; set; } = 0;
@@ -106,8 +104,7 @@ public class BotConfig
             UptimeKumaPushUrl = config.UptimeKumaPushUrl;
             DetectGuildId = config.DetectGuildId;
             DetectCategoryId = config.DetectCategoryId;
-            SendMessageGuildId = config.SendMessageGuildId;
-            SendMessageChannelId = config.SendMessageChannelId;
+            SendMessageWebHookUrl = config.SendMessageWebHookUrl;
             MentionRoleId = config.MentionRoleId;
 
             if (string.IsNullOrWhiteSpace(config.RedisTokenKey) || string.IsNullOrWhiteSpace(RedisTokenKey))

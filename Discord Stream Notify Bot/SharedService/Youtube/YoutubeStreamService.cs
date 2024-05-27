@@ -1,4 +1,5 @@
 ﻿using Discord.Interactions;
+using Discord.Webhook;
 using Discord_Stream_Notify_Bot.Interaction;
 using Discord_Stream_Notify_Bot.SharedService.Youtube.Json;
 using Google.Apis.Services;
@@ -44,12 +45,12 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
         private Timer holoSchedule, nijisanjiSchedule, otherSchedule, checkScheduleTime, saveDateBase, subscribePubSub, reScheduleTime/*, checkHoloNowStream, holoScheduleEmoji*/;
         private readonly DiscordSocketClient _client;
+        private readonly DiscordWebhookClient _webhookClient;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly HttpClient _nijisanjiApiHttpClient;
         private readonly EmojiService _emojiService;
         private readonly ConcurrentDictionary<string, byte> _endLiveBag = new();
         private readonly string _callbackUrl;
-        private ITextChannel textChannel = null;
 
         public YoutubeStreamService(DiscordSocketClient client, IHttpClientFactory httpClientFactory, BotConfig botConfig, EmojiService emojiService)
         {
@@ -71,6 +72,11 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 #if RELEASE
             if (botConfig.DetectGuildId != 0 && botConfig.DetectCategoryId != 0)
             {
+                if (!string.IsNullOrEmpty(botConfig.SendMessageWebHookUrl))
+                {
+                    _webhookClient = new DiscordWebhookClient(botConfig.SendMessageWebHookUrl);
+                }
+
                 _client.ChannelCreated += async (channel) =>
                 {
                     if (channel is not IVoiceChannel voiceChannel)
@@ -86,19 +92,14 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                     try
                     {
-                        if (botConfig.SendMessageGuildId != 0 && botConfig.SendMessageChannelId != 0)
+                        if (_webhookClient != null)
                         {
-                            if (textChannel == null)
-                            {
-                                textChannel = _client.GetGuild(botConfig.SendMessageGuildId).GetTextChannel(botConfig.SendMessageChannelId);
-                            }
-
                             if (botConfig.MentionRoleId != 0)
                             {
                                 msg = $"<@&{botConfig.MentionRoleId}> `{voiceChannel.Guild}` 建立了新頻道 `{voiceChannel}`";
                             }
 
-                            await textChannel.SendMessageAsync(msg);
+                            await _webhookClient.SendMessageAsync(msg);
                         }
                         else
                         {
