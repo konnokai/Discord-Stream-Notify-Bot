@@ -224,12 +224,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 {
                     Log.Info($"{channel} - {videoId}");
 
-                    if (_endLiveBag.ContainsKey(videoId))
-                    {
-                        Log.Warn("重複通知，略過");
-                        return;
-                    }
-
                     using (var db = DataBase.MainDbContext.GetDbContext())
                     {
                         try
@@ -282,12 +276,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 {
                     Log.Info($"{channel} - {videoId}");
 
-                    if (_endLiveBag.ContainsKey(videoId))
-                    {
-                        Log.Warn("重複通知，略過");
-                        return;
-                    }
-
                     _endLiveBag.TryAdd(videoId, 1);
 
                     using (var db = DataBase.MainDbContext.GetDbContext())
@@ -319,12 +307,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 Program.RedisSub.Subscribe(new RedisChannel("youtube.unarchived", RedisChannel.PatternMode.Literal), async (channel, videoId) =>
                 {
                     Log.Info($"{channel} - {videoId}");
-
-                    if (_endLiveBag.ContainsKey(videoId))
-                    {
-                        Log.Warn("重複通知，略過");
-                        return;
-                    }
 
                     _endLiveBag.TryAdd(videoId, 1);
 
