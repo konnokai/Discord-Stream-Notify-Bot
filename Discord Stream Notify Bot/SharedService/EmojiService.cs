@@ -13,7 +13,7 @@ namespace Discord_Stream_Notify_Bot.SharedService
                 {
                     try
                     {
-                        youTubeEmote = _client.Guilds.FirstOrDefault((x) => x.Id == 1040482713213345872).Emotes.FirstOrDefault((x) => x.Id == 1041913109926903878);
+                        Task.Run(async() => youTubeEmote = await _client.GetApplicationEmoteAsync(1265158558299848827));
                     }
                     catch (Exception ex)
                     {
@@ -33,7 +33,7 @@ namespace Discord_Stream_Notify_Bot.SharedService
                 {
                     try
                     {
-                        patreonEmote = _client.Guilds.FirstOrDefault((x) => x.Id == 1040482713213345872).Emotes.FirstOrDefault((x) => x.Id == 1041988445830119464);
+                        Task.Run(async () => patreonEmote = await _client.GetApplicationEmoteAsync(1265158902962458769));
                     }
                     catch (Exception ex)
                     {
@@ -53,7 +53,7 @@ namespace Discord_Stream_Notify_Bot.SharedService
                 {
                     try
                     {
-                        payPalEmote = _client.Guilds.FirstOrDefault((x) => x.Id == 1040482713213345872).Emotes.FirstOrDefault((x) => x.Id == 1042004146208899102);
+                        Task.Run(async () => payPalEmote = await _client.GetApplicationEmoteAsync(1265158658015236107));
                     }
                     catch (Exception ex)
                     {
