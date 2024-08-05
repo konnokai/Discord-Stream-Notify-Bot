@@ -115,7 +115,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
             }
         }
 
-        [SlashCommand("unlink", "解除Discord與Google綁定並移除授權")]
+        [SlashCommand("unlink", "解除 Discord 與 Google 綁定並移除授權")]
         public async Task UnlinkAsync()
         {
             await DeferAsync(true);

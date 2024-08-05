@@ -112,9 +112,9 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
         }
 
         [RequireGuildMemberCount(500)]
-        [CommandSummary("新增會限驗證頻道，目前可上限為20個頻道\n" +
+        [CommandSummary("新增會限驗證頻道，目前可上限為 20 個頻道\n" +
            "如新增同個頻道則可變更要授予的用戶組\n" +
-           "伺服器需大於500人才可使用\n" +
+           "伺服器需大於 500 人才可使用\n" +
            "如有任何需要請向擁有者詢問")]
         [CommandExample("https://www.youtube.com/@998rrr @玖桃")]
         [SlashCommand("add-member-check", "新增會限驗證頻道")]
@@ -162,7 +162,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
                     if (db.GuildYoutubeMemberConfig.Count((x) => x.GuildId == Context.Guild.Id) > 20)
                     {
                         await Context.Interaction.SendErrorAsync($"此伺服器已使用 20 個頻道做為會限驗證用\n" +
-                            $"請移除未使用到的頻道來繼續新增驗證頻道", true);
+                            $"請移除未使用到的頻道來繼續新增驗證頻道，或是向 Bot 擁有者詢問", true);
                         return;
                     }
 

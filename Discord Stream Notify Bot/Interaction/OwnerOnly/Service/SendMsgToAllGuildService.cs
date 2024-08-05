@@ -84,21 +84,24 @@
                 if (button.Data.CustomId.EndsWith("yes"))
                 {
                     isSending = true;
+                    var isSendMessageGuildId = new HashSet<ulong>();
 
                     using (var db = DataBase.MainDbContext.GetDbContext())
                     {
-                        List<KeyValuePair<ulong, ulong>> list = db.NoticeYoutubeStreamChannel
-                            .Distinct((x) => x.GuildId)
-                            .Where((x) => _client.Guilds.Any((x2) => x2.Id == x.GuildId))
-                            .Select((x) => new KeyValuePair<ulong, ulong>(x.GuildId, x.DiscordChannelId))
-                            .ToList(); ;
-
                         try
                         {
+                            List<KeyValuePair<ulong, ulong>> list = db.NoticeYoutubeStreamChannel
+                                .Distinct((x) => x.GuildId)
+                                .Where((x) => _client.Guilds.Any((x2) => x2.Id == x.GuildId))
+                                .Select((x) => new KeyValuePair<ulong, ulong>(x.GuildId, x.DiscordChannelId))
+                                .ToList();
+
                             int i = 0, num = list.Count;
                             foreach (var item in list)
                             {
                                 i++;
+
+                                isSendMessageGuildId.Add(item.Key);
 
                                 var guild = _client.GetGuild(item.Key);
                                 if (guild == null)
@@ -156,13 +159,86 @@
                         }
 
                         db.SaveChanges();
-                        await button.Channel.SendMessageAsync("已於通知頻道發送完成");
+                        await button.Channel.SendMessageAsync("已於 YT 通知頻道發送完成");
+
+                        try
+                        {
+                            List<KeyValuePair<ulong, ulong>> list = db.NoticeTwitchStreamChannels
+                                .Distinct((x) => x.GuildId)
+                                .Where((x) => !isSendMessageGuildId.Contains(x.GuildId) && _client.Guilds.Any((x2) => x2.Id == x.GuildId))
+                                .Select((x) => new KeyValuePair<ulong, ulong>(x.GuildId, x.DiscordChannelId))
+                                .ToList();
+
+                            int i = 0, num = list.Count;
+                            foreach (var item in list)
+                            {
+                                i++;
+
+                                isSendMessageGuildId.Add(item.Key);
+
+                                var guild = _client.GetGuild(item.Key);
+                                if (guild == null)
+                                {
+                                    Log.Warn($"伺服器不存在: {item.Key}");
+                                    try
+                                    {
+                                        db.NoticeTwitchStreamChannels.RemoveRange(db.NoticeTwitchStreamChannels.Where((x) => x.GuildId == item.Key));
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        Log.Error(ex.ToString());
+                                    }
+                                    continue;
+                                }
+
+                                var textChannel = guild.GetTextChannel(item.Value);
+                                if (textChannel == null)
+                                {
+                                    Log.Warn($"頻道不存在: {guild.Name} / {item.Value}");
+                                    try
+                                    {
+                                        db.NoticeTwitchStreamChannels.RemoveRange(db.NoticeTwitchStreamChannels.Where((x) => x.DiscordChannelId == item.Value));
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        Log.Error(ex.ToString());
+                                    }
+                                    continue;
+                                }
+
+                                try
+                                {
+                                    await textChannel.SendMessageAsync(embed: checkData.Embed);
+                                }
+                                catch (Discord.Net.HttpException ex) when (ex.DiscordCode.HasValue && ex.DiscordCode == DiscordErrorCode.MissingPermissions ||
+                                    ex.DiscordCode == DiscordErrorCode.InsufficientPermissions)
+                                {
+                                    Log.Warn($"缺少權限導致無法傳送訊息至: {guild.Name} / {textChannel.Name}");
+                                    db.NoticeTwitchStreamChannels.RemoveRange(db.NoticeTwitchStreamChannels.Where((x) => x.DiscordChannelId == item.Value));
+                                }
+                                catch (Exception ex)
+                                {
+                                    Log.Error(ex, $"MSG: {guild.Name} / {textChannel.Name}");
+                                }
+                                finally
+                                {
+                                    Log.Info($"({i}/{num}) {item.Key}");
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Error($"{ex}");
+                        }
+
+                        db.SaveChanges();
+                        await button.Channel.SendMessageAsync("已於 Twitch 通知頻道發送完成");
 
                         try
                         {
                             var memberList = db.GuildConfig
                                 .Distinct((x) => x.GuildId)
-                                .Where((x) => x.LogMemberStatusChannelId != 0 && !list.Any((x2) => x.GuildId == x2.Key) && _client.Guilds.Any((x2) => x2.Id == x.GuildId))
+                                .Where((x) => x.LogMemberStatusChannelId != 0 && !isSendMessageGuildId.Contains(x.GuildId) && _client.Guilds.Any((x2) => x2.Id == x.GuildId))
                                 .Select((x) => new KeyValuePair<ulong, ulong>(x.GuildId, x.LogMemberStatusChannelId))
                                 .ToList();
 
@@ -170,6 +246,8 @@
                             foreach (var item in memberList)
                             {
                                 i++;
+
+                                isSendMessageGuildId.Add(item.Key);
 
                                 var guild = _client.GetGuild(item.Key);
                                 if (guild == null)

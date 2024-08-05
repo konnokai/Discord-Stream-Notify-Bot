@@ -178,10 +178,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             };
         }
 
-        [RequireGuildMemberCount(300)]
         [CommandSummary("新增非兩大箱的頻道檢測爬蟲\n" +
-           "伺服器需大於 300 人才可使用\n" +
-           "未來會根據情況增減可新增的頻道數量\n" +
            "如有任何需要請向擁有者詢問")]
         [CommandExample("https://www.youtube.com/channel/UUMOs5FNYPHeZz5f7N1BDExxfg",
             "https://www.youtube.com/@998rrr")]
