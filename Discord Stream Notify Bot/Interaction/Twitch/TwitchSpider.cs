@@ -160,7 +160,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
            "伺服器需大於 500 人才可使用\n" +
            "未來會根據情況增減可新增的頻道數量\n" +
            "如有任何需要請向擁有者詢問")]
-        [CommandExample("margaretnorth", "https://twitch.tv/margaretnorth")]
+        [CommandExample("998rrr", "https://twitch.tv/998rrr")]
         [SlashCommand("add", "新增 Twitch 頻道爬蟲")]
         public async Task AddChannelSpider([Summary("頻道網址")] string twitchUrl)
         {
@@ -265,7 +265,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
 
         [CommandSummary("移除 Twitch 頻道檢測爬蟲\n" +
             "爬蟲必須由本伺服器新增才可移除")]
-        [CommandExample("margaretnorth", "https://twitch.tv/margaretnorth")]
+        [CommandExample("998rrr", "https://twitch.tv/998rrr")]
         [SlashCommand("remove", "移除 Twitch 頻道爬蟲")]
         public async Task RemoveChannelSpider([Summary("頻道網址", "userName"), Autocomplete(typeof(GuildTwitchSpiderAutocompleteHandler))] string twitchId)
         {

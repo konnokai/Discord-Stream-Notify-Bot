@@ -116,7 +116,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
            "如新增同個頻道則可變更要授予的用戶組\n" +
            "伺服器需大於500人才可使用\n" +
            "如有任何需要請向擁有者詢問")]
-        [CommandExample("https://www.youtube.com/@margaretnorth @諾爾絲家族")]
+        [CommandExample("https://www.youtube.com/@998rrr @玖桃")]
         [SlashCommand("add-member-check", "新增會限驗證頻道")]
         public async Task AddMemberCheckAsync([Summary("頻道連結")] string url, [Summary("用戶組Id")] IRole role)
         {
@@ -239,7 +239,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
         }
 
         [CommandSummary("移除會限驗證頻道")]
-        [CommandExample("https://www.youtube.com/@margaretnorth")]
+        [CommandExample("https://www.youtube.com/@998rrr")]
         [SlashCommand("remove-member-check", "移除會限驗證頻道")]
         public async Task RemoveMemberCheckAsync([Summary("頻道連結"), Autocomplete(typeof(GuildYoutubeMemberCheckChannelIdAutocompleteHandler))] string url)
         {

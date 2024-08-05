@@ -69,7 +69,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
             _client = client;
         }
 
-        [CommandExample("margaretnorth", "https://twitch.tv/margaretnorth")]
+        [CommandExample("998rrr", "https://twitch.tv/998rrr")]
         [SlashCommand("add", "新增 Twitch 直播通知的頻道")]
         public async Task AddChannel([Summary("頻道網址")] string twitchUrl,
             [Summary("發送通知的頻道"), ChannelTypes(ChannelType.Text, ChannelType.News)] IChannel channel)
@@ -132,7 +132,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
             }
         }
 
-        [CommandExample("margaretnorth", "https://twitch.tv/margaretnorth")]
+        [CommandExample("998rrr", "https://twitch.tv/998rrr")]
         [SlashCommand("remove", "移除 Twitch 直播通知的頻道")]
         public async Task RemoveChannel([Summary("頻道名稱", "userName"), Autocomplete(typeof(GuildNoticeTwitchChannelIdAutocompleteHandler))] string twitchId)
         {
@@ -179,7 +179,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
             "不輸入通知訊息的話則會關閉通知訊息\n" +
             "需先新增直播通知後才可設定通知訊息(`/help get-command-help twitch add`)\n\n" +
             "(考慮到有伺服器需 Ping 特定用戶組的情況，故 Bot 需提及所有身分組權限)")]
-        [CommandExample("margaretnorth 開台啦", "https://twitch.tv/margaretnorth 開台啦")]
+        [CommandExample("998rrr 開台啦", "https://twitch.tv/998rrr 開台啦")]
         [SlashCommand("set-message", "設定通知訊息")]
         public async Task SetMessage([Summary("頻道名稱", "userName"), Autocomplete(typeof(GuildNoticeTwitchChannelIdAutocompleteHandler))] string twitchId, [Summary("通知訊息")] string message = "")
         {
