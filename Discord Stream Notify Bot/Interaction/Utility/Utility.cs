@@ -21,7 +21,6 @@ namespace Discord_Stream_Notify_Bot.Interaction.Utility
             await Context.Interaction.SendConfirmAsync(":ping_pong: " + _client.Latency.ToString() + "ms");
         }
 
-
         [SlashCommand("invite", "取得邀請連結")]
         public async Task InviteAsync()
         {
@@ -31,7 +30,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Utility
                 _discordWebhookClient.SendMessageToDiscord($"[{Context.Guild.Name}-{Context.Channel.Name}] {Context.User.Username}:({Context.User.Id}) 使用了邀請指令");
             }
 #endif     
-            await Context.Interaction.SendConfirmAsync("<https://discordapp.com/api/oauth2/authorize?client_id=" + _client.CurrentUser.Id + "&permissions=268586049&scope=bot%20applications.commands>", ephemeral: true);
+            await Context.Interaction.SendConfirmAsync("<https://discordapp.com/api/oauth2/authorize?client_id=" + _client.CurrentUser.Id + "&permissions=268848193&integration_type=0&scope=bot+applications.commands>", ephemeral: true);
         }
 
         [SlashCommand("status", "顯示機器人目前的狀態")]
