@@ -249,12 +249,12 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
         private async Task SendStreamMessageAsync(TwitchStream twitchStream, TwitchSpider twitchSpider, bool isRecord = false)
         {
 #if DEBUG || DEBUG_DONTREGISTERCOMMAND
-            Log.New($"Twitch 開台通知: {twitchStream.UserName} - {twitchStream.StreamTitle} ({twitchStream})");
+            Log.New($"Twitch 開台通知: {twitchStream.UserName} - {twitchStream.StreamTitle} ({twitchStream.StreamId})");
 #else
             using (var db = MainDbContext.GetDbContext())
             {
                 var noticeGuildList = db.NoticeTwitchStreamChannels.Where((x) => x.NoticeTwitchUserId == twitchStream.UserId).ToList();
-                Log.New($"發送 Twitch 開台通知 ({noticeGuildList.Count}): {twitchStream.UserName} - {twitchStream.StreamTitle} ({twitchStream})");
+                Log.New($"發送 Twitch 開台通知 ({noticeGuildList.Count}): {twitchStream.UserName} - {twitchStream.StreamTitle} ({twitchStream.StreamId})");
 
                 EmbedBuilder embedBuilder = new EmbedBuilder()
                     .WithTitle(twitchStream.StreamTitle)
