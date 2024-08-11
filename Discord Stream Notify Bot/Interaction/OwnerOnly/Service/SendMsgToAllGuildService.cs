@@ -159,7 +159,7 @@
                         }
 
                         db.SaveChanges();
-                        await button.Channel.SendMessageAsync("已於 YT 通知頻道發送完成");
+                        await button.FollowupAsync("已於 YT 通知頻道發送完成", ephemeral: true);
 
                         try
                         {
@@ -232,7 +232,7 @@
                         }
 
                         db.SaveChanges();
-                        await button.Channel.SendMessageAsync("已於 Twitch 通知頻道發送完成");
+                        await button.FollowupAsync("已於 Twitch 通知頻道發送完成", ephemeral: true);
 
                         try
                         {
@@ -308,7 +308,7 @@
                         }
 
                         db.SaveChanges();
-                        await button.Channel.SendMessageAsync("已於會限驗證紀錄頻道發送完成");
+                        await button.FollowupAsync("已於會限驗證紀錄頻道發送完成", ephemeral: true);
                     }
                 }
                 else
