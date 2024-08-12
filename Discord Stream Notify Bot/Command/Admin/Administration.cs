@@ -297,5 +297,55 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
                 Log.Error(ex.ToString());
             }
         }
+
+        [RequireContext(ContextType.DM)]
+        [Command("AddOfficialList")]
+        [Summary("新增官方伺服器白名單")]
+        [Alias("aol")]
+        [RequireOwner]
+        public async Task AddOfficialListAsync(ulong guildId)
+        {
+            if (Utility.OfficialGuildList.Contains(guildId))
+            {
+                await Context.Channel.SendErrorAsync("此伺服器已存在於名單內");
+                return;
+            }
+
+            Utility.OfficialGuildList.Add(guildId);
+
+            if (_service.WriteOfficialListFile())
+            {
+                await Context.Channel.SendConfirmAsync($"已添加 {guildId} 至官方伺服器名單內");
+            }
+            else
+            {
+                await Context.Channel.SendErrorAsync($"添加 {guildId} 至官方伺服器名單內失敗");
+            }
+        }
+
+        [RequireContext(ContextType.DM)]
+        [Command("RemoveOfficialList")]
+        [Summary("移除官方伺服器白名單")]
+        [Alias("rol")]
+        [RequireOwner]
+        public async Task RemoveOfficialListAsync(ulong guildId)
+        {
+            if (!Utility.OfficialGuildList.Contains(guildId))
+            {
+                await Context.Channel.SendErrorAsync("此伺服器不存在於名單內");
+                return;
+            }
+
+            Utility.OfficialGuildList.Remove(guildId);
+
+            if (_service.WriteOfficialListFile())
+            {
+                await Context.Channel.SendConfirmAsync($"已從官方伺服器名單內移除 {guildId}");
+            }
+            else
+            {
+                await Context.Channel.SendErrorAsync($"從官方伺服器名單內移除 {guildId} 失敗");
+            }
+        }
     }
 }

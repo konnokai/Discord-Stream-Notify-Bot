@@ -155,9 +155,9 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
             };
         }
 
-        [RequireGuildMemberCount(500)]
+        [RequireGuildMemberCount(200)]
         [CommandSummary("新增 Twitch 頻道爬蟲\n" +
-           "伺服器需大於 500 人才可使用\n" +
+           "伺服器需大於 200 人才可使用\n" +
            "未來會根據情況增減可新增的頻道數量\n" +
            "如有任何需要請向擁有者詢問")]
         [CommandExample("998rrr", "https://twitch.tv/998rrr")]

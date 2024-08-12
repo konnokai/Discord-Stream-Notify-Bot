@@ -76,6 +76,19 @@ namespace Discord_Stream_Notify_Bot
             if (!Directory.Exists(Path.GetDirectoryName(GetDataFilePath(""))))
                 Directory.CreateDirectory(Path.GetDirectoryName(GetDataFilePath("")));
 
+            if (File.Exists(GetDataFilePath("OfficialList.json")))
+            {
+                try
+                {
+                    Utility.OfficialGuildList = JsonConvert.DeserializeObject<HashSet<ulong>>(File.ReadAllText(GetDataFilePath("OfficialList.json")));
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex, "ReadOfficialListFile Error");
+                    return;
+                }
+            }
+
             using (var db = DataBase.MainDbContext.GetDbContext())
                 db.Database.EnsureCreated();
             using (var db = DataBase.HoloVideoContext.GetDbContext())

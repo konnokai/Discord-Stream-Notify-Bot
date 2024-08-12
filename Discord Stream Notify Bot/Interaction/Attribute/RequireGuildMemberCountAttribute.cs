@@ -16,6 +16,8 @@ namespace Discord_Stream_Notify_Bot.Interaction.Attribute
         {
             if (context.Interaction.User.Id == Program.ApplicatonOwner.Id) return Task.FromResult(PreconditionResult.FromSuccess());
 
+            if (Discord_Stream_Notify_Bot.Utility.OfficialGuildList.Contains(context.Guild.Id)) return Task.FromResult(PreconditionResult.FromSuccess());
+
             var memberCount = ((SocketGuild)context.Guild).MemberCount;
             if (memberCount >= GuildMemberCount) return Task.FromResult(PreconditionResult.FromSuccess());
             else return Task.FromResult(PreconditionResult.FromError($"此伺服器不可使用本指令\n" +
