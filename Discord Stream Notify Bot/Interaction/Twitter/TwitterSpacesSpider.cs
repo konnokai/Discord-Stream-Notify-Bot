@@ -25,7 +25,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
             "伺服器需大於 500 人才可使用\n" +
             "未來會根據情況增減可新增的頻道數量\n" +
             "如有任何需要請向擁有者詢問\n")]
-        [CommandExample("margaretthebox", "@inui_toko")]
+        [CommandExample("_998rrr_", "@inui_toko")]
         [SlashCommand("add", "新增推特語音空間爬蟲")]
         public async Task AddSpider([Summary("推特使用者名稱")] string userScreenName)
         {
@@ -98,9 +98,9 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                     return;
                 }
 
-                if (db.TwitterSpaecSpider.Count((x) => x.GuildId == Context.Guild.Id) >= 5)
+                if (!Discord_Stream_Notify_Bot.Utility.OfficialGuildContains(Context.Guild.Id) && db.TwitterSpaecSpider.Count((x) => x.GuildId == Context.Guild.Id) >= 5)
                 {
-                    await Context.Interaction.SendErrorAsync($"此伺服器已設定五個推特語音空間爬蟲，請移除後再試\n" +
+                    await Context.Interaction.SendErrorAsync($"此伺服器已設定 5 個推特語音空間爬蟲，請移除後再試\n" +
                         $"如有特殊需求請向Bot擁有者詢問", true).ConfigureAwait(false);
                     return;
                 }
@@ -131,7 +131,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
 
         [CommandSummary("移除推特語音空間爬蟲\n" +
            "爬蟲必須由本伺服器新增才可移除")]
-        [CommandExample("margaretthebox", "@inui_toko")]
+        [CommandExample("_998rrr_", "@inui_toko")]
         [SlashCommand("remove", "移除推特語音空間爬蟲")]
         public async Task RemoveSpider([Summary("推特使用者名稱"), Autocomplete(typeof(GuildTwitterSpaceSpiderAutocompleteHandler))] string userScreenName)
         {

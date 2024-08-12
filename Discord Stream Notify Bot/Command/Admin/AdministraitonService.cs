@@ -16,5 +16,20 @@
 
             await Task.WhenAll(Task.Delay(1000), textChannel.DeleteMessagesAsync(msgs)).ConfigureAwait(false);
         }
+
+        internal bool WriteOfficialListFile()
+        {
+            try
+            {
+                File.WriteAllText(Program.GetDataFilePath("OfficialList.json"), JsonConvert.SerializeObject(Utility.OfficialGuildList));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "WriteOfficialListFile Error");
+                return false;
+            }
+
+            return true;
+        }
     }
 }
