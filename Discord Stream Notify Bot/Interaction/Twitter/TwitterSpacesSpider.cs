@@ -88,7 +88,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
 
                     await Context.Interaction.SendConfirmAsync($"`{userScreenName}` 已在爬蟲清單內\n" +
                         $"可直接到通知頻道內使用 `/twitter-space add-space-notice {userScreenName}` 開啟通知\n" +
-                        (isGuildExist ? $"\n(由 `{guild}` 設定)" : ""), true).ConfigureAwait(false);
+                        (isGuildExist ? $"\n(由 `{guild}` 設定)" : ""), true, true).ConfigureAwait(false);
                     return;
                 }
 
@@ -113,7 +113,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                 db.SaveChanges();
 
                 await Context.Interaction.SendConfirmAsync($"已將 `{userScreenName}` 加入到推特語音爬蟲清單內\n" +
-                    $"請到通知頻道內使用 `/twitter-space add {userScreenName}` 來開啟通知", true).ConfigureAwait(false);
+                    $"請到通知頻道內使用 `/twitter-space add {userScreenName}` 來開啟通知", true, true).ConfigureAwait(false);
 
                 try
                 {
@@ -160,7 +160,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                 db.TwitterSpaecSpider.Remove(db.TwitterSpaecSpider.First((x) => x.UserScreenName == userScreenName));
                 db.SaveChanges();
 
-                await Context.Interaction.SendConfirmAsync($"已移除 {userScreenName}").ConfigureAwait(false);
+                await Context.Interaction.SendConfirmAsync($"已移除 {userScreenName}", false, true).ConfigureAwait(false);
 
                 try
                 {
