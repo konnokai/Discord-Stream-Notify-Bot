@@ -347,5 +347,49 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
                 await Context.Channel.SendErrorAsync($"從官方伺服器名單內移除 {guildId} 失敗");
             }
         }
+
+        [RequireContext(ContextType.DM)]
+        [Command("ListOfficialList")]
+        [Summary("顯示官方伺服器白名單列表")]
+        [Alias("lol")]
+        [RequireOwner]
+        public async Task ListOfficialListAsync(int page = 0)
+        {
+            if (!Utility.OfficialGuildList.Any())
+            {
+                await Context.Channel.SendErrorAsync("官方伺服器白名單為空");
+                return;
+            }
+
+            List<string> officialList = new();
+            foreach (var item in Utility.OfficialGuildList)
+            {
+                try
+                {
+                    var guild = _client.GetGuild(item);
+                    if (guild == null)
+                    {
+                        officialList.Add($"*已離開的伺服器* `({item})`");
+                        continue;
+                    }
+
+                    officialList.Add($"{guild.Name} `({item})`");
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex, $"取得伺服器資料失敗: {item}");
+                }
+            }
+
+            if (page <= 0)
+                page = 0;
+
+            await Context.SendPaginatedConfirmAsync(page, (page) => (
+                new EmbedBuilder()
+                    .WithOkColor()
+                    .WithTitle("官方伺服器白名單清單")
+                    .WithDescription(string.Join('\n', officialList.Skip(page * 20).Take(20)))),
+                officialList.Count, 20);
+        }
     }
 }
