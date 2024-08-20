@@ -156,7 +156,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.TwitCasting
 
         private async Task SendStreamMessageAsync(TwitCastingStream twitcastingStream, bool isPrivate = false, bool isRecord = false)
         {
-#if DEBUG_DONTREGISTERCOMMAND
+#if DEBUG
             Log.New($"TwitCasting 開台通知: {twitcastingStream.ChannelTitle} - {twitcastingStream.StreamTitle} (isPrivate: {isPrivate})");
 #else
             using (var db = MainDbContext.GetDbContext())

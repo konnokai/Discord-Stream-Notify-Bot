@@ -1,4 +1,6 @@
 ﻿using Discord.Interactions;
+using Discord_Stream_Notify_Bot.DataBase;
+using Microsoft.EntityFrameworkCore;
 
 namespace Discord_Stream_Notify_Bot.Interaction
 {
@@ -73,6 +75,22 @@ namespace Discord_Stream_Notify_Bot.Interaction
                     return Task.CompletedTask;
                 });
                 return Task.CompletedTask;
+            }
+        }
+
+        public async Task CheckIsFirstSetNoticeAndSendWarningMessageAsync(MainDbContext dbContext)
+        {
+            bool firstCheck = !dbContext.NoticeYoutubeStreamChannel.AsNoTracking().Any((x) => x.GuildId == Context.Guild.Id);
+            bool secondCheck = !dbContext.NoticeTwitchStreamChannels.AsNoTracking().Any((x) => x.GuildId == Context.Guild.Id);
+            bool thirdCheck = !dbContext.GuildConfig.AsNoTracking().Any((x) => x.GuildId == Context.Guild.Id && x.LogMemberStatusChannelId != 0);
+            if (firstCheck && secondCheck && thirdCheck)
+            {
+                await Context.Interaction.SendConfirmAsync("看來是第一次設定通知呢\n" +
+                       "請注意 Bot 擁有者會透過通知頻道發送工商或是小幫手相關的通知 (功能更新之類的)\n" +
+                       "你可以透過 `/utility set-global-notice-channel` 來設定由哪個頻道來接收小幫手相關的通知\n" +
+                       "而工商相關通知則會直接發送到此頻道上\n" +
+                       "(已認可的官方群組不會收到工商通知，如需添加認可或確認請向 Bot 擁有者詢問)\n" +
+                       "(你可使用 `/utility send-message-to-bot-owner` 對 Bot 擁有者發送訊息)", true, true);
             }
         }
     }

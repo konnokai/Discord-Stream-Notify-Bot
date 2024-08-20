@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Discord_Stream_Notify_Bot.Migrations
 {
     [DbContext(typeof(MainDbContext))]
-    [Migration("20231221015929_AddYoutubeMemberAccessToken")]
-    partial class AddYoutubeMemberAccessToken
+    [Migration("20240820083449_AddGuildNoticeChannelId")]
+    partial class AddGuildNoticeChannelId
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -56,6 +56,9 @@ namespace Discord_Stream_Notify_Bot.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<ulong>("LogMemberStatusChannelId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<ulong>("NoticeChannelId")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
@@ -431,7 +434,7 @@ namespace Discord_Stream_Notify_Bot.Migrations
 
                     b.HasKey("DiscordUserId");
 
-                    b.ToTable("youtubeMemberAccessToken");
+                    b.ToTable("YoutubeMemberAccessToken");
                 });
 
             modelBuilder.Entity("Discord_Stream_Notify_Bot.DataBase.Table.YoutubeMemberCheck", b =>

@@ -107,6 +107,8 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
 
             using (var db = DataBase.MainDbContext.GetDbContext())
             {
+                await CheckIsFirstSetNoticeAndSendWarningMessageAsync(db);
+
                 var noticeTwitchStreamChannel = db.NoticeTwitchStreamChannels.FirstOrDefault((x) => x.GuildId == Context.Guild.Id && x.NoticeTwitchUserId == userData.Id);
                 if (noticeTwitchStreamChannel != null)
                 {

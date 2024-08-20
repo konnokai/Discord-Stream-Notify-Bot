@@ -4,5 +4,6 @@
     {
         public ulong GuildId { get; set; }
         public ulong LogMemberStatusChannelId { get; set; } = 0;
+        public ulong NoticeChannelId { get; set; } = 0;
     }
 }

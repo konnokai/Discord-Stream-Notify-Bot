@@ -96,6 +96,8 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
                     return;
                 }
 
+                await CheckIsFirstSetNoticeAndSendWarningMessageAsync(db);
+
                 var guildConfig = db.GuildConfig.FirstOrDefault((x) => x.GuildId == Context.Guild.Id);
                 if (guildConfig == null)
                 {

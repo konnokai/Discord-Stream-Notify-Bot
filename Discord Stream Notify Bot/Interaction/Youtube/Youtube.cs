@@ -357,8 +357,9 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
 
             using (var db = DataBase.MainDbContext.GetDbContext())
             {
-                var noticeYoutubeStreamChannel = db.NoticeYoutubeStreamChannel.FirstOrDefault((x) => x.GuildId == Context.Guild.Id && x.NoticeStreamChannelId == channelId);
+                await CheckIsFirstSetNoticeAndSendWarningMessageAsync(db);
 
+                var noticeYoutubeStreamChannel = db.NoticeYoutubeStreamChannel.FirstOrDefault((x) => x.GuildId == Context.Guild.Id && x.NoticeStreamChannelId == channelId);
                 if (noticeYoutubeStreamChannel != null)
                 {
                     if (await PromptUserConfirmAsync($"`{channelId}` 已在直播通知清單內，是否覆蓋設定?").ConfigureAwait(false))

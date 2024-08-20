@@ -3,6 +3,7 @@ using System;
 using Discord_Stream_Notify_Bot.DataBase;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Discord_Stream_Notify_Bot.Migrations
 {
     [DbContext(typeof(MainDbContext))]
-    partial class DBContextModelSnapshot : ModelSnapshot
+    [Migration("20240820083323_AddYoutubeMemberAccessToken")]
+    partial class AddYoutubeMemberAccessToken
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "7.0.14");
@@ -53,9 +56,6 @@ namespace Discord_Stream_Notify_Bot.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<ulong>("LogMemberStatusChannelId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<ulong>("NoticeChannelId")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");

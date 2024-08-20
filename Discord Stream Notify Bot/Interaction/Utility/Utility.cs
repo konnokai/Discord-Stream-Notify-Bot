@@ -1,4 +1,5 @@
 ﻿using Discord.Interactions;
+using Discord_Stream_Notify_Bot.DataBase;
 using Discord_Stream_Notify_Bot.Interaction.Utility.Service;
 
 namespace Discord_Stream_Notify_Bot.Interaction.Utility
@@ -63,6 +64,40 @@ namespace Discord_Stream_Notify_Bot.Interaction.Utility
                 .AddTextInput("聯繫方式", "contact-method", TextInputStyle.Short, "請輸入可與你聯繫的方式及相關資訊 (推特、Discord、Facebook等)", 3, null, true);
 
             await RespondWithModalAsync(modalBuilder.Build());
+        }
+
+        [SlashCommand("set-global-notice-channel", "設定要接收 Bot 擁有者發送的訊息頻道")]
+        [DefaultMemberPermissions(GuildPermission.Administrator)]
+        public async Task SetGlobalNoticeChannel([Summary("接收通知的頻道"), ChannelTypes(ChannelType.Text, ChannelType.News)] IChannel channel)
+        {
+            try
+            {
+                var textChannel = channel as IGuildChannel;
+                var permissions = Context.Guild.GetUser(_client.CurrentUser.Id).GetPermissions(textChannel);
+                if (!permissions.ViewChannel || !permissions.SendMessages)
+                {
+                    await Context.Interaction.SendErrorAsync($"我在 `{textChannel}` 沒有 `讀取&編輯頻道` 的權限，請給予權限後再次執行本指令", true);
+                    return;
+                }
+
+                if (!permissions.EmbedLinks)
+                {
+                    await Context.Interaction.SendErrorAsync($"我在 `{textChannel}` 沒有 `嵌入連結` 的權限，請給予權限後再次執行本指令", true);
+                    return;
+                }
+
+                using var db = MainDbContext.GetDbContext();
+                var guildConfig = db.GuildConfig.FirstOrDefault((x) => x.GuildId == Context.Guild.Id) ?? new DataBase.Table.GuildConfig();
+                guildConfig.NoticeChannelId = channel.Id;
+                db.SaveChanges();
+
+                await Context.Interaction.SendConfirmAsync($"已設定全球通知頻道為: {channel}", false, true);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Set Notice Channel Error");
+                await Context.Interaction.SendErrorAsync($"設定全球通知失敗，請向 Bot 擁有者詢問", false, true);
+            }
         }
     }
 }
