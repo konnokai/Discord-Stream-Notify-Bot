@@ -76,13 +76,13 @@ namespace Discord_Stream_Notify_Bot.Interaction.Utility
                 var permissions = Context.Guild.GetUser(_client.CurrentUser.Id).GetPermissions(textChannel);
                 if (!permissions.ViewChannel || !permissions.SendMessages)
                 {
-                    await Context.Interaction.SendErrorAsync($"我在 `{textChannel}` 沒有 `讀取&編輯頻道` 的權限，請給予權限後再次執行本指令", true);
+                    await Context.Interaction.SendErrorAsync($"我在 `{textChannel}` 沒有 `讀取&編輯頻道` 的權限，請給予權限後再次執行本指令");
                     return;
                 }
 
                 if (!permissions.EmbedLinks)
                 {
-                    await Context.Interaction.SendErrorAsync($"我在 `{textChannel}` 沒有 `嵌入連結` 的權限，請給予權限後再次執行本指令", true);
+                    await Context.Interaction.SendErrorAsync($"我在 `{textChannel}` 沒有 `嵌入連結` 的權限，請給予權限後再次執行本指令");
                     return;
                 }
 
@@ -91,12 +91,12 @@ namespace Discord_Stream_Notify_Bot.Interaction.Utility
                 guildConfig.NoticeChannelId = channel.Id;
                 db.SaveChanges();
 
-                await Context.Interaction.SendConfirmAsync($"已設定全球通知頻道為: {channel}", false, true);
+                await Context.Interaction.SendConfirmAsync($"已設定全球通知頻道為: {channel}", ephemeral: true);
             }
             catch (Exception ex)
             {
                 Log.Error(ex, "Set Notice Channel Error");
-                await Context.Interaction.SendErrorAsync($"設定全球通知失敗，請向 Bot 擁有者詢問", false, true);
+                await Context.Interaction.SendErrorAsync($"設定全球通知失敗，請向 Bot 擁有者詢問");
             }
         }
     }
