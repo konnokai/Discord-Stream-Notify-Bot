@@ -179,7 +179,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
         }
 
         [CommandSummary("新增非兩大箱的頻道檢測爬蟲\n" +
-           "如有任何需要請向擁有者詢問")]
+           "如有任何需要請向 Bot 擁有者詢問")]
         [CommandExample("https://www.youtube.com/channel/UUMOs5FNYPHeZz5f7N1BDExxfg",
             "https://www.youtube.com/@998rrr")]
         [SlashCommand("add", "新增非兩大箱的頻道檢測爬蟲")]
@@ -214,6 +214,14 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                 if (isTwoBox && !db.YoutubeChannelOwnedType.Any((x) => x.ChannelId == channelId))
                 {
                     await Context.Interaction.SendErrorAsync($"不可新增兩大箱的頻道", true).ConfigureAwait(false);
+                    return;
+                }
+
+                if (!Discord_Stream_Notify_Bot.Utility.OfficialGuildContains(Context.Guild.Id) && db.YoutubeChannelSpider.Count((x) => x.GuildId == Context.Guild.Id) >= 3)
+                {
+                    await Context.Interaction.SendErrorAsync($"此伺服器已設定 3 個 YouTube 爬蟲，請移除後再試\n" +
+                        $"如有特殊需求請向 Bot 擁有者詢問\n" +
+                        $"(你可使用 `/utility send-message-to-bot-owner` 對擁有者發送訊息)", true).ConfigureAwait(false);
                     return;
                 }
 

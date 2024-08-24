@@ -219,10 +219,11 @@ namespace Discord_Stream_Notify_Bot.Interaction.TwitCasting
                     return;
                 }
 
-                if (db.TwitCastingSpider.Count((x) => x.GuildId == Context.Guild.Id) >= 5)
+                if (db.TwitCastingSpider.Count((x) => x.GuildId == Context.Guild.Id) >= 2)
                 {
-                    await Context.Interaction.SendErrorAsync($"此伺服器已設定五個 TwitCasting 爬蟲頻道，請移除後再試\n" +
-                        $"如有特殊需求請向Bot擁有者詢問", true).ConfigureAwait(false);
+                    await Context.Interaction.SendErrorAsync($"此伺服器已設定 2 個 TwitCasting 爬蟲頻道，請移除後再試\n" +
+                        $"如有特殊需求請向 Bot 擁有者詢問\n" +
+                        $"(你可使用 `/utility send-message-to-bot-owner` 對擁有者發送訊息)", true).ConfigureAwait(false);
                     return;
                 }
 

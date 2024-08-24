@@ -219,10 +219,11 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
                     return;
                 }
 
-                if (db.TwitchSpider.Count((x) => x.GuildId == Context.Guild.Id) >= 10)
+                if (db.TwitchSpider.Count((x) => x.GuildId == Context.Guild.Id) >= 3)
                 {
-                    await Context.Interaction.SendErrorAsync($"此伺服器已設定十個 Twitch 爬蟲頻道，請移除後再試\n" +
-                        $"如有特殊需求請向 Bot 擁有者詢問", true).ConfigureAwait(false);
+                    await Context.Interaction.SendErrorAsync($"此伺服器已設定 3 個 Twitch 爬蟲頻道，請移除後再試\n" +
+                        $"如有特殊需求請向 Bot 擁有者詢問\n" +
+                        $"(你可使用 `/utility send-message-to-bot-owner` 對擁有者發送訊息)", true).ConfigureAwait(false);
                     return;
                 }
 
