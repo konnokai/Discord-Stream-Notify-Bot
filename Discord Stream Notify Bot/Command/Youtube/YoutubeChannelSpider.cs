@@ -1,5 +1,6 @@
 ﻿using Discord.Commands;
 using Discord_Stream_Notify_Bot.Command.Attribute;
+using Discord_Stream_Notify_Bot.DataBase.Table;
 
 namespace Discord_Stream_Notify_Bot.Command.Youtube
 {
@@ -54,13 +55,79 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                         return new EmbedBuilder()
                             .WithOkColor()
                             .WithTitle("死去的直播爬蟲清單")
-                            .WithDescription(string.Join('\n', list.Skip(page * 10).Take(10)))
-                            .WithFooter($"{Math.Min(list.Count(), (page + 1) * 10)} / {list.Count}個頻道");
-                    }, list.Count, 10, false).ConfigureAwait(false);
+                            .WithDescription(string.Join('\n', list.Skip(page * 20).Take(20)))
+                            .WithFooter($"{Math.Min(list.Count, (page + 1) * 20)} / {list.Count}個頻道");
+                    }, list.Count, 20, false).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
                     Log.Error(ex, "ListDeathChannelSpider");
+                    await Context.Channel.SendErrorAsync(ex.ToString());
+                    return;
+                }
+            }
+        }
+
+        [RequireContext(ContextType.DM)]
+        [RequireOwner]
+        [Command("ListNoNoticeChannelSpider")]
+        [Summary("顯示未設定通知的爬蟲頻道")]
+        [Alias("lnncs")]
+        public async Task ListNoNoticeChannelSpider(int page = 0)
+        {
+            if (page < 0) page = 0;
+
+            using (var db = DataBase.MainDbContext.GetDbContext())
+            {
+                try
+                {
+                    await Context.Channel.TriggerTypingAsync();
+
+                    var list = new List<YoutubeChannelSpider>();
+                    foreach (var item in db.YoutubeChannelSpider.Where((x) => x.GuildId != 0))
+                    {
+                        try
+                        {
+                            if (!db.NoticeYoutubeStreamChannel.Any((x) => x.NoticeStreamChannelId == item.ChannelId))
+                                list.Add(item);
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Error(ex, $"{item.ChannelTitle}: {item.GuildId}");
+                        }
+                    }
+
+                    if (!list.Any())
+                    {
+                        await Context.Channel.SendConfirmAsync("無未設定通知的爬蟲...");
+                        return;
+                    }
+
+                    await Context.SendPaginatedConfirmAsync(page, page =>
+                    {
+                        return new EmbedBuilder()
+                            .WithOkColor()
+                            .WithTitle("無未設定通知的爬蟲")
+                            .WithDescription(string.Join('\n', list.Skip(page * 20).Take(20).Select((x) => Format.Url(x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}"))))
+                            .WithFooter($"{Math.Min(list.Count, (page + 1) * 20)} / {list.Count}個頻道");
+                    }, list.Count, 20, false).ConfigureAwait(false);
+
+                    if (await PromptUserConfirmAsync(new EmbedBuilder().WithOkColor().WithDescription("是否要一次移除全部清單內的爬蟲?")))
+                    {
+                        try
+                        {
+                            db.YoutubeChannelSpider.RemoveRange(list);
+                            db.SaveChanges();
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Error(ex, "儲存資料庫失敗");
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex, "ListNoNoticeChannelSpider");
                     await Context.Channel.SendErrorAsync(ex.ToString());
                     return;
                 }
@@ -155,11 +222,11 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                     db.YoutubeChannelSpider.Update(channel);
                     db.SaveChanges();
 
-                    await Context.Channel.SendConfirmAsync($"已設定 {channel.ChannelTitle} 為`" + (channel.IsTrustedChannel ? "已" : "未") + "`認可頻道").ConfigureAwait(false);
+                    await Context.Channel.SendConfirmAsync($"已設定 `{channel.ChannelTitle}` 為" + (channel.IsTrustedChannel ? "已" : "未") + "認可頻道").ConfigureAwait(false);
                 }
                 else
                 {
-                    await Context.Channel.SendErrorAsync($"尚未設定 {channelId} 的爬蟲").ConfigureAwait(false);
+                    await Context.Channel.SendErrorAsync($"尚未設定 ` {channelId} ` 的爬蟲").ConfigureAwait(false);
                 }
             }
         }
@@ -197,11 +264,11 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                     db.YoutubeChannelSpider.Update(channel);
                     db.SaveChanges();
 
-                    await Context.Channel.SendConfirmAsync($"已設定 {channel.ChannelTitle} 的 GuildId 為 `{guildId}`").ConfigureAwait(false);
+                    await Context.Channel.SendConfirmAsync($"已設定 `{channel.ChannelTitle}` 的 GuildId 為 `{guildId}`").ConfigureAwait(false);
                 }
                 else
                 {
-                    await Context.Channel.SendErrorAsync($"尚未設定 {channelId} 的爬蟲").ConfigureAwait(false);
+                    await Context.Channel.SendErrorAsync($"尚未設定 `{channelId}` 的爬蟲").ConfigureAwait(false);
                 }
             }
         }
@@ -238,11 +305,11 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                     db.YoutubeChannelSpider.Remove(channel);
                     db.SaveChanges();
 
-                    await Context.Channel.SendConfirmAsync($"已移除 {channel.ChannelTitle} 的爬蟲").ConfigureAwait(false);
+                    await Context.Channel.SendConfirmAsync($"已移除 `{channel.ChannelTitle}` 的爬蟲").ConfigureAwait(false);
                 }
                 else
                 {
-                    await Context.Channel.SendErrorAsync($"尚未設定 {channelId} 的爬蟲").ConfigureAwait(false);
+                    await Context.Channel.SendErrorAsync($"尚未設定 `{channelId}` 的爬蟲").ConfigureAwait(false);
                 }
             }
         }
