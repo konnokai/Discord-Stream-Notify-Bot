@@ -198,9 +198,6 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
             {
                 var nowRecordList = db.RecordYoutubeChannel.Select((x) => x.YoutubeChannelId).ToList();
 
-                db.YoutubeChannelSpider.ToList().ForEach((item) => { if (!item.IsTrustedChannel && nowRecordList.Contains(item.ChannelId)) nowRecordList.Remove(item.ChannelId); });
-                int warningChannelNum = db.YoutubeChannelSpider.Count((x) => x.IsTrustedChannel);
-
                 if (nowRecordList.Count > 0)
                 {
                     var list = new List<string>();
@@ -217,7 +214,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                             .WithOkColor()
                             .WithTitle("直播記錄清單")
                             .WithDescription(string.Join('\n', list.Skip(page * 20).Take(20)))
-                            .WithFooter($"{Math.Min(list.Count, (page + 1) * 20)} / {list.Count}個頻道 ({warningChannelNum}個非VTuber的頻道)");
+                            .WithFooter($"{Math.Min(list.Count, (page + 1) * 20)} / {list.Count}個頻道");
                     }, list.Count, 20, false);
                 }
                 else await Context.Channel.SendConfirmAsync($"直播記錄清單中沒有任何頻道").ConfigureAwait(false);
