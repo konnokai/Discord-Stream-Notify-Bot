@@ -26,8 +26,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
         {
             if (videoId.Length != 11)
             {
-                string pattern = @"(?<=youtu\.be\/|youtube\.com\/(?:watch\?.*v=|live\/))(?'VideoId'[\w-]{11})";
-                var match = Regex.Match(videoId, pattern);
+                var match = Regex.Match(videoId, @"(?<=youtu\.be\/|youtube\.com\/(?:watch\?.*v=|live\/))(?'VideoId'[\w-]{11})");
 
                 if (match.Success)
                 {
@@ -141,12 +140,9 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                     return;
                 }
 
-                if (await PromptUserConfirmAsync(new EmbedBuilder().WithTitle("新增頻道至直播記錄清單?").WithDescription(channelTitle)))
-                {
-                    db.RecordYoutubeChannel.Add(new RecordYoutubeChannel() { YoutubeChannelId = channelId });
-                    db.SaveChanges();
-                    await Context.Channel.SendConfirmAsync($"已新增 {channelTitle} 至直播記錄清單").ConfigureAwait(false);
-                }
+                db.RecordYoutubeChannel.Add(new RecordYoutubeChannel() { YoutubeChannelId = channelId });
+                db.SaveChanges();
+                await Context.Channel.SendConfirmAsync($"已新增 {channelTitle} 至直播記錄清單").ConfigureAwait(false);
             }
         }
 
@@ -184,12 +180,9 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                 string channelTitle = await GetChannelTitle(channelId);
                 if (string.IsNullOrEmpty(channelTitle)) channelTitle = channelId;
 
-                if (await PromptUserConfirmAsync(new EmbedBuilder().WithTitle("從直播記錄清單移除頻道?").WithDescription(channelTitle)))
-                {
-                    db.RecordYoutubeChannel.Remove(db.RecordYoutubeChannel.First((x) => x.YoutubeChannelId == channelId));
-                    db.SaveChanges();
-                    await Context.Channel.SendConfirmAsync($"已從直播記錄清單中移除 {channelTitle}").ConfigureAwait(false);
-                }
+                db.RecordYoutubeChannel.Remove(db.RecordYoutubeChannel.First((x) => x.YoutubeChannelId == channelId));
+                db.SaveChanges();
+                await Context.Channel.SendConfirmAsync($"已從直播記錄清單中移除 {channelTitle}").ConfigureAwait(false);
             }
         }
 
@@ -234,7 +227,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
         [RequireContext(ContextType.DM)]
         [Command("ToggleRecord")]
         [Summary("切換直播記錄")]
-        [Alias("TS")]
+        [Alias("TR")]
         [RequireOwner]
         public async Task ToggleRecord()
         {
@@ -255,7 +248,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
 
             if (string.IsNullOrWhiteSpace(videoId))
             {
-                await ReplyAsync("VideoId空白").ConfigureAwait(false);
+                await ReplyAsync("VideoId 空白").ConfigureAwait(false);
                 return;
             }
 
@@ -335,7 +328,6 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                 await Context.Channel.SendConfirmAsync($"`{title}` 的所屬已改為 `{channelType.GetProductionName()}`");
             }
         }
-
 
         [RequireContext(ContextType.DM)]
         [RequireOwner]

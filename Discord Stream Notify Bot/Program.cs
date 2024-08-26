@@ -446,7 +446,6 @@ namespace Discord_Stream_Notify_Bot
                 List<string> str = new List<string>();
 
                 if (IsHoloChannelSpider) str.Add("Holo");
-                if (IsNijisanjiChannelSpider) str.Add("Nijisanji");
                 if (IsOtherChannelSpider) str.Add("Other");
 
                 Log.Info($"等待 {string.Join(", ", str)} 完成");

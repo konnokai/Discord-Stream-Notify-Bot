@@ -167,7 +167,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
         [RequireContext(ContextType.DM)]
         [RequireOwner]
         [Command("SetChannelSpiderGuildId")]
-        [Summary("設定頻道的伺服器 Id")]
+        [Summary("設定爬蟲頻道的伺服器 Id")]
         [CommandExample("https://www.youtube.com/channel/UC0qt9BfrpQo-drjuPKl_vdA 0")]
         [Alias("scsg")]
         public async Task SetChannelSpiderGuildId([Summary("頻道網址")] string channelUrl = "", ulong guildId = 0)
