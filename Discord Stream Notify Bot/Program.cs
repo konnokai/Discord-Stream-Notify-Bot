@@ -49,20 +49,19 @@ namespace Discord_Stream_Notify_Bot
             // https://stackoverflow.com/q/5710148/15800522
             AppDomain.CurrentDomain.UnhandledException += (sender, e) =>
             {
-                DateTime dtLogFileCreated = DateTime.Now;
                 Exception ex = (Exception)e.ExceptionObject;
-
-                Log.Error(ex, "UnhandledException");
 
                 try
                 {
                     if (!Debugger.IsAttached)
                     {
-                        StreamWriter sw = new StreamWriter($"{dtLogFileCreated:yyyy-MM-dd hh-mm-ss}_crash.log");
+                        StreamWriter sw = new StreamWriter($"{DateTime.Now:yyyy-MM-dd hh-mm-ss}_crash.log");
                         sw.WriteLine("### Server Crash ###");
                         sw.WriteLine(ex.ToString());
                         sw.Close();
                     }
+
+                    Log.Error(ex, "UnhandledException", true, false);
                 }
                 finally
                 {
