@@ -762,11 +762,41 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             channelUrl = channelUrl.Replace("https://m.youtube.com", "https://www.youtube.com");
             channelUrl = channelUrl.Split('?')[0]; // 移除網址上的參數
 
-            Regex regexOldFormat = new Regex(@"(http[s]{0,1}://){0,1}(www\.){0,1}(?'Host'[^/]+)/(?'Type'[^/]+)/(?'ChannelName'[\w%\-]+)");
             Regex regexNewFormat = new Regex(@"(http[s]{0,1}://){0,1}(www\.){0,1}(?'Host'[^/]+)/@(?'CustomId'[^/]+)");
-            Match matchOldFormat = regexOldFormat.Match(channelUrl);
+            Regex regexOldFormat = new Regex(@"(http[s]{0,1}://){0,1}(www\.){0,1}(?'Host'[^/]+)/(?'Type'[^/]+)/(?'ChannelName'[\w%\-]+)");
             Match matchNewFormat = regexNewFormat.Match(channelUrl);
-            if (matchOldFormat.Success)
+            Match matchOldFormat = regexOldFormat.Match(channelUrl);
+
+            if (matchNewFormat.Success)
+                {
+                string channelName = matchNewFormat.Groups["CustomId"].Value;
+
+                    using (var db = DataBase.MainDbContext.GetDbContext())
+                    {
+                        channelId = db.YoutubeChannelNameToId.SingleOrDefault((x) => x.ChannelName == channelName)?.ChannelId;
+
+                        if (string.IsNullOrEmpty(channelId))
+                        {
+                            try
+                            {
+                            channelId = await GetChannelIdByUrlAsync($"https://www.youtube.com/@{channelName}");
+                                db.YoutubeChannelNameToId.Add(new DataBase.Table.YoutubeChannelNameToId() { ChannelName = channelName, ChannelId = channelId });
+                                await db.SaveChangesAsync();
+                            }
+                            catch (UriFormatException)
+                            {
+                            Log.Error($"GetChannelIdAsync-GetChannelIdByUrlAsync-UriFormatException: {channelUrl}");
+                                throw;
+                            }
+                            catch (Exception ex)
+                            {
+                            Log.Error(ex, $"GetChannelIdAsync-GetChannelIdByUrlAsync-Exception: {channelUrl}");
+                                throw;
+                            }
+                        }
+                    }
+                }
+            else if (matchOldFormat.Success)
             {
                 string host = matchOldFormat.Groups["Host"].Value.ToLower();
                 if (host != "youtube.com")
@@ -778,44 +808,10 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     channelId = matchOldFormat.Groups["ChannelName"].Value;
                     if (!channelId.StartsWith("UC")) throw new FormatException("錯誤，頻道 Id 格式不正確");
                     if (channelId.Length != 24) throw new FormatException("錯誤，頻道 Id 字元數不正確");
-                }
-                else if (type == "c" || type == "user")
-                {
-                    string channelName = WebUtility.UrlDecode(matchOldFormat.Groups["ChannelName"].Value);
-
-                    using (var db = DataBase.MainDbContext.GetDbContext())
-                    {
-                        channelId = db.YoutubeChannelNameToId.SingleOrDefault((x) => x.ChannelName == channelName)?.ChannelId;
-
-                        if (string.IsNullOrEmpty(channelId))
-                        {
-                            try
-                            {
-                                channelId = await GetChannelIdByUrlAsync($"https://www.youtube.com/{type}/{channelName}");
-                                db.YoutubeChannelNameToId.Add(new DataBase.Table.YoutubeChannelNameToId() { ChannelName = channelName, ChannelId = channelId });
-                                await db.SaveChangesAsync();
-                            }
-                            catch (UriFormatException)
-                            {
-                                Log.Error($"GetChannelIdAsync-GetChannelIdByUrlAsync: {channelUrl}");
-                                throw;
-                            }
-                            catch (Exception ex)
-                            {
-                                Log.Error(channelUrl);
-                                Log.Error(ex.ToString());
-                                throw;
-                            }
-                        }
-                    }
-                }
-                else throw new FormatException("錯誤，網址格式不正確");
             }
-            else
+                else if (type == "c" || type == "user")
             {
-                string channelName = channelUrl.Replace("@", "");
-                if (matchNewFormat.Success)
-                    channelName = matchNewFormat.Groups["CustomId"].Value;
+                    string channelName = WebUtility.UrlDecode(matchOldFormat.Groups["ChannelName"].Value);
 
                 using (var db = DataBase.MainDbContext.GetDbContext())
                 {
@@ -825,22 +821,30 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     {
                         try
                         {
-                            channelId = await GetChannelIdByUrlAsync($"https://www.youtube.com/@{channelName}");
+                                channelId = await GetChannelIdByUrlAsync($"https://www.youtube.com/{type}/{channelName}");
                             db.YoutubeChannelNameToId.Add(new DataBase.Table.YoutubeChannelNameToId() { ChannelName = channelName, ChannelId = channelId });
                             await db.SaveChangesAsync();
                         }
                         catch (UriFormatException)
                         {
-                            Log.Error($"GetChannelIdAsync-GetChannelIdByUrlAsync-UriFormatException: {channelUrl}");
+                                Log.Error($"GetChannelIdAsync-GetChannelIdByUrlAsync: {channelUrl}");
                             throw;
                         }
                         catch (Exception ex)
                         {
-                            Log.Error(ex, $"GetChannelIdAsync-GetChannelIdByUrlAsync-Exception: {channelUrl}");
+                                Log.Error(channelUrl);
+                                Log.Error(ex.ToString());
                             throw;
                         }
                     }
+                    }
                 }
+                else throw new FormatException("錯誤，網址格式不正確");
+                }
+            else
+            {
+                Log.Error($"GetChannelIdAsync-NoMatch: {channelUrl}");
+                throw new FormatException("錯誤，找不到對應的網址處理方式，請向 Bot 擁有者聯絡");
             }
 
             return channelId;
