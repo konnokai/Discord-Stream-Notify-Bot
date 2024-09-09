@@ -299,6 +299,51 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
         }
 
         [RequireContext(ContextType.DM)]
+        [Command("UserInfo")]
+        [Summary("顯示使用者資訊")]
+        [Alias("uinfo")]
+        [RequireOwner]
+        public async Task UserInfo(ulong uid = 0)
+        {
+            try
+            {
+                if (uid == 0)
+                {
+                    await Context.Channel.SendErrorAsync("UserId 不可為空").ConfigureAwait(false);
+                    return;
+                }
+
+                var user =  await _client.Rest.GetUserAsync(uid);
+                if (user == null)
+                {
+                    await Context.Channel.SendErrorAsync("找不到指定的使用者").ConfigureAwait(false);
+                    return;
+                }
+
+                string result = $"使用者名稱: **{user.Username}**\n" +
+                            $"使用者 Id: {user.Id}\n";
+
+                List<string> guildList = new();
+                foreach (var item in _client.Guilds)
+                {
+                    if (item.GetUser(uid) != null)
+                        guildList.Add($"{item.Name} ({item.Id})");
+                }
+
+                if (guildList.Any())
+                {
+                    result += $"共同的伺服器: \n```{string.Join('\n', guildList)}```";
+                }
+
+                await Context.Channel.SendConfirmAsync(result).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.ToString());
+            }
+        }
+
+        [RequireContext(ContextType.DM)]
         [Command("AddOfficialList")]
         [Summary("新增官方伺服器白名單")]
         [Alias("aol")]
