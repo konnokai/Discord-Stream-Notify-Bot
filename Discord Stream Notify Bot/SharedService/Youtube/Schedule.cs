@@ -103,7 +103,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                 .AddField("上傳時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
 
                                 if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo) && !isFirstHolo)
-                                    await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.NewVideo).ConfigureAwait(false);
+                                    await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.NewVideo).ConfigureAwait(false);
                             }
                             else if (!string.IsNullOrEmpty(item.LiveStreamingDetails.ActualStartTimeRaw)) //已開台直播
                             {
@@ -151,7 +151,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                                     if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo))
                                     {
-                                        if (!isFirstHolo) await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.NewStream).ConfigureAwait(false);
+                                        if (!isFirstHolo) await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.NewStream).ConfigureAwait(false);
                                         StartReminder(streamVideo, streamVideo.ChannelType);
                                     }
                                 }
@@ -326,7 +326,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                             {
                                 // 會遇到尚未開台但已過開始時間的情況，所以還是先判定開始時間大於現在時間後再傳送新直播通知
                                 if (!isFirst2434 && item.Attributes.StartAt > DateTime.Now)
-                                    await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.NewStream).ConfigureAwait(false);
+                                    await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.NewStream).ConfigureAwait(false);
 
                                 StartReminder(streamVideo, streamVideo.ChannelType);
                             }
@@ -569,7 +569,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                 .AddField("直播狀態", "已刪除直播")
                                 .AddField("排定開台時間", reminder.Value.StreamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown(), true);
 
-                                await SendStreamMessageAsync(reminder.Value.StreamVideo, embedBuilder, NoticeType.Delete).ConfigureAwait(false);
+                                await SendStreamMessageAsync(reminder.Value.StreamVideo, embedBuilder.Build(), NoticeType.Delete).ConfigureAwait(false);
                                 Reminders.TryRemove(reminder.Key, out var reminderItem);
 
                                 reminder.Value.StreamVideo.IsPrivate = true;
@@ -607,7 +607,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                 .AddField("原先預定開台時間", reminder.Value.StreamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
 
                                 if (Program.ApplicatonOwner != null) await Program.ApplicatonOwner.SendMessageAsync(null, false, embedBuilder.Build()).ConfigureAwait(false);
-                                await SendStreamMessageAsync(reminder.Value.StreamVideo, embedBuilder, NoticeType.Start).ConfigureAwait(false);
+                                await SendStreamMessageAsync(reminder.Value.StreamVideo, embedBuilder.Build(), NoticeType.Start).ConfigureAwait(false);
                                 continue;
                             }
 
@@ -660,7 +660,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                         .AddField("排定開台時間", reminder.Value.StreamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown())
                                         .AddField("更改開台時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
 
-                                        await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.ChangeTime).ConfigureAwait(false);
+                                        await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.ChangeTime).ConfigureAwait(false);
                                         StartReminder(streamVideo, streamVideo.ChannelType);
                                     }
                                 }
@@ -715,7 +715,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 .AddField("上傳時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
 
                 if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo) && !isFirstOther && !isFromRNRS && streamVideo.ScheduledStartTime > DateTime.Now.AddDays(-2))
-                    await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.NewVideo).ConfigureAwait(false);
+                    await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.NewVideo).ConfigureAwait(false);
             }
             else if (!string.IsNullOrEmpty(item.LiveStreamingDetails.ActualStartTimeRaw)) //已開台直播
             {
@@ -765,7 +765,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                     if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo) && !isFromRNRS)
                     {
-                        if (!isFirstOther) await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.NewStream).ConfigureAwait(false);
+                        if (!isFirstOther) await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.NewStream).ConfigureAwait(false);
                         StartReminder(streamVideo, streamVideo.ChannelType);
                     }
                 }

@@ -4,6 +4,7 @@ using Discord_Stream_Notify_Bot.HttpClients;
 using Discord_Stream_Notify_Bot.HttpClients.TwitCasting;
 using Discord_Stream_Notify_Bot.Interaction;
 using Microsoft.EntityFrameworkCore;
+using Polly;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
@@ -193,17 +194,28 @@ namespace Discord_Stream_Notify_Bot.SharedService.TwitCasting
                         var channel = guild.GetTextChannel(item.DiscordChannelId);
                         if (channel == null) continue;
 
-                        var message = await channel.SendMessageAsync(item.StartStreamMessage, false, embedBuilder.Build(), components: comp);
+                        await Policy.Handle<TimeoutException>()
+                            .Or<Discord.Net.HttpException>((httpEx) => ((int)httpEx.HttpCode).ToString().StartsWith("50"))
+                            .WaitAndRetryAsync(3, (retryAttempt) =>
+                            {
+                                var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
+                                Log.Warn($"{item.GuildId} / {item.DiscordChannelId} 發送失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
+                                return timeSpan;
+                            })
+                            .ExecuteAsync(async () =>
+                            {
+                                var message = await channel.SendMessageAsync(text: item.StartStreamMessage, embed: embedBuilder.Build(), components: comp, options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
 
-                        try
-                        {
-                            if (channel is INewsChannel)
-                                await message.CrosspostAsync();
-                        }
-                        catch (Discord.Net.HttpException httpEx) when (httpEx.DiscordCode == DiscordErrorCode.MessageAlreadyCrossposted)
-                        {
-                            // ignore
-                        }
+                                try
+                                {
+                                    if (channel is INewsChannel)
+                                        await message.CrosspostAsync();
+                                }
+                                catch (Discord.Net.HttpException httpEx) when (httpEx.DiscordCode == DiscordErrorCode.MessageAlreadyCrossposted)
+                                {
+                                    // ignore
+                                }
+                            });
                     }
                     catch (Exception ex)
                     {

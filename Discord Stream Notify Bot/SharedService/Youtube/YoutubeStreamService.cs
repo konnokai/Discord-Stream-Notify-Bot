@@ -48,9 +48,9 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
         private readonly DiscordWebhookClient _webhookClient;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly HttpClient _nijisanjiApiHttpClient;
-        private readonly EmojiService _emojiService;
         private readonly ConcurrentDictionary<string, byte> _endLiveBag = new();
         private readonly string _callbackUrl;
+        private readonly MessageComponent _messageComponent;
 
         public YoutubeStreamService(DiscordSocketClient client, IHttpClientFactory httpClientFactory, BotConfig botConfig, EmojiService emojiService)
         {
@@ -67,7 +67,11 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             });
 
             _callbackUrl = botConfig.PubSubCallbackUrl;
-            _emojiService = emojiService;
+
+            _messageComponent = new ComponentBuilder()
+                        .WithButton("好手氣，隨機帶你到一個影片或直播", style: ButtonStyle.Link, emote: emojiService.YouTubeEmote, url: "https://api.konnokai.me/randomvideo")
+                        .WithButton("贊助小幫手 (Patreon) #ad", style: ButtonStyle.Link, emote: emojiService.PatreonEmote, url: Utility.PatreonUrl, row: 1)
+                        .WithButton("贊助小幫手 (Paypal) #ad", style: ButtonStyle.Link, emote: emojiService.PayPalEmote, url: Utility.PaypalUrl, row: 1).Build();
 
 #if RELEASE
             if (botConfig.DetectGuildId != 0 && botConfig.DetectCategoryId != 0)
@@ -262,7 +266,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                 .AddField("關台時間", endTime.ConvertDateTimeToDiscordMarkdown());
 
                                 if (Program.ApplicatonOwner != null) await Program.ApplicatonOwner.SendMessageAsync("已關台並變更為會限影片", false, embedBuilder.Build()).ConfigureAwait(false);
-                                await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.End).ConfigureAwait(false);
+                                await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.End).ConfigureAwait(false);
                             }
                         }
                         catch (Exception ex)
@@ -294,7 +298,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                 .AddField("直播狀態", "已刪除直播")
                                 .AddField("排定開台時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
 
-                                await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.Delete).ConfigureAwait(false);
+                                await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.Delete).ConfigureAwait(false);
                             }
                         }
                         catch (Exception ex)
@@ -327,7 +331,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                 .AddField("排定開台時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
 
                                 if (Program.ApplicatonOwner != null) await Program.ApplicatonOwner.SendMessageAsync("已關台並變更為私人存檔", false, embedBuilder.Build()).ConfigureAwait(false);
-                                await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.Delete).ConfigureAwait(false);
+                                await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.Delete).ConfigureAwait(false);
                             }
                         }
                         catch (Exception ex)
@@ -359,7 +363,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                 .AddField("排定開台時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
 
                                 if (Program.ApplicatonOwner != null) await Program.ApplicatonOwner.SendMessageAsync("429錯誤", false, embedBuilder.Build()).ConfigureAwait(false);
-                                await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.Start).ConfigureAwait(false);
+                                await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.Start).ConfigureAwait(false);
                             }
                         }
                         catch (Exception ex)
@@ -469,7 +473,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                     .AddField("上傳時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
 
                                     if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo) && streamVideo.ScheduledStartTime > DateTime.Now.AddDays(-2))
-                                        await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.NewVideo).ConfigureAwait(false);
+                                        await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.NewVideo).ConfigureAwait(false);
                                 }
                             }
                             else Log.Info($"{channel} - (編輯或關台) {youtubePubSubNotification.ChannelId}: {youtubePubSubNotification.VideoId}");
@@ -505,7 +509,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                     .AddField("狀態", "已刪除")
                                     .AddField("排定開台/上傳時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
 
-                                    await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.Delete).ConfigureAwait(false);
+                                    await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.Delete).ConfigureAwait(false);
                                 }
                             }
                         }
@@ -768,34 +772,34 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             Match matchOldFormat = regexOldFormat.Match(channelUrl);
 
             if (matchNewFormat.Success)
-                {
+            {
                 string channelName = matchNewFormat.Groups["CustomId"].Value;
 
-                    using (var db = DataBase.MainDbContext.GetDbContext())
-                    {
-                        channelId = db.YoutubeChannelNameToId.SingleOrDefault((x) => x.ChannelName == channelName)?.ChannelId;
+                using (var db = DataBase.MainDbContext.GetDbContext())
+                {
+                    channelId = db.YoutubeChannelNameToId.SingleOrDefault((x) => x.ChannelName == channelName)?.ChannelId;
 
-                        if (string.IsNullOrEmpty(channelId))
+                    if (string.IsNullOrEmpty(channelId))
+                    {
+                        try
                         {
-                            try
-                            {
                             channelId = await GetChannelIdByUrlAsync($"https://www.youtube.com/@{channelName}");
-                                db.YoutubeChannelNameToId.Add(new DataBase.Table.YoutubeChannelNameToId() { ChannelName = channelName, ChannelId = channelId });
-                                await db.SaveChangesAsync();
-                            }
-                            catch (UriFormatException)
-                            {
+                            db.YoutubeChannelNameToId.Add(new DataBase.Table.YoutubeChannelNameToId() { ChannelName = channelName, ChannelId = channelId });
+                            await db.SaveChangesAsync();
+                        }
+                        catch (UriFormatException)
+                        {
                             Log.Error($"GetChannelIdAsync-GetChannelIdByUrlAsync-UriFormatException: {channelUrl}");
-                                throw;
-                            }
-                            catch (Exception ex)
-                            {
+                            throw;
+                        }
+                        catch (Exception ex)
+                        {
                             Log.Error(ex, $"GetChannelIdAsync-GetChannelIdByUrlAsync-Exception: {channelUrl}");
-                                throw;
-                            }
+                            throw;
                         }
                     }
                 }
+            }
             else if (matchOldFormat.Success)
             {
                 string host = matchOldFormat.Groups["Host"].Value.ToLower();
@@ -808,39 +812,39 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     channelId = matchOldFormat.Groups["ChannelName"].Value;
                     if (!channelId.StartsWith("UC")) throw new FormatException("錯誤，頻道 Id 格式不正確");
                     if (channelId.Length != 24) throw new FormatException("錯誤，頻道 Id 字元數不正確");
-            }
+                }
                 else if (type == "c" || type == "user")
-            {
+                {
                     string channelName = WebUtility.UrlDecode(matchOldFormat.Groups["ChannelName"].Value);
 
-                using (var db = DataBase.MainDbContext.GetDbContext())
-                {
-                    channelId = db.YoutubeChannelNameToId.SingleOrDefault((x) => x.ChannelName == channelName)?.ChannelId;
-
-                    if (string.IsNullOrEmpty(channelId))
+                    using (var db = DataBase.MainDbContext.GetDbContext())
                     {
-                        try
+                        channelId = db.YoutubeChannelNameToId.SingleOrDefault((x) => x.ChannelName == channelName)?.ChannelId;
+
+                        if (string.IsNullOrEmpty(channelId))
                         {
+                            try
+                            {
                                 channelId = await GetChannelIdByUrlAsync($"https://www.youtube.com/{type}/{channelName}");
-                            db.YoutubeChannelNameToId.Add(new DataBase.Table.YoutubeChannelNameToId() { ChannelName = channelName, ChannelId = channelId });
-                            await db.SaveChangesAsync();
-                        }
-                        catch (UriFormatException)
-                        {
+                                db.YoutubeChannelNameToId.Add(new DataBase.Table.YoutubeChannelNameToId() { ChannelName = channelName, ChannelId = channelId });
+                                await db.SaveChangesAsync();
+                            }
+                            catch (UriFormatException)
+                            {
                                 Log.Error($"GetChannelIdAsync-GetChannelIdByUrlAsync: {channelUrl}");
-                            throw;
-                        }
-                        catch (Exception ex)
-                        {
+                                throw;
+                            }
+                            catch (Exception ex)
+                            {
                                 Log.Error(channelUrl);
                                 Log.Error(ex.ToString());
-                            throw;
+                                throw;
+                            }
                         }
-                    }
                     }
                 }
                 else throw new FormatException("錯誤，網址格式不正確");
-                }
+            }
             else
             {
                 Log.Error($"GetChannelIdAsync-NoMatch: {channelUrl}");

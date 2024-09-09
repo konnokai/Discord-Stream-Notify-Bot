@@ -57,7 +57,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         .AddField("直播狀態", "已刪除直播")
                         .AddField("排定開台時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
 
-                        await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.Delete).ConfigureAwait(false);
+                        await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.Delete).ConfigureAwait(false);
                         return;
                     }
                 }
@@ -166,7 +166,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         .AddField("直播狀態", "開台中")
                         .AddField("排定開台時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
 
-                        await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.Start).ConfigureAwait(false);
+                        await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.Start).ConfigureAwait(false);
                     }
 
                     if (Reminders.TryRemove(streamVideo.VideoId, out var t))
@@ -236,7 +236,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                             break;
                     }
 
-                    await SendStreamMessageAsync(streamVideo, embedBuilder, NoticeType.ChangeTime).ConfigureAwait(false);
+                    await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.ChangeTime).ConfigureAwait(false);
 
                     if (Reminders.TryRemove(streamVideo.VideoId, out var t))
                         t.Timer.Change(Timeout.Infinite, Timeout.Infinite);
@@ -287,11 +287,11 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     }
                 }
 
-                await SendStreamMessageAsync(streamVideo, embedBuilder, noticeType).ConfigureAwait(false);
+                await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), noticeType).ConfigureAwait(false);
             }
         }
 
-        private async Task SendStreamMessageAsync(DataBase.Table.Video streamVideo, EmbedBuilder embedBuilder, NoticeType noticeType)
+        private async Task SendStreamMessageAsync(DataBase.Table.Video streamVideo, Embed embed, NoticeType noticeType)
         {
             if (!Program.IsConnect)
                 return;
@@ -310,18 +310,18 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     break;
             }
 
-            List<NoticeYoutubeStreamChannel> noticeGuildList = new List<NoticeYoutubeStreamChannel>();
+            List<NoticeYoutubeStreamChannel> noticeYoutubeStreamChannels = new List<NoticeYoutubeStreamChannel>();
             using (var db = DataBase.MainDbContext.GetDbContext())
             {
                 try
                 {
                     // 有設定該頻道的通知就不用過濾，他們肯定是要這頻道的通知
-                    noticeGuildList.AddRange(db.NoticeYoutubeStreamChannel.Where((x) => x.NoticeStreamChannelId == streamVideo.ChannelId));
+                    noticeYoutubeStreamChannels.AddRange(db.NoticeYoutubeStreamChannel.Where((x) => x.NoticeStreamChannelId == streamVideo.ChannelId));
                 }
                 catch (Exception ex)
                 {
                     // 原則上不會有錯，我也不知道加這幹嘛
-                    Log.Error($"SendStreamMessageAsyncChannel: {streamVideo.VideoId}\n{ex}");
+                    Log.Error(ex, $"SendStreamMessageAsyncChannel: {streamVideo.VideoId}");
                 }
 
                 //類型檢查，其他類型的頻道要特別檢查，確保必須是認可的頻道才可被添加到其他類型通知
@@ -331,30 +331,22 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         !db.YoutubeChannelSpider.Any((x) => x.ChannelId == streamVideo.ChannelId) || //若該頻道非在爬蟲清單內，那也沒有認不認可的問題
                         db.YoutubeChannelSpider.First((x) => x.ChannelId == streamVideo.ChannelId).IsTrustedChannel) //最後該爬蟲必須是已認可的頻道，才可添加至其他類型的通知
                     {
-                        noticeGuildList.AddRange(db.NoticeYoutubeStreamChannel.Where((x) => x.NoticeStreamChannelId == "all" || x.NoticeStreamChannelId == type));
+                        noticeYoutubeStreamChannels.AddRange(db.NoticeYoutubeStreamChannel.Where((x) => x.NoticeStreamChannelId == "all" || x.NoticeStreamChannelId == type));
                     }
                 }
                 catch (Exception ex)
                 {
-                    Log.Error($"SendStreamMessageAsyncOtherChannel: {streamVideo.VideoId}\n{ex}");
+                    Log.Error(ex, $"SendStreamMessageAsyncOtherChannel: {streamVideo.VideoId}");
                 }
 
-                Log.New($"發送直播通知 ({noticeGuildList.Count} / {noticeType}): {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
+                Log.New($"發送直播通知 ({noticeYoutubeStreamChannels.Count} / {noticeType}): {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
 
 #if DEBUG || DEBUG_DONTREGISTERCOMMAND
                 return;
 #endif
 
-                MessageComponent comp = null;
-                if (noticeType == NoticeType.Start)
-                {
-                    comp = new ComponentBuilder()
-                        .WithButton("好手氣，隨機帶你到一個影片或直播", style: ButtonStyle.Link, emote: _emojiService.YouTubeEmote, url: "https://api.konnokai.me/randomvideo")
-                        .WithButton("贊助小幫手 (Patreon) #ad", style: ButtonStyle.Link, emote: _emojiService.PatreonEmote, url: Utility.PatreonUrl, row: 1)
-                        .WithButton("贊助小幫手 (Paypal) #ad", style: ButtonStyle.Link, emote: _emojiService.PayPalEmote, url: Utility.PaypalUrl, row: 1).Build();
-                }
-
-                foreach (var item in noticeGuildList)
+                var needReSandMessageDic = new Dictionary<ITextChannel, string>();
+                foreach (var item in noticeYoutubeStreamChannels)
                 {
                     try
                     {
@@ -380,6 +372,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                 sendMessage = item.DeleteMessage;
                                 break;
                         }
+
                         if (sendMessage == "-") continue;
 
                         var guild = _client.GetGuild(item.GuildId);
@@ -394,17 +387,28 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         var channel = guild.GetTextChannel(item.DiscordChannelId);
                         if (channel == null) continue;
 
-                        var message = await channel.SendMessageAsync(sendMessage, false, embedBuilder.Build(), components: comp, options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
+                        await Policy.Handle<TimeoutException>()
+                            .Or<Discord.Net.HttpException>((httpEx) => ((int)httpEx.HttpCode).ToString().StartsWith("50"))
+                            .WaitAndRetryAsync(3, (retryAttempt) =>
+                            {
+                                var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
+                                Log.Warn($"{item.GuildId} / {item.DiscordChannelId} 發送失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
+                                return timeSpan;
+                            })
+                            .ExecuteAsync(async () =>
+                            {
+                                var message = await channel.SendMessageAsync(text: sendMessage, embed: embed, components: noticeType == NoticeType.Start ? _messageComponent : null, options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
 
-                        try
-                        {
-                            if (channel is INewsChannel)
-                                await message.CrosspostAsync();
-                        }
-                        catch (Discord.Net.HttpException httpEx) when (httpEx.DiscordCode == DiscordErrorCode.MessageAlreadyCrossposted)
-                        {
-                            // ignore
-                        }
+                                try
+                                {
+                                    if (channel is INewsChannel)
+                                        await message.CrosspostAsync();
+                                }
+                                catch (Discord.Net.HttpException httpEx) when (httpEx.DiscordCode == DiscordErrorCode.MessageAlreadyCrossposted)
+                                {
+                                    // ignore
+                                }
+                            });
                     }
                     catch (Discord.Net.HttpException httpEx)
                     {
@@ -414,9 +418,9 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                             db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where((x) => x.DiscordChannelId == item.DiscordChannelId));
                             db.SaveChanges();
                         }
-                        else if (httpEx.HttpCode == System.Net.HttpStatusCode.InternalServerError || httpEx.HttpCode == System.Net.HttpStatusCode.BadGateway || httpEx.HttpCode == System.Net.HttpStatusCode.GatewayTimeout)
+                        else if (((int)httpEx.HttpCode).ToString().StartsWith("50"))
                         {
-                            Log.Warn("Youtube 通知 - Discord 500錯誤");
+                            Log.Warn($"Youtube 通知 - Discord 50X 錯誤: {httpEx.HttpCode}");
                         }
                         else
                         {
