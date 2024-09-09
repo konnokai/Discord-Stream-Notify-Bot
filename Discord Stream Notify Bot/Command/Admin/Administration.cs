@@ -313,7 +313,7 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
                     return;
                 }
 
-                var user =  await _client.Rest.GetUserAsync(uid);
+                var user = await _client.Rest.GetUserAsync(uid);
                 if (user == null)
                 {
                     await Context.Channel.SendErrorAsync("找不到指定的使用者").ConfigureAwait(false);

@@ -13,7 +13,7 @@ namespace Discord_Stream_Notify_Bot.SharedService
                 {
                     try
                     {
-                        Task.Run(async() => youTubeEmote = await _client.GetApplicationEmoteAsync(1265158558299848827));
+                        Task.Run(async () => youTubeEmote = await _client.GetApplicationEmoteAsync(1265158558299848827));
                     }
                     catch (Exception ex)
                     {
