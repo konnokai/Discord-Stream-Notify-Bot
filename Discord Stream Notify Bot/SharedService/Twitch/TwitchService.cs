@@ -45,6 +45,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
             {
                 twitchOAuthToken = botConfig.TwitchCookieAuthToken;
             }
+
             twitchRecordPath = botConfig.TwitchRecordPath;
             if (string.IsNullOrEmpty(twitchRecordPath)) twitchRecordPath = Program.GetDataFilePath("");
             if (!twitchRecordPath.EndsWith(Program.GetPlatformSlash())) twitchRecordPath += Program.GetPlatformSlash();
@@ -100,13 +101,17 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                     return null;
                 }
 
-
                 var users = await _twitchApi.Value.Helix.Users.GetUsersAsync(userId, userLogin, accessToken: accessToken);
                 return users.Users.FirstOrDefault();
             }
+            catch (TwitchLib.Api.Core.Exceptions.BadRequestException)
+            {
+                Log.Error($"無法取得 Twitch 資料，可能是找不到輸入的使用者資料: ({twitchUserId}) {twitchUserLogin}");
+                return null;
+            }
             catch (Exception ex)
             {
-                Log.Error(ex, $"無法取得 Twitch 資料，請確認 {nameof(BotConfig.TwitchClientId)} 或 {nameof(BotConfig.TwitchClientSecret)} 是否正常");
+                Log.Error(ex, $"無法取得 Twitch 資料: ({twitchUserId}) {twitchUserLogin}");
                 return null;
             }
         }
@@ -135,10 +140,15 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
 
                 return result;
             }
+            catch (TwitchLib.Api.Core.Exceptions.BadRequestException)
+            {
+                Log.Error($"無法取得 Twitch 資料，可能是找不到輸入的使用者資料: {twitchUserLogins.First()}");
+                return null;
+            }
             catch (Exception ex)
             {
-                Log.Error(ex, $"無法取得 Twitch 資料，請確認 {nameof(BotConfig.TwitchClientId)} 或 {nameof(BotConfig.TwitchClientSecret)} 是否正常");
-                return Array.Empty<User>();
+                Log.Error(ex, $"無法取得 Twitch 資料: {twitchUserLogins.First()}");
+                return null;
             }
         }
 

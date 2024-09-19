@@ -101,7 +101,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
             if (userData == null)
             {
                 await Context.Interaction.SendErrorAsync("錯誤，Twitch 使用者資料獲取失敗\n" +
-                        "請確認網址是否正確，若正確請向Bot擁有者回報", true);
+                        "請確認網址是否正確，若正確請向 Bot 擁有者回報", true);
                 return;
             }
 

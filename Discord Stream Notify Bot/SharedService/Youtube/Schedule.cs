@@ -3,6 +3,7 @@ using Discord_Stream_Notify_Bot.SharedService.Youtube.Json;
 using HtmlAgilityPack;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json.Linq;
+using Polly;
 using System.Data;
 using System.Text.RegularExpressions;
 using Extensions = Discord_Stream_Notify_Bot.Interaction.Extensions;
@@ -55,7 +56,24 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             try
             {
                 HtmlWeb htmlWeb = new HtmlWeb();
-                HtmlDocument htmlDocument = htmlWeb.Load("https://schedule.hololive.tv/simple");
+                HtmlDocument htmlDocument = await Policy.Handle<HttpRequestException>()
+                    .WaitAndRetryAsync(3, (retryAttempt) =>
+                    {
+                        var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
+                        Log.Warn($"HoloSchedule GET 失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
+                        return timeSpan;
+                    })
+                    .ExecuteAsync(async () =>
+                    {
+                        return await htmlWeb.LoadFromWebAsync("https://schedule.hololive.tv/simple");
+                    });
+
+                if (htmlDocument == null)
+                {
+                    Log.Warn("HoloSchedule htmlDocument 為空，放棄本次排程");
+                    return;
+                }
+
                 var aList = htmlDocument.DocumentNode.Descendants().Where((x) => x.Name == "a");
                 List<string> idList = new List<string>();
                 foreach (var item in aList)
@@ -416,7 +434,23 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     {
                         try
                         {
-                            var response = await httpClient.GetStringAsync($"https://www.youtube.com/channel/{item.ChannelId}/{type}");
+                            var response = await Policy.Handle<HttpRequestException>()
+                                .WaitAndRetryAsync(3, (retryAttempt) =>
+                                {
+                                    var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
+                                    Log.Warn($"OtherSchedule {item.ChannelId} - {type}: GET 失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
+                                    return timeSpan;
+                                })
+                                .ExecuteAsync(async () =>
+                                {
+                                    return await httpClient.GetStringAsync($"https://www.youtube.com/channel/{item.ChannelId}/{type}");
+                                });
+
+                            if (string.IsNullOrEmpty(response))
+                            {
+                                Log.Warn($"OtherSchedule {item.ChannelId} - {type}: Response 為空，放棄本次排程");
+                                continue;
+                            }
 
                             Regex regex;
                             if (response.Contains("window[\"ytInitialData\"]"))

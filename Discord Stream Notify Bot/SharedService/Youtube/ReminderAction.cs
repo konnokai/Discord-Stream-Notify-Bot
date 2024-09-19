@@ -91,7 +91,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                     }
                                     catch (Exception ex)
                                     {
-                                        Log.Error(ex.ToString());
+                                        Log.Error(ex, $"({streamVideo.ChannelType}) 直播標題變更保存失敗: {streamVideo.VideoId}");
                                     }
                                 }
                                 break;
@@ -106,7 +106,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                     }
                                     catch (Exception ex)
                                     {
-                                        Log.Error(ex.ToString());
+                                        Log.Error(ex, $"({streamVideo.ChannelType}) 直播標題變更保存失敗: {streamVideo.VideoId}");
                                     }
                                 }
                                 break;
@@ -121,7 +121,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                     }
                                     catch (Exception ex)
                                     {
-                                        Log.Error(ex.ToString());
+                                        Log.Error(ex, $"({streamVideo.ChannelType}) 直播標題變更保存失敗: {streamVideo.VideoId}");
                                     }
                                 }
                                 break;
@@ -200,7 +200,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                 }
                                 catch (Exception ex)
                                 {
-                                    Log.Error(ex.Message + "\n" + ex.StackTrace);
+                                    Log.Error(ex, $"({streamVideo.ChannelType}) 直播時間變更保存失敗: {streamVideo.VideoId}");
                                 }
                             }
                             break;
@@ -215,7 +215,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                 }
                                 catch (Exception ex)
                                 {
-                                    Log.Error(ex.Message + "\n" + ex.StackTrace);
+                                    Log.Error(ex, $"({streamVideo.ChannelType}) 直播時間變更保存失敗: {streamVideo.VideoId}");
                                 }
                             }
                             break;
@@ -230,7 +230,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                 }
                                 catch (Exception ex)
                                 {
-                                    Log.Error(ex.Message + "\n" + ex.StackTrace);
+                                    Log.Error(ex, $"({streamVideo.ChannelType}) 直播時間變更保存失敗: {streamVideo.VideoId}");
                                 }
                             }
                             break;
