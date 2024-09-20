@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json.Linq;
 using Polly;
 using System.Data;
+using System.Net;
 using System.Text.RegularExpressions;
 using Extensions = Discord_Stream_Notify_Bot.Interaction.Extensions;
 
@@ -57,6 +58,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             {
                 HtmlWeb htmlWeb = new HtmlWeb();
                 HtmlDocument htmlDocument = await Policy.Handle<HttpRequestException>()
+                    .Or<WebException>((ex) => ex.Message.Contains("unavailable")) // Resource temporarily unavailable
                     .WaitAndRetryAsync(3, (retryAttempt) =>
                     {
                         var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
@@ -435,6 +437,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         try
                         {
                             var response = await Policy.Handle<HttpRequestException>()
+                                .Or<WebException>((ex) => ex.Message.Contains("unavailable")) // Resource temporarily unavailable
                                 .WaitAndRetryAsync(3, (retryAttempt) =>
                                 {
                                     var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
