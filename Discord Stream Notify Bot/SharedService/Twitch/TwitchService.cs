@@ -396,15 +396,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                                 StreamStartAt = stream.StartedAt
                             };
 
-                            try
-                            {
-                                await Program.RedisDb.StringSetAsync(new($"twitch:stream_data:{stream.UserId}"), JsonConvert.SerializeObject(twitchStream));
-                            }
-                            catch (Exception ex)
-                            {
-                                Log.Error(ex, $"Twitch Set Redis Data Error: {stream.Id}");
-                            }
-
                             twitchStreamDb.TwitchStreams.Add(twitchStream);
 
                             EmbedBuilder embedBuilder = new EmbedBuilder()
@@ -427,19 +418,31 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
 
                             await SendStreamMessageAsync(twitchStream.UserId, embedBuilder.Build(), NoticeType.StartStream);
 
-                            try
+                            if (!twitchSpider.IsWarningUser)
                             {
-                                await _twitchApi.Value.Helix.EventSub.CreateEventSubSubscriptionAsync("channel.update", "2", new() { { "broadcaster_user_id", stream.UserId } },
-                                      TwitchLib.Api.Core.Enums.EventSubTransportMethod.Webhook, webhookCallback: $"https://{_apiServerUrl}/TwitchWebHooks", webhookSecret: twitchWebHookSecret);
+                                try
+                                {
+                                    await Program.RedisDb.StringSetAsync(new($"twitch:stream_data:{stream.UserId}"), JsonConvert.SerializeObject(twitchStream));
+                                }
+                                catch (Exception ex)
+                                {
+                                    Log.Error(ex, $"Twitch Set Redis Data Error: {stream.Id}");
+                                }
 
-                                await _twitchApi.Value.Helix.EventSub.CreateEventSubSubscriptionAsync("stream.offline", "1", new() { { "broadcaster_user_id", stream.UserId } },
-                                      TwitchLib.Api.Core.Enums.EventSubTransportMethod.Webhook, webhookCallback: $"https://{_apiServerUrl}/TwitchWebHooks", webhookSecret: twitchWebHookSecret);
+                                try
+                                {
+                                    await _twitchApi.Value.Helix.EventSub.CreateEventSubSubscriptionAsync("channel.update", "2", new() { { "broadcaster_user_id", stream.UserId } },
+                                          TwitchLib.Api.Core.Enums.EventSubTransportMethod.Webhook, webhookCallback: $"https://{_apiServerUrl}/TwitchWebHooks", webhookSecret: twitchWebHookSecret);
 
-                                Log.Info($"已註冊 Twitch WebHook: {twitchSpider.UserId} ({twitchSpider.UserName})");
-                            }
-                            catch (Exception ex)
-                            {
-                                Log.Error(ex, $"註冊 Twitch WebHook 失敗，也許是已經註冊過了?");
+                                    await _twitchApi.Value.Helix.EventSub.CreateEventSubSubscriptionAsync("stream.offline", "1", new() { { "broadcaster_user_id", stream.UserId } },
+                                          TwitchLib.Api.Core.Enums.EventSubTransportMethod.Webhook, webhookCallback: $"https://{_apiServerUrl}/TwitchWebHooks", webhookSecret: twitchWebHookSecret);
+
+                                    Log.Info($"已註冊 Twitch WebHook: {twitchSpider.UserId} ({twitchSpider.UserName})");
+                                }
+                                catch (Exception ex)
+                                {
+                                    Log.Error(ex, $"註冊 Twitch WebHook 失敗，也許是已經註冊過了?");
+                                }
                             }
                         }
                         catch (Exception ex) { Log.Error(ex, $"TwitchService-GetData: {twitchSpider.UserLogin}"); }
