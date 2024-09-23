@@ -16,7 +16,7 @@
 - 錄影功能需搭配隔壁 [Youtube Stream Record](https://github.com/konnokai/YoutubeStreamRecord) 使用 (如無搭配錄影的話則不會有關台通知，且不能即時的通知開台) \*
 - Twitter AuthToken & CSRFToken，這需要從已登入的 Twitter 帳號中，由名稱為 `auth_token` 和 `ct0` 的 Cookie 來獲得 (如不需要推特語音通知則不需要) \*\*
 - Discord & Google 的 OAuth Client ID 跟 Client Secret，用於 YouTube 會限驗證，需搭配 [網站後端](https://github.com/konnokai/Discord-Stream-Bot-Backend) 使用 \*\*
-- PubSubCallbackUrl，搭配上面的網站後端做 YouTube 影片上傳接收使用，當有新爬蟲時小幫手會自動註冊，網址格式為: `https://[後端域名]/NotificationCallback` ([Google PubSubHubbub](https://pubsubhubbub.appspot.com))
+- ApiServerDomain，搭配上面的網站後端做 YouTube 影片上傳接收 & Twitch 狀態更新使用，僅需填寫後端域名就好 (Ex: api.example.me) ([Google PubSubHubbub](https://pubsubhubbub.appspot.com)) ([Twitch Webhook Callback](https://dev.twitch.tv/docs/eventsub/handling-webhook-events/))
 - Uptime Kuma Push 監測器的網址，如果不需要上線監測則可為空，需搭配 [Uptime Kuma](https://github.com/louislam/uptime-kuma) 使用
 - [ffmpeg](https://ffmpeg.org/download.html), [streamlink](https://streamlink.github.io/install.html)，原則上不裝的話就只是不會錄影 (裝完記得確認 PATH 環境變數是否有設定正確的路徑)
 - Twitch App Client Id & Client Secret ([Twitch Develpers](https://dev.twitch.tv/console/apps)) \*\*
@@ -45,6 +45,7 @@
 - [NadekoBot](https://gitlab.com/Kwoth/nadekobot)
 - [LivestreamRecorderService](https://github.com/Recorder-moe/LivestreamRecorderService)
 - [Discord .NET](https://github.com/discord-net/Discord.Net)
+- [TwitchLib](https://github.com/TwitchLib/TwitchLib)
 - [twspace-crawler](https://github.com/HitomaruKonpaku/twspace-crawler)
 - 其餘參考附於程式碼內
 

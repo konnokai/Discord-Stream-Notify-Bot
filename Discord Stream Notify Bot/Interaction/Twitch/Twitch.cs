@@ -1,6 +1,7 @@
 ﻿using Discord.Interactions;
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.Interaction.Attribute;
+using Discord_Stream_Notify_Bot.SharedService.Twitch;
 
 namespace Discord_Stream_Notify_Bot.Interaction.Twitch
 {
@@ -8,7 +9,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
     [RequireUserPermission(GuildPermission.ManageMessages)]
     [DefaultMemberPermissions(GuildPermission.ManageMessages)]
     [Group("twitch", "Twitch 通知設定")]
-    public class Twitch : TopLevelModule<SharedService.Twitch.TwitchService>
+    public class Twitch : TopLevelModule<TwitchService>
     {
         private readonly DiscordSocketClient _client;
 
@@ -179,75 +180,122 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
         [RequireBotPermission(GuildPermission.MentionEveryone)]
         [CommandSummary("設定通知訊息\n" +
             "不輸入通知訊息的話則會關閉通知訊息\n" +
+            "若輸入 `-` 則可以關閉該通知類型\n" +
             "需先新增直播通知後才可設定通知訊息(`/help get-command-help twitch add`)\n\n" +
             "(考慮到有伺服器需 Ping 特定用戶組的情況，故 Bot 需提及所有身分組權限)")]
-        [CommandExample("998rrr 開台啦", "https://twitch.tv/998rrr 開台啦")]
+        [CommandExample("998rrr 開台啦", "https://twitch.tv/998rrr 開始直播 開台啦")]
         [SlashCommand("set-message", "設定通知訊息")]
-        public async Task SetMessage([Summary("頻道名稱", "userName"), Autocomplete(typeof(GuildNoticeTwitchChannelIdAutocompleteHandler))] string twitchId, [Summary("通知訊息")] string message = "")
+        public async Task SetMessage([Summary("頻道名稱"), Autocomplete(typeof(GuildNoticeTwitchChannelIdAutocompleteHandler))] string twitchId,
+            [Summary("通知類型")] TwitchService.NoticeType noticeType,
+            [Summary("通知訊息")] string message = "")
         {
             await DeferAsync(true).ConfigureAwait(false);
 
             using (var db = DataBase.MainDbContext.GetDbContext())
             {
                 var noticeTwitchStreamChannel = db.NoticeTwitchStreamChannels.FirstOrDefault((x) => x.GuildId == Context.Guild.Id && x.NoticeTwitchUserId == twitchId);
-                if (noticeTwitchStreamChannel == null) // 邏輯上不會發生但還是寫一下
+                if (noticeTwitchStreamChannel == null)
                 {
                     await Context.Interaction.SendErrorAsync($"並未設定 `{twitchId}` 的 Twitch 直播通知\n" +
                         $"請先使用 `/twitch add {twitchId}` 新增通知後再設定通知訊息", true).ConfigureAwait(false);
                 }
                 else
                 {
-                    noticeTwitchStreamChannel.StartStreamMessage = message.Trim();
+                    string noticeTypeString = "", result = "";
+
+                    message = message.Trim();
+                    switch (noticeType)
+                    {
+                        case TwitchService.NoticeType.StartStream:
+                            noticeTwitchStreamChannel.StartStreamMessage = message;
+                            noticeTypeString = "開始直播";
+                            break;
+                        case TwitchService.NoticeType.EndStream:
+                            noticeTwitchStreamChannel.EndStreamMessage = message;
+                            noticeTypeString = "結束直播";
+                            break;
+                        case TwitchService.NoticeType.ChangeStreamData:
+                            noticeTwitchStreamChannel.ChangeStreamDataMessage = message;
+                            noticeTypeString = "更改直播資料";
+                            break;
+                    }
+
                     db.NoticeTwitchStreamChannels.Update(noticeTwitchStreamChannel);
                     db.SaveChanges();
 
-                    if (message != "") await Context.Interaction.SendConfirmAsync($"已設定 `{db.GetTwitchUserNameByUserId(twitchId)}` 的 Twitch 直播通知訊息為:\n{message}", true, true).ConfigureAwait(false);
-                    else await Context.Interaction.SendConfirmAsync($"已取消 `{db.GetTwitchUserNameByUserId(twitchId)}` 的 Twitch 直播通知訊息", true, true).ConfigureAwait(false);
+                    if (message == "-")
+                    {
+                        result = $"已關閉 `{db.GetTwitchUserNameByUserId(twitchId)}` 的 `{noticeTypeString}` 通知";
+                    }
+                    else if (message != "")
+                    {
+                        result = $"已設定 `{db.GetTwitchUserNameByUserId(twitchId)}` 的 `{noticeTypeString}` 通知訊息為:\n" +
+                            $"{message}";
+                    }
+                    else
+                    {
+                        result = $"已清除 `{db.GetTwitchUserNameByUserId(twitchId)}` 的 `{noticeTypeString}` 通知訊息";
+                    }
+
+                    await Context.Interaction.SendConfirmAsync(result, true, true).ConfigureAwait(false);
                 }
             }
         }
 
+        string GetCurrectMessage(string message)
+            => message == "-" ? "(已關閉本類別的通知)" : message;
+
         [SlashCommand("list-message", "列出已設定的 Twitch 直播通知訊息")]
         public async Task ListMessage([Summary("頁數")] int page = 0)
         {
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            try
             {
-                if (db.NoticeTwitchStreamChannels.Any((x) => x.GuildId == Context.Guild.Id))
+                using (var db = DataBase.MainDbContext.GetDbContext())
                 {
-                    var noticeTwitchStreamChannels = db.NoticeTwitchStreamChannels.Where((x) => x.GuildId == Context.Guild.Id);
-                    Dictionary<string, string> dic = new Dictionary<string, string>();
-
-                    foreach (var item in noticeTwitchStreamChannels)
+                    if (db.NoticeTwitchStreamChannels.Any((x) => x.GuildId == Context.Guild.Id))
                     {
-                        string message = string.IsNullOrWhiteSpace(item.StartStreamMessage) ? "無" : item.StartStreamMessage;
-                        dic.Add(db.GetTwitchUserNameByUserId(item.NoticeTwitchUserId), message);
-                    }
+                        var noticeTwitchStreamChannels = db.NoticeTwitchStreamChannels.Where((x) => x.GuildId == Context.Guild.Id);
+                        Dictionary<string, string> dic = new Dictionary<string, string>();
 
-                    try
-                    {
-                        await Context.SendPaginatedConfirmAsync(page, (page) =>
+                        foreach (var item in noticeTwitchStreamChannels)
                         {
-                            EmbedBuilder embedBuilder = new EmbedBuilder().WithOkColor().WithTitle("Twitch 直播通知訊息清單")
-                                .WithDescription("如果沒訊息的話就代表沒設定\n不用擔心會 Tag 到用戶組，Embed 不會有 Ping 的反應");
+                            dic.Add(db.GetTwitchUserNameByUserId(item.NoticeTwitchUserId),
+                                $"開始直播: {GetCurrectMessage(item.StartStreamMessage)}\n" +
+                                $"結束直播: {GetCurrectMessage(item.EndStreamMessage)}\n" +
+                                $"更改直播資料: {GetCurrectMessage(item.ChangeStreamDataMessage)}");
+                        }
 
-                            foreach (var item in dic.Skip(page * 10).Take(10))
+                        try
+                        {
+                            await Context.SendPaginatedConfirmAsync(page, (page) =>
                             {
-                                embedBuilder.AddField(item.Key, item.Value);
-                            }
+                                EmbedBuilder embedBuilder = new EmbedBuilder().WithOkColor().WithTitle("Twitch 直播通知訊息清單")
+                                    .WithDescription("如果沒訊息的話就代表沒設定\n不用擔心會 Tag 到用戶組，Embed 不會有 Ping 的反應");
 
-                            return embedBuilder;
-                        }, dic.Count, 10).ConfigureAwait(false);
+                                foreach (var item in dic.Skip(page * 10).Take(10))
+                                {
+                                    embedBuilder.AddField(item.Key, item.Value);
+                                }
+
+                                return embedBuilder;
+                            }, dic.Count, 10).ConfigureAwait(false);
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Error(ex.Message + "\n" + ex.StackTrace);
+                        }
                     }
-                    catch (Exception ex)
+                    else
                     {
-                        Log.Error(ex.Message + "\n" + ex.StackTrace);
+                        await Context.Interaction.SendErrorAsync($"並未設定 Twitch 直播通知\n" +
+                            $"請先使用 `/help get-command-help twitch add` 查看說明並新增 Twitch 直播通知").ConfigureAwait(false);
                     }
                 }
-                else
-                {
-                    await Context.Interaction.SendErrorAsync($"並未設定 Twitch 直播通知\n" +
-                        $"請先使用 `/help get-command-help twitch add` 查看說明並新增 Twitch 直播通知").ConfigureAwait(false);
-                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Twitch ListMessage");
+                await Context.Interaction.SendErrorAsync("錯誤，請向 Bot 擁有者詢問");
             }
         }
     }
