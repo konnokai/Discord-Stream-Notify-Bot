@@ -55,7 +55,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.OwnerOnly.Service
                     .WithAuthor(modal.User)
                     .WithDescription(message)
                     .WithImageUrl(imageUrl)
-                    .WithFooter("若看到此消息出現在非通知頻道上，請通知管理員重新設定直播通知").Build();
+                    .WithFooter("管理員可以透過 `/utility set-global-notice-channel` 來設定由哪個頻道來接收小幫手相關的通知").Build();
 
                 var guid = Guid.NewGuid().ToString().Replace("-", "");
                 ComponentBuilder component = new ComponentBuilder()
