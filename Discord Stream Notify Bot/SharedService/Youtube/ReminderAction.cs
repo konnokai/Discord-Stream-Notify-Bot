@@ -331,7 +331,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         !db.YoutubeChannelSpider.Any((x) => x.ChannelId == streamVideo.ChannelId) || //若該頻道非在爬蟲清單內，那也沒有認不認可的問題
                         db.YoutubeChannelSpider.First((x) => x.ChannelId == streamVideo.ChannelId).IsTrustedChannel) //最後該爬蟲必須是已認可的頻道，才可添加至其他類型的通知
                     {
-                        noticeYoutubeStreamChannels.AddRange(db.NoticeYoutubeStreamChannel.Where((x) => x.NoticeStreamChannelId == "all" || x.NoticeStreamChannelId == type));
+                        noticeYoutubeStreamChannels.AddRange(db.NoticeYoutubeStreamChannel.Where((x) => x.NoticeStreamChannelId == type));
                     }
                 }
                 catch (Exception ex)
