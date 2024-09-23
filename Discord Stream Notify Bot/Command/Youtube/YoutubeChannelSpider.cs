@@ -147,21 +147,21 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                 var youtubeChannelSpider = db.YoutubeChannelSpider.SingleOrDefault((x) => x.ChannelId == channelId);
                 if (youtubeChannelSpider != null)
                 {
-                    await Context.Channel.SendErrorAsync($"`{channelId}` 已被 `{youtubeChannelSpider.GuildId}` 設定");
+                    await Context.Channel.SendErrorAsync($"`{channelId}` 已被 `{youtubeChannelSpider.GuildId}` 設定").ConfigureAwait(false);
                     return;
                 }
 
-                string channelTitle = await _service.GetChannelTitle(channelId).ConfigureAwait(false);
+                string channelTitle = await _service.GetChannelTitle(channelId);
                 if (channelTitle == "")
                 {
                     await Context.Channel.SendErrorAsync($"頻道 `{channelId}` 不存在").ConfigureAwait(false);
                     return;
                 }
 
-                db.YoutubeChannelSpider.Add(new DataBase.Table.YoutubeChannelSpider() { ChannelId = channelId, GuildId = guildId, ChannelTitle = channelTitle, IsTrustedChannel = true });
+                db.YoutubeChannelSpider.Add(new YoutubeChannelSpider() { ChannelId = channelId, GuildId = guildId, ChannelTitle = channelTitle, IsTrustedChannel = true });
                 db.SaveChanges();
 
-                await Context.Channel.SendConfirmAsync($"已將 `{channelTitle}` 設定至 `{guildId}`，等待爬蟲註冊...");
+                await Context.Channel.SendConfirmAsync($"已將 `{channelTitle}` 設定至 `{guildId}`，等待爬蟲註冊...").ConfigureAwait(false);
             }
         }
 

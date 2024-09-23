@@ -11,8 +11,8 @@ namespace Discord_Stream_Notify_Bot.Interaction
 {
     static class Extensions
     {
-        private static readonly IEmote arrow_left = new Emoji("⬅");
-        private static readonly IEmote arrow_right = new Emoji("➡");
+        private static readonly IEmote arrow_left = new Emoji("\u2B05");
+        private static readonly IEmote arrow_right = new Emoji("\u27A1");
 
         public static EmbedBuilder WithOkColor(this EmbedBuilder eb) =>
            eb.WithColor(00, 229, 132);

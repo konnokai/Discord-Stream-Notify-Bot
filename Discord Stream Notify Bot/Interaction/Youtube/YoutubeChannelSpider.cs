@@ -194,12 +194,12 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             }
             catch (FormatException fex)
             {
-                await Context.Interaction.SendErrorAsync(fex.Message, true);
+                await Context.Interaction.SendErrorAsync(fex.Message, true).ConfigureAwait(false);
                 return;
             }
             catch (ArgumentNullException)
             {
-                await Context.Interaction.SendErrorAsync("網址不可空白", true);
+                await Context.Interaction.SendErrorAsync("網址不可空白", true).ConfigureAwait(false);
                 return;
             }
 
@@ -262,7 +262,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                     return;
                 }
 
-                string channelTitle = await _service.GetChannelTitle(channelId).ConfigureAwait(false);
+                string channelTitle = await _service.GetChannelTitle(channelId);
                 if (channelTitle == "")
                 {
                     await Context.Interaction.SendErrorAsync($"頻道 `{channelId}` 不存在", true).ConfigureAwait(false);
@@ -315,12 +315,12 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             }
             catch (FormatException fex)
             {
-                await Context.Interaction.SendErrorAsync(fex.Message, true);
+                await Context.Interaction.SendErrorAsync(fex.Message, true).ConfigureAwait(false);
                 return;
             }
             catch (ArgumentNullException)
             {
-                await Context.Interaction.SendErrorAsync("網址不可空白", true);
+                await Context.Interaction.SendErrorAsync("網址不可空白", true).ConfigureAwait(false);
                 return;
             }
 

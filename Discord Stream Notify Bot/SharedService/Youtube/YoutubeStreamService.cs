@@ -20,13 +20,13 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             NewStream,
             [ChoiceDisplay("新上傳影片")]
             NewVideo,
-            [ChoiceDisplay("開始實況\\首播")]
+            [ChoiceDisplay("開始直播\\首播")]
             Start,
-            [ChoiceDisplay("結束實況\\首播")]
+            [ChoiceDisplay("結束直播\\首播")]
             End,
-            [ChoiceDisplay("更改開台時間")]
+            [ChoiceDisplay("變更直播時間")]
             ChangeTime,
-            [ChoiceDisplay("已刪除或私人化實況")]
+            [ChoiceDisplay("已刪除或私人化直播")]
             Delete
         }
 
@@ -49,7 +49,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly HttpClient _nijisanjiApiHttpClient;
         private readonly ConcurrentDictionary<string, byte> _endLiveBag = new();
-        private readonly string _callbackUrl;
+        private readonly string _apiServerUrl;
         private readonly MessageComponent _messageComponent;
 
         public YoutubeStreamService(DiscordSocketClient client, IHttpClientFactory httpClientFactory, BotConfig botConfig, EmojiService emojiService)
@@ -66,7 +66,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 ApiKey = botConfig.GoogleApiKey,
             });
 
-            _callbackUrl = botConfig.PubSubCallbackUrl;
+            _apiServerUrl = botConfig.ApiServerDomain;
 
             _messageComponent = new ComponentBuilder()
                         .WithButton("好手氣，隨機帶你到一個影片或直播", style: ButtonStyle.Link, emote: emojiService.YouTubeEmote, url: "https://api.konnokai.me/randomvideo")
@@ -919,14 +919,22 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
         {
             try
             {
+                if (channelId.Length != 24)
+                    return "";
+
                 var channel = YouTubeService.Channels.List("snippet");
                 channel.Id = channelId;
                 var response = await channel.ExecuteAsync().ConfigureAwait(false);
                 return response.Items[0].Snippet.Title;
             }
+            catch (NullReferenceException)
+            {
+                Log.Warn($"YouTube GetChannelTitle 可能已被刪除的頻道: {channelId}");
+                return "";
+            }
             catch (Exception ex)
             {
-                Log.Error(ex.Message + "\n" + ex.StackTrace);
+                Log.Error(ex, $"YouTube GetChannelTitle 未知的錯誤: {channelId}");
                 return "";
             }
         }
@@ -981,7 +989,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 {
                     { "hub.mode", subscribe ? "subscribe" : "unsubscribe" },
                     { "hub.topic", $"https://www.youtube.com/xml/feeds/videos.xml?channel_id={channelId}" },
-                    { "hub.callback", _callbackUrl },
+                    { "hub.callback", $"https://{_apiServerUrl}/NotificationCallback" },
                     { "hub.verify", "async" },
                     { "hub.secret", guid },
                     { "hub.verify_token", guid },
