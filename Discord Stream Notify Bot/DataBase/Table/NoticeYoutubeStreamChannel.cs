@@ -3,8 +3,9 @@
     public class NoticeYoutubeStreamChannel : DbEntity
     {
         public ulong GuildId { get; set; }
-        public ulong DiscordChannelId { get; set; }
-        public string NoticeStreamChannelId { get; set; }
+        public ulong DiscordNoticeVideoChannelId { get; set; }
+        public ulong DiscordNoticeStreamChannelId { get; set; }
+        public string YouTubeChannelId { get; set; }
         public string NewStreamMessage { get; set; } = "";
         public string NewVideoMessage { get; set; } = "";
         public string StratMessage { get; set; } = "";

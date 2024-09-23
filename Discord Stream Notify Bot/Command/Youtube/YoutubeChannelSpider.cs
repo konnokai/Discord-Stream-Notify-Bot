@@ -88,7 +88,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                     {
                         try
                         {
-                            if (!db.NoticeYoutubeStreamChannel.Any((x) => x.NoticeStreamChannelId == item.ChannelId))
+                            if (!db.NoticeYoutubeStreamChannel.Any((x) => x.YouTubeChannelId == item.ChannelId))
                                 list.Add(item);
                         }
                         catch (Exception ex)
@@ -306,6 +306,8 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                     db.SaveChanges();
 
                     await Context.Channel.SendConfirmAsync($"已移除 `{channel.ChannelTitle}` 的爬蟲").ConfigureAwait(false);
+
+                    await _service.PostSubscribeRequestAsync(channelId, false);
                 }
                 else
                 {

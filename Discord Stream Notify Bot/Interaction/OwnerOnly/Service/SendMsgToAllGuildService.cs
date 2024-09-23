@@ -190,7 +190,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.OwnerOnly.Service
                                 List<KeyValuePair<ulong, ulong>> list = db.NoticeYoutubeStreamChannel
                                     .Distinct((x) => x.GuildId)
                                     .Where((x) => !isSendMessageGuildId.Contains(x.GuildId) && _client.Guilds.Any((x2) => x2.Id == x.GuildId))
-                                    .Select((x) => new KeyValuePair<ulong, ulong>(x.GuildId, x.DiscordChannelId))
+                                    .Select((x) => new KeyValuePair<ulong, ulong>(x.GuildId, x.DiscordNoticeVideoChannelId))
                                     .ToList();
 
                                 int i = 0, num = list.Count;
@@ -219,7 +219,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.OwnerOnly.Service
                                         Log.Warn($"頻道不存在: {guild.Name} / {item.Value}");
                                         try
                                         {
-                                            db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where((x) => x.DiscordChannelId == item.Value));
+                                            db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where((x) => x.DiscordNoticeVideoChannelId == item.Value));
                                         }
                                         catch (Exception ex)
                                         {
@@ -237,7 +237,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.OwnerOnly.Service
                                         ex.DiscordCode == DiscordErrorCode.InsufficientPermissions)
                                     {
                                         Log.Warn($"缺少權限導致無法傳送訊息至: {guild.Name} / {textChannel.Name}");
-                                        db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where((x) => x.DiscordChannelId == item.Value));
+                                        db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where((x) => x.DiscordNoticeVideoChannelId == item.Value));
                                     }
                                     catch (Exception ex)
                                     {

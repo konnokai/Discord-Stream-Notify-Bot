@@ -316,7 +316,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 try
                 {
                     // 有設定該頻道的通知就不用過濾，他們肯定是要這頻道的通知
-                    noticeYoutubeStreamChannels.AddRange(db.NoticeYoutubeStreamChannel.Where((x) => x.NoticeStreamChannelId == streamVideo.ChannelId));
+                    noticeYoutubeStreamChannels.AddRange(db.NoticeYoutubeStreamChannel.Where((x) => x.YouTubeChannelId == streamVideo.ChannelId));
                 }
                 catch (Exception ex)
                 {
@@ -331,7 +331,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         !db.YoutubeChannelSpider.Any((x) => x.ChannelId == streamVideo.ChannelId) || //若該頻道非在爬蟲清單內，那也沒有認不認可的問題
                         db.YoutubeChannelSpider.First((x) => x.ChannelId == streamVideo.ChannelId).IsTrustedChannel) //最後該爬蟲必須是已認可的頻道，才可添加至其他類型的通知
                     {
-                        noticeYoutubeStreamChannels.AddRange(db.NoticeYoutubeStreamChannel.Where((x) => x.NoticeStreamChannelId == type));
+                        noticeYoutubeStreamChannels.AddRange(db.NoticeYoutubeStreamChannel.Where((x) => x.YouTubeChannelId == type));
                     }
                 }
                 catch (Exception ex)
@@ -378,13 +378,14 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         var guild = _client.GetGuild(item.GuildId);
                         if (guild == null)
                         {
-                            Log.Warn($"YouTube 通知 ({item.NoticeStreamChannelId}) | 找不到伺服器 {item.GuildId}");
+                            Log.Warn($"YouTube 通知 ({item.YouTubeChannelId}) | 找不到伺服器 {item.GuildId}");
                             db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where((x) => x.GuildId == item.GuildId));
                             db.SaveChanges();
                             continue;
                         }
 
-                        var channel = guild.GetTextChannel(item.DiscordChannelId);
+                        // 只有新影片會發到影片通知頻道，首播類的影片歸類在直播類型
+                        var channel = guild.GetTextChannel(noticeType == NoticeType.NewVideo ? item.DiscordNoticeVideoChannelId : item.DiscordNoticeStreamChannelId);
                         if (channel == null) continue;
 
                         await Policy.Handle<TimeoutException>()
@@ -392,7 +393,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                             .WaitAndRetryAsync(3, (retryAttempt) =>
                             {
                                 var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
-                                Log.Warn($"YouTube 通知 ({item.NoticeStreamChannelId}) | {item.GuildId} / {item.DiscordChannelId} 發送失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
+                                Log.Warn($"YouTube 通知 ({item.YouTubeChannelId}) | {item.GuildId} / {channel.Id} 發送失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
                                 return timeSpan;
                             })
                             .ExecuteAsync(async () =>
@@ -414,8 +415,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     {
                         if (httpEx.DiscordCode.HasValue && (httpEx.DiscordCode.Value == DiscordErrorCode.InsufficientPermissions || httpEx.DiscordCode.Value == DiscordErrorCode.MissingPermissions))
                         {
-                            Log.Warn($"YouTube 通知 - 遺失權限 {item.GuildId} / {item.DiscordChannelId}");
-                            db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where((x) => x.DiscordChannelId == item.DiscordChannelId));
+                            Log.Warn($"YouTube 通知 - 遺失權限 {item.GuildId} / {item.DiscordNoticeVideoChannelId}");
+                            db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where((x) => x.DiscordNoticeVideoChannelId == item.DiscordNoticeVideoChannelId));
                             db.SaveChanges();
                         }
                         else if (((int)httpEx.HttpCode).ToString().StartsWith("50"))
@@ -424,16 +425,16 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         }
                         else
                         {
-                            Log.Error(httpEx, $"YouTube 通知 - Discord 未知錯誤 {item.GuildId} / {item.DiscordChannelId}");
+                            Log.Error(httpEx, $"YouTube 通知 - Discord 未知錯誤 {item.GuildId} / {item.DiscordNoticeVideoChannelId}");
                         }
                     }
                     catch (TimeoutException)
                     {
-                        Log.Warn($"YouTube 通知 - Timeout {item.GuildId} / {item.DiscordChannelId}");
+                        Log.Warn($"YouTube 通知 - Timeout {item.GuildId} / {item.DiscordNoticeVideoChannelId}");
                     }
                     catch (Exception ex)
                     {
-                        Log.Error(ex, $"YouTube 通知 - 未知錯誤 {item.GuildId} / {item.DiscordChannelId}");
+                        Log.Error(ex, $"YouTube 通知 - 未知錯誤 {item.GuildId} / {item.DiscordNoticeVideoChannelId}");
                     }
                 }
             }

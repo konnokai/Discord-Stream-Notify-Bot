@@ -351,6 +351,8 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                     .AddField("頻道", $"https://www.youtube.com/channel/{channelId}", false)
                     .AddField("伺服器", $"{Context.Guild.Name} ({Context.Guild.Id})", false)
                     .AddField("執行者", $"{Context.User.Username} ({Context.User.Id})", false).Build());
+
+                await _service.PostSubscribeRequestAsync(channelId, false);
             }
             catch (Exception ex) { Log.Error(ex.ToString()); }
         }

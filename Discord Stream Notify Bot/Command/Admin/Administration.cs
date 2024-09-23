@@ -248,12 +248,12 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
 
                         foreach (var item in youtubechannelList)
                         {
-                            var noticeChannel = guild.GetChannel(item.DiscordChannelId);
+                            var noticeChannel = guild.GetChannel(item.DiscordNoticeVideoChannelId);
 
                             if (noticeChannel != null)
-                                channelListResult.Add($"{noticeChannel}: {item.NoticeStreamChannelId}");
+                                channelListResult.Add($"{noticeChannel}: {item.YouTubeChannelId}");
                             else
-                                channelListResult.Add($"(不存在) {item.DiscordChannelId}: {item.NoticeStreamChannelId}");
+                                channelListResult.Add($"(不存在) {item.DiscordNoticeVideoChannelId}: {item.YouTubeChannelId}");
                         }
 
                         result += $"設定 YouTube 通知的頻道: \n```{string.Join('\n', channelListResult)}```\n";
