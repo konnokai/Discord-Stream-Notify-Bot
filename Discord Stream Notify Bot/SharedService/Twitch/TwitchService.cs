@@ -41,7 +41,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
         private string twitchRecordPath, twitchOAuthToken, twitchWebHookSecret;
         private bool isRuning = false;
 
-
         public TwitchService(DiscordSocketClient client, BotConfig botConfig, EmojiService emojiService)
         {
             if (string.IsNullOrEmpty(botConfig.TwitchClientId) || string.IsNullOrEmpty(botConfig.TwitchClientSecret))
@@ -105,9 +104,11 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                 .WithButton("贊助小幫手 (Patreon) #ad", style: ButtonStyle.Link, emote: emojiService.PatreonEmote, url: Utility.PatreonUrl, row: 1)
                 .WithButton("贊助小幫手 (Paypal) #ad", style: ButtonStyle.Link, emote: emojiService.PayPalEmote, url: Utility.PaypalUrl, row: 1).Build();
 
+#nullable enable
+
             Program.RedisSub.Subscribe(new RedisChannel("twitch:stream_offline", RedisChannel.PatternMode.Literal), async (channel, streamData) =>
             {
-                var data = JsonConvert.DeserializeObject<TwitchLib.EventSub.Core.SubscriptionTypes.Stream.StreamOffline>(streamData);
+                var data = JsonConvert.DeserializeObject<TwitchLib.EventSub.Core.SubscriptionTypes.Stream.StreamOffline>(streamData!)!;
                 Log.Info($"Twitch 直播離線: {data.BroadcasterUserId}");
 
                 try
@@ -124,13 +125,36 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                     Log.Error(ex, $"Event Delete Error: {data.BroadcasterUserId}");
                 }
 
+                TwitchStream? twitchStream = null;
+                try
+                {
+                    var redisJson = await Program.RedisDb.StringGetAsync(new RedisKey($"twitch:stream_data:{data.BroadcasterUserId}"));
+                    if (redisJson.HasValue)
+                        twitchStream = JsonConvert.DeserializeObject<TwitchStream>(redisJson!);
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex, $"Twitch Get Redis Data Error: {data.BroadcasterUserId}");
+                }
+
                 using var db = MainDbContext.GetDbContext();
                 var twitchSpider = db.TwitchSpider.AsNoTracking().FirstOrDefault((x) => x.UserId == data.BroadcasterUserId);
 
                 var embedBuilder = new EmbedBuilder()
                     .WithErrorColor()
-                    .WithTitle("已關台")
-                    .WithDescription(Format.Url($"{data.BroadcasterUserName}", $"https://twitch.tv/{data.BroadcasterUserLogin}"));
+                    .WithTitle("(找不到標題)")
+                    .WithUrl($"https://twitch.tv/{data.BroadcasterUserLogin}")
+                    .WithDescription(Format.Url($"{data.BroadcasterUserName}", $"https://twitch.tv/{data.BroadcasterUserLogin}"))
+                    .AddField("直播狀態", "已關台");
+
+                if (twitchStream != null)
+                {
+                    embedBuilder
+                        .WithTitle(twitchStream.StreamTitle)
+                        .AddField("直播時間", $"{DateTime.UtcNow.Subtract(twitchStream.StreamStartAt):hh'時'mm'分'ss'秒'}");
+                }
+
+                embedBuilder.AddField("關台時間", DateTime.UtcNow.ConvertDateTimeToDiscordMarkdown());
 
                 if (twitchSpider != null)
                 {
@@ -143,17 +167,56 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
 
             Program.RedisSub.Subscribe(new RedisChannel("twitch:channel_update", RedisChannel.PatternMode.Literal), async (channel, updateData) =>
             {
-                var data = JsonConvert.DeserializeObject<TwitchLib.EventSub.Core.SubscriptionTypes.Channel.ChannelUpdate>(updateData);
+                var data = JsonConvert.DeserializeObject<TwitchLib.EventSub.Core.SubscriptionTypes.Channel.ChannelUpdate>(updateData!)!;
                 Log.Info($"Twitch 頻道更新: {data.BroadcasterUserName} - {data.Title} ({data.CategoryName})");
+
+                TwitchStream? twitchStream = null;
+                try
+                {
+                    var redisJson = await Program.RedisDb.StringGetAsync(new RedisKey($"twitch:stream_data:{data.BroadcasterUserId}"));
+                    if (redisJson.HasValue)
+                        twitchStream = JsonConvert.DeserializeObject<TwitchStream>(redisJson!);
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex, $"Twitch Get Redis Data Error: {data.BroadcasterUserId}");
+                }
 
                 var embedBuilder = new EmbedBuilder()
                     .WithOkColor()
-                    .WithTitle("頻道資訊變更")
+                    .WithTitle(data.Title)
+                    .WithUrl($"https://twitch.tv/{data.BroadcasterUserLogin}")
                     .WithDescription(Format.Url($"{data.BroadcasterUserName}", $"https://twitch.tv/{data.BroadcasterUserLogin}"))
-                    .AddField("標題", data.Title);
+                    .AddField("直播狀態", "直播資料更新");
 
                 if (!string.IsNullOrEmpty(data.CategoryName))
                     embedBuilder.AddField("分類", data.CategoryName);
+
+                if (twitchStream != null)
+                {
+                    embedBuilder.AddField("更新的時間軸", $"{DateTime.UtcNow.Subtract(twitchStream.StreamStartAt):hh'時'mm'分'ss'秒'}");
+                }
+
+                try
+                {
+                    twitchStream = new TwitchStream()
+                    {
+                        StreamId = twitchStream?.StreamId,
+                        StreamTitle = data.Title,
+                        GameName = data.CategoryName,
+                        ThumbnailUrl = twitchStream?.ThumbnailUrl,
+                        UserId = data.BroadcasterUserId,
+                        UserLogin = data.BroadcasterUserLogin,
+                        UserName = data.BroadcasterUserName,
+                        StreamStartAt = twitchStream?.StreamStartAt ?? DateTime.UtcNow
+                    };
+
+                    await Program.RedisDb.StringSetAsync(new($"twitch:stream_data:{data.BroadcasterUserId}"), JsonConvert.SerializeObject(twitchStream));
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex, $"Twitch Channel Update Set Redis Data Error: {data.BroadcasterUserId}");
+                }
 
                 using var db = MainDbContext.GetDbContext();
                 var twitchSpider = db.TwitchSpider.AsNoTracking().FirstOrDefault((x) => x.UserId == data.BroadcasterUserId);
@@ -162,6 +225,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
 
                 await Task.Run(() => SendStreamMessageAsync(data.BroadcasterUserId, embedBuilder.Build(), NoticeType.ChangeStreamData));
             });
+
+#nullable disable
 
             _timer = new Timer(async (obj) => { await TimerHandel(); },
             null, TimeSpan.FromSeconds(15), TimeSpan.FromSeconds(30));
@@ -331,6 +396,15 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                                 StreamStartAt = stream.StartedAt
                             };
 
+                            try
+                            {
+                                await Program.RedisDb.StringSetAsync(new($"twitch:stream_data:{stream.UserId}"), JsonConvert.SerializeObject(twitchStream));
+                            }
+                            catch (Exception ex)
+                            {
+                                Log.Error(ex, $"Twitch Set Redis Data Error: {stream.Id}");
+                            }
+
                             twitchStreamDb.TwitchStreams.Add(twitchStream);
 
                             EmbedBuilder embedBuilder = new EmbedBuilder()
@@ -338,7 +412,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                                 .WithDescription(Format.Url($"{twitchStream.UserName}", $"https://twitch.tv/{twitchStream.UserLogin}"))
                                 .WithUrl($"https://twitch.tv/{twitchStream.UserLogin}")
                                 .WithThumbnailUrl(twitchSpider.ProfileImageUrl)
-                                .WithImageUrl($"{twitchStream.ThumbnailUrl}?t={DateTime.Now.ToFileTime()}"); // 新增參數避免預覽圖被 Discord 快取
+                                .WithImageUrl($"{twitchStream.ThumbnailUrl}?t={DateTime.Now.ToFileTime()}") // 新增參數避免預覽圖被 Discord 快取
+                                .AddField("直播狀態", "直播中");
 
                             if (!string.IsNullOrEmpty(twitchStream.GameName))
                                 embedBuilder.AddField("分類", twitchStream.GameName, true);
