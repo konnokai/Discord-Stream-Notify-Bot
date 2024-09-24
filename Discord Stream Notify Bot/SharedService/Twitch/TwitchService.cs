@@ -3,13 +3,16 @@ using Discord_Stream_Notify_Bot.DataBase;
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.Interaction;
 using Microsoft.EntityFrameworkCore;
-using Polly;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using TwitchLib.Api;
 using Stream = TwitchLib.Api.Helix.Models.Streams.GetStreams.Stream;
 using User = TwitchLib.Api.Helix.Models.Users.GetUsers.User;
+
+#if RELEASE
+using Polly;
+#endif
 
 namespace Discord_Stream_Notify_Bot.SharedService.Twitch
 {

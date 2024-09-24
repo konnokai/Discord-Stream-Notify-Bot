@@ -4,9 +4,12 @@ using Discord_Stream_Notify_Bot.HttpClients;
 using Discord_Stream_Notify_Bot.HttpClients.TwitCasting;
 using Discord_Stream_Notify_Bot.Interaction;
 using Microsoft.EntityFrameworkCore;
-using Polly;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+
+#if RELEASE
+using Polly;
+#endif
 
 namespace Discord_Stream_Notify_Bot.SharedService.TwitCasting
 {
@@ -162,7 +165,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.TwitCasting
 #else
             using (var db = MainDbContext.GetDbContext())
             {
-                var noticeGuildList = db.NoticeTwitCastingStreamChannels.Where((x) => x.ChannelId == twitcastingStream.ChannelId).ToList();
+                var noticeGuildList = db.NoticeTwitCastingStreamChannels.AsNoTracking().Where((x) => x.ChannelId == twitcastingStream.ChannelId).ToList();
                 Log.New($"發送 TwitCasting 開台通知 ({noticeGuildList.Count}): {twitcastingStream.ChannelTitle} - {twitcastingStream.StreamTitle} (私人直播: {isPrivate})");
 
                 EmbedBuilder embedBuilder = new EmbedBuilder()
@@ -190,7 +193,14 @@ namespace Discord_Stream_Notify_Bot.SharedService.TwitCasting
                     try
                     {
                         var guild = _client.GetGuild(item.GuildId);
-                        if (guild == null) continue;
+                        if (guild == null)
+                        {
+                            Log.Warn($"TwitCasting 通知 ({item.DiscordChannelId}) | 找不到伺服器 {item.GuildId}");
+                            db.NoticeTwitCastingStreamChannels.RemoveRange(db.NoticeTwitCastingStreamChannels.Where((x) => x.GuildId == item.GuildId));
+                            db.SaveChanges();
+                            continue;
+                        }
+
                         var channel = guild.GetTextChannel(item.DiscordChannelId);
                         if (channel == null) continue;
 
@@ -217,11 +227,30 @@ namespace Discord_Stream_Notify_Bot.SharedService.TwitCasting
                                 }
                             });
                     }
+                    catch (Discord.Net.HttpException httpEx)
+                    {
+                        if (httpEx.DiscordCode.HasValue && (httpEx.DiscordCode.Value == DiscordErrorCode.InsufficientPermissions || httpEx.DiscordCode.Value == DiscordErrorCode.MissingPermissions))
+                        {
+                            Log.Warn($"TwitCasting 通知 - 遺失權限 {item.GuildId} / {item.DiscordChannelId}");
+                            db.NoticeTwitCastingStreamChannels.RemoveRange(db.NoticeTwitCastingStreamChannels.Where((x) => x.DiscordChannelId == item.DiscordChannelId));
+                            db.SaveChanges();
+                        }
+                        else if (((int)httpEx.HttpCode).ToString().StartsWith("50"))
+                        {
+                            Log.Warn($"TwitCasting 通知 - Discord 50X 錯誤: {httpEx.HttpCode}");
+                        }
+                        else
+                        {
+                            Log.Error(httpEx, $"TwitCasting 通知 - Discord 未知錯誤 {item.GuildId} / {item.DiscordChannelId}");
+                        }
+                    }
+                    catch (TimeoutException)
+                    {
+                        Log.Warn($"TwitCasting 通知 - Timeout {item.GuildId} / {item.DiscordChannelId}");
+                    }
                     catch (Exception ex)
                     {
-                        Log.Error($"Notice TwitCasting {item.GuildId} / {item.DiscordChannelId}\n{ex.Message}");
-                        if (ex.Message.Contains("50013") || ex.Message.Contains("50001")) db.NoticeTwitCastingStreamChannels.RemoveRange(db.NoticeTwitCastingStreamChannels.Where((x) => x.DiscordChannelId == item.DiscordChannelId));
-                        db.SaveChanges();
+                        Log.Error(ex, $"TwitCasting 通知 - 未知錯誤 {item.GuildId} / {item.DiscordChannelId}");
                     }
                 }
             }

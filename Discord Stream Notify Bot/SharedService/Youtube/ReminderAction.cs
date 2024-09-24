@@ -1,5 +1,6 @@
 ﻿using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.Interaction;
+using Microsoft.EntityFrameworkCore;
 using Polly;
 
 namespace Discord_Stream_Notify_Bot.SharedService.Youtube
@@ -316,7 +317,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 try
                 {
                     // 有設定該頻道的通知就不用過濾，他們肯定是要這頻道的通知
-                    noticeYoutubeStreamChannels.AddRange(db.NoticeYoutubeStreamChannel.Where((x) => x.YouTubeChannelId == streamVideo.ChannelId));
+                    noticeYoutubeStreamChannels.AddRange(db.NoticeYoutubeStreamChannel.AsNoTracking().Where((x) => x.YouTubeChannelId == streamVideo.ChannelId));
                 }
                 catch (Exception ex)
                 {
@@ -328,10 +329,10 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 try
                 {
                     if (type != "other" || //如果不是其他類的頻道，直接添加到對應的類型通知即可
-                        !db.YoutubeChannelSpider.Any((x) => x.ChannelId == streamVideo.ChannelId) || //若該頻道非在爬蟲清單內，那也沒有認不認可的問題
-                        db.YoutubeChannelSpider.First((x) => x.ChannelId == streamVideo.ChannelId).IsTrustedChannel) //最後該爬蟲必須是已認可的頻道，才可添加至其他類型的通知
+                        !db.YoutubeChannelSpider.AsNoTracking().Any((x) => x.ChannelId == streamVideo.ChannelId) || //若該頻道非在爬蟲清單內，那也沒有認不認可的問題
+                        db.YoutubeChannelSpider.AsNoTracking().First((x) => x.ChannelId == streamVideo.ChannelId).IsTrustedChannel) //最後該爬蟲必須是已認可的頻道，才可添加至其他類型的通知
                     {
-                        noticeYoutubeStreamChannels.AddRange(db.NoticeYoutubeStreamChannel.Where((x) => x.YouTubeChannelId == type));
+                        noticeYoutubeStreamChannels.AddRange(db.NoticeYoutubeStreamChannel.AsNoTracking().Where((x) => x.YouTubeChannelId == type));
                     }
                 }
                 catch (Exception ex)
@@ -345,7 +346,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 return;
 #endif
 
-                var needReSandMessageDic = new Dictionary<ITextChannel, string>();
                 foreach (var item in noticeYoutubeStreamChannels)
                 {
                     try
@@ -444,11 +444,11 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
         {
             var pBreaker = Policy<Google.Apis.YouTube.v3.Data.Video>
                 .Handle<Exception>()
-                .WaitAndRetryAsync(new TimeSpan[]
+                .WaitAndRetryAsync(3, (retryAttempt) =>
                 {
-                    TimeSpan.FromSeconds(1),
-                    TimeSpan.FromSeconds(2),
-                    TimeSpan.FromSeconds(4)
+                    var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
+                    Log.Warn($"YouTube GetVideoAsync ({videoId}) 失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
+                    return timeSpan;
                 });
 
             return await pBreaker.ExecuteAsync(async () =>
@@ -465,11 +465,11 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
         {
             var pBreaker = Policy<IEnumerable<Google.Apis.YouTube.v3.Data.Video>>
                 .Handle<Exception>()
-                .WaitAndRetryAsync(new TimeSpan[]
+                .WaitAndRetryAsync(3, (retryAttempt) =>
                 {
-                    TimeSpan.FromSeconds(1),
-                    TimeSpan.FromSeconds(2),
-                    TimeSpan.FromSeconds(4)
+                    var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
+                    Log.Warn($"YouTube GetVideoAsync ({videoIds.Count()}) 失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
+                    return timeSpan;
                 });
 
             return await pBreaker.ExecuteAsync(async () =>

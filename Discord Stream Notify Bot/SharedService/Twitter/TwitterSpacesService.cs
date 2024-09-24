@@ -1,9 +1,14 @@
 ﻿using Discord_Stream_Notify_Bot.HttpClients;
 using Discord_Stream_Notify_Bot.HttpClients.Twitter;
 using Discord_Stream_Notify_Bot.Interaction;
-using Polly;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Microsoft.EntityFrameworkCore;
+
+
+#if RELEASE
+using Polly;
+#endif
 
 namespace Discord_Stream_Notify_Bot.SharedService.Twitter
 {
@@ -182,7 +187,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
 #else
             using (var db = DataBase.MainDbContext.GetDbContext())
             {
-                var noticeGuildList = db.NoticeTwitterSpaceChannel.Where((x) => x.NoticeTwitterSpaceUserId == twitterSpace.UserId).ToList();
+                var noticeGuildList = db.NoticeTwitterSpaceChannel.AsNoTracking().Where((x) => x.NoticeTwitterSpaceUserId == twitterSpace.UserId).ToList();
                 Log.New($"發送推特空間開台通知 ({noticeGuildList.Count}): {twitterSpace.UserScreenName} - {twitterSpace.SpaecTitle}");
 
                 EmbedBuilder embedBuilder = new EmbedBuilder()
@@ -204,7 +209,14 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                     try
                     {
                         var guild = _client.GetGuild(item.GuildId);
-                        if (guild == null) continue;
+                        if (guild == null)
+                        {
+                            Log.Warn($"Twitter Space 通知 ({item.DiscordChannelId}) | 找不到伺服器 {item.GuildId}");
+                            db.NoticeTwitterSpaceChannel.RemoveRange(db.NoticeTwitterSpaceChannel.Where((x) => x.GuildId == item.GuildId));
+                            db.SaveChanges();
+                            continue;
+                        }
+
                         var channel = guild.GetTextChannel(item.DiscordChannelId);
                         if (channel == null) continue;
 
@@ -231,11 +243,30 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                                 }
                             });
                     }
+                    catch (Discord.Net.HttpException httpEx)
+                    {
+                        if (httpEx.DiscordCode.HasValue && (httpEx.DiscordCode.Value == DiscordErrorCode.InsufficientPermissions || httpEx.DiscordCode.Value == DiscordErrorCode.MissingPermissions))
+                        {
+                            Log.Warn($"Twitter Space 通知 - 遺失權限 {item.GuildId} / {item.DiscordChannelId}");
+                            db.NoticeTwitterSpaceChannel.RemoveRange(db.NoticeTwitterSpaceChannel.Where((x) => x.DiscordChannelId == item.DiscordChannelId));
+                            db.SaveChanges();
+                        }
+                        else if (((int)httpEx.HttpCode).ToString().StartsWith("50"))
+                        {
+                            Log.Warn($"Twitter Space 通知 - Discord 50X 錯誤: {httpEx.HttpCode}");
+                        }
+                        else
+                        {
+                            Log.Error(httpEx, $"Twitter Space 通知 - Discord 未知錯誤 {item.GuildId} / {item.DiscordChannelId}");
+                        }
+                    }
+                    catch (TimeoutException)
+                    {
+                        Log.Warn($"Twitter Space 通知 - Timeout {item.GuildId} / {item.DiscordChannelId}");
+                    }
                     catch (Exception ex)
                     {
-                        Log.Error($"Notice Space {item.GuildId} / {item.DiscordChannelId}\n{ex.Message}");
-                        if (ex.Message.Contains("50013") || ex.Message.Contains("50001")) db.NoticeTwitterSpaceChannel.RemoveRange(db.NoticeTwitterSpaceChannel.Where((x) => x.DiscordChannelId == item.DiscordChannelId));
-                        db.SaveChanges();
+                        Log.Error(ex, $"Twitter Space 通知 - 未知錯誤 {item.GuildId} / {item.DiscordChannelId}");
                     }
                 }
             }
