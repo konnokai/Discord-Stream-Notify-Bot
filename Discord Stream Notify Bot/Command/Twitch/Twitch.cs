@@ -51,7 +51,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitch
         [RequireOwner]
         [Command("TwitchSetChannelSpiderGuildId")]
         [Summary("設定爬蟲頻道的伺服器 Id")]
-        [CommandExample("https://twitch.com/998rrr 0")]
+        [CommandExample("https://twitch.tv/998rrr 0")]
         [Alias("tscsg")]
         public async Task SetChannelSpiderGuildId([Summary("頻道網址")] string channelUrl, ulong guildId = 0)
         {
@@ -79,7 +79,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitch
         [RequireOwner]
         [Command("TwitchToggleIsTrustedChannel")]
         [Summary("切換頻道是否為認可頻道")]
-        [CommandExample("https://twitch.com/998rrr")]
+        [CommandExample("https://twitch.tv/998rrr")]
         [Alias("tttc")]
         public async Task ToggleIsTrustedChannel([Summary("頻道網址")] string channelUrl = "")
         {
@@ -107,7 +107,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitch
         [RequireOwner]
         [Command("TwitchRemoveChannelSpider")]
         [Summary("移除頻道爬蟲")]
-        [CommandExample("https://twitch.com/998rrr")]
+        [CommandExample("https://twitch.tv/998rrr")]
         [Alias("trcs")]
         public async Task RemoveChannelSpider([Summary("頻道網址")] string channelUrl = "")
         {
