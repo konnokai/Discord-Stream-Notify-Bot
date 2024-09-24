@@ -222,7 +222,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
 
                                 try
                                 {
-                                    if (channel is INewsChannel)
+                                    if (channel is INewsChannel && Utility.OfficialGuildList.Contains(guild.Id))
                                         await message.CrosspostAsync();
                                 }
                                 catch (Discord.Net.HttpException httpEx) when (httpEx.DiscordCode == DiscordErrorCode.MessageAlreadyCrossposted)
