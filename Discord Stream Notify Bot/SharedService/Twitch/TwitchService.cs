@@ -33,16 +33,16 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
         private Regex UserLoginRegex { get; } = new(@"twitch.tv/(?<name>[\w\d\-_]+)/?",
             RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
+        private bool isRuning = false;
+        private string twitchRecordPath;
+
         private readonly EmojiService _emojiService;
         private readonly DiscordSocketClient _client;
         private readonly Lazy<TwitchAPI> _twitchApi;
         private readonly Timer _timer;
         private readonly HashSet<string> _hashSet = new();
-        private readonly string _apiServerUrl;
         private readonly MessageComponent _messageComponent;
-
-        private string twitchRecordPath, twitchOAuthToken, twitchWebHookSecret;
-        private bool isRuning = false;
+        private readonly string _apiServerUrl, _twitchOAuthToken, _twitchWebHookSecret;
 
         public TwitchService(DiscordSocketClient client, BotConfig botConfig, EmojiService emojiService)
         {
@@ -55,13 +55,13 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
 
             try
             {
-                twitchWebHookSecret = Program.RedisDb.StringGet("twitch:webhook_secret");
-                if (string.IsNullOrEmpty(twitchWebHookSecret))
+                _twitchWebHookSecret = Program.RedisDb.StringGet("twitch:webhook_secret");
+                if (string.IsNullOrEmpty(_twitchWebHookSecret))
                 {
                     Log.Warn("缺少 TwitchWebHookSecret，嘗試重新建立...");
 
-                    twitchWebHookSecret = BotConfig.GenRandomKey(64);
-                    Program.RedisDb.StringSet("twitch:webhook_secret", twitchWebHookSecret);
+                    _twitchWebHookSecret = BotConfig.GenRandomKey(64);
+                    Program.RedisDb.StringSet("twitch:webhook_secret", _twitchWebHookSecret);
                 }
             }
             catch (Exception ex)
@@ -78,7 +78,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
             }
             else
             {
-                twitchOAuthToken = botConfig.TwitchCookieAuthToken;
+                _twitchOAuthToken = botConfig.TwitchCookieAuthToken;
             }
 
             _apiServerUrl = botConfig.ApiServerDomain;
@@ -185,20 +185,38 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                     Log.Error(ex, $"Twitch Get Redis Data Error: {data.BroadcasterUserId}");
                 }
 
+                if (twitchStream == null)
+                {
+                    Log.Warn($"Redis 找不到 Twitch 頻道資料，忽略: {data.BroadcasterUserName}");
+                    return;
+                }
+
+                bool isChangeTitle = twitchStream.StreamTitle != data.Title;
+                bool isChangeCategory = twitchStream.GameName != data.CategoryName;
+                if (!isChangeTitle && !isChangeCategory)
+                {
+                    Log.Warn($"Twitch 頻道更新資料相同，忽略: {data.BroadcasterUserName}");
+                    return;
+                }
+
                 var embedBuilder = new EmbedBuilder()
                     .WithOkColor()
-                    .WithTitle(data.Title)
-                    .WithUrl($"https://twitch.tv/{data.BroadcasterUserLogin}")
-                    .WithDescription(Format.Url($"{data.BroadcasterUserName}", $"https://twitch.tv/{data.BroadcasterUserLogin}"))
-                    .AddField("直播狀態", "直播資料更新");
+                    .WithTitle("直播資料更新")
+                    .WithDescription(Format.Url($"{data.BroadcasterUserName}", $"https://twitch.tv/{data.BroadcasterUserLogin}"));
 
-                if (!string.IsNullOrEmpty(data.CategoryName))
-                    embedBuilder.AddField("分類", data.CategoryName);
-
-                if (twitchStream != null)
+                if (isChangeTitle)
                 {
-                    embedBuilder.AddField("更新的時間軸", $"{DateTime.UtcNow.Subtract(twitchStream.StreamStartAt):hh'時'mm'分'ss'秒'}");
+                    embedBuilder.AddField("舊標題", twitchStream.StreamTitle);
+                    embedBuilder.AddField("新標題", data.Title);
                 }
+
+                if (isChangeCategory)
+                {
+                    embedBuilder.AddField("舊分類", string.IsNullOrEmpty(twitchStream.GameName) ? "無" : twitchStream.GameName, true);
+                    embedBuilder.AddField("新分類", string.IsNullOrEmpty(data.CategoryName) ? "無" : data.CategoryName, true);
+                }
+
+                embedBuilder.AddField("更新的時間軸", $"{DateTime.UtcNow.Subtract(twitchStream.StreamStartAt):hh':'mm':'ss}");
 
                 try
                 {
@@ -435,10 +453,10 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                                 try
                                 {
                                     await _twitchApi.Value.Helix.EventSub.CreateEventSubSubscriptionAsync("channel.update", "2", new() { { "broadcaster_user_id", stream.UserId } },
-                                          TwitchLib.Api.Core.Enums.EventSubTransportMethod.Webhook, webhookCallback: $"https://{_apiServerUrl}/TwitchWebHooks", webhookSecret: twitchWebHookSecret);
+                                          TwitchLib.Api.Core.Enums.EventSubTransportMethod.Webhook, webhookCallback: $"https://{_apiServerUrl}/TwitchWebHooks", webhookSecret: _twitchWebHookSecret);
 
                                     await _twitchApi.Value.Helix.EventSub.CreateEventSubSubscriptionAsync("stream.offline", "1", new() { { "broadcaster_user_id", stream.UserId } },
-                                          TwitchLib.Api.Core.Enums.EventSubTransportMethod.Webhook, webhookCallback: $"https://{_apiServerUrl}/TwitchWebHooks", webhookSecret: twitchWebHookSecret);
+                                          TwitchLib.Api.Core.Enums.EventSubTransportMethod.Webhook, webhookCallback: $"https://{_apiServerUrl}/TwitchWebHooks", webhookSecret: _twitchWebHookSecret);
 
                                     Log.Info($"已註冊 Twitch WebHook: {twitchSpider.UserId} ({twitchSpider.UserName})");
                                 }
@@ -586,8 +604,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
             }
 
             string procArgs = $"streamlink --twitch-disable-ads https://twitch.tv/{twitchStream.UserLogin} best --output \"{twitchRecordPath}[{twitchStream.UserLogin}]{twitchStream.StreamStartAt:yyyyMMdd} - {twitchStream.StreamId}.ts\"";
-            if (!string.IsNullOrEmpty(twitchOAuthToken))
-                procArgs += $" \"--twitch-api-header=Authorization=OAuth {twitchOAuthToken}\"";
+            if (!string.IsNullOrEmpty(_twitchOAuthToken))
+                procArgs += $" \"--twitch-api-header=Authorization=OAuth {_twitchOAuthToken}\"";
 
             try
             {
