@@ -18,8 +18,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
 {
     public class TwitchService : IInteractionService
     {
-        public bool IsEnable { get; private set; } = true;
-
         public enum NoticeType
         {
             [ChoiceDisplay("開始直播")]
@@ -30,6 +28,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
             ChangeStreamData
         }
 
+        internal bool IsEnable { get; private set; } = true;
+        internal Lazy<TwitchAPI> TwitchApi { get; }
         private Regex UserLoginRegex { get; } = new(@"twitch.tv/(?<name>[\w\d\-_]+)/?",
             RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
@@ -38,7 +38,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
 
         private readonly EmojiService _emojiService;
         private readonly DiscordSocketClient _client;
-        private readonly Lazy<TwitchAPI> _twitchApi;
         private readonly Timer _timer;
         private readonly HashSet<string> _hashSet = new();
         private readonly MessageComponent _messageComponent;
@@ -90,7 +89,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
             _client = client;
             _emojiService = emojiService;
 
-            _twitchApi = new(() => new()
+            TwitchApi = new(() => new()
             {
                 Helix =
                 {
@@ -116,11 +115,11 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
 
                 try
                 {
-                    var list = await _twitchApi.Value.Helix.EventSub.GetEventSubSubscriptionsAsync(userId: data.BroadcasterUserId);
+                    var list = await TwitchApi.Value.Helix.EventSub.GetEventSubSubscriptionsAsync(userId: data.BroadcasterUserId);
                     foreach (var item in list.Subscriptions)
                     {
                         Log.Info($"Delete EventSub: {item.Id} ({item.Type})");
-                        await _twitchApi.Value.Helix.EventSub.DeleteEventSubSubscriptionAsync(item.Id);
+                        await TwitchApi.Value.Helix.EventSub.DeleteEventSubSubscriptionAsync(item.Id);
                     }
                 }
                 catch (Exception ex)
@@ -277,7 +276,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
 
             try
             {
-                string accessToken = await _twitchApi.Value.Auth.GetAccessTokenAsync();
+                string accessToken = await TwitchApi.Value.Auth.GetAccessTokenAsync();
 
                 if (string.IsNullOrEmpty(accessToken))
                 {
@@ -285,7 +284,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                     return null;
                 }
 
-                var users = await _twitchApi.Value.Helix.Users.GetUsersAsync(userId, userLogin, accessToken: accessToken);
+                var users = await TwitchApi.Value.Helix.Users.GetUsersAsync(userId, userLogin, accessToken: accessToken);
                 return users.Users.FirstOrDefault();
             }
             catch (TwitchLib.Api.Core.Exceptions.BadRequestException)
@@ -304,7 +303,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
         {
             try
             {
-                string accessToken = await _twitchApi.Value.Auth.GetAccessTokenAsync();
+                string accessToken = await TwitchApi.Value.Auth.GetAccessTokenAsync();
 
                 if (string.IsNullOrEmpty(accessToken))
                 {
@@ -315,7 +314,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                 List<User> result = new();
                 foreach (var item in twitchUserLogins.Chunk(100))
                 {
-                    var users = await _twitchApi.Value.Helix.Users.GetUsersAsync(logins: new List<string>(twitchUserLogins), accessToken: accessToken);
+                    var users = await TwitchApi.Value.Helix.Users.GetUsersAsync(logins: new List<string>(twitchUserLogins), accessToken: accessToken);
                     if (users.Users.Any())
                     {
                         result.AddRange(users.Users);
@@ -340,7 +339,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
         {
             try
             {
-                string accessToken = await _twitchApi.Value.Auth.GetAccessTokenAsync();
+                string accessToken = await TwitchApi.Value.Auth.GetAccessTokenAsync();
 
                 if (string.IsNullOrEmpty(accessToken))
                 {
@@ -351,7 +350,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                 List<Stream> result = new();
                 foreach (var item in twitchUserIds.Chunk(100))
                 {
-                    var streams = await _twitchApi.Value.Helix.Streams.GetStreamsAsync(first: 100, userIds: new List<string>(twitchUserIds), accessToken: accessToken);
+                    var streams = await TwitchApi.Value.Helix.Streams.GetStreamsAsync(first: 100, userIds: new List<string>(twitchUserIds), accessToken: accessToken);
                     if (streams.Streams.Any())
                     {
                         result.AddRange(streams.Streams);
@@ -452,10 +451,10 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
 
                                 try
                                 {
-                                    await _twitchApi.Value.Helix.EventSub.CreateEventSubSubscriptionAsync("channel.update", "2", new() { { "broadcaster_user_id", stream.UserId } },
+                                    await TwitchApi.Value.Helix.EventSub.CreateEventSubSubscriptionAsync("channel.update", "2", new() { { "broadcaster_user_id", stream.UserId } },
                                           TwitchLib.Api.Core.Enums.EventSubTransportMethod.Webhook, webhookCallback: $"https://{_apiServerUrl}/TwitchWebHooks", webhookSecret: _twitchWebHookSecret);
 
-                                    await _twitchApi.Value.Helix.EventSub.CreateEventSubSubscriptionAsync("stream.offline", "1", new() { { "broadcaster_user_id", stream.UserId } },
+                                    await TwitchApi.Value.Helix.EventSub.CreateEventSubSubscriptionAsync("stream.offline", "1", new() { { "broadcaster_user_id", stream.UserId } },
                                           TwitchLib.Api.Core.Enums.EventSubTransportMethod.Webhook, webhookCallback: $"https://{_apiServerUrl}/TwitchWebHooks", webhookSecret: _twitchWebHookSecret);
 
                                     Log.Info($"已註冊 Twitch WebHook: {twitchSpider.UserId} ({twitchSpider.UserName})");

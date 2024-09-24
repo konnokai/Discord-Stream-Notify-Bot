@@ -3,10 +3,9 @@ using Discord_Stream_Notify_Bot.HttpClients.Twitter;
 using Discord_Stream_Notify_Bot.Interaction;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using Microsoft.EntityFrameworkCore;
-
 
 #if RELEASE
+using Microsoft.EntityFrameworkCore;
 using Polly;
 #endif
 
@@ -14,7 +13,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
 {
     public class TwitterSpacesService : IInteractionService
     {
-        public bool IsEnable { get; private set; } = true;
+        internal bool IsEnable { get; private set; } = true;
 
         private readonly DiscordSocketClient _client;
         private readonly EmojiService _emojiService;

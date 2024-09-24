@@ -142,6 +142,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
         public async Task AddSpiderToGuild(string channelId, ulong guildId)
         {
             channelId = await _service.GetChannelIdAsync(channelId);
+
             using (var db = DataBase.MainDbContext.GetDbContext())
             {
                 var youtubeChannelSpider = db.YoutubeChannelSpider.SingleOrDefault((x) => x.ChannelId == channelId);
@@ -222,7 +223,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                     db.YoutubeChannelSpider.Update(channel);
                     db.SaveChanges();
 
-                    await Context.Channel.SendConfirmAsync($"已設定 `{channel.ChannelTitle}` 為" + (channel.IsTrustedChannel ? "已" : "未") + "認可頻道").ConfigureAwait(false);
+                    await Context.Channel.SendConfirmAsync($"已設定 `{channel.ChannelTitle}` 為 __" + (channel.IsTrustedChannel ? "已" : "未") + "__ 認可頻道").ConfigureAwait(false);
                 }
                 else
                 {
