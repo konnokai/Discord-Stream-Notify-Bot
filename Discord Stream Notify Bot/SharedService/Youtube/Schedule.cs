@@ -580,21 +580,21 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                     var video = YouTubeService.Videos.List("snippet,liveStreamingDetails");
                     video.Id = string.Join(",", remindersList.Select((x) => x.Key));
-                    var videoResult = await video.ExecuteAsync(); // 如果直播被刪除的話該直播Id不會回傳資訊，但API會返回200狀態
+                    var videoResult = await video.ExecuteAsync(); // 如果直播被刪除的話該直播 Id 不會回傳資訊，但 API 會返回 200 狀態
 
-                    foreach (var reminder in remindersList) // 直接使用Reminders來做迴圈
+                    foreach (var reminder in remindersList) // 直接使用 Reminders 來做迴圈
                     {
                         try
                         {
-                            // 如果viderResult內沒有該VideoId直播的話，則判定該直播已刪除
+                            // 如果 viderResult 內沒有該 VideoId 直播的話，則判定該直播已刪除
                             if (!videoResult.Items.Any((x) => x.Id == reminder.Key))
                             {
                                 // 如果是錄影頻道的話則忽略
-                                if (recordChannelId.Any((x) => x == reminder.Value.StreamVideo.ChannelId))
-                                {
-                                    Log.Warn($"CheckScheduleTime-VideoResult-{reminder.Key}: 錄影頻道已刪除直播，略過");
-                                    continue;
-                                }
+                                //if (recordChannelId.Any((x) => x == reminder.Value.StreamVideo.ChannelId))
+                                //{
+                                //    Log.Warn($"CheckScheduleTime-VideoResult-{reminder.Key}: 錄影頻道已刪除直播，略過");
+                                //    continue;
+                                //}
 
                                 Log.Warn($"CheckScheduleTime-VideoResult-{reminder.Key}: 已刪除直播");
 
