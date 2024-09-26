@@ -4,11 +4,14 @@ namespace Discord_Stream_Notify_Bot.SharedService
 {
     public class EmojiService : IInteractionService
     {
-
+        // 好像要把 Emote Id 給拉到 BotConfig 設定還是怎樣的
         public Emote YouTubeEmote
         {
             get
             {
+#if !RELEASE
+                return null;
+#endif
                 if (youTubeEmote == null)
                 {
                     try
@@ -29,6 +32,9 @@ namespace Discord_Stream_Notify_Bot.SharedService
         {
             get
             {
+#if !RELEASE
+                return null;
+#endif
                 if (patreonEmote == null)
                 {
                     try
@@ -49,6 +55,9 @@ namespace Discord_Stream_Notify_Bot.SharedService
         {
             get
             {
+#if !RELEASE
+                return null;
+#endif
                 if (payPalEmote == null)
                 {
                     try
