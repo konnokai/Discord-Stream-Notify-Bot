@@ -2,7 +2,9 @@
 using Discord_Stream_Notify_Bot.DataBase;
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.Interaction;
+using Dorssel.Utilities;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
@@ -42,6 +44,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
         private readonly HashSet<string> _hashSet = new();
         private readonly MessageComponent _messageComponent;
         private readonly string _apiServerUrl, _twitchOAuthToken, _twitchWebHookSecret;
+        private readonly ConcurrentDictionary<string, DebounceChannelUpdateMessage> _debounceChannelUpdateMessage = new();
 
         public TwitchService(DiscordSocketClient client, BotConfig botConfig, EmojiService emojiService)
         {
@@ -198,24 +201,34 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                     return;
                 }
 
-                var embedBuilder = new EmbedBuilder()
-                    .WithOkColor()
-                    .WithTitle("直播資料更新")
-                    .WithDescription(Format.Url($"{data.BroadcasterUserName}", $"https://twitch.tv/{data.BroadcasterUserLogin}"));
+                string message = $"`{DateTime.UtcNow.Subtract(twitchStream.StreamStartAt):hh':'mm':'ss}`";
 
                 if (isChangeTitle)
                 {
-                    embedBuilder.AddField("舊標題", twitchStream.StreamTitle);
-                    embedBuilder.AddField("新標題", data.Title);
+                    message += $"\n標題變更 `{twitchStream.StreamTitle}` => `{data.Title}`";
                 }
 
                 if (isChangeCategory)
                 {
-                    embedBuilder.AddField("舊分類", string.IsNullOrEmpty(twitchStream.GameName) ? "無" : twitchStream.GameName, true);
-                    embedBuilder.AddField("新分類", string.IsNullOrEmpty(data.CategoryName) ? "無" : data.CategoryName, true);
+                    message += $"\n分類變更 `" +
+                    (string.IsNullOrEmpty(twitchStream.GameName) ? "無" : twitchStream.GameName) +
+                    "` => `" +
+                    (string.IsNullOrEmpty(data.CategoryName) ? "無" : data.CategoryName) +
+                    "`";
                 }
 
-                embedBuilder.AddField("更新的時間軸", $"{DateTime.UtcNow.Subtract(twitchStream.StreamStartAt):hh':'mm':'ss}");
+                _debounceChannelUpdateMessage.AddOrUpdate(data.BroadcasterUserId,
+                    (userId) =>
+                    {
+                        var debounce = new DebounceChannelUpdateMessage(this, data.BroadcasterUserName, data.BroadcasterUserLogin, data.BroadcasterUserId);
+                        debounce.AddMessage(message);
+                        return debounce;
+                    },
+                    (userId, debounce) =>
+                    {
+                        debounce.AddMessage(message);
+                        return debounce;
+                    });
 
                 try
                 {
@@ -237,13 +250,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                 {
                     Log.Error(ex, $"Twitch Channel Update Set Redis Data Error: {data.BroadcasterUserId}");
                 }
-
-                using var db = MainDbContext.GetDbContext();
-                var twitchSpider = db.TwitchSpider.AsNoTracking().FirstOrDefault((x) => x.UserId == data.BroadcasterUserId);
-                if (twitchSpider != null)
-                    embedBuilder.WithThumbnailUrl(twitchSpider.ProfileImageUrl);
-
-                await Task.Run(() => SendStreamMessageAsync(data.BroadcasterUserId, embedBuilder.Build(), NoticeType.ChangeStreamData));
             });
 
 #nullable disable
@@ -436,8 +442,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                             else
                                 embedBuilder.WithOkColor();
 
-                            await SendStreamMessageAsync(twitchStream.UserId, embedBuilder.Build(), NoticeType.StartStream);
-
                             if (!twitchSpider.IsWarningUser)
                             {
                                 try
@@ -464,6 +468,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                                     Log.Error(ex, $"註冊 Twitch WebHook 失敗，也許是已經註冊過了?");
                                 }
                             }
+
+                            await SendStreamMessageAsync(twitchStream.UserId, embedBuilder.Build(), NoticeType.StartStream);
                         }
                         catch (Exception ex) { Log.Error(ex, $"TwitchService-GetData: {twitchSpider.UserLogin}"); }
                     }
@@ -486,7 +492,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
 
         }
 
-        private async Task SendStreamMessageAsync(string twitchUserId, Embed embed, NoticeType noticeType)
+        internal async Task SendStreamMessageAsync(string twitchUserId, Embed embed, NoticeType noticeType)
         {
             if (!Program.IsConnect)
                 return;
@@ -623,6 +629,82 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
             {
                 Log.Error(ex, "RecordTwitch 失敗，請確認是否已安裝 StreamLink");
                 return false;
+            }
+        }
+
+        // https://blog.darkthread.net/blog/dotnet-debounce/
+        // https://github.com/dorssel/dotnet-debounce
+        class DebounceChannelUpdateMessage
+        {
+            private readonly Debouncer _debouncer;
+            private readonly TwitchService _twitchService;
+            private readonly string _twitchUserName, _twitchUserLogin, _twitchUserId;
+            private readonly ConcurrentQueue<string> messageQueue = new();
+
+            public DebounceChannelUpdateMessage(TwitchService twitchService, string twitchUserName, string twitchUserLogin, string twitchUserId)
+            {
+                _twitchService = twitchService;
+                _twitchUserName = twitchUserName;
+                _twitchUserLogin = twitchUserLogin;
+                _twitchUserId = twitchUserId;
+
+                _debouncer = new()
+                {
+                    DebounceWindow = TimeSpan.FromMinutes(1),
+                    DebounceTimeout = TimeSpan.FromMinutes(3),
+                };
+                _debouncer.Debounced += _debouncer_Debounced;
+            }
+
+            private void _debouncer_Debounced(object sender, DebouncedEventArgs e)
+            {
+                try
+                {
+                    Log.Info($"{_twitchUserLogin} 發送頻道更新通知 (Debouncer 觸發數量: {e.Count})");
+
+                    var description = string.Join("\n\n", messageQueue);
+
+                    var embedBuilder = new EmbedBuilder()
+                        .WithOkColor()
+                        .WithTitle($"{_twitchUserName} 直播資料更新")
+                        .WithUrl($"https://twitch.tv/{_twitchUserLogin}")
+                        .WithDescription(description);
+
+                    using var db = MainDbContext.GetDbContext();
+                    var twitchSpider = db.TwitchSpider.AsNoTracking().FirstOrDefault((x) => x.UserId == _twitchUserId);
+                    if (twitchSpider != null)
+                        embedBuilder.WithThumbnailUrl(twitchSpider.ProfileImageUrl);
+
+                    Task.Run(async () => { await _twitchService.SendStreamMessageAsync(_twitchUserId, embedBuilder.Build(), NoticeType.ChangeStreamData); });
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex, $"{_twitchUserLogin} 訊息去抖動失敗");
+                }
+                finally
+                {
+                    messageQueue.Clear();
+                    _debouncer.Reset();
+                }
+            }
+
+            public void AddMessage(string message)
+            {
+                Log.Debug($"Debouncer ({_twitchUserLogin}): {message}");
+
+                messageQueue.Enqueue(message);
+                _debouncer.Trigger();
+            }
+
+            bool isDisposed;
+            public void Dispose()
+            {
+                if (!isDisposed)
+                {
+                    _debouncer.Debounced -= _debouncer_Debounced;
+                    _debouncer.Dispose();
+                    isDisposed = true;
+                }
             }
         }
     }
