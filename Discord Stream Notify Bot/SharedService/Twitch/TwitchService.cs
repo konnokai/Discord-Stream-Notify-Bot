@@ -9,8 +9,12 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using TwitchLib.Api;
+using TwitchLib.Api.Core.Enums;
+using TwitchLib.Api.Core.Exceptions;
+using Clip = TwitchLib.Api.Helix.Models.Clips.GetClips.Clip;
 using Stream = TwitchLib.Api.Helix.Models.Streams.GetStreams.Stream;
 using User = TwitchLib.Api.Helix.Models.Users.GetUsers.User;
+using Video = TwitchLib.Api.Helix.Models.Videos.GetVideos.Video;
 
 #if RELEASE
 using Polly;
@@ -142,8 +146,23 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                     Log.Error(ex, $"Twitch Get Redis Data Error: {data.BroadcasterUserId}");
                 }
 
-                using var db = MainDbContext.GetDbContext();
-                var twitchSpider = db.TwitchSpider.AsNoTracking().FirstOrDefault((x) => x.UserId == data.BroadcasterUserId);
+                DateTime createAt, endAt;
+                var video = await GetLatestVODAsync(data.BroadcasterUserId);
+                if (video == null)
+                {
+                    Log.Warn($"找不到對應的 Video 資料: {data.BroadcasterUserId}");
+                    createAt = DateTime.Now.AddDays(-3);
+                    endAt = DateTime.Now;
+                }
+                else
+                {
+                    twitchStream = twitchStream ?? new();
+                    twitchStream.StreamTitle = video.Title;
+                    twitchStream.StreamStartAt = DateTime.Parse(video.CreatedAt);
+
+                    createAt = DateTime.Parse(video.CreatedAt);
+                    endAt = createAt + TimeSpan.Parse(video.Duration.Replace("d", ":").Replace("h", ":").Replace("m", ":").Replace("s", ""));
+                }
 
                 var embedBuilder = new EmbedBuilder()
                     .WithErrorColor()
@@ -161,6 +180,16 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
 
                 embedBuilder.AddField("關台時間", DateTime.UtcNow.ConvertDateTimeToDiscordMarkdown());
 
+                var clips = await GetClipsAsync(data.BroadcasterUserId, createAt, endAt);
+                if (clips != null)
+                {
+                    int i = 0;
+                    embedBuilder.AddField("最多觀看的 Clip", string.Join('\n', clips.Where((x) => video != null ? x.VideoId == video.Id : true)
+                        .Select((x) => $"{i++}. {Format.Url(x.Title, x.Url)} By `{x.CreatorName}` (`{x.ViewCount}` 次觀看)")));
+                }
+
+                using var db = MainDbContext.GetDbContext();
+                var twitchSpider = db.TwitchSpider.AsNoTracking().FirstOrDefault((x) => x.UserId == data.BroadcasterUserId);
                 if (twitchSpider != null)
                 {
                     embedBuilder.WithImageUrl(twitchSpider.OfflineImageUrl)
@@ -282,18 +311,10 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
 
             try
             {
-                string accessToken = await TwitchApi.Value.Auth.GetAccessTokenAsync();
-
-                if (string.IsNullOrEmpty(accessToken))
-                {
-                    Log.Warn($"Access Token 獲取失敗，請確認 {nameof(BotConfig.TwitchClientId)} 或 {nameof(BotConfig.TwitchClientSecret)} 是否正常");
-                    return null;
-                }
-
-                var users = await TwitchApi.Value.Helix.Users.GetUsersAsync(userId, userLogin, accessToken: accessToken);
+                var users = await TwitchApi.Value.Helix.Users.GetUsersAsync(userId, userLogin);
                 return users.Users.FirstOrDefault();
             }
-            catch (TwitchLib.Api.Core.Exceptions.BadRequestException)
+            catch (BadRequestException)
             {
                 Log.Error($"無法取得 Twitch 資料，可能是找不到輸入的使用者資料: ({twitchUserId}) {twitchUserLogin}");
                 return null;
@@ -309,18 +330,10 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
         {
             try
             {
-                string accessToken = await TwitchApi.Value.Auth.GetAccessTokenAsync();
-
-                if (string.IsNullOrEmpty(accessToken))
-                {
-                    Log.Warn($"Access Token 獲取失敗，請確認 {nameof(BotConfig.TwitchClientId)} 或 {nameof(BotConfig.TwitchClientSecret)} 是否正常");
-                    return Array.Empty<User>();
-                }
-
                 List<User> result = new();
                 foreach (var item in twitchUserLogins.Chunk(100))
                 {
-                    var users = await TwitchApi.Value.Helix.Users.GetUsersAsync(logins: new List<string>(twitchUserLogins), accessToken: accessToken);
+                    var users = await TwitchApi.Value.Helix.Users.GetUsersAsync(logins: new List<string>(twitchUserLogins));
                     if (users.Users.Any())
                     {
                         result.AddRange(users.Users);
@@ -329,7 +342,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
 
                 return result;
             }
-            catch (TwitchLib.Api.Core.Exceptions.BadRequestException)
+            catch (BadRequestException)
             {
                 Log.Error($"無法取得 Twitch 資料，可能是找不到輸入的使用者資料: {twitchUserLogins.First()}");
                 return null;
@@ -341,22 +354,59 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
             }
         }
 
+        public async Task<Video> GetLatestVODAsync(string twitchUserId)
+        {
+            try
+            {
+                var videosResponse = await TwitchApi.Value.Helix.Videos.GetVideosAsync(userId: twitchUserId, first: 1, type: VideoType.Archive);
+                return videosResponse.Videos.FirstOrDefault();
+            }
+            catch (BadRequestException)
+            {
+                Log.Error($"無法取得 Twitch 資料，可能是找不到輸入的使用者資料: {twitchUserId}");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, $"無法取得 Twitch 資料: {twitchUserId}");
+                return null;
+            }
+        }
+
+        public async Task<IReadOnlyList<Clip>> GetClipsAsync(string twitchUserId, DateTime startedAt, DateTime endedAt)
+        {
+            try
+            {
+                var clipsResponse = await TwitchApi.Value.Helix.Clips.GetClipsAsync(broadcasterId: twitchUserId, startedAt: startedAt, endedAt: endedAt, first: 5);
+                if (clipsResponse.Clips.Any())
+                {
+                    return clipsResponse.Clips;
+                }
+                else
+                {
+                    return null;
+                }
+            }
+            catch (BadRequestException)
+            {
+                Log.Error($"無法取得 Twitch 資料，可能是找不到輸入的使用者資料: {twitchUserId}");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, $"無法取得 Twitch 資料: {twitchUserId}");
+                return null;
+            }
+        }
+
         public async Task<IReadOnlyList<Stream>> GetNowStreamsAsync(params string[] twitchUserIds)
         {
             try
             {
-                string accessToken = await TwitchApi.Value.Auth.GetAccessTokenAsync();
-
-                if (string.IsNullOrEmpty(accessToken))
-                {
-                    Log.Warn($"Access Token 獲取失敗，請確認 {nameof(BotConfig.TwitchClientId)} 或 {nameof(BotConfig.TwitchClientSecret)} 是否正常");
-                    return Array.Empty<Stream>();
-                }
-
                 List<Stream> result = new();
                 foreach (var item in twitchUserIds.Chunk(100))
                 {
-                    var streams = await TwitchApi.Value.Helix.Streams.GetStreamsAsync(first: 100, userIds: new List<string>(twitchUserIds), accessToken: accessToken);
+                    var streams = await TwitchApi.Value.Helix.Streams.GetStreamsAsync(first: 100, userIds: new List<string>(twitchUserIds));
                     if (streams.Streams.Any())
                     {
                         result.AddRange(streams.Streams);
@@ -456,10 +506,10 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                                 try
                                 {
                                     await TwitchApi.Value.Helix.EventSub.CreateEventSubSubscriptionAsync("channel.update", "2", new() { { "broadcaster_user_id", stream.UserId } },
-                                          TwitchLib.Api.Core.Enums.EventSubTransportMethod.Webhook, webhookCallback: $"https://{_apiServerUrl}/TwitchWebHooks", webhookSecret: _twitchWebHookSecret);
+                                          EventSubTransportMethod.Webhook, webhookCallback: $"https://{_apiServerUrl}/TwitchWebHooks", webhookSecret: _twitchWebHookSecret);
 
                                     await TwitchApi.Value.Helix.EventSub.CreateEventSubSubscriptionAsync("stream.offline", "1", new() { { "broadcaster_user_id", stream.UserId } },
-                                          TwitchLib.Api.Core.Enums.EventSubTransportMethod.Webhook, webhookCallback: $"https://{_apiServerUrl}/TwitchWebHooks", webhookSecret: _twitchWebHookSecret);
+                                          EventSubTransportMethod.Webhook, webhookCallback: $"https://{_apiServerUrl}/TwitchWebHooks", webhookSecret: _twitchWebHookSecret);
 
                                     Log.Info($"已註冊 Twitch WebHook: {twitchSpider.UserId} ({twitchSpider.UserName})");
                                 }

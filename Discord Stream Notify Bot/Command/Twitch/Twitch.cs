@@ -129,5 +129,56 @@ namespace Discord_Stream_Notify_Bot.Command.Twitch
                 }
             }
         }
+
+        [RequireContext(ContextType.DM)]
+        [RequireOwner]
+        [Command("TwitchGetLatestVOD")]
+        [Summary("取得 Twitch 頻道最新的 VOD 資訊")]
+        [CommandExample("https://twitch.tv/998rrr")]
+        [Alias("tglv")]
+        public async Task GetLatestVOD([Summary("頻道網址")] string channelUrl = "")
+        {
+            try
+            {
+                await Context.Channel.TriggerTypingAsync();
+
+                string userLogin = _service.GetUserLoginByUrl(channelUrl);
+
+                var user = await _service.GetUserAsync(twitchUserLogin: userLogin);
+                if (user == null)
+                {
+                    await Context.Channel.SendErrorAsync("找不到對應的 User 資料");
+                    return;
+                }
+
+                var video = await _service.GetLatestVODAsync(user.Id);
+                if (video == null)
+                {
+                    await Context.Channel.SendErrorAsync("找不到對應的 Video 資料");
+                    return;
+                }
+
+                var createAt = DateTime.Parse(video.CreatedAt);
+                var endAt = createAt + TimeSpan.Parse(video.Duration.Replace("d", ":").Replace("h", ":").Replace("m", ":").Replace("s", ""));
+                var clips = await _service.GetClipsAsync(video.UserId, createAt, endAt);
+
+                int i = 0;
+                var embed = new EmbedBuilder()
+                    .WithOkColor()
+                    .WithTitle(video.Title)
+                    .WithUrl(video.Url)
+                    .WithDescription($"{Format.Url($"{video.UserName}", $"https://twitch.tv/{video.UserLogin}")}")
+                    .AddField("最多觀看的 Clip", string.Join('\n', clips.Where((x) => x.VideoId == video.Id)
+                            .Select((x) => $"{i++}. {Format.Url(x.Title, x.Url)} By `{x.CreatorName}` (`{x.ViewCount}` 次觀看)")))
+                    .WithImageUrl(video.ThumbnailUrl.Replace("%{width}", "854").Replace("%{height}", "480")).Build();
+
+                await Context.Channel.SendMessageAsync(embed: embed);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "TwitchGetLatestVOD Error");
+                await Context.Channel.SendErrorAsync("Error");
+            }
+        }
     }
 }
