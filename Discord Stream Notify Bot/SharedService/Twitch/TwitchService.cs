@@ -146,13 +146,11 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                     Log.Error(ex, $"Twitch Get Redis Data Error: {data.BroadcasterUserId}");
                 }
 
-                DateTime createAt, endAt;
+                DateTime createAt = DateTime.Now.AddDays(-3), endAt = DateTime.Now;
                 var video = await GetLatestVODAsync(data.BroadcasterUserId);
                 if (video == null)
                 {
                     Log.Warn($"找不到對應的 Video 資料: {data.BroadcasterUserId}");
-                    createAt = DateTime.Now.AddDays(-3);
-                    endAt = DateTime.Now;
                 }
                 else
                 {
@@ -180,12 +178,15 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
 
                 embedBuilder.AddField("關台時間", DateTime.UtcNow.ConvertDateTimeToDiscordMarkdown());
 
-                var clips = await GetClipsAsync(data.BroadcasterUserId, createAt, endAt);
-                if (clips != null)
+                if (video != null) // 僅增加與該場直播有關的 Clip
                 {
-                    int i = 0;
-                    embedBuilder.AddField("最多觀看的 Clip", string.Join('\n', clips.Where((x) => video != null ? x.VideoId == video.Id : true)
-                        .Select((x) => $"{i++}. {Format.Url(x.Title, x.Url)} By `{x.CreatorName}` (`{x.ViewCount}` 次觀看)")));
+                    var clips = await GetClipsAsync(data.BroadcasterUserId, createAt, endAt);
+                    if (clips != null && clips.Any((x) => x.VideoId == video.Id))
+                    {
+                        int i = 0;
+                        embedBuilder.AddField("最多觀看的 Clip", string.Join('\n', clips.Where((x) => x.VideoId == video.Id)
+                            .Select((x) => $"{i++}. {Format.Url(x.Title, x.Url)} By `{x.CreatorName}` (`{x.ViewCount}` 次觀看)")));
+                    }
                 }
 
                 using var db = MainDbContext.GetDbContext();

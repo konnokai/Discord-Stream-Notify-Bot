@@ -136,7 +136,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitch
         [Summary("取得 Twitch 頻道最新的 VOD 資訊")]
         [CommandExample("https://twitch.tv/998rrr")]
         [Alias("tglv")]
-        public async Task GetLatestVOD([Summary("頻道網址")] string channelUrl = "")
+        public async Task GetLatestVOD([Summary("頻道網址")] string channelUrl)
         {
             try
             {
@@ -174,8 +174,9 @@ namespace Discord_Stream_Notify_Bot.Command.Twitch
                     .AddField("結束時間", endAt.ConvertDateTimeToDiscordMarkdown())
                     .AddField("直播時長", video.Duration.Replace("h", "時").Replace("m", "分").Replace("s", "秒"));
 
-                if (clips != null)
+                if (clips != null && clips.Any((x) => x.VideoId == video.Id))
                 {
+                    Log.Debug(JsonConvert.SerializeObject(clips));
                     int i = 0;
                     embedBuilder.AddField("最多觀看的 Clip", string.Join('\n', clips.Where((x) => x.VideoId == video.Id)
                         .Select((x) => $"{i++}. {Format.Url(x.Title, x.Url)} By `{x.CreatorName}` (`{x.ViewCount}` 次觀看)")));
