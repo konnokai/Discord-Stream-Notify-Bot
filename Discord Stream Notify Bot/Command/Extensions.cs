@@ -14,6 +14,11 @@ namespace Discord_Stream_Notify_Bot.Command
            eb.WithColor(00, 229, 132);
         public static EmbedBuilder WithErrorColor(this EmbedBuilder eb) =>
            eb.WithColor(40, 40, 40);
+        public static string ConvertDateTimeToDiscordMarkdown(this DateTime dateTime)
+        {
+            long UTCTime = ((DateTimeOffset)dateTime).ToUnixTimeSeconds();
+            return $"<t:{UTCTime}:F> (<t:{UTCTime}:R>)";
+        }
         public static string GetProductionName(this DataBase.Table.Video.YTChannelType channelType) =>
                 channelType == DataBase.Table.Video.YTChannelType.Holo ? "Hololive" : channelType == DataBase.Table.Video.YTChannelType.Nijisanji ? "彩虹社" : "其他";
 

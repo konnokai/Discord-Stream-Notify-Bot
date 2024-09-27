@@ -213,7 +213,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         .WithImageUrl($"https://i.ytimg.com/vi/{item.Id}/maxresdefault.jpg")
                         .WithUrl($"https://www.youtube.com/watch?v={item.Id}")
                         .AddField("直播狀態", "已關台")
-                        .AddField("直播時間", $"{endTime.Subtract(startTime):hh'時'mm'分'ss'秒'}")
+                        .AddField("直播時長", $"{endTime.Subtract(startTime):hh'時'mm'分'ss'秒'}")
                         .AddField("關台時間", endTime.ConvertDateTimeToDiscordMarkdown());
 
                         await SendStreamMessageAsync(item.Id, embedBuilder, NoticeType.End).ConfigureAwait(false);

@@ -161,7 +161,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                     twitchStream.StreamStartAt = DateTime.Parse(video.CreatedAt);
 
                     createAt = DateTime.Parse(video.CreatedAt);
-                    endAt = createAt + TimeSpan.Parse(video.Duration.Replace("d", ":").Replace("h", ":").Replace("m", ":").Replace("s", ""));
+                    endAt = createAt + ParseToTimeSpan(video.Duration);
                 }
 
                 var embedBuilder = new EmbedBuilder()
@@ -175,7 +175,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                 {
                     embedBuilder
                         .WithTitle(twitchStream.StreamTitle)
-                        .AddField("直播時間", $"{DateTime.UtcNow.Subtract(twitchStream.StreamStartAt):hh'時'mm'分'ss'秒'}");
+                        .AddField("直播時長", $"{DateTime.UtcNow.Subtract(twitchStream.StreamStartAt):hh'時'mm'分'ss'秒'}");
                 }
 
                 embedBuilder.AddField("關台時間", DateTime.UtcNow.ConvertDateTimeToDiscordMarkdown());
@@ -300,126 +300,26 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
             return url;
         }
 
-        public async Task<User> GetUserAsync(string twitchUserId = "", string twitchUserLogin = "")
+        // Generate by ChatGPT
+        public TimeSpan ParseToTimeSpan(string input)
         {
-            List<string> userId = null, userLogin = null;
-            if (!string.IsNullOrEmpty(twitchUserId))
-                userId = new List<string> { twitchUserId };
-            else if (!string.IsNullOrEmpty(twitchUserLogin))
-                userLogin = new List<string> { twitchUserLogin };
-            else throw new ArgumentException("兩者參數不可同時為空");
-
-            try
+            int days = 0, hours = 0, minutes = 0, seconds = 0;
+            // 定義正則表達式去匹配天、時、分、秒
+            Regex regex = new Regex(@"(\d+)d|(\d+)h|(\d+)m|(\d+)s");
+            MatchCollection matches = regex.Matches(input);
+            // 遍歷匹配結果並賦值
+            foreach (Match match in matches)
             {
-                var users = await TwitchApi.Value.Helix.Users.GetUsersAsync(userId, userLogin);
-                return users.Users.FirstOrDefault();
+                if (match.Groups[1].Success)
+                    days = int.Parse(match.Groups[1].Value);
+                if (match.Groups[2].Success)
+                    hours = int.Parse(match.Groups[2].Value);
+                if (match.Groups[3].Success)
+                    minutes = int.Parse(match.Groups[3].Value);
+                if (match.Groups[4].Success)
+                    seconds = int.Parse(match.Groups[4].Value);
             }
-            catch (BadRequestException)
-            {
-                Log.Error($"無法取得 Twitch 資料，可能是找不到輸入的使用者資料: ({twitchUserId}) {twitchUserLogin}");
-                return null;
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, $"無法取得 Twitch 資料: ({twitchUserId}) {twitchUserLogin}");
-                return null;
-            }
-        }
-
-        public async Task<IReadOnlyList<User>> GetUsersAsync(params string[] twitchUserLogins)
-        {
-            try
-            {
-                List<User> result = new();
-                foreach (var item in twitchUserLogins.Chunk(100))
-                {
-                    var users = await TwitchApi.Value.Helix.Users.GetUsersAsync(logins: new List<string>(twitchUserLogins));
-                    if (users.Users.Any())
-                    {
-                        result.AddRange(users.Users);
-                    }
-                }
-
-                return result;
-            }
-            catch (BadRequestException)
-            {
-                Log.Error($"無法取得 Twitch 資料，可能是找不到輸入的使用者資料: {twitchUserLogins.First()}");
-                return null;
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, $"無法取得 Twitch 資料: {twitchUserLogins.First()}");
-                return null;
-            }
-        }
-
-        public async Task<Video> GetLatestVODAsync(string twitchUserId)
-        {
-            try
-            {
-                var videosResponse = await TwitchApi.Value.Helix.Videos.GetVideosAsync(userId: twitchUserId, first: 1, type: VideoType.Archive);
-                return videosResponse.Videos.FirstOrDefault();
-            }
-            catch (BadRequestException)
-            {
-                Log.Error($"無法取得 Twitch 資料，可能是找不到輸入的使用者資料: {twitchUserId}");
-                return null;
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, $"無法取得 Twitch 資料: {twitchUserId}");
-                return null;
-            }
-        }
-
-        public async Task<IReadOnlyList<Clip>> GetClipsAsync(string twitchUserId, DateTime startedAt, DateTime endedAt)
-        {
-            try
-            {
-                var clipsResponse = await TwitchApi.Value.Helix.Clips.GetClipsAsync(broadcasterId: twitchUserId, startedAt: startedAt, endedAt: endedAt, first: 5);
-                if (clipsResponse.Clips.Any())
-                {
-                    return clipsResponse.Clips;
-                }
-                else
-                {
-                    return null;
-                }
-            }
-            catch (BadRequestException)
-            {
-                Log.Error($"無法取得 Twitch 資料，可能是找不到輸入的使用者資料: {twitchUserId}");
-                return null;
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, $"無法取得 Twitch 資料: {twitchUserId}");
-                return null;
-            }
-        }
-
-        public async Task<IReadOnlyList<Stream>> GetNowStreamsAsync(params string[] twitchUserIds)
-        {
-            try
-            {
-                List<Stream> result = new();
-                foreach (var item in twitchUserIds.Chunk(100))
-                {
-                    var streams = await TwitchApi.Value.Helix.Streams.GetStreamsAsync(first: 100, userIds: new List<string>(twitchUserIds));
-                    if (streams.Streams.Any())
-                    {
-                        result.AddRange(streams.Streams);
-                    }
-                }
-
-                return result;
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, $"無法取得 Twitch 資料，請確認 {nameof(BotConfig.TwitchClientId)} 或 {nameof(BotConfig.TwitchClientSecret)} 是否正常");
-                return Array.Empty<Stream>();
-            }
+            return new TimeSpan(days, hours, minutes, seconds);
         }
 
         private async Task TimerHandel()
@@ -681,6 +581,130 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                 return false;
             }
         }
+
+        #region TwitchAPI
+        public async Task<User> GetUserAsync(string twitchUserId = "", string twitchUserLogin = "")
+        {
+            List<string> userId = null, userLogin = null;
+            if (!string.IsNullOrEmpty(twitchUserId))
+                userId = new List<string> { twitchUserId };
+            else if (!string.IsNullOrEmpty(twitchUserLogin))
+                userLogin = new List<string> { twitchUserLogin };
+            else throw new ArgumentException("兩者參數不可同時為空");
+
+            try
+            {
+                var users = await TwitchApi.Value.Helix.Users.GetUsersAsync(userId, userLogin);
+                return users.Users.FirstOrDefault();
+            }
+            catch (BadRequestException)
+            {
+                Log.Error($"無法取得 Twitch 資料，可能是找不到輸入的使用者資料: ({twitchUserId}) {twitchUserLogin}");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, $"無法取得 Twitch 資料: ({twitchUserId}) {twitchUserLogin}");
+                return null;
+            }
+        }
+
+        public async Task<IReadOnlyList<User>> GetUsersAsync(params string[] twitchUserLogins)
+        {
+            try
+            {
+                List<User> result = new();
+                foreach (var item in twitchUserLogins.Chunk(100))
+                {
+                    var users = await TwitchApi.Value.Helix.Users.GetUsersAsync(logins: new List<string>(twitchUserLogins));
+                    if (users.Users.Any())
+                    {
+                        result.AddRange(users.Users);
+                    }
+                }
+
+                return result;
+            }
+            catch (BadRequestException)
+            {
+                Log.Error($"無法取得 Twitch 資料，可能是找不到輸入的使用者資料: {twitchUserLogins.First()}");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, $"無法取得 Twitch 資料: {twitchUserLogins.First()}");
+                return null;
+            }
+        }
+
+        public async Task<Video> GetLatestVODAsync(string twitchUserId)
+        {
+            try
+            {
+                var videosResponse = await TwitchApi.Value.Helix.Videos.GetVideosAsync(userId: twitchUserId, first: 1, type: VideoType.Archive);
+                return videosResponse.Videos.FirstOrDefault();
+            }
+            catch (BadRequestException)
+            {
+                Log.Error($"無法取得 Twitch 資料，可能是找不到輸入的使用者資料: {twitchUserId}");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, $"無法取得 Twitch 資料: {twitchUserId}");
+                return null;
+            }
+        }
+
+        public async Task<IReadOnlyList<Clip>> GetClipsAsync(string twitchUserId, DateTime startedAt, DateTime endedAt)
+        {
+            try
+            {
+                var clipsResponse = await TwitchApi.Value.Helix.Clips.GetClipsAsync(broadcasterId: twitchUserId, startedAt: startedAt, endedAt: endedAt, first: 5);
+                if (clipsResponse.Clips.Any())
+                {
+                    return clipsResponse.Clips;
+                }
+                else
+                {
+                    return null;
+                }
+            }
+            catch (BadRequestException)
+            {
+                Log.Error($"無法取得 Twitch 資料，可能是找不到輸入的使用者資料: {twitchUserId}");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, $"無法取得 Twitch 資料: {twitchUserId}");
+                return null;
+            }
+        }
+
+        public async Task<IReadOnlyList<Stream>> GetNowStreamsAsync(params string[] twitchUserIds)
+        {
+            try
+            {
+                List<Stream> result = new();
+                foreach (var item in twitchUserIds.Chunk(100))
+                {
+                    var streams = await TwitchApi.Value.Helix.Streams.GetStreamsAsync(first: 100, userIds: new List<string>(twitchUserIds));
+                    if (streams.Streams.Any())
+                    {
+                        result.AddRange(streams.Streams);
+                    }
+                }
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, $"無法取得 Twitch 資料，請確認 {nameof(BotConfig.TwitchClientId)} 或 {nameof(BotConfig.TwitchClientSecret)} 是否正常");
+                return Array.Empty<Stream>();
+            }
+        }
+        #endregion
 
         // https://blog.darkthread.net/blog/dotnet-debounce/
         // https://github.com/dorssel/dotnet-debounce

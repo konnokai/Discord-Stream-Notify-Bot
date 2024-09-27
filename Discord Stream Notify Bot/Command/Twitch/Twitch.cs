@@ -159,20 +159,29 @@ namespace Discord_Stream_Notify_Bot.Command.Twitch
                 }
 
                 var createAt = DateTime.Parse(video.CreatedAt);
-                var endAt = createAt + TimeSpan.Parse(video.Duration.Replace("d", ":").Replace("h", ":").Replace("m", ":").Replace("s", ""));
+                var endAt = createAt + _service.ParseToTimeSpan(video.Duration);
                 var clips = await _service.GetClipsAsync(video.UserId, createAt, endAt);
 
-                int i = 0;
-                var embed = new EmbedBuilder()
+                Log.Debug($"Duration: {video.Duration} | createAt: {createAt} | endAt: {endAt}");
+
+                var embedBuilder = new EmbedBuilder()
                     .WithOkColor()
                     .WithTitle(video.Title)
                     .WithUrl(video.Url)
                     .WithDescription($"{Format.Url($"{video.UserName}", $"https://twitch.tv/{video.UserLogin}")}")
-                    .AddField("最多觀看的 Clip", string.Join('\n', clips.Where((x) => x.VideoId == video.Id)
-                            .Select((x) => $"{i++}. {Format.Url(x.Title, x.Url)} By `{x.CreatorName}` (`{x.ViewCount}` 次觀看)")))
-                    .WithImageUrl(video.ThumbnailUrl.Replace("%{width}", "854").Replace("%{height}", "480")).Build();
+                    .WithImageUrl(video.ThumbnailUrl.Replace("%{width}", "854").Replace("%{height}", "480"))
+                    .AddField("開始時間", createAt.ConvertDateTimeToDiscordMarkdown())
+                    .AddField("結束時間", endAt.ConvertDateTimeToDiscordMarkdown())
+                    .AddField("直播時長", video.Duration.Replace("h", "時").Replace("m", "分").Replace("s", "秒"));
 
-                await Context.Channel.SendMessageAsync(embed: embed);
+                if (clips != null)
+                {
+                    int i = 0;
+                    embedBuilder.AddField("最多觀看的 Clip", string.Join('\n', clips.Where((x) => x.VideoId == video.Id)
+                        .Select((x) => $"{i++}. {Format.Url(x.Title, x.Url)} By `{x.CreatorName}` (`{x.ViewCount}` 次觀看)")));
+                }
+
+                await Context.Channel.SendMessageAsync(embed: embedBuilder.Build());
             }
             catch (Exception ex)
             {
