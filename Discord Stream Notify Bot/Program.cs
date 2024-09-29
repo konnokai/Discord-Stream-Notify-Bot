@@ -442,7 +442,7 @@ namespace Discord_Stream_Notify_Bot
             do { await Task.Delay(1000); }
             while (!IsDisconnect);
 
-            while (IsHoloChannelSpider || IsNijisanjiChannelSpider || IsOtherChannelSpider)
+            while (IsHoloChannelSpider || IsOtherChannelSpider)
             {
                 List<string> str = new List<string>();
 

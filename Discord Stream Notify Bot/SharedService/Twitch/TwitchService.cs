@@ -173,7 +173,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                 {
                     embedBuilder
                         .WithTitle(twitchStream.StreamTitle)
-                        .AddField("直播時長", $"{DateTime.UtcNow.Subtract(twitchStream.StreamStartAt):hh'時'mm'分'ss'秒'}");
+                        .AddField("直播時長", $"{DateTime.Now.Subtract(twitchStream.StreamStartAt):hh'時'mm'分'ss'秒'}");
                 }
 
                 embedBuilder.AddField("關台時間", DateTime.UtcNow.ConvertDateTimeToDiscordMarkdown());
