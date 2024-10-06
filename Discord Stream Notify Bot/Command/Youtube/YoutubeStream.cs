@@ -2,6 +2,7 @@
 using Discord_Stream_Notify_Bot.Command.Attribute;
 using Discord_Stream_Notify_Bot.DataBase;
 using Discord_Stream_Notify_Bot.DataBase.Table;
+using Microsoft.EntityFrameworkCore;
 using System.Text.RegularExpressions;
 
 namespace Discord_Stream_Notify_Bot.Command.Youtube
@@ -24,6 +25,8 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
         [RequireOwner]
         public async Task RightNowRecordStream(string videoId)
         {
+            await Context.Channel.TriggerTypingAsync();
+
             if (videoId.Length != 11)
             {
                 var match = Regex.Match(videoId, @"(?<=youtu\.be\/|youtube\.com\/(?:watch\?.*v=|live\/))(?'VideoId'[\w-]{11})");
@@ -34,13 +37,13 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                 }
                 else
                 {
-                    await Context.Channel.SendConfirmAsync("Regex驗證失敗，請確認是否輸入正確的網址").ConfigureAwait(false);
+                    await Context.Channel.SendConfirmAsync("Regex 驗證失敗，請確認是否輸入正確的網址").ConfigureAwait(false);
                     return;
                 }
 
                 if (videoId.Length != 11)
                 {
-                    await Context.Channel.SendConfirmAsync("VideoId錯誤錯誤，需為11字數").ConfigureAwait(false);
+                    await Context.Channel.SendConfirmAsync("VideoId 錯誤錯誤，需為 11 字數").ConfigureAwait(false);
                     return;
                 }
             }
@@ -89,8 +92,8 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                     }
                     else
                     {
-                        Log.Warn($"Redis Sub頻道不存在，請開啟錄影工具: {videoId}");
-                        await Context.Channel.SendErrorAsync("Redis Sub頻道不存在，請開啟錄影工具", description).ConfigureAwait(false);
+                        Log.Warn($"Redis Sub 頻道不存在，請開啟錄影工具: {videoId}");
+                        await Context.Channel.SendErrorAsync("Redis Sub 頻道不存在，請開啟錄影工具", description).ConfigureAwait(false);
                     }
                 }
             }
@@ -99,6 +102,176 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                 Log.Error($"RightNowRecordStream-Record: {videoId}\n{ex}");
                 await Context.Channel.SendErrorAsync(ex.ToString()).ConfigureAwait(false);
             }
+        }
+
+        [RequireContext(ContextType.DM)]
+        [Command("AddVideoData")]
+        [Summary("新增影片資料並發送通知")]
+        [Alias("aod")]
+        [RequireOwner]
+        public async Task AddVideoDataAsync(string videoId)
+        {
+            await Context.Channel.TriggerTypingAsync();
+
+            if (videoId.Length != 11)
+            {
+                var match = Regex.Match(videoId, @"(?<=youtu\.be\/|youtube\.com\/(?:watch\?.*v=|live\/))(?'VideoId'[\w-]{11})");
+
+                if (match.Success)
+                {
+                    videoId = match.Groups["VideoId"].Value;
+                }
+                else
+                {
+                    await Context.Channel.SendConfirmAsync("Regex 驗證失敗，請確認是否輸入正確的網址").ConfigureAwait(false);
+                    return;
+                }
+
+                if (videoId.Length != 11)
+                {
+                    await Context.Channel.SendConfirmAsync("VideoId 錯誤錯誤，需為 11 字數").ConfigureAwait(false);
+                    return;
+                }
+            }
+
+            Google.Apis.YouTube.v3.Data.Video video;
+            try
+            {
+                video = await _service.GetVideoAsync(videoId);
+            }
+            catch (Exception ex)
+            {
+                await Context.Channel.SendErrorAsync(ex.ToString());
+                return;
+            }
+
+            if (video == null)
+            {
+                await Context.Channel.SendConfirmAsync($"{videoId} 不存在").ConfigureAwait(false);
+                return;
+            }
+
+            using var db = MainDbContext.GetDbContext();
+            if (!db.HasStreamVideoByVideoId(videoId))
+            {
+                await _service.AddOtherDataAsync(video, false);
+                await Context.Channel.SendConfirmAsync($"已添加資料: {video.Snippet.ChannelTitle} - {video.Snippet.Title}");
+            }
+            else
+            {
+                await Context.Channel.SendErrorAsync($"資料已存在於資料庫內，忽略");
+            }
+        }
+
+        [RequireContext(ContextType.DM)]
+        [Command("ForceReSubscribeSpider")]
+        [Summary("強制重新註冊爬蟲 (all or channelUrl)")]
+        [Alias("frss")]
+        [CommandExample("all", "998rrr", "UCs5FNYPHeZz5f7N1BDExxfg")]
+        [RequireOwner]
+        public async Task ForceReSubscribeSpider(string channelUrl)
+        {
+            await Context.Channel.TriggerTypingAsync();
+
+            string channelId = "";
+            try
+            {
+                channelId = await _service.GetChannelIdAsync(channelUrl).ConfigureAwait(false);
+            }
+            catch (FormatException fex)
+            {
+                await Context.Channel.SendErrorAsync(fex.Message);
+                return;
+            }
+            catch (ArgumentNullException)
+            {
+                await Context.Channel.SendErrorAsync("網址不可空白");
+                return;
+            }
+
+            using var db = MainDbContext.GetDbContext();
+
+            if (channelId == "all")
+            {
+                if (await PromptUserConfirmAsync(new EmbedBuilder().WithOkColor().WithDescription("是否要重新註冊全部的爬蟲?")))
+                {
+                    foreach (var item in db.YoutubeChannelSpider)
+                    {
+                        item.LastSubscribeTime = DateTime.MinValue;
+                    }
+                }
+            }
+            else
+            {
+                var youtubeChannelSpider = db.YoutubeChannelSpider.FirstOrDefault((x) => x.ChannelId == channelId);
+                if (youtubeChannelSpider == null)
+                {
+                    await Context.Channel.SendErrorAsync($"資料庫中找不到 {channelId} 的爬蟲");
+                    return;
+                }
+                else
+                {
+                    youtubeChannelSpider.LastSubscribeTime = DateTime.MinValue;
+                }
+            }
+
+            db.SaveChanges();
+
+            await Context.Channel.SendConfirmAsync("已變更，等待爬蟲註冊中...");
+            await _service.SubscribePubSubAsync();
+        }
+
+        [RequireContext(ContextType.DM)]
+        [Command("GetNotionGuild")]
+        [Summary("取得已設定通知的伺服器")]
+        [Alias("gng")]
+        [CommandExample("998rrr", "UCs5FNYPHeZz5f7N1BDExxfg")]
+        [RequireOwner]
+        public async Task GetNotionGuild(string channelUrl)
+        {
+            await Context.Channel.TriggerTypingAsync();
+
+            string channelId = "";
+            try
+            {
+                channelId = await _service.GetChannelIdAsync(channelUrl).ConfigureAwait(false);
+            }
+            catch (FormatException fex)
+            {
+                await Context.Channel.SendErrorAsync(fex.Message);
+                return;
+            }
+            catch (ArgumentNullException)
+            {
+                await Context.Channel.SendErrorAsync("網址不可空白");
+                return;
+            }
+
+            using var db = MainDbContext.GetDbContext();
+
+            var youtubeChannelSpider = db.YoutubeChannelSpider.AsNoTracking().FirstOrDefault((x) => x.ChannelId == channelId);
+
+            var guildList = new List<string>();
+            foreach (var item in db.NoticeYoutubeStreamChannel.AsNoTracking().Where((x) => x.YouTubeChannelId == channelId))
+            {
+                var guild = _client.GetGuild(item.GuildId);
+                if (guild == null)
+                {
+                    guildList.Add($"{item.GuildId}: (已離開)");
+                }
+                else
+                {
+                    guildList.Add($"{item.GuildId}: {guild.Name}");
+                }
+            }
+
+            await Context.SendPaginatedConfirmAsync(0, (page) =>
+            {
+                return new EmbedBuilder()
+                   .WithOkColor()
+                   .WithTitle($"設定 `" + (youtubeChannelSpider != null ? youtubeChannelSpider.ChannelTitle : channelId) + "` 通知的伺服器清單")
+                   .WithDescription(string.Join('\n', guildList.Skip(page * 20).Take(20)));
+            }, guildList.Count, 20);
         }
 
         [RequireContext(ContextType.DM)]

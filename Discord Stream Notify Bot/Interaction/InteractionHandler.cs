@@ -105,10 +105,10 @@ namespace Discord_Stream_Notify_Bot.Interaction
                         await arg2.Interaction.SendErrorAsync("輸入的參數錯誤");
                         break;
                     case InteractionCommandError.Exception when arg3.ErrorReason.Contains("50001"):
-                        await arg2.Interaction.SendErrorAsync($"我在 `{arg2.Channel}` 沒有 `讀取&編輯頻道&嵌入連結` 的權限，請給予權限後再次執行本指令", true);
+                        await arg2.Interaction.SendErrorAsync($"我在 `{arg2.Channel}` 沒有 `讀取 & 編輯頻道 & 嵌入連結` 的權限，請給予權限後再次執行本指令");
                         break;
                     default:
-                        await arg2.Interaction.SendErrorAsync("未知的錯誤，請向Bot擁有者回報");
+                        await arg2.Interaction.SendErrorAsync("未知的錯誤，請向 Bot 擁有者回報");
                         break;
                 }
             }

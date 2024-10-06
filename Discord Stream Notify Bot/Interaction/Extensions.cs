@@ -204,9 +204,20 @@ namespace Discord_Stream_Notify_Bot.Interaction
         public static Task SendConfirmAsync(this IDiscordInteraction di, string des, bool isFollowerup = false, bool ephemeral = false)
         {
             if (isFollowerup)
+            {
                 return di.FollowupAsync(embed: new EmbedBuilder().WithOkColor().WithDescription(des).Build(), ephemeral: ephemeral);
+            }
             else
-                return di.RespondAsync(embed: new EmbedBuilder().WithOkColor().WithDescription(des).Build(), ephemeral: ephemeral);
+            {
+                try
+                {
+                    return di.RespondAsync(embed: new EmbedBuilder().WithOkColor().WithDescription(des).Build(), ephemeral: ephemeral);
+                }
+                catch (Exception ex) when (ex.Message.ToLower().Contains("cannot respond twice to the same interaction"))
+                {
+                    return di.FollowupAsync(embed: new EmbedBuilder().WithOkColor().WithDescription(des).Build(), ephemeral: ephemeral);
+                }
+            }
         }
 
         public static Task SendConfirmAsync(this IDiscordInteraction di, string title, string des, bool isFollowerup = false, bool ephemeral = false)
@@ -222,9 +233,20 @@ namespace Discord_Stream_Notify_Bot.Interaction
             Log.Warn($"回傳錯誤給 [{di.User.Username}]: {des}");
 
             if (isFollowerup)
+            {
                 return di.FollowupAsync(embed: new EmbedBuilder().WithErrorColor().WithDescription(des).Build(), ephemeral: ephemeral);
+            }
             else
-                return di.RespondAsync(embed: new EmbedBuilder().WithErrorColor().WithDescription(des).Build(), ephemeral: ephemeral);
+            {
+                try
+                {
+                    return di.RespondAsync(embed: new EmbedBuilder().WithErrorColor().WithDescription(des).Build(), ephemeral: ephemeral);
+                }
+                catch (Exception ex) when (ex.Message .ToLower().Contains("cannot respond twice to the same interaction"))
+                {
+                    return di.FollowupAsync(embed: new EmbedBuilder().WithErrorColor().WithDescription(des).Build(), ephemeral: ephemeral);
+                }
+            }
         }
 
         public static Task SendErrorAsync(this IDiscordInteraction di, string title, string des, bool isFollowerup = false, bool ephemeral = true)

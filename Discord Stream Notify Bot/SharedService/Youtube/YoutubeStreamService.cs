@@ -43,6 +43,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
         public bool IsRecord { get; set; } = true;
         public YouTubeService YouTubeService { get; set; }
 
+        private bool isSubscribing = false;
         private Timer holoSchedule, nijisanjiSchedule, otherSchedule, checkScheduleTime, saveDateBase, subscribePubSub, reScheduleTime/*, checkHoloNowStream, holoScheduleEmoji*/;
         private readonly DiscordSocketClient _client;
         private readonly DiscordWebhookClient _webhookClient;
@@ -655,7 +656,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             return;
 #endif
 
-            subscribePubSub = new Timer((objState) => SubscribePubSub(), null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(30));
+            subscribePubSub = new Timer(async (objState) => await SubscribePubSubAsync(), null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(30));
         }
 
         private async Task GetOrCreateNijisanjiLiverListAsync(string affiliation, bool forceRefresh = false)
@@ -848,7 +849,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             else
             {
                 Log.Error($"GetChannelIdAsync-NoMatch: {channelUrl}");
-                throw new FormatException("錯誤，找不到對應的網址處理方式，請向 Bot 擁有者聯絡");
+                throw new FormatException("錯誤，找不到對應的網址處理方式，請向 Bot 擁有者聯絡\n" +
+                    "若你是透過自動提示來輸入頻道名稱，請勿切換 Discord 頻道，這會導致自動代入的名稱錯誤");
             }
 
             return channelId;
@@ -949,27 +951,60 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 if (formatUrl) return response.Items.Select((x) => Format.Url(x.Snippet.Title, $"https://www.youtube.com/channel/{x.Id}")).ToList();
                 else return response.Items.Select((x) => x.Snippet.Title).ToList();
             }
+
+            catch (NullReferenceException)
+            {
+                Log.Warn($"YouTube GetChannelTitle 可能已被刪除的頻道: {channelId}");
+                return null;
+            }
             catch (Exception ex)
             {
-                Log.Error(ex.Message + "\n" + ex.StackTrace);
+                Log.Error(ex, $"YouTube GetChannelTitles 未知的錯誤: {string.Join(", ", channelId)}");
                 return null;
             }
         }
 
-        private async void SubscribePubSub()
+        internal async Task SubscribePubSubAsync()
         {
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            if (isSubscribing)
+                return;
+            isSubscribing = true;
+
+            try
             {
-                foreach (var item in db.YoutubeChannelSpider.Where((x) => x.LastSubscribeTime < DateTime.Now.AddDays(-7)))
+                using (var db = DataBase.MainDbContext.GetDbContext())
                 {
-                    if (await PostSubscribeRequestAsync(item.ChannelId))
+                    var list = db.YoutubeChannelSpider.Where((x) => x.LastSubscribeTime < DateTime.Now.AddDays(-7));
+
+                    int i = 0;
+                    if (list.Any())
                     {
-                        Log.Info($"已註冊 YT PubSub: {item.ChannelTitle} ({item.ChannelId})");
-                        item.LastSubscribeTime = DateTime.Now;
-                        db.Update(item);
+                        foreach (var item in list)
+                        {
+                            i++;
+                            if (await PostSubscribeRequestAsync(item.ChannelId))
+                            {
+                                Log.Info($"已註冊 YT PubSub: {item.ChannelTitle} ({item.ChannelId}) ({i}/{list.Count()})");
+                                item.LastSubscribeTime = DateTime.Now;
+                                db.Update(item);
+                            }
+                            else
+                            {
+                                Log.Warn($"註冊 YT PubSub 失敗: {item.ChannelTitle} ({item.ChannelId}) ({i}/{list.Count()})");
+                            }
+                        }
+
+                        db.SaveChanges();
                     }
                 }
-                db.SaveChanges();
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "SubscribePubSubAsync Error");
+            }
+            finally
+            {
+                isSubscribing = false;
             }
         }
 

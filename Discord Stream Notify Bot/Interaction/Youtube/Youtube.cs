@@ -471,7 +471,9 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                 }
                 else
                 {
-                    await Context.Interaction.SendErrorAsync($"找不到 `{channelId}` 的通知設定，請向 Bot 擁有者詢問", true).ConfigureAwait(false);
+                    await Context.Interaction.SendErrorAsync($"找不到 `{channelId}` 的通知設定" +
+                        $"請先使用 `/youtube add {channelId}` 新增直播後再設定通知訊息" + 
+                        $"若已新增，請向 Bot 擁有者詢問", true).ConfigureAwait(false);
                 }
             }
         }
@@ -484,34 +486,42 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
         {
             await DeferAsync();
 
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            try
             {
-                if (!db.NoticeYoutubeStreamChannel.Any((x) => x.GuildId == Context.Guild.Id))
+                using (var db = DataBase.MainDbContext.GetDbContext())
                 {
-                    await Context.Interaction.SendErrorAsync("YouTube 通知清單為空").ConfigureAwait(false);
-                    return;
+                    if (!db.NoticeYoutubeStreamChannel.Any((x) => x.GuildId == Context.Guild.Id))
+                    {
+                        await Context.Interaction.SendErrorAsync("YouTube 通知清單為空").ConfigureAwait(false);
+                        return;
+                    }
+
+                    var ytChannelList = db.NoticeYoutubeStreamChannel
+                        .Where((x) => x.GuildId == Context.Guild.Id && x.YouTubeChannelId.StartsWith("UC"))
+                        .Select((x) => $"{db.GetYoutubeChannelTitleByChannelId(x.YouTubeChannelId)} | 直播通知: <#{x.DiscordNoticeStreamChannelId}> | 影片通知: <#{x.DiscordNoticeVideoChannelId}>")
+                        .ToList();
+
+                    var notYTChannelNoticeList = db.NoticeYoutubeStreamChannel
+                        .Where((x) => x.GuildId == Context.Guild.Id && !x.YouTubeChannelId.StartsWith("UC"))
+                        .Select((x) => $"{db.GetYoutubeChannelTitleByChannelId(x.YouTubeChannelId)} | 直播通知: <#{x.DiscordNoticeStreamChannelId}> | 影片通知: <#{x.DiscordNoticeVideoChannelId}>")
+                        .ToList();
+
+                    ytChannelList.AddRange(notYTChannelNoticeList);
+
+                    await Context.SendPaginatedConfirmAsync(page, page =>
+                    {
+                        return new EmbedBuilder()
+                            .WithOkColor()
+                            .WithTitle("YouTube 通知清單")
+                            .WithDescription(string.Join('\n', ytChannelList.Skip(page * 20).Take(20)))
+                            .WithFooter($"{Math.Min(ytChannelList.Count, (page + 1) * 20)} / {ytChannelList.Count} 個頻道");
+                    }, ytChannelList.Count, 20, isFollowup: true);
                 }
-
-                var ytChannelList = db.NoticeYoutubeStreamChannel
-                    .Where((x) => x.GuildId == Context.Guild.Id && x.YouTubeChannelId.StartsWith("UC"))
-                    .Select((x) => $"{db.GetYoutubeChannelTitleByChannelId(x.YouTubeChannelId)} | 直播通知: <#{x.DiscordNoticeStreamChannelId}> | 影片通知: <#{x.DiscordNoticeVideoChannelId}>")
-                    .ToList();
-
-                var notYTChannelNoticeList = db.NoticeYoutubeStreamChannel
-                    .Where((x) => x.GuildId == Context.Guild.Id && !x.YouTubeChannelId.StartsWith("UC"))
-                    .Select((x) => $"{db.GetYoutubeChannelTitleByChannelId(x.YouTubeChannelId)} | 直播通知: <#{x.DiscordNoticeStreamChannelId}> | 影片通知: <#{x.DiscordNoticeVideoChannelId}>")
-                    .ToList();
-
-                ytChannelList.AddRange(notYTChannelNoticeList);
-
-                await Context.SendPaginatedConfirmAsync(page, page =>
-                {
-                    return new EmbedBuilder()
-                        .WithOkColor()
-                        .WithTitle("YouTube 通知清單")
-                        .WithDescription(string.Join('\n', ytChannelList.Skip(page * 20).Take(20)))
-                        .WithFooter($"{Math.Min(ytChannelList.Count, (page + 1) * 20)} / {ytChannelList.Count} 個頻道");
-                }, ytChannelList.Count, 20, isFollowup: true);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, $"YouTube ListChannel Error: {Context.Guild.Id}");
+                await Context.Interaction.SendErrorAsync("未知的錯誤，請向 Bot 擁有者回報");
             }
         }
 
