@@ -492,7 +492,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                 {
                     if (!db.NoticeYoutubeStreamChannel.Any((x) => x.GuildId == Context.Guild.Id))
                     {
-                        await Context.Interaction.SendErrorAsync("YouTube 通知清單為空").ConfigureAwait(false);
+                        await Context.Interaction.SendErrorAsync("YouTube 通知清單為空", true).ConfigureAwait(false);
                         return;
                     }
 
