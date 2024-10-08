@@ -463,12 +463,42 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                             var group = regex.Match(response).Groups[1];
                             var jObject = JObject.Parse(group.Value);
+                            var alerts = jObject["alerts"];
+
+                            if (alerts != null)
+                            {
+                                foreach (var alert in alerts)
+                                {
+                                    var alertRenderer = alert["alertRenderer"];
+                                    if (alertRenderer["type"].ToString() == "ERROR")
+                                    {
+                                        try
+                                        {
+                                            Log.Warn($"{item.ChannelTitle} ({item.ChannelId}) 頻道錯誤: {alertRenderer["text"]["simpleText"]}");
+
+                                            await Program.ApplicatonOwner.SendMessageAsync($"`{item.ChannelTitle}` ({item.ChannelId}) 頻道錯誤: {alertRenderer["text"]["simpleText"]}");
+
+                                            db.YoutubeChannelSpider.Remove(item);
+                                            db.SaveChanges();
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            Log.Error(ex, $"頻道被 Ban 了但移除爬蟲失敗: {item.ChannelTitle} ({item.ChannelId})");
+                                        }
+                                    }
+                                }
+
+                                break;
+                            }
 
                             List<JToken> videoList = new List<JToken>();
                             videoList.AddRange(jObject.Descendants().Where((x) => x.ToString().StartsWith("\"gridVideoRenderer")));
                             videoList.AddRange(jObject.Descendants().Where((x) => x.ToString().StartsWith("\"videoRenderer")));
 
-                            if (!otherVideoDic.ContainsKey(item.ChannelId)) otherVideoDic.Add(item.ChannelId, new List<string>());
+                            if (!otherVideoDic.ContainsKey(item.ChannelId))
+                            {
+                                otherVideoDic.Add(item.ChannelId, new List<string>());
+                            }
 
                             foreach (var item2 in videoList)
                             {
@@ -488,9 +518,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                     Log.Error(ex, $"OtherSchedule {item.ChannelId} - {type}: GetVideoId");
                                 }
                             }
-
-                            if (!response.Contains($"/channel/{item.ChannelId}/streams")) // 這行應該是判定如果沒有直播頁籤的話就直接跳出迴圈?
-                                break;
                         }
                         catch (Exception ex)
                         {

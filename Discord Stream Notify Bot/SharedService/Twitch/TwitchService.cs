@@ -404,6 +404,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                                     Log.Error(ex, $"Twitch Set Redis Data Error: {stream.Id}");
                                 }
 
+#if RELEASE
                                 try
                                 {
                                     await TwitchApi.Value.Helix.EventSub.CreateEventSubSubscriptionAsync("channel.update", "2", new() { { "broadcaster_user_id", stream.UserId } },
@@ -418,6 +419,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                                 {
                                     Log.Error(ex, $"註冊 Twitch WebHook 失敗，也許是已經註冊過了?");
                                 }
+#endif
                             }
 
                             await SendStreamMessageAsync(twitchStream.UserId, embedBuilder.Build(), NoticeType.StartStream);
