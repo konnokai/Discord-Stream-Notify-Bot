@@ -1,9 +1,13 @@
 ﻿using Discord_Stream_Notify_Bot.HttpClients.Twitter;
 using HtmlAgilityPack;
 using Newtonsoft.Json.Linq;
+using Polly;
+using System;
 using System.Net;
+using System.Net.Http;
 using System.Text;
 using System.Text.RegularExpressions;
+using TwitchLib.PubSub.Models.Responses;
 
 namespace Discord_Stream_Notify_Bot.HttpClients
 {
@@ -43,7 +47,19 @@ namespace Discord_Stream_Notify_Bot.HttpClients
                     httpClient.DefaultRequestHeaders.Add("ContentType", "application/json");
                     httpClient.DefaultRequestHeaders.Add("X-Csrf-Token", _botConfig.TwitterCSRFToken);
 
-                    var data = await httpClient.PostAsync("https://api.twitter.com/1.1/guest/activate.json", null);
+                    var data = await Policy.Handle<HttpRequestException>()
+                        .Or<WebException>((ex) => ex.Message.Contains("unavailable")) // Resource temporarily unavailable
+                        .WaitAndRetryAsync(3, (retryAttempt) =>
+                        {
+                            var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
+                            Log.Warn($"Twitter GetGusetTokenAsync: POST 失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
+                            return timeSpan;
+                        })
+                        .ExecuteAsync(async () =>
+                        {
+                            return await httpClient.PostAsync("https://api.twitter.com/1.1/guest/activate.json", null);
+                        });
+
                     Regex regex = new Regex(@"""(\d{19})""");
                     var guestToken = regex.Match(await data.Content.ReadAsStringAsync()).Groups[1].Value;
                     return guestToken;
@@ -89,41 +105,52 @@ namespace Discord_Stream_Notify_Bot.HttpClients
 
         private async Task<string> GetRealHomePageContextAsync(HttpClient httpClient)
         {
-            var httpResponse = await httpClient.GetAsync("https://twitter.com");
-            var firstWebContext = await httpResponse.Content.ReadAsStringAsync();
+            return await Policy.Handle<HttpRequestException>()
+                .Or<WebException>((ex) => ex.Message.Contains("unavailable")) // Resource temporarily unavailable
+                .WaitAndRetryAsync(3, (retryAttempt) =>
+                {
+                    var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
+                    Log.Warn($"Twitter GetRealHomePageContextAsync: GET or POST 失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
+                    return timeSpan;
+                })
+                .ExecuteAsync(async () =>
+                {
+                    var httpResponse = await httpClient.GetAsync("https://twitter.com");
+                    var firstWebContext = await httpResponse.Content.ReadAsStringAsync();
 
-            string redirectUrl = "";
-            Regex regex = new Regex(@"document\.location\s*=\s*""(?'url'.+?)""");
-            Match match = Regex.Match(firstWebContext, @"document\.location\s*=\s*""(?'url'.+?)""");
-            if (match.Success)
-                redirectUrl = match.Groups["url"].Value;
+                    string redirectUrl = "";
+                    Regex regex = new Regex(@"document\.location\s*=\s*""(?'url'.+?)""");
+                    Match match = Regex.Match(firstWebContext, @"document\.location\s*=\s*""(?'url'.+?)""");
+                    if (match.Success)
+                        redirectUrl = match.Groups["url"].Value;
 
-            if (string.IsNullOrEmpty(redirectUrl))
-                throw new NullReferenceException(redirectUrl);
+                    if (string.IsNullOrEmpty(redirectUrl))
+                        throw new NullReferenceException(redirectUrl);
 
-            httpResponse = await httpClient.GetAsync(redirectUrl);
-            HtmlDocument htmlDocument = new HtmlDocument();
-            htmlDocument.LoadHtml(await httpResponse.Content.ReadAsStringAsync());
-            var nodes = htmlDocument.DocumentNode.Descendants().Where((x) => x.Name == "input");
+                    httpResponse = await httpClient.GetAsync(redirectUrl);
+                    HtmlDocument htmlDocument = new HtmlDocument();
+                    htmlDocument.LoadHtml(await httpResponse.Content.ReadAsStringAsync());
+                    var nodes = htmlDocument.DocumentNode.Descendants().Where((x) => x.Name == "input");
 
-            var formContent = new Dictionary<string, string>();
-            foreach (var node in nodes)
-            {
-                if (node.GetAttributeValue("type", "") != "hidden")
-                    continue;
+                    var formContent = new Dictionary<string, string>();
+                    foreach (var node in nodes)
+                    {
+                        if (node.GetAttributeValue("type", "") != "hidden")
+                            continue;
 
-                string name = node.GetAttributeValue("name", "");
-                string value = node.GetAttributeValue("value", "");
-                if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(value))
-                    continue;
+                        string name = node.GetAttributeValue("name", "");
+                        string value = node.GetAttributeValue("value", "");
+                        if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(value))
+                            continue;
 
-                formContent.Add(name, value);
-            }
+                        formContent.Add(name, value);
+                    }
 
-            httpResponse = await httpClient.PostAsync("https://x.com/x/migrate", new FormUrlEncodedContent(formContent));
-            var readWebContext = await httpResponse.Content.ReadAsStringAsync();
+                    httpResponse = await httpClient.PostAsync("https://x.com/x/migrate", new FormUrlEncodedContent(formContent));
+                    var readWebContext = await httpResponse.Content.ReadAsStringAsync();
 
-            return readWebContext;
+                    return readWebContext;
+                });
         }
 
         private async Task AddApiQueryDataAsync(HttpClient httpClient, string webContext, string fileName)
@@ -159,7 +186,19 @@ namespace Discord_Stream_Notify_Bot.HttpClients
 
                 Log.Debug($"https://abs.twimg.com/responsive-web/{type}/{fileName}");
 
-                string mainJsText = await httpClient.GetStringAsync($"https://abs.twimg.com/responsive-web/{type}/{fileName}");
+                var mainJsText = await Policy.Handle<HttpRequestException>()
+                    .Or<WebException>((ex) => ex.Message.Contains("unavailable")) // Resource temporarily unavailable
+                    .WaitAndRetryAsync(3, (retryAttempt) =>
+                    {
+                        var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
+                        Log.Warn($"Twitter AddApiQueryDataAsync: GET 失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
+                        return timeSpan;
+                    })
+                    .ExecuteAsync(async () =>
+                    {
+                        return await httpClient.GetStringAsync($"https://abs.twimg.com/responsive-web/{type}/{fileName}");
+                    });
+
                 var queryList = apiQueryRegex.Matches(mainJsText);
                 foreach (Match item in queryList)
                 {
@@ -194,7 +233,20 @@ namespace Discord_Stream_Notify_Bot.HttpClients
             try
             {
                 string url = $"https://twitter.com/i/api/graphql/{_apiQueryData["UserByScreenName"].QueryId}/UserByScreenName?variables={variables}&features={_apiQueryData["UserByScreenName"].FeatureSwitches}";
-                return JsonConvert.DeserializeObject<TwitterUserJson>(await _graphQLClient.GetStringAsync(url));
+                var json = await Policy.Handle<HttpRequestException>()
+                    .Or<WebException>((ex) => ex.Message.Contains("unavailable")) // Resource temporarily unavailable
+                    .WaitAndRetryAsync(3, (retryAttempt) =>
+                    {
+                        var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
+                        Log.Warn($"Twitter GetUserDataByScreenNameAsync: GET 失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
+                        return timeSpan;
+                    })
+                    .ExecuteAsync(async () =>
+                    {
+                        return await _graphQLClient.GetStringAsync(url);
+                    });
+
+                return JsonConvert.DeserializeObject<TwitterUserJson>(json);
             }
             catch (HttpRequestException httpEx) when (httpEx.Message.Contains("40") && !isRefresh)
             {
@@ -224,7 +276,19 @@ namespace Discord_Stream_Notify_Bot.HttpClients
                 {
                     // user_ids可以放多個，使用','來分隔，應該也是以100人為限
                     // 如果沒Spaces的話會回傳空的資料，所以不用特別判定現在是否正在開
-                    var result = await httpClient.GetStringAsync($"https://twitter.com/i/api/fleets/v1/avatar_content?user_ids={string.Join(',', usersId)}&only_spaces=true");
+                    var result = await Policy.Handle<HttpRequestException>()
+                        .Or<WebException>((ex) => ex.Message.Contains("unavailable")) // Resource temporarily unavailable
+                        .WaitAndRetryAsync(3, (retryAttempt) =>
+                        {
+                            var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
+                            Log.Warn($"Twitter GetTwitterSpaceByUsersIdAsync: GET 失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
+                            return timeSpan;
+                        })
+                        .ExecuteAsync(async () =>
+                        {
+                           return await httpClient.GetStringAsync($"https://twitter.com/i/api/fleets/v1/avatar_content?user_ids={string.Join(',', usersId)}&only_spaces=true");
+                        });
+
                     if (result.Contains("{\"users\":{}")) // 空的代表查詢的Id都沒有開Space;
                         return resultList;
 
@@ -279,7 +343,20 @@ namespace Discord_Stream_Notify_Bot.HttpClients
             try
             {
                 string url = $"https://twitter.com/i/api/graphql/{_apiQueryData["AudioSpaceById"].QueryId}/AudioSpaceById?variables={variables}&features={_apiQueryData["AudioSpaceById"].FeatureSwitches}";
-                return JObject.Parse(await _graphQLClient.GetStringAsync(url))["data"]["audioSpace"]["metadata"];
+                var json = await Policy.Handle<HttpRequestException>()
+                    .Or<WebException>((ex) => ex.Message.Contains("unavailable")) // Resource temporarily unavailable
+                    .WaitAndRetryAsync(3, (retryAttempt) =>
+                    {
+                        var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
+                        Log.Warn($"Twitter GetTwitterSpaceMetadataAsync: GET 失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
+                        return timeSpan;
+                    })
+                    .ExecuteAsync(async () =>
+                    {
+                        return await _graphQLClient.GetStringAsync(url);
+                    });
+
+                return JObject.Parse(json)["data"]["audioSpace"]["metadata"];
             }
             catch (HttpRequestException httpEx) when (httpEx.Message.Contains("40") && !isRefresh)
             {
@@ -298,7 +375,20 @@ namespace Discord_Stream_Notify_Bot.HttpClients
             try
             {
                 string url = $"https://twitter.com/i/api/1.1/live_video_stream/status/{mediaKey}";
-                return JObject.Parse(await _graphQLClient.GetStringAsync(url))["source"]["location"].ToString();
+                var json = await Policy.Handle<HttpRequestException>()
+                    .Or<WebException>((ex) => ex.Message.Contains("unavailable")) // Resource temporarily unavailable
+                    .WaitAndRetryAsync(3, (retryAttempt) =>
+                    {
+                        var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
+                        Log.Warn($"Twitter GetTwitterSpaceMasterUrlAsync: GET 失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
+                        return timeSpan;
+                    })
+                    .ExecuteAsync(async () =>
+                    {
+                        return await _graphQLClient.GetStringAsync(url);
+                    });
+
+                return JObject.Parse(json)["source"]["location"].ToString();
             }
             catch (Exception)
             {

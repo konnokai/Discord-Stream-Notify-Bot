@@ -159,7 +159,7 @@ namespace Discord_Stream_Notify_Bot
             {
                 LogLevel = LogSeverity.Verbose,
                 ConnectionTimeout = int.MaxValue,
-                MessageCacheSize = 50,
+                MessageCacheSize = 0,
                 // 因為沒有註冊事件，Discord .NET 建議可移除這兩個沒用到的特權
                 // https://dotblogs.com.tw/yc421206/2015/10/20/c_scharp_enum_of_flags
                 GatewayIntents = GatewayIntents.AllUnprivileged & ~GatewayIntents.GuildInvites & ~GatewayIntents.GuildScheduledEvents,
@@ -197,19 +197,33 @@ namespace Discord_Stream_Notify_Bot
             {
                 try
                 {
+                    Log.Info($"離開伺服器: {guild.Name}");
+
                     using (var db = DataBase.MainDbContext.GetDbContext())
                     {
                         GuildConfig guildConfig;
                         if ((guildConfig = db.GuildConfig.FirstOrDefault(x => x.GuildId == guild.Id)) != null)
                             db.GuildConfig.Remove(guildConfig);
 
-                        GuildYoutubeMemberConfig guildYoutubeMemberConfig;
-                        if ((guildYoutubeMemberConfig = db.GuildYoutubeMemberConfig.FirstOrDefault(x => x.GuildId == guild.Id)) != null)
-                            db.GuildYoutubeMemberConfig.Remove(guildYoutubeMemberConfig);
+                        IEnumerable<GuildYoutubeMemberConfig> guildYoutubeMemberConfigs;
+                        if ((guildYoutubeMemberConfigs = db.GuildYoutubeMemberConfig.Where(x => x.GuildId == guild.Id)).Any())
+                            db.GuildYoutubeMemberConfig.RemoveRange(guildYoutubeMemberConfigs);
+
+                        IEnumerable<BannerChange> bannerChange;
+                        if ((bannerChange = db.BannerChange.Where(x => x.GuildId == guild.Id)).Any())
+                            db.BannerChange.RemoveRange(bannerChange);
 
                         IEnumerable<NoticeTwitterSpaceChannel> noticeTwitterSpaceChannels;
                         if ((noticeTwitterSpaceChannels = db.NoticeTwitterSpaceChannel.Where(x => x.GuildId == guild.Id)).Any())
                             db.NoticeTwitterSpaceChannel.RemoveRange(noticeTwitterSpaceChannels);
+
+                        IEnumerable<NoticeTwitCastingStreamChannel> noticeTwitCastingStreamChannels;
+                        if ((noticeTwitCastingStreamChannels = db.NoticeTwitCastingStreamChannels.Where(x => x.GuildId == guild.Id)).Any())
+                            db.NoticeTwitCastingStreamChannels.RemoveRange(noticeTwitCastingStreamChannels);
+
+                        IEnumerable<NoticeTwitchStreamChannel> NoticeTwitchStreamChannels;
+                        if ((NoticeTwitchStreamChannels = db.NoticeTwitchStreamChannels.Where(x => x.GuildId == guild.Id)).Any())
+                            db.NoticeTwitchStreamChannels.RemoveRange(NoticeTwitchStreamChannels);
 
                         IEnumerable<NoticeYoutubeStreamChannel> noticeYoutubeStreamChannels;
                         if ((noticeYoutubeStreamChannels = db.NoticeYoutubeStreamChannel.Where(x => x.GuildId == guild.Id)).Any())
@@ -305,10 +319,7 @@ namespace Discord_Stream_Notify_Bot
             //https://blog.darkthread.net/blog/polly/
             //HandleTransientHttpError 包含 5xx 及 408 錯誤
             interactionServices.AddHttpClient<DiscordWebhookClient>();
-            interactionServices.AddHttpClient<TwitterClient>()
-                .AddPolicyHandler(HttpPolicyExtensions
-                    .HandleTransientHttpError()
-                    .RetryAsync(3));
+            interactionServices.AddHttpClient<TwitterClient>();
             interactionServices.AddHttpClient<TwitCastingClient>()
                 .AddPolicyHandler(HttpPolicyExtensions
                     .HandleTransientHttpError()
@@ -335,10 +346,6 @@ namespace Discord_Stream_Notify_Bot
                 }));
 
             commandServices.AddHttpClient<DiscordWebhookClient>();
-            commandServices.AddHttpClient<TwitterClient>()
-                .AddPolicyHandler(HttpPolicyExtensions
-                    .HandleTransientHttpError()
-                    .RetryAsync(3));
 
             commandServices.LoadCommandFrom(Assembly.GetAssembly(typeof(CommandHandler)));
             IServiceProvider service = commandServices.BuildServiceProvider();
@@ -348,10 +355,10 @@ namespace Discord_Stream_Notify_Bot
             #region 註冊互動指令
             try
             {
-                InteractionService interactionService = iService.GetService<InteractionService>();
                 var commandCount = (await RedisDb.StringGetSetAsync("discord_stream_bot:command_count", iService.GetService<InteractionHandler>().CommandCount)).ToString();
                 if (commandCount != iService.GetService<InteractionHandler>().CommandCount.ToString())
                 {
+                    InteractionService interactionService = iService.GetService<InteractionService>();
 #if DEBUG
                     if (botConfig.TestSlashCommandGuildId == 0 || client.GetGuild(botConfig.TestSlashCommandGuildId) == null)
                         Log.Warn("未設定測試Slash指令的伺服器或伺服器不存在，略過");
@@ -383,7 +390,7 @@ namespace Discord_Stream_Notify_Bot
                         {
                             foreach (var item in interactionService.Modules.Where((x) => x.Preconditions.Any((x) => x is Interaction.Attribute.RequireGuildAttribute)))
                             {
-                                var guildId = ((Interaction.Attribute.RequireGuildAttribute)item.Preconditions.FirstOrDefault((x) => x is Interaction.Attribute.RequireGuildAttribute)).GuildId;
+                                var guildId = ((Interaction.Attribute.RequireGuildAttribute)item.Preconditions.Single((x) => x is Interaction.Attribute.RequireGuildAttribute)).GuildId;
                                 var guild = client.GetGuild(guildId.Value);
 
                                 if (guild == null)
@@ -422,8 +429,11 @@ namespace Discord_Stream_Notify_Bot
             }
             #endregion
 
+            // 因為會用到 DiscordWebhookClient Service，所以沒辦法往上移動到 Region 內
             client.JoinedGuild += (guild) =>
             {
+                Log.Info($"加入伺服器: {guild.Name}");
+
                 using (var db = DataBase.MainDbContext.GetDbContext())
                 {
                     if (!db.GuildConfig.Any(x => x.GuildId == guild.Id))
