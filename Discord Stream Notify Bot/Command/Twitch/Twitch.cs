@@ -132,6 +132,26 @@ namespace Discord_Stream_Notify_Bot.Command.Twitch
 
         [RequireContext(ContextType.DM)]
         [RequireOwner]
+        [Command("CreateEventSubSubscription")]
+        [Summary("建立事件訂閱頻道")]
+        [CommandExample("174268844")]
+        [Alias("cess")]
+        public async Task CreateEventSubSubscriptionAsync(string broadcasterUserId)
+        {
+            await Context.Channel.TriggerTypingAsync();
+
+            if (await _service.CreateEventSubSubscriptionAsync(broadcasterUserId))
+            {
+                await Context.Channel.SendConfirmAsync($"已註冊圖奇事件通知: {broadcasterUserId}");
+            }
+            else
+            {
+                await Context.Channel.SendErrorAsync($"圖奇事件通知註冊失敗");
+            }
+        }
+
+        [RequireContext(ContextType.DM)]
+        [RequireOwner]
         [Command("TwitchGetLatestVOD")]
         [Summary("取得 Twitch 頻道最新的 VOD 資訊")]
         [CommandExample("https://twitch.tv/998rrr")]

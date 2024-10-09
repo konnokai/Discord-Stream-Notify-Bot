@@ -405,19 +405,9 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                                 }
 
 #if RELEASE
-                                try
+                                if (await CreateEventSubSubscriptionAsync(stream.UserId))
                                 {
-                                    await TwitchApi.Value.Helix.EventSub.CreateEventSubSubscriptionAsync("channel.update", "2", new() { { "broadcaster_user_id", stream.UserId } },
-                                          EventSubTransportMethod.Webhook, webhookCallback: $"https://{_apiServerUrl}/TwitchWebHooks", webhookSecret: _twitchWebHookSecret);
-
-                                    await TwitchApi.Value.Helix.EventSub.CreateEventSubSubscriptionAsync("stream.offline", "1", new() { { "broadcaster_user_id", stream.UserId } },
-                                          EventSubTransportMethod.Webhook, webhookCallback: $"https://{_apiServerUrl}/TwitchWebHooks", webhookSecret: _twitchWebHookSecret);
-
                                     Log.Info($"已註冊 Twitch WebHook: {twitchSpider.UserId} ({twitchSpider.UserName})");
-                                }
-                                catch (Exception ex)
-                                {
-                                    Log.Error(ex, $"註冊 Twitch WebHook 失敗，也許是已經註冊過了?");
                                 }
 #endif
                             }
@@ -443,6 +433,26 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
             catch (Exception ex) { Log.Error(ex, "TwitchService-Timer"); }
             finally { isRuning = false; }
 
+        }
+
+        internal async Task<bool> CreateEventSubSubscriptionAsync(string broadcasterUserId)
+        {
+            try
+            {
+                await TwitchApi.Value.Helix.EventSub.CreateEventSubSubscriptionAsync("channel.update", "2", new() { { "broadcaster_user_id", broadcasterUserId } },
+                      EventSubTransportMethod.Webhook, webhookCallback: $"https://{_apiServerUrl}/TwitchWebHooks", webhookSecret: _twitchWebHookSecret);
+
+                await TwitchApi.Value.Helix.EventSub.CreateEventSubSubscriptionAsync("stream.offline", "1", new() { { "broadcaster_user_id", broadcasterUserId } },
+                      EventSubTransportMethod.Webhook, webhookCallback: $"https://{_apiServerUrl}/TwitchWebHooks", webhookSecret: _twitchWebHookSecret);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, $"註冊 Twitch WebHook 失敗，也許是已經註冊過了?");
+            }
+
+            return false;
         }
 
         internal async Task SendStreamMessageAsync(string twitchUserId, Embed embed, NoticeType noticeType)
