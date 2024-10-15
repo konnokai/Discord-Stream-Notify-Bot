@@ -5,8 +5,6 @@ using Discord_Stream_Notify_Bot.Interaction;
 using Dorssel.Utilities;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Concurrent;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using TwitchLib.Api;
 using TwitchLib.Api.Core.Enums;
@@ -388,7 +386,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
 
                             embedBuilder.AddField("開始時間", twitchStream.StreamStartAt.ConvertDateTimeToDiscordMarkdown());
 
-                            if (twitchSpider.IsRecord && RecordTwitch(twitchStream))
+                            if (twitchSpider.IsRecord && await RecordTwitchAsync(twitchStream))
                                 embedBuilder.WithRecordColor();
                             else
                                 embedBuilder.WithOkColor();
@@ -553,46 +551,24 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
 #endif
         }
 
-        private bool RecordTwitch(TwitchStream twitchStream)
+        private async Task<bool> RecordTwitchAsync(TwitchStream twitchStream)
         {
             Log.Info($"{twitchStream.UserName} ({twitchStream.StreamId}): {twitchStream.StreamTitle}");
 
-            try
+            if (Program.Redis != null)
             {
-                if (!Directory.Exists(twitchRecordPath))
-                    Directory.CreateDirectory(twitchRecordPath);
-            }
-            catch (Exception ex)
-            {
-                Log.Error($"Twitch 保存路徑不存在且不可建立: {twitchRecordPath}");
-                Log.Error($"更改保存路徑至 Data 資料夾: {Program.GetDataFilePath("")}");
-                Log.Error(ex.ToString());
-
-                twitchRecordPath = Program.GetDataFilePath("");
-            }
-
-            string procArgs = $"streamlink --twitch-disable-ads https://twitch.tv/{twitchStream.UserLogin} best --output \"{twitchRecordPath}[{twitchStream.UserLogin}]{twitchStream.StreamStartAt:yyyyMMdd} - {twitchStream.StreamId}.ts\"";
-            if (!string.IsNullOrEmpty(_twitchOAuthToken))
-                procArgs += $" \"--twitch-api-header=Authorization=OAuth {_twitchOAuthToken}\"";
-
-            try
-            {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) Process.Start("tmux", $"new-window -d -n \"Twitch {twitchStream.UserLogin}\" {procArgs}");
-                else Process.Start(new ProcessStartInfo()
+                if (await Program.RedisSub.PublishAsync(new RedisChannel("youtube.record", RedisChannel.PatternMode.Literal), twitchStream.UserLogin) != 0)
                 {
-                    FileName = "streamlink",
-                    Arguments = procArgs.Replace("streamlink", ""),
-                    CreateNoWindow = false,
-                    UseShellExecute = true
-                });
+                    Log.Info($"已發送 Twitch 錄影請求: {twitchStream.UserLogin}");
+                    return true;
+                }
+                else
+                {
+                    Log.Warn($"Redis Sub 頻道不存在，請開啟錄影工具: {twitchStream.UserLogin}");
+                }
+            }
 
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "RecordTwitch 失敗，請確認是否已安裝 StreamLink");
-                return false;
-            }
+            return false;
         }
 
         #region TwitchAPI

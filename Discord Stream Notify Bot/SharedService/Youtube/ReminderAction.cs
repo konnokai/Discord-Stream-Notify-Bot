@@ -173,10 +173,13 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                 {
                                     if (await Program.RedisSub.PublishAsync(new RedisChannel("youtube.record", RedisChannel.PatternMode.Literal), streamVideo.VideoId) != 0)
                                     {
-                                        Log.Info($"已發送錄影請求: {streamVideo.VideoId}");
+                                        Log.Info($"已發送 YouTube 錄影請求: {streamVideo.VideoId}");
                                         isRecord = true;
                                     }
-                                    else Log.Warn($"Redis Sub頻道不存在，請開啟錄影工具: {streamVideo.VideoId}");
+                                    else
+                                    {
+                                        Log.Warn($"Redis Sub 頻道不存在，請開啟錄影工具: {streamVideo.VideoId}");
+                                    }
                                 }
                             }
                         }
