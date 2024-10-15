@@ -75,15 +75,16 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
         public async Task AddChannel([Summary("頻道網址")] string twitchUrl,
             [Summary("發送通知的頻道"), ChannelTypes(ChannelType.Text, ChannelType.News)] IChannel channel)
         {
+            if (!_service.IsEnable)
+            {
+                await Context.Interaction.SendErrorAsync("此 Bot 的 Twitch 功能已關閉，請向 Bot 擁有者確認").ConfigureAwait(false);
+                return;
+            }
+
+            await DeferAsync(true).ConfigureAwait(false);
+
             try
             {
-                if (!_service.IsEnable)
-                {
-                    await Context.Interaction.SendErrorAsync("此 Bot 的 Twitch 功能已關閉，請向 Bot 擁有者確認").ConfigureAwait(false);
-                    return;
-                }
-
-                await DeferAsync(true).ConfigureAwait(false);
 
                 var textChannel = channel as IGuildChannel;
 

@@ -242,7 +242,7 @@ namespace Discord_Stream_Notify_Bot.Interaction
                 {
                     return di.RespondAsync(embed: new EmbedBuilder().WithErrorColor().WithDescription(des).Build(), ephemeral: ephemeral);
                 }
-                catch (Exception ex) when (ex.Message .ToLower().Contains("cannot respond twice to the same interaction"))
+                catch (Exception ex) when (ex.Message.ToLower().Contains("cannot respond twice to the same interaction"))
                 {
                     return di.FollowupAsync(embed: new EmbedBuilder().WithErrorColor().WithDescription(des).Build(), ephemeral: ephemeral);
                 }
