@@ -447,7 +447,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
             }
             catch (Exception ex)
             {
-                Log.Error(ex, $"註冊 Twitch WebHook 失敗，也許是已經註冊過了?");
+                Log.Error(ex, $"註冊 {broadcasterUserId} 的 Twitch WebHook 失敗，也許是已經註冊過了?");
             }
 
             return false;

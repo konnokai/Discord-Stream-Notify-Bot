@@ -75,63 +75,71 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
         public async Task AddChannel([Summary("頻道網址")] string twitchUrl,
             [Summary("發送通知的頻道"), ChannelTypes(ChannelType.Text, ChannelType.News)] IChannel channel)
         {
-            if (!_service.IsEnable)
+            try
             {
-                await Context.Interaction.SendErrorAsync("此 Bot 的 Twitch 功能已關閉，請向 Bot 擁有者確認").ConfigureAwait(false);
-                return;
-            }
-
-            await DeferAsync(true).ConfigureAwait(false);
-
-            var textChannel = channel as IGuildChannel;
-
-            var permissions = Context.Guild.GetUser(_client.CurrentUser.Id).GetPermissions(textChannel);
-            if (!permissions.ViewChannel || !permissions.SendMessages)
-            {
-                await Context.Interaction.SendErrorAsync($"我在 `{textChannel}` 沒有 `讀取&編輯頻道` 的權限，請給予權限後再次執行本指令", true);
-                return;
-            }
-
-            if (!permissions.EmbedLinks)
-            {
-                await Context.Interaction.SendErrorAsync($"我在 `{textChannel}` 沒有 `嵌入連結` 的權限，請給予權限後再次執行本指令", true);
-                return;
-            }
-
-            var userData = await _service.GetUserAsync(twitchUserLogin: _service.GetUserLoginByUrl(twitchUrl));
-            if (userData == null)
-            {
-                await Context.Interaction.SendErrorAsync("錯誤，Twitch 使用者資料獲取失敗\n" +
-                        "請確認網址是否正確，若正確請向 Bot 擁有者回報", true);
-                return;
-            }
-
-            using (var db = DataBase.MainDbContext.GetDbContext())
-            {
-                await CheckIsFirstSetNoticeAndSendWarningMessageAsync(db);
-
-                var noticeTwitchStreamChannel = db.NoticeTwitchStreamChannels.FirstOrDefault((x) => x.GuildId == Context.Guild.Id && x.NoticeTwitchUserId == userData.Id);
-                if (noticeTwitchStreamChannel != null)
+                if (!_service.IsEnable)
                 {
-                    if (await PromptUserConfirmAsync($"`{userData.DisplayName}` 已在直播通知清單內，是否覆蓋設定?").ConfigureAwait(false))
+                    await Context.Interaction.SendErrorAsync("此 Bot 的 Twitch 功能已關閉，請向 Bot 擁有者確認").ConfigureAwait(false);
+                    return;
+                }
+
+                await DeferAsync(true).ConfigureAwait(false);
+
+                var textChannel = channel as IGuildChannel;
+
+                var permissions = Context.Guild.GetUser(_client.CurrentUser.Id).GetPermissions(textChannel);
+                if (!permissions.ViewChannel || !permissions.SendMessages)
+                {
+                    await Context.Interaction.SendErrorAsync($"我在 `{textChannel}` 沒有 `讀取&編輯頻道` 的權限，請給予權限後再次執行本指令", true);
+                    return;
+                }
+
+                if (!permissions.EmbedLinks)
+                {
+                    await Context.Interaction.SendErrorAsync($"我在 `{textChannel}` 沒有 `嵌入連結` 的權限，請給予權限後再次執行本指令", true);
+                    return;
+                }
+
+                var userData = await _service.GetUserAsync(twitchUserLogin: _service.GetUserLoginByUrl(twitchUrl));
+                if (userData == null)
+                {
+                    await Context.Interaction.SendErrorAsync("錯誤，Twitch 使用者資料獲取失敗\n" +
+                            "請確認網址是否正確，若正確請向 Bot 擁有者回報", true);
+                    return;
+                }
+
+                using (var db = DataBase.MainDbContext.GetDbContext())
+                {
+                    await CheckIsFirstSetNoticeAndSendWarningMessageAsync(db);
+
+                    var noticeTwitchStreamChannel = db.NoticeTwitchStreamChannels.FirstOrDefault((x) => x.GuildId == Context.Guild.Id && x.NoticeTwitchUserId == userData.Id);
+                    if (noticeTwitchStreamChannel != null)
                     {
-                        noticeTwitchStreamChannel.DiscordChannelId = textChannel.Id;
-                        db.NoticeTwitchStreamChannels.Update(noticeTwitchStreamChannel);
-                        await Context.Interaction.SendConfirmAsync($"已將 `{userData.DisplayName}` 的通知頻道變更至: {textChannel}", true, true).ConfigureAwait(false);
+                        if (await PromptUserConfirmAsync($"`{userData.DisplayName}` 已在直播通知清單內，是否覆蓋設定?").ConfigureAwait(false))
+                        {
+                            noticeTwitchStreamChannel.DiscordChannelId = textChannel.Id;
+                            db.NoticeTwitchStreamChannels.Update(noticeTwitchStreamChannel);
+                            await Context.Interaction.SendConfirmAsync($"已將 `{userData.DisplayName}` 的通知頻道變更至: {textChannel}", true, true).ConfigureAwait(false);
+                        }
+                        else return;
                     }
-                    else return;
-                }
-                else
-                {
-                    string addString = "";
-                    if (!db.TwitchSpider.Any((x) => x.UserId == userData.Id))
-                        addString += $"\n\n(注意: 該頻道未加入爬蟲清單\n如長時間無通知請使用 `/help get-command-help twitch-spider add` 查看說明並加入爬蟲)";
+                    else
+                    {
+                        string addString = "";
+                        if (!db.TwitchSpider.Any((x) => x.UserId == userData.Id))
+                            addString += $"\n\n(注意: 該頻道未加入爬蟲清單\n如長時間無通知請使用 `/help get-command-help twitch-spider add` 查看說明並加入爬蟲)";
 
-                    db.NoticeTwitchStreamChannels.Add(new NoticeTwitchStreamChannel() { GuildId = Context.Guild.Id, DiscordChannelId = textChannel.Id, NoticeTwitchUserId = userData.Id });
-                    await Context.Interaction.SendConfirmAsync($"已將 `{userData.DisplayName}` 加入到 Twitch 通知頻道清單內{addString}", true, true).ConfigureAwait(false);
-                }
+                        db.NoticeTwitchStreamChannels.Add(new NoticeTwitchStreamChannel() { GuildId = Context.Guild.Id, DiscordChannelId = textChannel.Id, NoticeTwitchUserId = userData.Id });
+                        await Context.Interaction.SendConfirmAsync($"已將 `{userData.DisplayName}` 加入到 Twitch 通知頻道清單內{addString}", true, true).ConfigureAwait(false);
+                    }
 
-                db.SaveChanges();
+                    db.SaveChanges();
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, $"Twitch Add Error: {twitchUrl}");
+                await Context.Interaction.SendErrorAsync("新增失敗，請向 Bot 擁有者回報", true);
             }
         }
 
