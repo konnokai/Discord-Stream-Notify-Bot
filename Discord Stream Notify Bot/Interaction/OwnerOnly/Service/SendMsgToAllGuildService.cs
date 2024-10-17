@@ -1,5 +1,4 @@
 ﻿using Discord.Interactions;
-using Discord_Stream_Notify_Bot.Command;
 using Polly;
 using System.Net;
 
@@ -36,7 +35,6 @@ namespace Discord_Stream_Notify_Bot.Interaction.OwnerOnly.Service
         private readonly DiscordSocketClient _client;
         private ButtonCheckData checkData;
         private bool isSending = false;
-        private ISocketMessageChannel sendResultTextChannel;
 
         public SendMsgToAllGuildService(DiscordSocketClient discordSocketClient)
         {
@@ -97,8 +95,6 @@ namespace Discord_Stream_Notify_Bot.Interaction.OwnerOnly.Service
 
                 if (button.Data.CustomId.EndsWith("yes"))
                 {
-                    sendResultTextChannel = button.Channel;
-
                     ThreadPool.QueueUserWorkItem(async (state) => await StartSendMessage());
                 }
                 else
@@ -198,7 +194,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.OwnerOnly.Service
                     }
 
                     db.SaveChanges();
-                    await sendResultTextChannel.SendConfirmAsync("已於全球訊息專用通知頻道發送完成");
+                    Log.Info("已於全球訊息專用通知頻道發送完成");
                 }
                 else if (checkData.NoticeType == NoticeType.Sponsor)
                 {
@@ -292,7 +288,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.OwnerOnly.Service
                 }
 
                 db.SaveChanges();
-                await sendResultTextChannel.SendConfirmAsync("已於 YT 通知頻道發送完成");
+                Log.Info("已於 YT 通知頻道發送完成");
 
                 try
                 {
@@ -376,7 +372,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.OwnerOnly.Service
                 }
 
                 db.SaveChanges();
-                await sendResultTextChannel.SendConfirmAsync("已於 Twitch 通知頻道發送完成");
+                Log.Info("已於 Twitch 通知頻道發送完成");
 
                 try
                 {
@@ -463,7 +459,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.OwnerOnly.Service
                 }
 
                 db.SaveChanges();
-                await sendResultTextChannel.SendConfirmAsync("已於會限驗證紀錄頻道發送完成");
+                Log.Info("已於會限驗證紀錄頻道發送完成");
 
                 checkData = null;
                 isSending = false;
