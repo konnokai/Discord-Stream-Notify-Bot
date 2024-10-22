@@ -152,8 +152,12 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                 }
                 else
                 {
-                    twitchStream = twitchStream ?? new();
-                    twitchStream.StreamTitle = video.Title;
+                    twitchStream = twitchStream ?? new()
+                    {
+                        // 這個會有問題，因為圖奇的 VOD 標題會直接以開播當下的標題為準，中途變更的話也不會改
+                        // 所以只有在 Redis 抓不到資料的時候再設定標題上去，否則以 Redis 最新的資料為準
+                        StreamTitle = video.Title,
+                    };
                     twitchStream.StreamStartAt = DateTime.Parse(video.CreatedAt);
 
                     createAt = DateTime.Parse(video.CreatedAt);
