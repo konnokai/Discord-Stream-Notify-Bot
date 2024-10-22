@@ -225,8 +225,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                     else if (ex.Message.ToLower().Contains("notfound"))
                                     {
                                         Log.Warn($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {member.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 的會限資格取得失敗");
-                                        Log.Warn($"{guildYoutubeMemberConfig.MemberCheckChannelTitle} ({guildYoutubeMemberConfig.MemberCheckChannelId}): {guildYoutubeMemberConfig.MemberCheckVideoId}已刪除影片");
-                                        await Program.ApplicatonOwner.Id.SendErrorMessageAsync(_client, $"{guildYoutubeMemberConfig.GuildId} - {member.UserId} 會限資格取得失敗: {guildYoutubeMemberConfig.MemberCheckVideoId}已刪除影片", logChannel);
+                                        Log.Warn($"{guildYoutubeMemberConfig.MemberCheckChannelTitle} ({guildYoutubeMemberConfig.MemberCheckChannelId}): {guildYoutubeMemberConfig.MemberCheckVideoId} 已刪除影片");
+                                        await Program.ApplicatonOwner.Id.SendErrorMessageAsync(_client, $"{guildYoutubeMemberConfig.GuildId} - {member.UserId} 會限資格取得失敗: {guildYoutubeMemberConfig.MemberCheckVideoId} 已刪除影片", logChannel);
 
                                         guildYoutubeMemberConfig.MemberCheckVideoId = "-";
                                         db.GuildYoutubeMemberConfig.Update(guildYoutubeMemberConfig);
@@ -251,10 +251,16 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                             Log.Warn($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {member.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 該會員已離開伺服器");
                                             continue;
                                         }
+                                        catch (Discord.Net.HttpException discordEx) when (discordEx.DiscordCode == DiscordErrorCode.MissingPermissions)
+                                        {
+                                            Log.Warn($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {member.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 缺少權限，無法移除用戶組");
+                                            await logChannel.SendErrorMessageAsync(_client, member.UserId, guildYoutubeMemberConfig.MemberCheckChannelTitle, "小幫手缺少 \"管理身分組\" 權限，無法移除用戶組\n" +
+                                                "請管理員手動移除並補上小幫手的權限");
+                                            continue;
+                                        }
                                         catch (Exception ex2)
                                         {
-                                            Log.Error($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {member.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 無法移除用戶組");
-                                            Log.Error(ex2.ToString());
+                                            Log.Error(ex2, $"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {member.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 無法移除用戶組");
                                         }
 
                                         if (isOldCheck)

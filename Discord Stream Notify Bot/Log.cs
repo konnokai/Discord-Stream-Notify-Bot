@@ -129,8 +129,8 @@ public static class Log
         if (message.Exception != null && 
             message.Message != null && 
             !message.Message.Contains("TYPING_START") && 
-            (message.Exception is not GatewayReconnectException ||
-            message.Exception is not TaskCanceledException ||
+            (message.Exception is not GatewayReconnectException &&
+            message.Exception is not TaskCanceledException &&
             message.Exception is not JsonSerializationException))
         {
             consoleColor = ConsoleColor.DarkRed;
