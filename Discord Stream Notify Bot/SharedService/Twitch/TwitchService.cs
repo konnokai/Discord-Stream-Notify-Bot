@@ -561,7 +561,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
 
             if (Program.Redis != null)
             {
-                if (await Program.RedisSub.PublishAsync(new RedisChannel("youtube.record", RedisChannel.PatternMode.Literal), twitchStream.UserLogin) != 0)
+                if (await Program.RedisSub.PublishAsync(new RedisChannel("twitch.record", RedisChannel.PatternMode.Literal), twitchStream.UserLogin) != 0)
                 {
                     Log.Info($"已發送 Twitch 錄影請求: {twitchStream.UserLogin}");
                     return true;
