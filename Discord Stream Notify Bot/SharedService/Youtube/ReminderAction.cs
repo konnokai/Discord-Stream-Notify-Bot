@@ -402,8 +402,36 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 Log.New($"發送 YouTube 通知 ({noticeYoutubeStreamChannels.Count} / {noticeType}): {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
 
 #if DEBUG || DEBUG_DONTREGISTERCOMMAND
-                return;
+                                return;
 #endif
+
+                Image? coverImage = null;
+                if (noticeType == NoticeType.NewStream && noticeYoutubeStreamChannels.Any((x) => x.IsCreateEventForNewStream))
+                {
+                    Log.Info($"YouTube 通知 ({streamVideo.ChannelId}) | 嘗試下載封面");
+                    try
+                    {
+                        var stream = await Policy.Handle<TimeoutException>()
+                            .Or<Discord.Net.HttpException>((httpEx) => ((int)httpEx.HttpCode).ToString().StartsWith("50"))
+                            .WaitAndRetryAsync(3, (retryAttempt) =>
+                            {
+                                var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
+                                Log.Warn($"YouTube 通知 ({streamVideo.ChannelId}) | 封面下載失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
+                                return timeSpan;
+                            })
+                            .ExecuteAsync(async () =>
+                            {
+                                HttpClient httpClient = new HttpClient();
+                                return await httpClient.GetStreamAsync(embed.Image.Value.Url);
+                            });
+
+                        coverImage = new Image(stream);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error(ex, $"YouTube 通知 ({streamVideo.ChannelId}) | 封面下載失敗");
+                    }
+                }
 
                 foreach (var item in noticeYoutubeStreamChannels)
                 {
@@ -469,31 +497,72 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                     // ignore
                                 }
                             });
+
+                        // 如果是新直播的話就建立活動
+                        try
+                        {
+                            if (noticeType == NoticeType.NewStream && item.IsCreateEventForNewStream)
+                            {
+                                if (guild.GetUser(_client.CurrentUser.Id).GuildPermissions.ManageEvents)
+                                {
+                                    Log.Warn($"YouTube 通知 ({item.YouTubeChannelId}) | {item.GuildId} / {channel.Id} 嘗試建立活動");
+                                    await Policy.Handle<TimeoutException>()
+                                        .Or<Discord.Net.HttpException>((httpEx) => ((int)httpEx.HttpCode).ToString().StartsWith("50"))
+                                        .WaitAndRetryAsync(3, (retryAttempt) =>
+                                        {
+                                            var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
+                                            Log.Warn($"YouTube 通知 ({item.YouTubeChannelId}) | {item.GuildId} / {channel.Id} 建立活動失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
+                                            return timeSpan;
+                                        })
+                                        .ExecuteAsync(async () =>
+                                        {
+                                            await guild.CreateEventAsync(streamVideo.VideoTitle,
+                                                streamVideo.ScheduledStartTime.ToUniversalTime(),
+                                                GuildScheduledEventType.External,
+                                                endTime: streamVideo.ScheduledStartTime.ToUniversalTime().AddHours(1),
+                                                location: $"https://youtube.com/watch?v={streamVideo.VideoId}",
+                                                coverImage: coverImage);
+                                        });
+                                }
+                                else
+                                {
+                                    Log.Warn($"YouTube 通知 ({item.YouTubeChannelId}) | {item.GuildId} / {channel.Id} 無權限可建立活動，關閉此功能");
+                                    item.IsCreateEventForNewStream = false;
+                                    db.NoticeYoutubeStreamChannel.Update(item);
+                                    db.SaveChanges();
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Error(ex, $"YouTube 通知 ({item.YouTubeChannelId}) | {item.GuildId} / {channel.Id} 建立活動失敗");
+                        }
                     }
                     catch (Discord.Net.HttpException httpEx)
                     {
                         if (httpEx.DiscordCode.HasValue && (httpEx.DiscordCode.Value == DiscordErrorCode.InsufficientPermissions || httpEx.DiscordCode.Value == DiscordErrorCode.MissingPermissions))
                         {
-                            Log.Warn($"YouTube 通知 - 遺失權限 {item.GuildId} / {item.DiscordNoticeVideoChannelId}");
+                            Log.Warn($"YouTube 通知 ({item.YouTubeChannelId}) | {item.GuildId} / {item.DiscordNoticeVideoChannelId} 遺失權限");
                             db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where((x) => x.DiscordNoticeVideoChannelId == item.DiscordNoticeVideoChannelId));
                             db.SaveChanges();
                         }
                         else if (((int)httpEx.HttpCode).ToString().StartsWith("50"))
                         {
-                            Log.Warn($"YouTube 通知 - Discord 50X 錯誤: {httpEx.HttpCode}");
+                            Log.Warn($"YouTube 通知 ({item.YouTubeChannelId}) | {item.GuildId} / {item.DiscordNoticeVideoChannelId} Discord 50X 錯誤: {httpEx.HttpCode}");
                         }
                         else
                         {
-                            Log.Error(httpEx, $"YouTube 通知 - Discord 未知錯誤 {item.GuildId} / {item.DiscordNoticeVideoChannelId}");
+
+                            Log.Error(httpEx, $"YouTube 通知 ({item.YouTubeChannelId}) | {item.GuildId} / {item.DiscordNoticeVideoChannelId} Discord 未知錯誤");
                         }
                     }
                     catch (TimeoutException)
                     {
-                        Log.Warn($"YouTube 通知 - Timeout {item.GuildId} / {item.DiscordNoticeVideoChannelId}");
+                        Log.Warn($"YouTube 通知 ({item.YouTubeChannelId}) | {item.GuildId} / {item.DiscordNoticeVideoChannelId} Timeout");
                     }
                     catch (Exception ex)
                     {
-                        Log.Error(ex, $"YouTube 通知 - 未知錯誤 {item.GuildId} / {item.DiscordNoticeVideoChannelId}");
+                        Log.Error(ex, $"YouTube 通知 ({item.YouTubeChannelId}) | {item.GuildId} / {item.DiscordNoticeVideoChannelId} 未知錯誤");
                     }
                 }
             }

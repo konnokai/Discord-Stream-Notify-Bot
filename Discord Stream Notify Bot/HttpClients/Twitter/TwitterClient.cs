@@ -2,12 +2,9 @@
 using HtmlAgilityPack;
 using Newtonsoft.Json.Linq;
 using Polly;
-using System;
 using System.Net;
-using System.Net.Http;
 using System.Text;
 using System.Text.RegularExpressions;
-using TwitchLib.PubSub.Models.Responses;
 
 namespace Discord_Stream_Notify_Bot.HttpClients
 {
@@ -286,7 +283,7 @@ namespace Discord_Stream_Notify_Bot.HttpClients
                         })
                         .ExecuteAsync(async () =>
                         {
-                           return await httpClient.GetStringAsync($"https://twitter.com/i/api/fleets/v1/avatar_content?user_ids={string.Join(',', usersId)}&only_spaces=true");
+                            return await httpClient.GetStringAsync($"https://twitter.com/i/api/fleets/v1/avatar_content?user_ids={string.Join(',', usersId)}&only_spaces=true");
                         });
 
                     if (result.Contains("{\"users\":{}")) // 空的代表查詢的Id都沒有開Space;

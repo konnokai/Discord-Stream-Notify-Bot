@@ -126,9 +126,9 @@ public static class Log
         WriteLogToFile(LogType.Verb, message.Message);
 #endif
 
-        if (message.Exception != null && 
-            message.Message != null && 
-            !message.Message.Contains("TYPING_START") && 
+        if (message.Exception != null &&
+            message.Message != null &&
+            !message.Message.Contains("TYPING_START") &&
             (message.Exception is not GatewayReconnectException &&
             message.Exception is not TaskCanceledException &&
             message.Exception is not JsonSerializationException))

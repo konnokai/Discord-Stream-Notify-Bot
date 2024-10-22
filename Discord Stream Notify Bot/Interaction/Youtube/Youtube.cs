@@ -170,7 +170,105 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Message + "r\n" + ex.StackTrace);
+                Log.Error(ex, $"GetMemberOnlyPlayListAsync: {channelUrl}");
+                await Context.Interaction.SendErrorAsync("不明的錯誤，請向 Bot 擁有者回報", true);
+            }
+        }
+
+        [RequireContext(ContextType.Guild)]
+        [RequireBotPermission(GuildPermission.ManageEvents)]
+        [RequireUserPermission(GuildPermission.ManageEvents)]
+        [DefaultMemberPermissions(GuildPermission.ManageEvents)]
+        [SlashCommand("toggle-create-event", "當收到新直播通知時同時在 Discord 上建立該直播的新活動")]
+        [CommandSummary("注意: 此指令依賴新直播通知，若 NewStream 通知被關閉則無法建立活動")]
+        public async Task ToggleCreateEvent([Summary("頻道名稱"), Autocomplete(typeof(GuildNoticeYoutubeChannelIdAutocompleteHandler))] string channelName)
+        {
+            await DeferAsync(true);
+
+            try
+            {
+                string channelId = "";
+                try
+                {
+                    channelId = await _service.GetChannelIdAsync(channelName).ConfigureAwait(false);
+                }
+                catch (FormatException fex)
+                {
+                    await Context.Interaction.SendErrorAsync(fex.Message, true);
+                    return;
+                }
+                catch (ArgumentNullException)
+                {
+                    await Context.Interaction.SendErrorAsync("網址不可空白", true);
+                    return;
+                }
+
+                using var db = DataBase.MainDbContext.GetDbContext();
+                var noticeYoutubeStreamChannel = db.NoticeYoutubeStreamChannel.First((x) => x.GuildId == Context.Guild.Id && x.YouTubeChannelId == channelId);
+
+                //var channel = Context.Guild.GetTextChannel(noticeYoutubeStreamChannel.DiscordNoticeStreamChannelId);
+                //if (channel == null)
+                //{
+                //    await Context.Interaction.SendErrorAsync($"無法獲取 `{noticeYoutubeStreamChannel.YouTubeChannelId}` 所設定的通知頻道，請重新加入通知後重試", true);
+                //    db.NoticeYoutubeStreamChannel.Remove(noticeYoutubeStreamChannel);
+                //    db.SaveChanges();
+                //    return;
+                //}
+
+                // 不知道為啥 CreateEvents 權限歸類在頻道內，但明明這權限要從伺服器身分組那邊設定
+                // 故需要直接建立活動來驗證權限是否正常
+                //var permission = Context.Guild.GetUser(Context.Client.CurrentUser.Id).GetPermissions(channel);
+                //if (!permission.CreateEvents)
+                //{
+                //    await Context.Interaction.SendErrorAsync($"我在伺服器沒有 `建立 & 管理活動 ` 的權限，請給予權限後再次執行本指令", true);
+                //    return;
+                //}
+
+                // 經測試，只要有管理活動的權限就可以建立，不用另外去伺服器用戶組那邊開建立活動權限
+                //try
+                //{
+                //    var testEvent = await Context.Guild.CreateEventAsync("測試用活動",
+                //        DateTimeOffset.Now.AddHours(1),
+                //        GuildScheduledEventType.External,
+                //        endTime: DateTimeOffset.Now.AddHours(2),
+                //        location: "https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+                //    await testEvent.DeleteAsync();
+                //}
+                //catch (Discord.Net.HttpException httpEx) when (httpEx.DiscordCode == DiscordErrorCode.MissingPermissions)
+                //{
+                //    await Context.Interaction.SendErrorAsync($"我在伺服器沒有 `管理活動 ` 的權限，請給予權限後再次執行本指令", true);
+                //    return;
+                //}
+
+                if (!noticeYoutubeStreamChannel.IsCreateEventForNewStream && noticeYoutubeStreamChannel.NewStreamMessage == "-")
+                {
+                    if (await PromptUserConfirmAsync("開啟此功能需要同時開啟新待機所通知，是否開啟?"))
+                    {
+                        noticeYoutubeStreamChannel.NewStreamMessage = "";
+                    }
+                    else
+                    {
+                        return;
+                    }
+                }
+
+                noticeYoutubeStreamChannel.IsCreateEventForNewStream = !noticeYoutubeStreamChannel.IsCreateEventForNewStream;
+                db.NoticeYoutubeStreamChannel.Update(noticeYoutubeStreamChannel);
+                db.SaveChanges();
+
+                var channelTitle = db.GetYoutubeChannelTitleByChannelId(channelId);
+                if (noticeYoutubeStreamChannel.IsCreateEventForNewStream)
+                {
+                    await Context.Interaction.SendConfirmAsync($"將會於 `{channelTitle}` 建立新直播時一併在 Discord 建立新的活動", true, true);
+                }
+                else
+                {
+                    await Context.Interaction.SendConfirmAsync($"已關閉 `{channelTitle}` 的建立新活動功能", true, true);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "CreateEvent");
                 await Context.Interaction.SendErrorAsync("不明的錯誤，請向 Bot 擁有者回報", true);
             }
         }
@@ -181,7 +279,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
         [DefaultMemberPermissions(GuildPermission.ManageGuild)]
         [CommandSummary("設定伺服器橫幅使用指定頻道的最新影片(直播)縮圖\n" +
             "若未輸入頻道網址則關閉本設定\n\n" +
-            "Bot需要有管理伺服器權限\n" +
+            "Bot 需要有管理伺服器權限\n" +
             "且伺服器需有 Boost Lv2 才可使用本設定\n" +
             "(此功能依賴直播通知，請確保設定的頻道在兩大箱或是爬蟲清單內)")]
         [CommandExample("https://www.youtube.com/@998rrr")]
@@ -472,7 +570,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                 else
                 {
                     await Context.Interaction.SendErrorAsync($"找不到 `{channelId}` 的通知設定" +
-                        $"請先使用 `/youtube add {channelId}` 新增直播後再設定通知訊息" + 
+                        $"請先使用 `/youtube add {channelId}` 新增直播後再設定通知訊息" +
                         $"若已新增，請向 Bot 擁有者詢問", true).ConfigureAwait(false);
                 }
             }
@@ -573,8 +671,21 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                 else
                 {
                     string noticeTypeString = "", result = "";
-
                     message = message.Trim();
+
+                    if (noticeType == YoutubeStreamService.NoticeType.NewStream && message == "-" && noticeStreamChannel.IsCreateEventForNewStream)
+                    {
+                        if (await PromptUserConfirmAsync("已設定自動建立新活動，若關閉新待機所通知會導致此功能失效，是否繼續?"))
+                        {
+                            result = $"已關閉 `{channelTitle}` 的建立新活動功能\n";
+                            noticeStreamChannel.IsCreateEventForNewStream = false;
+                        }
+                        else
+                        {
+                            return;
+                        }
+                    }
+
                     switch (noticeType)
                     {
                         case YoutubeStreamService.NoticeType.NewStream:
@@ -608,11 +719,11 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
 
                     if (message == "-")
                     {
-                        result = $"已關閉 `{channelTitle}` 的 `{noticeTypeString}` 通知";
+                        result += $"已關閉 `{channelTitle}` 的 `{noticeTypeString}` 通知";
                     }
                     else if (message != "")
                     {
-                        result = $"已設定 `{channelTitle}` 的 `{noticeTypeString}` 通知訊息為:\n" +
+                        result += $"已設定 `{channelTitle}` 的 `{noticeTypeString}` 通知訊息為:\n" +
                                 $"{message}";
 
                         if (noticeType == YoutubeStreamService.NoticeType.End && !db.RecordYoutubeChannel.AsNoTracking().Any((x) => x.YoutubeChannelId == channelId))
