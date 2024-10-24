@@ -240,31 +240,46 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                 //    return;
                 //}
 
-                if (!noticeYoutubeStreamChannel.IsCreateEventForNewStream && noticeYoutubeStreamChannel.NewStreamMessage == "-")
-                {
-                    if (await PromptUserConfirmAsync("開啟此功能需要同時開啟新待機所通知，是否開啟?"))
-                    {
-                        noticeYoutubeStreamChannel.NewStreamMessage = "";
-                    }
-                    else
-                    {
-                        return;
-                    }
-                }
+                //if (!noticeYoutubeStreamChannel.IsCreateEventForNewStream && noticeYoutubeStreamChannel.NewStreamMessage == "-")
+                //{
+                //    if (await PromptUserConfirmAsync("開啟此功能需要同時開啟新待機所通知，是否開啟?"))
+                //    {
+                //        noticeYoutubeStreamChannel.NewStreamMessage = "";
+                //    }
+                //    else
+                //    {
+                //        return;
+                //    }
+                //}
 
                 noticeYoutubeStreamChannel.IsCreateEventForNewStream = !noticeYoutubeStreamChannel.IsCreateEventForNewStream;
                 db.NoticeYoutubeStreamChannel.Update(noticeYoutubeStreamChannel);
-                db.SaveChanges();
 
                 var channelTitle = db.GetYoutubeChannelTitleByChannelId(channelId);
                 if (noticeYoutubeStreamChannel.IsCreateEventForNewStream)
                 {
-                    await Context.Interaction.SendConfirmAsync($"將會於 `{channelTitle}` 建立新直播時一併在 Discord 建立新的活動", true, true);
+                    await Context.Interaction.SendConfirmAsync($"將會於 `{channelTitle}` 有新直播時在 Discord 上建立新的活動", true, true);
+
+                    if (noticeYoutubeStreamChannel.NewStreamMessage != "-")
+                    {
+                        try
+                        {
+                            if (await PromptUserConfirmAsync("是否要關閉 `新待機所` 通知，這樣新待機所就只會出現在 Discord 的活動上\n" +
+                                "(開始直播等相關通知還是會在原先設定的通知頻道上發送)"))
+                            {
+                                noticeYoutubeStreamChannel.NewStreamMessage = "-";
+                                await Context.Interaction.SendConfirmAsync($"已關閉 `{channelTitle}` 的 `新待機所` 通知", true, true);
+                            }
+                        }
+                        catch { }
+                    }
                 }
                 else
                 {
                     await Context.Interaction.SendConfirmAsync($"已關閉 `{channelTitle}` 的建立新活動功能", true, true);
                 }
+
+                db.SaveChanges();
             }
             catch (Exception ex)
             {
@@ -673,19 +688,6 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                     string noticeTypeString = "", result = "";
                     message = message.Trim();
 
-                    if (noticeType == YoutubeStreamService.NoticeType.NewStream && message == "-" && noticeStreamChannel.IsCreateEventForNewStream)
-                    {
-                        if (await PromptUserConfirmAsync("已設定自動建立新活動，若關閉新待機所通知會導致此功能失效，是否繼續?"))
-                        {
-                            result = $"已關閉 `{channelTitle}` 的建立新活動功能\n";
-                            noticeStreamChannel.IsCreateEventForNewStream = false;
-                        }
-                        else
-                        {
-                            return;
-                        }
-                    }
-
                     switch (noticeType)
                     {
                         case YoutubeStreamService.NoticeType.NewStream:
@@ -712,6 +714,19 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                             noticeStreamChannel.DeleteMessage = message;
                             noticeTypeString = "已刪除或私人化直播";
                             break;
+                    }
+
+                    if (noticeType == YoutubeStreamService.NoticeType.NewStream && message == "-" && !noticeStreamChannel.IsCreateEventForNewStream)
+                    {
+                        if (await PromptUserConfirmAsync("你可以啟用自動建立 Discord 活動來做為替換 `新待機所` 的通知方式，是否啟用?"))
+                        {
+                            result = $"將會於 `{channelTitle}` 有新直播時在 Discord 上建立新的活動\n";
+                            noticeStreamChannel.IsCreateEventForNewStream = true;
+                        }
+                        else
+                        {
+                            return;
+                        }
                     }
 
                     db.NoticeYoutubeStreamChannel.Update(noticeStreamChannel);

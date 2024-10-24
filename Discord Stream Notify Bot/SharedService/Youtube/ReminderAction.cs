@@ -408,7 +408,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 Image? coverImage = null;
                 if (noticeType == NoticeType.NewStream && noticeYoutubeStreamChannels.Any((x) => x.IsCreateEventForNewStream))
                 {
-                    Log.Info($"YouTube 通知 ({streamVideo.ChannelId}) | 嘗試下載封面");
+                    Log.Info($"YouTube 通知 ({streamVideo.ChannelId}) | 嘗試下載封面: {embed.Image.Value.Url}");
                     try
                     {
                         var stream = await Policy.Handle<TimeoutException>()
@@ -429,7 +429,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     }
                     catch (Exception ex)
                     {
-                        Log.Error(ex, $"YouTube 通知 ({streamVideo.ChannelId}) | 封面下載失敗");
+                        Log.Error(ex, $"YouTube 通知 ({streamVideo.ChannelId}) | 封面下載失敗，可能是找不到圖檔");
                     }
                 }
 
@@ -437,6 +437,79 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 {
                     try
                     {
+                        var guild = _client.GetGuild(item.GuildId);
+                        if (guild == null)
+                        {
+                            Log.Warn($"YouTube 通知 ({item.YouTubeChannelId}) | 找不到伺服器 {item.GuildId}");
+                            db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where((x) => x.GuildId == item.GuildId));
+                            db.SaveChanges();
+                            continue;
+                        }
+
+                        // 只有新影片會發到影片通知頻道，首播類的影片歸類在直播類型
+                        // 原則上 DiscordNoticeVideoChannelId 預設會跟 DiscordNoticeStreamChannelId 一樣，不該為空
+                        var channel = guild.GetTextChannel(noticeType == NoticeType.NewVideo ? item.DiscordNoticeVideoChannelId : item.DiscordNoticeStreamChannelId);
+                        if (channel == null) continue;
+
+                        // 如果是新直播的話就建立活動
+                        try
+                        {
+                            if (noticeType == NoticeType.NewStream && item.IsCreateEventForNewStream)
+                            {
+                                if (guild.GetUser(_client.CurrentUser.Id).GuildPermissions.ManageEvents)
+                                {
+                                    Log.Info($"YouTube 通知 ({item.YouTubeChannelId}) | {item.GuildId} 嘗試建立活動");
+                                    await Policy.Handle<TimeoutException>()
+                                        .Or<Discord.Net.HttpException>((httpEx) => ((int)httpEx.HttpCode).ToString().StartsWith("50"))
+                                        .WaitAndRetryAsync(3, (retryAttempt) =>
+                                        {
+                                            var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
+                                            Log.Warn($"YouTube 通知 ({item.YouTubeChannelId}) | {item.GuildId} 建立活動失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
+                                            return timeSpan;
+                                        })
+                                        .ExecuteAsync(async () =>
+                                        {
+                                            await guild.CreateEventAsync(streamVideo.VideoTitle,
+                                                streamVideo.ScheduledStartTime.ToUniversalTime(),
+                                                GuildScheduledEventType.External,
+                                                description: Format.Url(streamVideo.ChannelTitle, $"https://youtube.com/channel/{streamVideo.ChannelId}"),
+                                                endTime: streamVideo.ScheduledStartTime.ToUniversalTime().AddHours(1),
+                                                location: $"https://youtube.com/watch?v={streamVideo.VideoId}",
+                                                coverImage: coverImage);
+                                        });
+                                }
+                                else
+                                {
+                                    Log.Warn($"YouTube 通知 ({item.YouTubeChannelId}) | {item.GuildId} 無權限可建立活動，關閉此功能");
+                                    item.IsCreateEventForNewStream = false;
+                                    db.NoticeYoutubeStreamChannel.Update(item);
+                                    db.SaveChanges();
+
+                                    try
+                                    {
+                                        await Policy.Handle<TimeoutException>()
+                                            .Or<Discord.Net.HttpException>((httpEx) => ((int)httpEx.HttpCode).ToString().StartsWith("50"))
+                                            .WaitAndRetryAsync(3, (retryAttempt) =>
+                                            {
+                                                var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
+                                                Log.Warn($"YouTube 通知 ({item.YouTubeChannelId}) | {item.GuildId} / {channel.Id} 無權限提示發送失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
+                                                return timeSpan;
+                                            })
+                                            .ExecuteAsync(async () =>
+                                            {
+                                                await channel.SendMessageAsync(embed: new EmbedBuilder().WithErrorColor().WithDescription("我在伺服器沒有 `管理活動` 的權限\n" +
+                                                    "請給予權限後再次執行 `/youtube toggle-create-event` 來開啟自動建立活動的功能").Build());
+                                            });
+                                    }
+                                    catch (Exception) { }
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Error(ex, $"YouTube 通知 ({item.YouTubeChannelId}) | {item.GuildId} 建立活動失敗");
+                        }
+
                         string sendMessage = "";
                         switch (noticeType)
                         {
@@ -462,19 +535,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                         if (sendMessage == "-") continue;
 
-                        var guild = _client.GetGuild(item.GuildId);
-                        if (guild == null)
-                        {
-                            Log.Warn($"YouTube 通知 ({item.YouTubeChannelId}) | 找不到伺服器 {item.GuildId}");
-                            db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where((x) => x.GuildId == item.GuildId));
-                            db.SaveChanges();
-                            continue;
-                        }
-
-                        // 只有新影片會發到影片通知頻道，首播類的影片歸類在直播類型
-                        var channel = guild.GetTextChannel(noticeType == NoticeType.NewVideo ? item.DiscordNoticeVideoChannelId : item.DiscordNoticeStreamChannelId);
-                        if (channel == null) continue;
-
                         await Policy.Handle<TimeoutException>()
                             .Or<Discord.Net.HttpException>((httpEx) => ((int)httpEx.HttpCode).ToString().StartsWith("50"))
                             .WaitAndRetryAsync(3, (retryAttempt) =>
@@ -497,46 +557,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                     // ignore
                                 }
                             });
-
-                        // 如果是新直播的話就建立活動
-                        try
-                        {
-                            if (noticeType == NoticeType.NewStream && item.IsCreateEventForNewStream)
-                            {
-                                if (guild.GetUser(_client.CurrentUser.Id).GuildPermissions.ManageEvents)
-                                {
-                                    Log.Warn($"YouTube 通知 ({item.YouTubeChannelId}) | {item.GuildId} / {channel.Id} 嘗試建立活動");
-                                    await Policy.Handle<TimeoutException>()
-                                        .Or<Discord.Net.HttpException>((httpEx) => ((int)httpEx.HttpCode).ToString().StartsWith("50"))
-                                        .WaitAndRetryAsync(3, (retryAttempt) =>
-                                        {
-                                            var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
-                                            Log.Warn($"YouTube 通知 ({item.YouTubeChannelId}) | {item.GuildId} / {channel.Id} 建立活動失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
-                                            return timeSpan;
-                                        })
-                                        .ExecuteAsync(async () =>
-                                        {
-                                            await guild.CreateEventAsync(streamVideo.VideoTitle,
-                                                streamVideo.ScheduledStartTime.ToUniversalTime(),
-                                                GuildScheduledEventType.External,
-                                                endTime: streamVideo.ScheduledStartTime.ToUniversalTime().AddHours(1),
-                                                location: $"https://youtube.com/watch?v={streamVideo.VideoId}",
-                                                coverImage: coverImage);
-                                        });
-                                }
-                                else
-                                {
-                                    Log.Warn($"YouTube 通知 ({item.YouTubeChannelId}) | {item.GuildId} / {channel.Id} 無權限可建立活動，關閉此功能");
-                                    item.IsCreateEventForNewStream = false;
-                                    db.NoticeYoutubeStreamChannel.Update(item);
-                                    db.SaveChanges();
-                                }
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            Log.Error(ex, $"YouTube 通知 ({item.YouTubeChannelId}) | {item.GuildId} / {channel.Id} 建立活動失敗");
-                        }
                     }
                     catch (Discord.Net.HttpException httpEx)
                     {

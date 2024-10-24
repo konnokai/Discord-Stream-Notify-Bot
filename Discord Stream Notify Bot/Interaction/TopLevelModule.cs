@@ -65,13 +65,12 @@ namespace Discord_Stream_Notify_Bot.Interaction
                         return Task.CompletedTask;
                     }
 
-                    if (userInputTask.TrySetResult(component.Data.CustomId.EndsWith("yes")))
-                    {
-                        await component.UpdateAsync((x) => x.Components = new ComponentBuilder()
-                            .WithButton("是", $"{guid}-yes", ButtonStyle.Success, disabled: true)
-                            .WithButton("否", $"{guid}-no", ButtonStyle.Danger, disabled: true).Build())
-                        .ConfigureAwait(false);
-                    }
+                    userInputTask.TrySetResult(component.Data.CustomId.EndsWith("yes"));
+
+                    await component.UpdateAsync((x) => x.Components = new ComponentBuilder()
+                        .WithButton("是", $"{guid}-yes", ButtonStyle.Success, disabled: true)
+                        .WithButton("否", $"{guid}-no", ButtonStyle.Danger, disabled: true).Build())
+                    .ConfigureAwait(false);
                     return Task.CompletedTask;
                 });
                 return Task.CompletedTask;
