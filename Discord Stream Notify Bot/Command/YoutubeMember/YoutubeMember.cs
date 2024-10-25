@@ -5,10 +5,12 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
     public class YoutubeMember : TopLevelModule, ICommandService
     {
         private readonly SharedService.Youtube.YoutubeStreamService _service;
+        private readonly SharedService.YoutubeMember.YoutubeMemberService _ytMemberService;
 
-        public YoutubeMember(SharedService.Youtube.YoutubeStreamService service)
+        public YoutubeMember(SharedService.Youtube.YoutubeStreamService service, SharedService.YoutubeMember.YoutubeMemberService youtubeMemberService)
         {
             _service = service;
+            _ytMemberService = youtubeMemberService;
         }
 
         [Command("ListAllGuildCheckedMember")]
@@ -103,6 +105,18 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
                 Log.Error(ex.ToString());
                 await Context.Channel.SendErrorAsync(ex.Message);
             }
+        }
+
+        [Command("StartNewMemberCheck")]
+        [Summary("開始新會員的會限驗證")]
+        [Alias("snmc")]
+        [RequireContext(ContextType.DM)]
+        [RequireOwner]
+        public async Task StartNewMemberCheck()
+        {
+            await _ytMemberService.CheckMemberShip(false);
+
+            await Context.Channel.SendConfirmAsync(":ok:");
         }
     }
 }
