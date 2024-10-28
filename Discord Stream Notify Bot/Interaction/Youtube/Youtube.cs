@@ -789,6 +789,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                             }
 
                             dic.Add(channelTitle,
+                                $"是否會自動建立新活動: " + (item.IsCreateEventForNewStream ? "是" : "否") + "\n" +
                                 $"新待機所: {GetCurrectMessage(item.NewStreamMessage)}\n" +
                                 $"新影片: {GetCurrectMessage(item.NewVideoMessage)}\n" +
                                 $"開始直播: {GetCurrectMessage(item.StratMessage)}\n" +
