@@ -12,7 +12,8 @@ namespace Discord_Stream_Notify_Bot.Interaction
 
             EmbedBuilder embed = new EmbedBuilder()
                 .WithOkColor()
-                .WithDescription(context);
+                .WithDescription(context)
+                .WithFooter("10 秒後按鈕會無效化，請快速選擇或重新觸發");
 
             ComponentBuilder component = new ComponentBuilder()
                 .WithButton("是", $"{guid}-yes", ButtonStyle.Success)
