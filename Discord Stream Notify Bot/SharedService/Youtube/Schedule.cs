@@ -112,7 +112,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                     ChannelType = DataBase.Table.Video.YTChannelType.Holo
                                 };
 
-                                Log.New($"(新影片) | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
+                                Log.New($"(新影片) | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle} ({streamVideo.VideoId})");
 
                                 EmbedBuilder embedBuilder = new EmbedBuilder();
                                 embedBuilder.WithOkColor()
@@ -138,7 +138,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                     ChannelType = DataBase.Table.Video.YTChannelType.Holo
                                 };
 
-                                Log.New($"(已開台) | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
+                                Log.New($"(已開台) | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle} ({streamVideo.VideoId})");
 
                                 if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo) && item.Snippet.LiveBroadcastContent == "live")
                                     await ReminderTimerActionAsync(streamVideo);
@@ -156,7 +156,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                     ChannelType = DataBase.Table.Video.YTChannelType.Holo
                                 };
 
-                                Log.New($"(新直播) | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
+                                Log.New($"(新直播) | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle} ({streamVideo.VideoId})");
 
                                 if (startTime > DateTime.Now && startTime < DateTime.Now.AddDays(14))
                                 {
@@ -322,7 +322,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                     if (item.Attributes.Status == "on_air") // 已開台
                     {
-                        Log.New($"(已開台) | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
+                        Log.New($"(已開台) | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle} ({streamVideo.VideoId})");
 
                         if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo))
                             StartReminder(streamVideo, streamVideo.ChannelType);
@@ -340,7 +340,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                 .AddField("直播狀態", "尚未開台")
                                 .AddField("排定開台時間", item.Attributes.StartAt.Value.ConvertDateTimeToDiscordMarkdown());
 
-                            Log.New($"(新直播) | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
+                            Log.New($"(新直播) | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle} ({streamVideo.VideoId})");
 
                             if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo))
                             {
@@ -358,7 +358,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     }
                     else
                     {
-                        Log.New($"(已下播的新直播) | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
+                        Log.New($"(已下播的新直播) | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle} ({streamVideo.VideoId})");
                         addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo);
                     }
                 }
@@ -769,7 +769,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 };
 
                 streamVideo.ChannelType = streamVideo.GetProductionType();
-                Log.New($"(新影片) | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
+                Log.New($"(新影片) | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle} ({streamVideo.VideoId})");
 
                 EmbedBuilder embedBuilder = new EmbedBuilder();
                 embedBuilder.WithOkColor()
@@ -796,7 +796,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 };
 
                 streamVideo.ChannelType = streamVideo.GetProductionType();
-                Log.New($"(已開台) | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
+                Log.New($"(已開台) | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle} ({streamVideo.VideoId})");
 
                 if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo) && item.Snippet.LiveBroadcastContent == "live" && !isFromRNRS)
                     await ReminderTimerActionAsync(streamVideo);
@@ -815,7 +815,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 };
 
                 streamVideo.ChannelType = streamVideo.GetProductionType();
-                Log.New($"(新直播) | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
+                Log.New($"(新直播) | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle} ({streamVideo.VideoId})");
 
                 if (startTime > DateTime.Now && startTime < DateTime.Now.AddDays(14))
                 {
@@ -841,6 +841,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 }
                 else addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo);
             }
+            // 好像從沒看過這個分類觸發過
             else if (string.IsNullOrEmpty(item.LiveStreamingDetails.ActualStartTimeRaw) && item.LiveStreamingDetails.ActiveLiveChatId != null)
             {
                 var streamVideo = new DataBase.Table.Video()
@@ -853,7 +854,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     ChannelType = DataBase.Table.Video.YTChannelType.Other
                 };
 
-                Log.New($"(一般路過的新直播室) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
+                Log.New($"(一般路過的新直播室) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle} ({streamVideo.VideoId})");
                 addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo);
             }
         }
