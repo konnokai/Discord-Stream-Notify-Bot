@@ -238,15 +238,23 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
                     var youtubeChannelSpiders = db.YoutubeChannelSpider.Where((x) => x.GuildId == gid);
                     if (youtubeChannelSpiders.Any())
                     {
-                        result += $"設定的 YouTube 爬蟲: \n```{string.Join('\n', youtubeChannelSpiders.Select((x) => $"{x.ChannelTitle}: {x.ChannelId}"))}```";
+                        bool isTooMany = youtubeChannelSpiders.Count() > 20;
+                        if (isTooMany)
+                        {
+                            result += $"設定的 YouTube 爬蟲: \n```{string.Join('\n', youtubeChannelSpiders.Take(20).Select((x) => $"{x.ChannelTitle}: {x.ChannelId}"))}\n(還有 {youtubeChannelSpiders.Count() - 20} 個爬蟲...)```\n";
+                        }
+                        else
+                        {
+                            result += $"設定的 YouTube 爬蟲: \n```{string.Join('\n', youtubeChannelSpiders.Select((x) => $"{x.ChannelTitle}: {x.ChannelId}"))}```\n";
+                        }
                     }
 
-                    var youtubechannelList = db.NoticeYoutubeStreamChannel.Where((x) => x.GuildId == guild.Id);
-                    if (youtubechannelList.Any())
+                    var youtubeChannelList = db.NoticeYoutubeStreamChannel.Where((x) => x.GuildId == guild.Id);
+                    if (youtubeChannelList.Any())
                     {
                         List<string> channelListResult = new List<string>();
 
-                        foreach (var item in youtubechannelList)
+                        foreach (var item in youtubeChannelList)
                         {
                             var noticeChannel = guild.GetChannel(item.DiscordNoticeVideoChannelId);
 
@@ -256,7 +264,15 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
                                 channelListResult.Add($"(不存在) {item.DiscordNoticeVideoChannelId}: {item.YouTubeChannelId}");
                         }
 
-                        result += $"設定 YouTube 通知的頻道: \n```{string.Join('\n', channelListResult)}```\n";
+                        bool isTooMany = channelListResult.Count > 20;
+                        if (isTooMany)
+                        {
+                            result += $"設定 YouTube 通知的頻道: \n```{string.Join('\n', channelListResult.Take(20))}\n(還有 {channelListResult.Count - 20} 個爬蟲...)```\n";
+                        }
+                        else
+                        {
+                            result += $"設定 YouTube 通知的頻道: \n```{string.Join('\n', channelListResult)}```\n";
+                        }
                     }
 
                     var memberChcekList = db.GuildYoutubeMemberConfig.Where((x) => x.GuildId == guild.Id);
