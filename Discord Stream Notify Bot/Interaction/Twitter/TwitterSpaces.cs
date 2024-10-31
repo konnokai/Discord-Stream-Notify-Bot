@@ -264,40 +264,51 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
         [SlashCommand("set-message", "設定通知訊息")]
         public async Task SetMessage([Summary("推特使用者名稱"), Autocomplete(typeof(GuildNoticeTwitterSpaceIdAutocompleteHandler))] string userScreenName, [Summary("通知訊息")] string message = "")
         {
-            if (string.IsNullOrWhiteSpace(userScreenName))
+            try
             {
-                await Context.Interaction.SendErrorAsync("使用者名稱不可空白").ConfigureAwait(false);
-                return;
-            }
+                await DeferAsync(true);
 
-            userScreenName = userScreenName.Replace("@", "");
-
-            var user = await _service.GetTwitterUserAsync(userScreenName);
-            if (user == null)
-            {
-                await Context.Interaction.SendErrorAsync($"`{userScreenName}` 不存在此使用者").ConfigureAwait(false);
-                return;
-            }
-
-            using (var db = DataBase.MainDbContext.GetDbContext())
-            {
-                if (db.NoticeTwitterSpaceChannel.Any((x) => x.GuildId == Context.Guild.Id && x.NoticeTwitterSpaceUserId == user.RestId))
+                if (string.IsNullOrWhiteSpace(userScreenName))
                 {
-                    var noticeTwitterSpace = db.NoticeTwitterSpaceChannel.First((x) => x.GuildId == Context.Guild.Id && x.NoticeTwitterSpaceUserId == user.RestId);
-
-                    noticeTwitterSpace.StratTwitterSpaceMessage = message;
-
-                    db.NoticeTwitterSpaceChannel.Update(noticeTwitterSpace);
-                    db.SaveChanges();
-
-                    if (message != "") await Context.Interaction.SendConfirmAsync($"已設定 `{user.Legacy.Name}` 的推特語音空間通知訊息為:\n{message}", false, true).ConfigureAwait(false);
-                    else await Context.Interaction.SendConfirmAsync($"已取消 `{user.Legacy.Name}` 的推特語音空間通知訊息", false, true).ConfigureAwait(false);
+                    await Context.Interaction.SendErrorAsync("使用者名稱不可空白", true).ConfigureAwait(false);
+                    return;
                 }
-                else
+
+                userScreenName = userScreenName.Replace("@", "");
+
+                var user = await _service.GetTwitterUserAsync(userScreenName);
+                if (user == null)
                 {
-                    await Context.Interaction.SendErrorAsync($"並未設定 `{user.Legacy.Name}` 的推特語音空間通知\n" +
-                        $"請先使用 `/twitter-space add {userScreenName}` 新增語音空間通知後再設定通知訊息").ConfigureAwait(false);
+                    await Context.Interaction.SendErrorAsync($"`{userScreenName}` 不存在此使用者\n" +
+                        $"(注意: 設定時請勿切換 Discord 頻道，這會導致自動輸入的頻道名稱跑掉)", true).ConfigureAwait(false);
+                    return;
                 }
+
+                using (var db = DataBase.MainDbContext.GetDbContext())
+                {
+                    if (db.NoticeTwitterSpaceChannel.Any((x) => x.GuildId == Context.Guild.Id && x.NoticeTwitterSpaceUserId == user.RestId))
+                    {
+                        var noticeTwitterSpace = db.NoticeTwitterSpaceChannel.First((x) => x.GuildId == Context.Guild.Id && x.NoticeTwitterSpaceUserId == user.RestId);
+
+                        noticeTwitterSpace.StratTwitterSpaceMessage = message;
+
+                        db.NoticeTwitterSpaceChannel.Update(noticeTwitterSpace);
+                        db.SaveChanges();
+
+                        if (message != "") await Context.Interaction.SendConfirmAsync($"已設定 `{user.Legacy.Name}` 的推特語音空間通知訊息為:\n{message}", true, true).ConfigureAwait(false);
+                        else await Context.Interaction.SendConfirmAsync($"已取消 `{user.Legacy.Name}` 的推特語音空間通知訊息", true, true).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        await Context.Interaction.SendErrorAsync($"並未設定 `{user.Legacy.Name}` 的推特語音空間通知\n" +
+                            $"請先使用 `/twitter-space add {userScreenName}` 新增語音空間通知後再設定通知訊息", true).ConfigureAwait(false);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, $"Twitter Set Message Error: {userScreenName}");
+                await Context.Interaction.SendErrorAsync("未知的錯誤，請向 Bot 擁有者回報", true);
             }
         }
 

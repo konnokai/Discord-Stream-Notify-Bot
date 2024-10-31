@@ -140,7 +140,8 @@ namespace Discord_Stream_Notify_Bot.Interaction.TwitCasting
             if (string.IsNullOrEmpty(channelData.ChannelTitle))
             {
                 await Context.Interaction.SendErrorAsync("錯誤，TwitCasting 找不到該使用者的名稱\n" +
-                    "請確認網址是否正確，若正確請向 Bot 擁有者回報", true);
+                    "請確認網址是否正確，若正確請向 Bot 擁有者回報\n" +
+                    $"(注意: 設定時請勿切換 Discord 頻道，這會導致自動輸入的頻道名稱跑掉)", true).ConfigureAwait(false);
                 return;
             }
 

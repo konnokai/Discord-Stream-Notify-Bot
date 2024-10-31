@@ -180,7 +180,6 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
         [RequireUserPermission(GuildPermission.ManageEvents)]
         [DefaultMemberPermissions(GuildPermission.ManageEvents)]
         [SlashCommand("toggle-create-event", "當收到新直播通知時同時在 Discord 上建立該直播的新活動")]
-        [CommandSummary("注意: 此指令依賴新直播通知，若 NewStream 通知被關閉則無法建立活動")]
         public async Task ToggleCreateEvent([Summary("頻道名稱"), Autocomplete(typeof(GuildNoticeYoutubeChannelIdAutocompleteHandler))] string channelName)
         {
             await DeferAsync(true);
@@ -585,8 +584,8 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                 else
                 {
                     await Context.Interaction.SendErrorAsync($"找不到 `{channelId}` 的通知設定" +
-                        $"請先使用 `/youtube add {channelId}` 新增直播後再設定通知訊息" +
-                        $"若已新增，請向 Bot 擁有者詢問", true).ConfigureAwait(false);
+                        $"請先使用 `/youtube add {channelId}` 新增直播後再設定通知訊息\n" +
+                        $"(注意: 設定時請勿切換 Discord 頻道，這會導致自動輸入的頻道名稱跑掉)", true).ConfigureAwait(false);
                 }
             }
         }
@@ -681,83 +680,84 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                 if (noticeStreamChannel == null)
                 {
                     await Context.Interaction.SendErrorAsync($"並未設定 `{channelTitle}` 的直播通知\n" +
-                        $"請先使用 `/youtube add {channelId}` 新增直播後再設定通知訊息", true).ConfigureAwait(false);
+                        $"請先使用 `/youtube add {channelId}` 新增直播後再設定通知訊息\n" +
+                        $"(注意: 設定時請勿切換 Discord 頻道，這會導致自動輸入的頻道名稱跑掉)", true).ConfigureAwait(false);
+
+                    return;
                 }
-                else
+
+                string noticeTypeString = "", result = "";
+                message = message.Trim();
+
+                switch (noticeType)
                 {
-                    string noticeTypeString = "", result = "";
-                    message = message.Trim();
+                    case YoutubeStreamService.NoticeType.NewStream:
+                        noticeStreamChannel.NewStreamMessage = message;
+                        noticeTypeString = "新待機所";
+                        break;
+                    case YoutubeStreamService.NoticeType.NewVideo:
+                        noticeStreamChannel.NewVideoMessage = message;
+                        noticeTypeString = "新上傳影片";
+                        break;
+                    case YoutubeStreamService.NoticeType.Start:
+                        noticeStreamChannel.StratMessage = message;
+                        noticeTypeString = "開始直播\\首播";
+                        break;
+                    case YoutubeStreamService.NoticeType.End:
+                        noticeStreamChannel.EndMessage = message;
+                        noticeTypeString = "結束直播\\首播";
+                        break;
+                    case YoutubeStreamService.NoticeType.ChangeTime:
+                        noticeStreamChannel.ChangeTimeMessage = message;
+                        noticeTypeString = "變更直播時間";
+                        break;
+                    case YoutubeStreamService.NoticeType.Delete:
+                        noticeStreamChannel.DeleteMessage = message;
+                        noticeTypeString = "已刪除或私人化直播";
+                        break;
+                }
 
-                    switch (noticeType)
+                if (noticeType == YoutubeStreamService.NoticeType.NewStream && message == "-" && !noticeStreamChannel.IsCreateEventForNewStream)
+                {
+                    if (await PromptUserConfirmAsync("你可以啟用自動建立 Discord 活動來做為替換 `新待機所` 的通知方式，是否啟用?"))
                     {
-                        case YoutubeStreamService.NoticeType.NewStream:
-                            noticeStreamChannel.NewStreamMessage = message;
-                            noticeTypeString = "新待機所";
-                            break;
-                        case YoutubeStreamService.NoticeType.NewVideo:
-                            noticeStreamChannel.NewVideoMessage = message;
-                            noticeTypeString = "新上傳影片";
-                            break;
-                        case YoutubeStreamService.NoticeType.Start:
-                            noticeStreamChannel.StratMessage = message;
-                            noticeTypeString = "開始直播\\首播";
-                            break;
-                        case YoutubeStreamService.NoticeType.End:
-                            noticeStreamChannel.EndMessage = message;
-                            noticeTypeString = "結束直播\\首播";
-                            break;
-                        case YoutubeStreamService.NoticeType.ChangeTime:
-                            noticeStreamChannel.ChangeTimeMessage = message;
-                            noticeTypeString = "變更直播時間";
-                            break;
-                        case YoutubeStreamService.NoticeType.Delete:
-                            noticeStreamChannel.DeleteMessage = message;
-                            noticeTypeString = "已刪除或私人化直播";
-                            break;
-                    }
-
-                    if (noticeType == YoutubeStreamService.NoticeType.NewStream && message == "-" && !noticeStreamChannel.IsCreateEventForNewStream)
-                    {
-                        if (await PromptUserConfirmAsync("你可以啟用自動建立 Discord 活動來做為替換 `新待機所` 的通知方式，是否啟用?"))
-                        {
-                            result = $"將會於 `{channelTitle}` 有新直播時在 Discord 上建立新的活動\n";
-                            noticeStreamChannel.IsCreateEventForNewStream = true;
-                        }
-                        else
-                        {
-                            return;
-                        }
-                    }
-
-                    db.NoticeYoutubeStreamChannel.Update(noticeStreamChannel);
-                    db.SaveChanges();
-
-                    if (message == "-")
-                    {
-                        result += $"已關閉 `{channelTitle}` 的 `{noticeTypeString}` 通知";
-                    }
-                    else if (message != "")
-                    {
-                        result += $"已設定 `{channelTitle}` 的 `{noticeTypeString}` 通知訊息為:\n" +
-                                $"{message}";
-
-                        if (noticeType == YoutubeStreamService.NoticeType.End && !db.RecordYoutubeChannel.AsNoTracking().Any((x) => x.YoutubeChannelId == channelId))
-                        {
-                            result += $"\n\n(注意: 該頻道目前不會有結束直播通知)";
-                        }
-                        else if (!db.YoutubeChannelSpider.FirstOrDefault((x) => x.IsTrustedChannel)?.IsTrustedChannel ?? false &&
-                            (channelId != "holo" && channelId != "2434" && channelId != "other"))
-                        {
-                            result += $"\n\n(注意: 該頻道目前僅會有影片上傳通知)";
-                        }
+                        result = $"將會於 `{channelTitle}` 有新直播時在 Discord 上建立新的活動\n";
+                        noticeStreamChannel.IsCreateEventForNewStream = true;
                     }
                     else
                     {
-                        result = $"已清除 `{channelTitle}` 的 `{noticeTypeString}` 通知訊息";
+                        return;
                     }
-
-                    await Context.Interaction.SendConfirmAsync(result, true, true).ConfigureAwait(false);
                 }
+
+                db.NoticeYoutubeStreamChannel.Update(noticeStreamChannel);
+                db.SaveChanges();
+
+                if (message == "-")
+                {
+                    result += $"已關閉 `{channelTitle}` 的 `{noticeTypeString}` 通知";
+                }
+                else if (message != "")
+                {
+                    result += $"已設定 `{channelTitle}` 的 `{noticeTypeString}` 通知訊息為:\n" +
+                            $"{message}";
+
+                    if (noticeType == YoutubeStreamService.NoticeType.End && !db.RecordYoutubeChannel.AsNoTracking().Any((x) => x.YoutubeChannelId == channelId))
+                    {
+                        result += $"\n\n(注意: 該頻道目前不會有結束直播通知)";
+                    }
+                    else if (!db.YoutubeChannelSpider.FirstOrDefault((x) => x.IsTrustedChannel)?.IsTrustedChannel ?? false &&
+                        (channelId != "holo" && channelId != "2434" && channelId != "other"))
+                    {
+                        result += $"\n\n(注意: 該頻道目前僅會有影片上傳通知)";
+                    }
+                }
+                else
+                {
+                    result = $"已清除 `{channelTitle}` 的 `{noticeTypeString}` 通知訊息";
+                }
+
+                await Context.Interaction.SendConfirmAsync(result, true, true).ConfigureAwait(false);
             }
         }
 
