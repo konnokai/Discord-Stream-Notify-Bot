@@ -278,13 +278,37 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
                     var memberChcekList = db.GuildYoutubeMemberConfig.Where((x) => x.GuildId == guild.Id);
                     if (memberChcekList.Any())
                     {
-                        result += $"設定會限的頻道: \n```{string.Join('\n', memberChcekList.Select((x) => $"{x.MemberCheckChannelTitle}: {x.MemberCheckGrantRoleId}"))}```";
+                        result += $"設定會限的頻道: \n```{string.Join('\n', memberChcekList.Select((x) => $"{x.MemberCheckChannelTitle}: {x.MemberCheckGrantRoleId}"))}```\n";
+                    }
+
+                    var twitchSpiders = db.TwitchSpider.Where((x) => x.GuildId == gid);
+                    if (twitchSpiders.Any())
+                    {
+                        result += $"設定的 Twitch 爬蟲: \n```{string.Join('\n', twitchSpiders.Select((x) => $"{x.UserName}: {x.UserLogin}"))}```\n";
+                    }
+
+                    var noticeTwitchStreamChannels = db.NoticeTwitchStreamChannels.Where((x) => x.GuildId == guild.Id);
+                    if (noticeTwitchStreamChannels.Any())
+                    {
+                        List<string> channelListResult = new List<string>();
+
+                        foreach (var item in noticeTwitchStreamChannels)
+                        {
+                            var noticeChannel = guild.GetChannel(item.DiscordChannelId);
+
+                            if (noticeChannel != null)
+                                channelListResult.Add($"{noticeChannel}: {item.NoticeTwitchUserId}");
+                            else
+                                channelListResult.Add($"(不存在) {item.DiscordChannelId}: {item.NoticeTwitchUserId}");
+                        }
+
+                        result += $"設定 Twitch 通知的頻道: \n```{string.Join('\n', channelListResult)}```\n";
                     }
 
                     var twitterSpiders = db.TwitterSpaecSpider.Where((x) => x.GuildId == gid);
                     if (twitterSpiders.Any())
                     {
-                        result += $"設定的 Twitter 爬蟲: \n```{string.Join('\n', twitterSpiders.Select((x) => $"{x.UserName}: {x.UserScreenName}"))}```";
+                        result += $"設定的 Twitter 爬蟲: \n```{string.Join('\n', twitterSpiders.Select((x) => $"{x.UserName}: {x.UserScreenName}"))}```\n";
                     }
 
                     var twitterChannelList = db.NoticeTwitterSpaceChannel.Where((x) => x.GuildId == guild.Id);

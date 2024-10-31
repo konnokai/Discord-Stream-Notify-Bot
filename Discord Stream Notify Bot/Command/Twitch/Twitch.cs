@@ -43,7 +43,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitch
                 db.TwitchSpider.Add(new TwitchSpider() { UserId = user.Id, GuildId = guildId, UserLogin = user.Login, IsWarningUser = false, UserName = user.DisplayName });
                 db.SaveChanges();
 
-                await Context.Channel.SendConfirmAsync($"已將 `{user.DisplayName}` (`{user.Login}`) 設定至 `{guildId}`，等待爬蟲註冊...").ConfigureAwait(false);
+                await Context.Channel.SendConfirmAsync($"已將 `{user.DisplayName}` (`{user.Login}`) 設定至 `{guildId}`").ConfigureAwait(false);
             }
         }
 
