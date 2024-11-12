@@ -34,12 +34,11 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
                     return new EmbedBuilder()
                         .WithOkColor()
                         .WithTitle("推特語音空間爬蟲清單")
-                        .WithDescription(string.Join('\n', list.Skip(page * 10).Take(10)))
-                        .WithFooter($"{Math.Min(list.Count(), (page + 1) * 10)} / {list.Count()}個使用者 ({warningChannelNum}個隱藏的警告使用者)");
-                }, list.Count(), 10, false).ConfigureAwait(false);
+                        .WithDescription(string.Join('\n', list.Skip(page * 20).Take(20)))
+                        .WithFooter($"{Math.Min(list.Count(), (page + 1) * 20)} / {list.Count()}個使用者 ({warningChannelNum}個隱藏的警告使用者)");
+                }, list.Count(), 20, false).ConfigureAwait(false);
             }
         }
-
 
         [RequireContext(ContextType.DM)]
         [RequireOwner]
@@ -60,9 +59,44 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
                     return new EmbedBuilder()
                         .WithOkColor()
                         .WithTitle("警告的推特語音空間爬蟲清單")
-                        .WithDescription(string.Join('\n', list.Skip(page * 10).Take(10)))
-                        .WithFooter($"{Math.Min(list.Count(), (page + 1) * 10)} / {list.Count()}個使用者");
-                }, list.Count(), 10, false).ConfigureAwait(false);
+                        .WithDescription(string.Join('\n', list.Skip(page * 20).Take(20)))
+                        .WithFooter($"{Math.Min(list.Count(), (page + 1) * 20)} / {list.Count()}個使用者");
+                }, list.Count(), 20, false).ConfigureAwait(false);
+            }
+        }
+
+        [RequireContext(ContextType.DM)]
+        [Command("ListTwitterSpaceRecord")]
+        [Summary("顯示推特語音空間爬蟲")]
+        [Alias("lwsr")]
+        public async Task ListTwitterSpaceRecord(int page = 0)
+        {
+            if (page < 0) page = 0;
+
+            using (var db = DataBase.MainDbContext.GetDbContext())
+            {
+                var nowRecordList = db.TwitterSpaecSpider.Where((x) => x.IsRecord && !x.IsWarningUser)
+                    .Select((x) => $"{x.UserName} ({Format.Url($"{x.UserScreenName}", $"https://twitter.com/{x.UserScreenName}")})")
+                    .ToList();
+                int warningUserNum = db.TwitterSpaecSpider.Count((x) => x.IsWarningUser);
+
+                if (nowRecordList.Count > 0)
+                {
+                    nowRecordList.Sort();
+                    await Context.SendPaginatedConfirmAsync(page, page =>
+                    {
+                        return new EmbedBuilder()
+                            .WithOkColor()
+                            .WithTitle("推特語音空間記錄清單")
+                            .WithDescription(string.Join('\n', nowRecordList.Skip(page * 20).Take(20)))
+                            .WithFooter($"{Math.Min(nowRecordList.Count, (page + 1) * 20)} / {nowRecordList.Count} 個使用者 ({warningUserNum} 個隱藏的警告頻道)");
+                    }, nowRecordList.Count, 20, false);
+                }
+                else
+                {
+                    await Context.Channel.SendErrorAsync($"並未設定語音空間通知\n" +
+                        $"請先使用 `/help get-command-help twitter-space add` 查看說明並新增語音空間通知").ConfigureAwait(false);
+                }
             }
         }
 
@@ -112,7 +146,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
 
             if (!_service.IsEnable)
             {
-                await Context.Channel.SendErrorAsync("此Bot的Twitter功能已關閉，請向擁有者確認").ConfigureAwait(false);
+                await Context.Channel.SendErrorAsync("此 Bot 的 Twitter 功能已關閉，請向擁有者確認").ConfigureAwait(false);
                 return;
             }
 

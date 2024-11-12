@@ -315,74 +315,54 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
         [SlashCommand("list-message", "列出已設定的推特語音空間通知訊息")]
         public async Task ListMessage([Summary("頁數")] int page = 0)
         {
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            await DeferAsync(true);
+
+            try
             {
-                if (db.NoticeTwitterSpaceChannel.Any((x) => x.GuildId == Context.Guild.Id))
+                using (var db = DataBase.MainDbContext.GetDbContext())
                 {
-                    var noticeTwitterSpaces = db.NoticeTwitterSpaceChannel.Where((x) => x.GuildId == Context.Guild.Id);
-                    Dictionary<string, string> dic = new Dictionary<string, string>();
-
-                    foreach (var item in noticeTwitterSpaces)
+                    if (db.NoticeTwitterSpaceChannel.Any((x) => x.GuildId == Context.Guild.Id))
                     {
-                        string message = string.IsNullOrWhiteSpace(item.StratTwitterSpaceMessage) ? "無" : item.StratTwitterSpaceMessage;
-                        dic.Add(item.NoticeTwitterSpaceUserScreenName, message);
-                    }
+                        var noticeTwitterSpaces = db.NoticeTwitterSpaceChannel.Where((x) => x.GuildId == Context.Guild.Id);
+                        Dictionary<string, string> dic = new Dictionary<string, string>();
 
-                    try
-                    {
-                        await Context.SendPaginatedConfirmAsync(page, (page) =>
+                        foreach (var item in noticeTwitterSpaces)
                         {
-                            EmbedBuilder embedBuilder = new EmbedBuilder().WithOkColor().WithTitle("推特語音空間通知訊息清單")
-                                .WithDescription("如果沒訊息的話就代表沒設定\n不用擔心會 Tag 到用戶組，Embed 不會有 Ping 的反應");
+                            string message = string.IsNullOrWhiteSpace(item.StratTwitterSpaceMessage) ? "無" : item.StratTwitterSpaceMessage;
+                            dic.Add(item.NoticeTwitterSpaceUserScreenName, message);
+                        }
 
-                            foreach (var item in dic.Skip(page * 10).Take(10))
+                        try
+                        {
+                            await Context.SendPaginatedConfirmAsync(page, (page) =>
                             {
-                                embedBuilder.AddField(item.Key, item.Value);
-                            }
+                                EmbedBuilder embedBuilder = new EmbedBuilder().WithOkColor().WithTitle("推特語音空間通知訊息清單")
+                                    .WithDescription("如果沒訊息的話就代表沒設定\n不用擔心會 Tag 到用戶組，Embed 不會有 Ping 的反應");
 
-                            return embedBuilder;
-                        }, dic.Count, 10).ConfigureAwait(false);
+                                foreach (var item in dic.Skip(page * 10).Take(10))
+                                {
+                                    embedBuilder.AddField(item.Key, item.Value);
+                                }
+
+                                return embedBuilder;
+                            }, dic.Count, 10, isFollowup: true).ConfigureAwait(false);
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Error(ex.Message + "\n" + ex.StackTrace);
+                        }
                     }
-                    catch (Exception ex)
+                    else
                     {
-                        Log.Error(ex.Message + "\n" + ex.StackTrace);
+                        await Context.Interaction.SendErrorAsync($"並未設定推特語音空間通知\n" +
+                            $"請先使用 `/help get-command-help twitter-space add` 查看說明並新增語音空間通知", true, true).ConfigureAwait(false);
                     }
-                }
-                else
-                {
-                    await Context.Interaction.SendConfirmAsync($"並未設定推特語音空間通知\n" +
-                        $"請先使用 `/help get-command-help twitter-space add` 查看說明並新增語音空間通知").ConfigureAwait(false);
                 }
             }
-        }
-
-        [SlashCommand("list-record-user", "顯示推特語音空間錄影清單")]
-        public async Task ListRecord([Summary("頁數")] int page = 0)
-        {
-            if (page < 0) page = 0;
-
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            catch (Exception ex)
             {
-                var nowRecordList = db.TwitterSpaecSpider.Where((x) => x.IsRecord && !x.IsWarningUser).Select((x) => $"{x.UserName} ({Format.Url($"{x.UserScreenName}", $"https://twitter.com/{x.UserScreenName}")})").ToList();
-                int warningUserNum = db.TwitterSpaecSpider.Count((x) => x.IsWarningUser);
-
-                if (nowRecordList.Count > 0)
-                {
-                    nowRecordList.Sort();
-                    await Context.SendPaginatedConfirmAsync(page, page =>
-                    {
-                        return new EmbedBuilder()
-                            .WithOkColor()
-                            .WithTitle("推特語音空間記錄清單")
-                            .WithDescription(string.Join('\n', nowRecordList.Skip(page * 20).Take(20)))
-                            .WithFooter($"{Math.Min(nowRecordList.Count, (page + 1) * 20)} / {nowRecordList.Count} 個使用者 ({warningUserNum} 個隱藏的警告頻道)");
-                    }, nowRecordList.Count, 20, false);
-                }
-                else
-                {
-                    await Context.Interaction.SendErrorAsync($"並未設定語音空間通知\n" +
-                        $"請先使用 `/help get-command-help twitter-space add` 查看說明並新增語音空間通知").ConfigureAwait(false);
-                }
+                Log.Error(ex, $"Twitter list-message: {Context.Guild.Id}");
+                await Context.Interaction.SendErrorAsync("未知的錯誤，請向 Bot 擁有者回報");
             }
         }
     }
