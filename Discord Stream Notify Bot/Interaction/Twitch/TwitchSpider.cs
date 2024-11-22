@@ -313,18 +313,26 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
 
             using (var db = DataBase.MainDbContext.GetDbContext())
             {
-                var list = db.TwitchSpider.Where((x) => !x.IsWarningUser).Select((x) => Format.Url(x.UserName, $"https://twitch.tv/{x.UserLogin}") +
-                    $" 由 `" + (x.GuildId == 0 ? "Bot擁有者" : (_client.GetGuild(x.GuildId) != null ? _client.GetGuild(x.GuildId).Name : "已退出的伺服器")) + "` 新增");
-                int warningChannelNum = db.TwitchSpider.Count((x) => x.IsWarningUser);
-
-                await Context.SendPaginatedConfirmAsync(page, page =>
+                try
                 {
-                    return new EmbedBuilder()
-                        .WithOkColor()
-                        .WithTitle("Twitch 直播爬蟲清單")
-                        .WithDescription(string.Join('\n', list.Skip(page * 20).Take(20)))
-                        .WithFooter($"{Math.Min(list.Count(), (page + 1) * 20)} / {list.Count()}個頻道 ({warningChannelNum}個非認可的爬蟲)");
-                }, list.Count(), 10, false).ConfigureAwait(false);
+                    var list = db.TwitchSpider.Where((x) => !x.IsWarningUser).Select((x) => Format.Url(x.UserName, $"https://twitch.tv/{x.UserLogin}") +
+                        $" 由 `" + (x.GuildId == 0 ? "Bot 擁有者" : (_client.GetGuild(x.GuildId) != null ? _client.GetGuild(x.GuildId).Name : "已退出的伺服器")) + "` 新增");
+                    int warningChannelNum = db.TwitchSpider.Count((x) => x.IsWarningUser);
+
+                    await Context.SendPaginatedConfirmAsync(page, page =>
+                    {
+                        return new EmbedBuilder()
+                            .WithOkColor()
+                            .WithTitle("Twitch 直播爬蟲清單")
+                            .WithDescription(string.Join('\n', list.Skip(page * 20).Take(20)))
+                            .WithFooter($"{Math.Min(list.Count(), (page + 1) * 20)} / {list.Count()}個頻道 ({warningChannelNum}個非認可的爬蟲)");
+                    }, list.Count(), 10, false).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex, $"Twitch-Spider-List Error");
+                    await Context.Interaction.SendErrorAsync("指令執行失敗", false, true);
+                }
             }
         }
 
@@ -336,7 +344,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
             using (var db = DataBase.MainDbContext.GetDbContext())
             {
                 var list = db.TwitchSpider.Where((x) => x.IsWarningUser).Select((x) => Format.Url(x.UserName, $"https://twitch.tv/{x.UserLogin}") +
-                    $" 由 `" + (x.GuildId == 0 ? "Bot擁有者" : (_client.GetGuild(x.GuildId) != null ? _client.GetGuild(x.GuildId).Name : "已退出的伺服器")) + "` 新增");
+                    $" 由 `" + (x.GuildId == 0 ? "Bot 擁有者" : (_client.GetGuild(x.GuildId) != null ? _client.GetGuild(x.GuildId).Name : "已退出的伺服器")) + "` 新增");
 
                 await Context.SendPaginatedConfirmAsync(page, page =>
                 {

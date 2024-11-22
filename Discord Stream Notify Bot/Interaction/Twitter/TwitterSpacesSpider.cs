@@ -183,18 +183,26 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
 
             using (var db = DataBase.MainDbContext.GetDbContext())
             {
-                var list = db.TwitterSpaecSpider.Where((x) => !x.IsWarningUser).Select((x) => Format.Url(x.UserScreenName, $"https://twitter.com/{x.UserScreenName}") +
-                    $" 由 `" + (x.GuildId == 0 ? "Bot 擁有者" : (_client.GetGuild(x.GuildId) != null ? _client.GetGuild(x.GuildId).Name : "已退出的伺服器")) + "` 新增");
-                int warningChannelNum = db.TwitterSpaecSpider.Count((x) => x.IsWarningUser);
-
-                await Context.SendPaginatedConfirmAsync(page, page =>
+                try
                 {
-                    return new EmbedBuilder()
-                        .WithOkColor()
-                        .WithTitle("推特語音空間爬蟲清單")
-                        .WithDescription(string.Join('\n', list.Skip(page * 10).Take(10)))
-                        .WithFooter($"{Math.Min(list.Count(), (page + 1) * 10)} / {list.Count()} 個使用者 ({warningChannelNum} 個隱藏的警告使用者)");
-                }, list.Count(), 10, false).ConfigureAwait(false);
+                    var list = db.TwitterSpaecSpider.Where((x) => !x.IsWarningUser).Select((x) => Format.Url(x.UserScreenName, $"https://twitter.com/{x.UserScreenName}") +
+                    $" 由 `" + (x.GuildId == 0 ? "Bot 擁有者" : (_client.GetGuild(x.GuildId) != null ? _client.GetGuild(x.GuildId).Name : "已退出的伺服器")) + "` 新增");
+                    int warningChannelNum = db.TwitterSpaecSpider.Count((x) => x.IsWarningUser);
+
+                    await Context.SendPaginatedConfirmAsync(page, page =>
+                    {
+                        return new EmbedBuilder()
+                            .WithOkColor()
+                            .WithTitle("推特語音空間爬蟲清單")
+                            .WithDescription(string.Join('\n', list.Skip(page * 10).Take(10)))
+                            .WithFooter($"{Math.Min(list.Count(), (page + 1) * 10)} / {list.Count()} 個使用者 ({warningChannelNum} 個隱藏的警告使用者)");
+                    }, list.Count(), 10, false).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex, $"Twitch-Spider-List Error");
+                    await Context.Interaction.SendErrorAsync("指令執行失敗", false, true);
+                }
             }
         }
     }

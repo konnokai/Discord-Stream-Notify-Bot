@@ -137,7 +137,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                             }
                             catch (Exception ex)
                             {
-                                if (!ex.Message.Contains("503") && !ex.Message.Contains("temporarily unavailable"))
+                                if (!ex.Message.Contains("50") && !ex.Message.Contains("temporarily unavailable"))
                                     Log.Error(ex, "Prepare-Spaces");
                             }
                         }

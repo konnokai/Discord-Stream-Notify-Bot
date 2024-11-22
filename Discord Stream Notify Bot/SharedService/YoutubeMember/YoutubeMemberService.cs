@@ -7,6 +7,7 @@ using Google.Apis.Auth.OAuth2.Flows;
 using Google.Apis.Auth.OAuth2.Responses;
 using Google.Apis.Services;
 using Google.Apis.YouTube.v3;
+using Polly;
 
 namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
 {
@@ -469,21 +470,32 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
         {
             try
             {
+                embedBuilder.WithOkColor();
+
                 var user = await client.Rest.GetUserAsync(userId);
-                if (user == null)
-                    return await tc.SendMessageAsync(embed: embedBuilder.WithOkColor().Build(), options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
-                else
-                    return await tc.SendMessageAsync(embed: embedBuilder.WithOkColor().WithAuthor(user).WithThumbnailUrl(user.GetAvatarUrl()).Build(), options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
-            }
-            catch (Discord.Net.HttpException discordEx) when (discordEx.HttpCode == System.Net.HttpStatusCode.ServiceUnavailable)
-            {
-                Log.Warn("SendConfirmMessageAsync: Discord 503 錯誤，嘗試重發...");
-                await Task.Delay(3000);
-                return await SendConfirmMessageAsync(tc, client, userId, embedBuilder);
+                if (user != null)
+                {
+                    embedBuilder
+                        .WithAuthor(user)
+                        .WithThumbnailUrl(user.GetAvatarUrl());
+                }
+
+                return await Policy.Handle<TimeoutException>()
+                    .Or<Discord.Net.HttpException>((httpEx) => ((int)httpEx.HttpCode).ToString().StartsWith("50"))
+                    .WaitAndRetryAsync(3, (retryAttempt) =>
+                    {
+                        var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
+                        Log.Warn($"YoutubeMemberService-SendConfirmMessageAsync 通知 | {tc.Id} / {userId} 發送失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
+                        return timeSpan;
+                    })
+                    .ExecuteAsync(async () =>
+                    {
+                        return await tc.SendMessageAsync(embed: embedBuilder.Build(), options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
+                    });
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "YoutubeMemberService-SendConfirmMessageAsync");
+                Log.Error(ex, $"YoutubeMemberService-SendConfirmMessageAsync: {userId} ({tc.Name} / {tc.Id})");
                 throw;
             }
         }
@@ -492,11 +504,22 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
         {
             try
             {
-                return await tc.SendMessageAsync(embed: new EmbedBuilder().WithOkColor().WithTitle(title).WithDescription(dec).Build(), options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
+                return await Policy.Handle<TimeoutException>()
+                    .Or<Discord.Net.HttpException>((httpEx) => ((int)httpEx.HttpCode).ToString().StartsWith("50"))
+                    .WaitAndRetryAsync(3, (retryAttempt) =>
+                    {
+                        var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
+                        Log.Warn($"YoutubeMemberService-SendConfirmMessageAsync 通知 | {tc.Id} 發送失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
+                        return timeSpan;
+                    })
+                    .ExecuteAsync(async () =>
+                    {
+                        return await tc.SendMessageAsync(embed: new EmbedBuilder().WithOkColor().WithTitle(title).WithDescription(dec).Build(), options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
+                    });
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "SendConfirmMessageAsync");
+                Log.Error(ex, $"YoutubeMemberService-SendConfirmMessageAsync: {tc.Name} ({tc.Id})");
                 return null;
             }
         }
@@ -505,22 +528,36 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
         {
             try
             {
+                var embedBuilder = new EmbedBuilder()
+                    .WithErrorColor()
+                    .AddField("檢查頻道", channelTitle)
+                    .AddField("狀態", status);
+
                 var user = await client.Rest.GetUserAsync(userId);
-                if (user == null)
-                    return await tc.SendMessageAsync(embed: new EmbedBuilder().WithErrorColor().AddField("檢查頻道", channelTitle).AddField("狀態", status).Build(), options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
-                else
-                    return await tc.SendMessageAsync(embed: new EmbedBuilder().WithErrorColor().WithAuthor(user).WithThumbnailUrl(user.GetAvatarUrl()).AddField("檢查頻道", channelTitle).AddField("狀態", status).Build(), options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
-            }
-            catch (Discord.Net.HttpException discordEx) when (discordEx.HttpCode == System.Net.HttpStatusCode.ServiceUnavailable)
-            {
-                Log.Warn("SendErrorMessageAsync: Discord 503 錯誤，嘗試重發...");
-                await Task.Delay(3000);
-                return await SendErrorMessageAsync(tc, client, userId, channelTitle, status);
+                if (user != null)
+                {
+                    embedBuilder
+                        .WithAuthor(user)
+                        .WithThumbnailUrl(user.GetAvatarUrl());
+                }
+
+                return await Policy.Handle<TimeoutException>()
+                    .Or<Discord.Net.HttpException>((httpEx) => ((int)httpEx.HttpCode).ToString().StartsWith("50"))
+                    .WaitAndRetryAsync(3, (retryAttempt) =>
+                    {
+                        var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
+                        Log.Warn($"YoutubeMemberService-SendErrorMessageAsync 通知 | {tc.Id} / {userId} 發送失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
+                        return timeSpan;
+                    })
+                    .ExecuteAsync(async () =>
+                    {
+                        return await tc.SendMessageAsync(embed: embedBuilder.Build(), options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
+                    });
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "YoutubeMemberService-SendErrorMessageAsync");
-                throw;
+                Log.Error(ex, $"YoutubeMemberService-SendErrorMessageAsync: {tc.Name} ({tc.Id})");
+                return null;
             }
         }
 
@@ -542,7 +579,18 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
 
             try
             {
-                await userChannel.SendMessageAsync(embed: new EmbedBuilder().WithOkColor().WithDescription(text).Build());
+                await Policy.Handle<TimeoutException>()
+                    .Or<Discord.Net.HttpException>((httpEx) => ((int)httpEx.HttpCode).ToString().StartsWith("50"))
+                    .WaitAndRetryAsync(3, (retryAttempt) =>
+                    {
+                        var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
+                        Log.Warn($"YoutubeMemberService-SendUserDMConfirmMessageAsync 通知 | {userId} 發送失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
+                        return timeSpan;
+                    })
+                    .ExecuteAsync(async () =>
+                    {
+                        return await userChannel.SendMessageAsync(embed: new EmbedBuilder().WithOkColor().WithDescription(text).Build());
+                    });
             }
             catch (Discord.Net.HttpException ex)
             {
@@ -552,11 +600,13 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                     await tc.SendMessageAsync($"無法傳送訊息至: <@{userId}>\n請向該用戶提醒開啟 `允許來自伺服器成員的私人訊息`");
                 }
                 else
-                    Log.Error(ex.ToString());
+                {
+                    Log.Error(ex, $"YoutubeMemberService-SendUserDMConfirmMessageAsync - Discord 錯誤: {userId}");
+                }
             }
             catch (Exception ex)
             {
-                Log.Error(ex.ToString());
+                Log.Error(ex, $"YoutubeMemberService-SendUserDMConfirmMessageAsync 錯誤: {userId}");
             }
         }
 
@@ -578,7 +628,18 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
 
             try
             {
-                await userChannel.SendMessageAsync(embed: new EmbedBuilder().WithErrorColor().WithDescription(text).Build());
+                await Policy.Handle<TimeoutException>()
+                    .Or<Discord.Net.HttpException>((httpEx) => ((int)httpEx.HttpCode).ToString().StartsWith("50"))
+                    .WaitAndRetryAsync(3, (retryAttempt) =>
+                    {
+                        var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
+                        Log.Warn($"YoutubeMemberService-SendUserDMErrorMessageAsync 通知 | {userId} 發送失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
+                        return timeSpan;
+                    })
+                    .ExecuteAsync(async () =>
+                    {
+                        return await userChannel.SendMessageAsync(embed: new EmbedBuilder().WithErrorColor().WithDescription(text).Build());
+                    });
             }
             catch (Discord.Net.HttpException ex)
             {
@@ -588,11 +649,13 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                     await tc.SendMessageAsync($"無法傳送訊息至: <@{userId}>\n請向該用戶提醒開啟 `允許來自伺服器成員的私人訊息`");
                 }
                 else
-                    Log.Error(ex.ToString());
+                {
+                    Log.Error(ex, $"YoutubeMemberService-SendUserDMErrorMessageAsync - Discord 錯誤: {userId}");
+                }
             }
             catch (Exception ex)
             {
-                Log.Error(ex.ToString());
+                Log.Error(ex, $"YoutubeMemberService-SendUserDMErrorMessageAsync 錯誤: {userId}");
             }
         }
 
@@ -602,7 +665,18 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
 
             try
             {
-                await dc.SendMessageAsync(embed: new EmbedBuilder().WithErrorColor().WithDescription(text).Build());
+                await Policy.Handle<TimeoutException>()
+                    .Or<Discord.Net.HttpException>((httpEx) => ((int)httpEx.HttpCode).ToString().StartsWith("50"))
+                    .WaitAndRetryAsync(3, (retryAttempt) =>
+                    {
+                        var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
+                        Log.Warn($"YoutubeMemberService-SendUserDMErrorMessageAsync 通知 | {dc.Id} 發送失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
+                        return timeSpan;
+                    })
+                    .ExecuteAsync(async () =>
+                    {
+                        return await dc.SendMessageAsync(embed: new EmbedBuilder().WithErrorColor().WithDescription(text).Build());
+                    });
             }
             catch (Discord.Net.HttpException ex)
             {
@@ -611,11 +685,13 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                     Log.Warn($"無法傳送訊息至: {dc.Name}");
                 }
                 else
-                    Log.Error(ex.ToString());
+                {
+                    Log.Error(ex, $"YoutubeMemberService-SendUserDMErrorMessageAsync - Discord 錯誤: {dc.Name}");
+                }
             }
             catch (Exception ex)
             {
-                Log.Error(ex.ToString());
+                Log.Error(ex, $"YoutubeMemberService-SendUserDMErrorMessageAsync 錯誤: {dc.Name}");
             }
         }
     }

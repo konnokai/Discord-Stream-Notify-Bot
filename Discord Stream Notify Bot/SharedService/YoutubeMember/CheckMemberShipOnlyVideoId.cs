@@ -1,6 +1,7 @@
 ﻿using Discord_Stream_Notify_Bot.DataBase;
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.Interaction;
+using Microsoft.EntityFrameworkCore;
 
 namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
 {
@@ -88,10 +89,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                         }
                         else Log.Warn($"CheckMemberShipOnlyVideoId: {item.GuildId} / {item.MemberCheckChannelId}\n{ex}");
                     }
-                    finally
-                    {
-                        db.SaveChanges();
-                    }
 
                     try
                     {
@@ -113,10 +110,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                     {
                         Log.Warn($"CheckMemberShipOnlyChannelName: {item.GuildId} / {item.MemberCheckChannelId}\n{ex}");
                     }
-                    finally
-                    {
-                        db.SaveChanges();
-                    }
                 }
 
                 try
@@ -131,7 +124,39 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
 
                 try
                 {
-                    db.SaveChanges();
+                    var saveTime = DateTime.Now;
+                    bool saveFailed;
+
+                    do
+                    {
+                        saveFailed = false;
+                        try
+                        {
+                            db.SaveChanges();
+                        }
+                        catch (DbUpdateConcurrencyException ex)
+                        {
+                            saveFailed = true;
+                            foreach (var item2 in ex.Entries)
+                            {
+                                try
+                                {
+                                    item2.Reload();
+                                }
+                                catch (Exception ex2)
+                                {
+                                    Log.Error($"VideoContext-SaveChanges-Reload");
+                                    Log.Error(item2.DebugView.ToString());
+                                    Log.Error(ex2.ToString());
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Error($"VideoContext-SaveChanges: {ex}");
+                            Log.Error(db.ChangeTracker.DebugView.LongView);
+                        }
+                    } while (saveFailed && DateTime.Now.Subtract(saveTime) <= TimeSpan.FromMinutes(1));
                 }
                 catch (Exception ex)
                 {
