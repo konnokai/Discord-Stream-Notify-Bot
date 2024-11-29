@@ -5,6 +5,7 @@ using Discord_Stream_Notify_Bot.Interaction;
 using Dorssel.Utilities;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Text.RegularExpressions;
 using TwitchLib.Api;
 using TwitchLib.Api.Core.Enums;
@@ -70,7 +71,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "獲取 TwitchWebHookSecret 失敗，無法運行 Twitch 類功能");
+                Log.Error(ex.Demystify(), "獲取 TwitchWebHookSecret 失敗，無法運行 Twitch 類功能");
                 IsEnable = false;
                 return;
             }
@@ -129,7 +130,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex, $"Event Delete Error: {data.BroadcasterUserId}");
+                    Log.Error(ex.Demystify(), $"Event Delete Error: {data.BroadcasterUserId}");
                 }
 
                 TwitchStream? twitchStream = null;
@@ -141,7 +142,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex, $"Twitch Get Redis Data Error: {data.BroadcasterUserId}");
+                    Log.Error(ex.Demystify(), $"Twitch Get Redis Data Error: {data.BroadcasterUserId}");
                 }
 
                 DateTime createAt = DateTime.Now.AddDays(-3), endAt = DateTime.Now;
@@ -216,7 +217,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex, $"Twitch Get Redis Data Error: {data.BroadcasterUserId}");
+                    Log.Error(ex.Demystify(), $"Twitch Get Redis Data Error: {data.BroadcasterUserId}");
                 }
 
                 if (twitchStream == null)
@@ -280,7 +281,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex, $"Twitch Channel Update Set Redis Data Error: {data.BroadcasterUserId}");
+                    Log.Error(ex.Demystify(), $"Twitch Channel Update Set Redis Data Error: {data.BroadcasterUserId}");
                 }
             });
 
@@ -403,7 +404,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                                 }
                                 catch (Exception ex)
                                 {
-                                    Log.Error(ex, $"Twitch Set Redis Data Error: {stream.Id}");
+                                    Log.Error(ex.Demystify(), $"Twitch Set Redis Data Error: {stream.Id}");
                                 }
 
 #if RELEASE
@@ -416,7 +417,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
 
                             await SendStreamMessageAsync(twitchStream.UserId, embedBuilder.Build(), NoticeType.StartStream);
                         }
-                        catch (Exception ex) { Log.Error(ex, $"TwitchService-GetData: {twitchSpider.UserLogin}"); }
+                        catch (Exception ex) { Log.Error(ex.Demystify(), $"TwitchService-GetData: {twitchSpider.UserLogin}"); }
                     }
 
                     await Task.Delay(1000); // 等個一秒鐘避免觸發 429 之類的錯誤，雖然也不知道有沒有用
@@ -429,10 +430,10 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex, "TwitchService-Timer: SaveDb Error");
+                    Log.Error(ex.Demystify(), "TwitchService-Timer: SaveDb Error");
                 }
             }
-            catch (Exception ex) { Log.Error(ex, "TwitchService-Timer"); }
+            catch (Exception ex) { Log.Error(ex.Demystify(), "TwitchService-Timer"); }
             finally { isRuning = false; }
 
         }
@@ -451,7 +452,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
             }
             catch (Exception ex)
             {
-                Log.Error(ex, $"註冊 {broadcasterUserId} 的 Twitch WebHook 失敗，也許是已經註冊過了?");
+                Log.Error(ex.Demystify(), $"註冊 {broadcasterUserId} 的 Twitch WebHook 失敗，也許是已經註冊過了?");
             }
 
             return false;
@@ -548,7 +549,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                     }
                     catch (Exception ex)
                     {
-                        Log.Error(ex, $"Twitch 通知 ({twitchUserId}) | 未知錯誤 {item.GuildId} / {item.DiscordChannelId}");
+                        Log.Error(ex.Demystify(), $"Twitch 通知 ({twitchUserId}) | 未知錯誤 {item.GuildId} / {item.DiscordChannelId}");
                     }
                 }
             }
@@ -597,7 +598,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
             }
             catch (Exception ex)
             {
-                Log.Error(ex, $"無法取得 Twitch 資料: ({twitchUserId}) {twitchUserLogin}");
+                Log.Error(ex.Demystify(), $"無法取得 Twitch 資料: ({twitchUserId}) {twitchUserLogin}");
                 return null;
             }
         }
@@ -625,7 +626,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
             }
             catch (Exception ex)
             {
-                Log.Error(ex, $"無法取得 Twitch 資料: {twitchUserLogins.First()}");
+                Log.Error(ex.Demystify(), $"無法取得 Twitch 資料: {twitchUserLogins.First()}");
                 return null;
             }
         }
@@ -644,7 +645,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
             }
             catch (Exception ex)
             {
-                Log.Error(ex, $"無法取得 Twitch 資料: {twitchUserId}");
+                Log.Error(ex.Demystify(), $"無法取得 Twitch 資料: {twitchUserId}");
                 return null;
             }
         }
@@ -670,7 +671,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
             }
             catch (Exception ex)
             {
-                Log.Error(ex, $"無法取得 Twitch 資料: {twitchUserId}");
+                Log.Error(ex.Demystify(), $"無法取得 Twitch 資料: {twitchUserId}");
                 return null;
             }
         }
@@ -693,7 +694,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
             }
             catch (Exception ex)
             {
-                Log.Error(ex, $"無法取得 Twitch 資料，請確認 {nameof(BotConfig.TwitchClientId)} 或 {nameof(BotConfig.TwitchClientSecret)} 是否正常");
+                Log.Error(ex.Demystify(), $"無法取得 Twitch 資料，請確認 {nameof(BotConfig.TwitchClientId)} 或 {nameof(BotConfig.TwitchClientSecret)} 是否正常");
                 return Array.Empty<Stream>();
             }
         }
@@ -746,7 +747,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex, $"{_twitchUserLogin} 訊息去抖動失敗");
+                    Log.Error(ex.Demystify(), $"{_twitchUserLogin} 訊息去抖動失敗");
                 }
                 finally
                 {

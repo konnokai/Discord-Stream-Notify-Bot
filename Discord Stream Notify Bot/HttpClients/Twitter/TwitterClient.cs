@@ -2,6 +2,7 @@
 using HtmlAgilityPack;
 using Newtonsoft.Json.Linq;
 using Polly;
+using System.Diagnostics;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -207,7 +208,7 @@ namespace Discord_Stream_Notify_Bot.HttpClients
             }
             catch (Exception ex)
             {
-                Log.Error(ex, $"AddApiQueryData - {fileName}");
+                Log.Error(ex.Demystify(), $"AddApiQueryData - {fileName}");
                 throw;
             }
         }
@@ -314,7 +315,7 @@ namespace Discord_Stream_Notify_Bot.HttpClients
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex, "GetTwitterSpaceByUsersIdAsync");
+                    Log.Error(ex.Demystify(), "GetTwitterSpaceByUsersIdAsync");
                     throw;
                 }
             }

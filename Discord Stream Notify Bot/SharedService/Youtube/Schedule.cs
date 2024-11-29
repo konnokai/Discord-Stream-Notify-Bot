@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json.Linq;
 using Polly;
 using System.Data;
+using System.Diagnostics;
 using System.Net;
 using System.Text.RegularExpressions;
 using Extensions = Discord_Stream_Notify_Bot.Interaction.Extensions;
@@ -236,7 +237,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     catch (Exception ex)
                     {
                         if (!ex.Message.Contains("EOF or 0 bytes") && !ex.Message.Contains("504") && !ex.Message.Contains("500"))
-                            Log.Error(ex, $"NijisanjiScheduleAsync-GetData: {i}");
+                            Log.Error(ex.Demystify(), $"NijisanjiScheduleAsync-GetData: {i}");
                         continue;
                     }
                 }
@@ -291,7 +292,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                             }
                             catch (Exception ex)
                             {
-                                Log.Error(ex, $"channelData 解析失敗: {channelData.socialLinks.youtube}");
+                                Log.Error(ex.Demystify(), $"channelData 解析失敗: {channelData.socialLinks.youtube}");
                             }
                         }
                     }
@@ -353,7 +354,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         }
                         catch (Exception ex)
                         {
-                            Log.Error(ex, $"NijisanjiScheduleAsync-New Stream: {streamVideo.VideoId}");
+                            Log.Error(ex.Demystify(), $"NijisanjiScheduleAsync-New Stream: {streamVideo.VideoId}");
                         }
                     }
                     else
@@ -427,7 +428,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     }
                     catch (Exception ex)
                     {
-                        Log.Error(ex, $"OtherUpdateChannelTitle {item}");
+                        Log.Error(ex.Demystify(), $"OtherUpdateChannelTitle {item}");
                     }
 
                     string videoId = "";
@@ -483,7 +484,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                         }
                                         catch (Exception ex)
                                         {
-                                            Log.Error(ex, $"頻道被 Ban 了但移除爬蟲失敗: {item.ChannelTitle} ({item.ChannelId})");
+                                            Log.Error(ex.Demystify(), $"頻道被 Ban 了但移除爬蟲失敗: {item.ChannelTitle} ({item.ChannelId})");
                                         }
                                     }
                                 }
@@ -516,7 +517,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                 }
                                 catch (Exception ex)
                                 {
-                                    Log.Error(ex, $"OtherSchedule {item.ChannelId} - {type}: GetVideoId");
+                                    Log.Error(ex.Demystify(), $"OtherSchedule {item.ChannelId} - {type}: GetVideoId");
                                 }
                             }
                         }
@@ -524,7 +525,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         {
                             try { otherVideoDic[item.ChannelId].Remove(videoId); }
                             catch (Exception) { }
-                            Log.Error(ex, $"OtherSchedule {item.ChannelId} - {type}: GetVideoList");
+                            Log.Error(ex.Demystify(), $"OtherSchedule {item.ChannelId} - {type}: GetVideoList");
                         }
                     }
                 }
@@ -553,7 +554,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         }
                         catch (Exception ex)
                         {
-                            Log.Error(ex, $"OtherAddSchedule {item.Id}");
+                            Log.Error(ex.Demystify(), $"OtherAddSchedule {item.Id}");
                         }
                     }
                 }

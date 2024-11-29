@@ -1,5 +1,6 @@
 ﻿using Discord.Interactions;
 using Discord_Stream_Notify_Bot.Interaction.Attribute;
+using System.Diagnostics;
 
 namespace Discord_Stream_Notify_Bot.Interaction.TwitCasting
 {
@@ -150,7 +151,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.TwitCasting
                 catch (Exception ex)
                 {
                     await button.SendErrorAsync(ex.Message, true);
-                    Log.Error(ex.ToString());
+                    Log.Error(ex.Demystify().ToString());
                 }
             };
         }
@@ -206,7 +207,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.TwitCasting
                                     .AddField("原伺服器", Context.Guild.Id, false)
                                     .AddField("新伺服器", $"{Context.Guild.Name} ({Context.Guild.Id})", false).Build());
                         }
-                        catch (Exception ex) { Log.Error(ex.ToString()); }
+                        catch (Exception ex) { Log.Error(ex.Demystify().ToString()); }
 
                         item.GuildId = Context.Guild.Id;
                         db.TwitCastingSpider.Update(item);
@@ -251,7 +252,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.TwitCasting
                             .WithButton("切換頻道狀態", $"spider_tc:warning:{channelData.ChannelId}", ButtonStyle.Danger)
                             .WithButton("切換頻道錄影", $"spider_tc:record:{channelData.ChannelId}", ButtonStyle.Success).Build());
                 }
-                catch (Exception ex) { Log.Error(ex.ToString()); }
+                catch (Exception ex) { Log.Error(ex.Demystify().ToString()); }
             }
         }
 
@@ -299,7 +300,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.TwitCasting
                     .AddField("伺服器", $"{Context.Guild.Name} ({Context.Guild.Id})", false)
                     .AddField("執行者", $"{Context.User.Username} ({Context.User.Id})", false).Build());
             }
-            catch (Exception ex) { Log.Error(ex.ToString()); }
+            catch (Exception ex) { Log.Error(ex.Demystify().ToString()); }
         }
 
         [SlashCommand("list", "顯示已加入爬蟲檢測的頻道")]

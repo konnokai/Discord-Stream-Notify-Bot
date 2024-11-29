@@ -2,6 +2,7 @@
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.Interaction.Attribute;
 using Discord_Stream_Notify_Bot.SharedService.Twitch;
+using System.Diagnostics;
 
 namespace Discord_Stream_Notify_Bot.Interaction.Twitch
 {
@@ -139,7 +140,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
             }
             catch (Exception ex)
             {
-                Log.Error(ex, $"Twitch Add Error: {twitchUrl}");
+                Log.Error(ex.Demystify(), $"Twitch Add Error: {twitchUrl}");
                 await Context.Interaction.SendErrorAsync("新增失敗，請向 Bot 擁有者回報", true);
             }
         }
@@ -298,7 +299,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
                         }
                         catch (Exception ex)
                         {
-                            Log.Error(ex.Message + "\n" + ex.StackTrace);
+                            Log.Error(ex.Demystify().Message + "\n" + ex.StackTrace);
                         }
                     }
                     else
@@ -310,7 +311,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Twitch ListMessage");
+                Log.Error(ex.Demystify(), "Twitch ListMessage");
                 await Context.Interaction.SendErrorAsync("錯誤，請向 Bot 擁有者詢問");
             }
         }

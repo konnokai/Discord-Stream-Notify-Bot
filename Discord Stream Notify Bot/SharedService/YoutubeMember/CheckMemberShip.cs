@@ -4,6 +4,7 @@ using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
 using Google.Apis.YouTube.v3;
 using Microsoft.EntityFrameworkCore;
+using System.Diagnostics;
 
 namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
 {
@@ -59,7 +60,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                     }
                     catch (Exception ex)
                     {
-                        Log.Error(ex, "Split member check list error");
+                        Log.Error(ex.Demystify(), "Split member check list error");
                     }
                 }
 
@@ -169,7 +170,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                     continue;
                                 }
 
-                                Log.Error(ex.ToString());
+                                Log.Error(ex.Demystify().ToString());
                                 continue;
                             }
 
@@ -300,7 +301,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                     else if (ex.Message.ToLower().Contains("the added or subtracted value results in an un-representable"))
                                     {
                                         Log.Error($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {member.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 的會限資格取得失敗: 時間加減錯誤");
-                                        Log.Error(ex.ToString());
+                                        Log.Error(ex.Demystify().ToString());
 
                                         await RevokeUserGoogleCertAsync(member.UserId.ToString());
 
@@ -339,7 +340,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                     else
                                     {
                                         Log.Error($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {member.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 的會限資格取得失敗: 未知的錯誤");
-                                        Log.Error(ex.ToString());
+                                        Log.Error(ex.Demystify().ToString());
 
                                         await logChannel.SendErrorMessageAsync(_client, member.UserId, guildYoutubeMemberConfig.MemberCheckChannelTitle, "不明的錯誤");
                                         await member.UserId.SendErrorMessageAsync(_client, $"無法驗證您的帳號，可能是 Google 內部錯誤\n請向 {Program.ApplicatonOwner} 確認問題", logChannel);

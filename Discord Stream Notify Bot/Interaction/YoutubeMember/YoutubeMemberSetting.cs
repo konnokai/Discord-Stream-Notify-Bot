@@ -2,6 +2,7 @@
 using Discord_Stream_Notify_Bot.Interaction.Attribute;
 using Discord_Stream_Notify_Bot.SharedService.Youtube;
 using Discord_Stream_Notify_Bot.SharedService.YoutubeMember;
+using System.Diagnostics;
 
 namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
 {
@@ -218,7 +219,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
                                 .AddField("伺服器", $"{Context.Guild.Name} ({Context.Guild.Id})", false)
                                 .AddField("執行者", $"{Context.User.Username} ({Context.User.Id})", false).Build());
                         }
-                        catch (Exception ex) { Log.Error(ex.ToString()); }
+                        catch (Exception ex) { Log.Error(ex.Demystify().ToString()); }
                     }
                     else
                     {
@@ -235,7 +236,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
                 catch (Exception ex)
                 {
                     await Context.Interaction.SendErrorAsync(ex.Message, true);
-                    Log.Error(ex.ToString());
+                    Log.Error(ex.Demystify().ToString());
                 }
             }
         }
@@ -272,7 +273,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
                                 .AddField("伺服器", $"{Context.Guild.Name} ({Context.Guild.Id})", false)
                                 .AddField("執行者", $"{Context.User.Username} ({Context.User.Id})", false).Build());
                         }
-                        catch (Exception ex) { Log.Error(ex.ToString()); }
+                        catch (Exception ex) { Log.Error(ex.Demystify().ToString()); }
                     }
 
                     db.SaveChanges();
@@ -280,7 +281,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
                 catch (Exception ex)
                 {
                     await Context.Interaction.SendErrorAsync("資料保存失敗，請向孤之界回報", true);
-                    Log.Error(ex.ToString());
+                    Log.Error(ex.Demystify().ToString());
                 }
             }
         }

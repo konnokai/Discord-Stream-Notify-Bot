@@ -1,6 +1,7 @@
 ﻿using Discord.Interactions;
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.Interaction.Attribute;
+using System.Diagnostics;
 
 namespace Discord_Stream_Notify_Bot.Interaction.TwitCasting
 {
@@ -260,7 +261,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.TwitCasting
                     }
                     catch (Exception ex)
                     {
-                        Log.Error(ex.Message + "\n" + ex.StackTrace);
+                        Log.Error(ex.Demystify().Message + "\n" + ex.StackTrace);
                     }
                 }
                 else

@@ -3,6 +3,7 @@ using Discord_Stream_Notify_Bot.Command.Attribute;
 using Discord_Stream_Notify_Bot.DataBase;
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using Microsoft.EntityFrameworkCore;
+using System.Diagnostics;
 using System.Text.RegularExpressions;
 
 namespace Discord_Stream_Notify_Bot.Command.Youtube
@@ -523,7 +524,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex, "FixNijisanjiDatabase");
+                    Log.Error(ex.Demystify(), "FixNijisanjiDatabase");
                 }
             }
         }
@@ -539,7 +540,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Message + "\n" + ex.StackTrace);
+                Log.Error(ex.Demystify().Message + "\n" + ex.StackTrace);
                 return "";
             }
         }
@@ -555,7 +556,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Message + "\n" + ex.StackTrace);
+                Log.Error(ex.Demystify().Message + "\n" + ex.StackTrace);
                 return null;
             }
         }

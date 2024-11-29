@@ -61,7 +61,7 @@ namespace Discord_Stream_Notify_Bot
                         sw.Close();
                     }
 
-                    Log.Error(ex, "UnhandledException", true, false);
+                    Log.Error(ex.Demystify(), "UnhandledException", true, false);
                 }
                 finally
                 {
@@ -83,7 +83,7 @@ namespace Discord_Stream_Notify_Bot
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex, "ReadOfficialListFile Error");
+                    Log.Error(ex.Demystify(), "ReadOfficialListFile Error");
                     return;
                 }
             }
@@ -144,7 +144,7 @@ namespace Discord_Stream_Notify_Bot
             catch (Exception ex)
             {
                 Log.Error("Redis連線錯誤，請確認伺服器是否已開啟");
-                Log.Error(ex.Message);
+                Log.Error(ex.Demystify().Message);
                 return;
             }
 
@@ -286,7 +286,7 @@ namespace Discord_Stream_Notify_Bot
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Discord 登入失敗!");
+                Log.Error(ex.Demystify(), "Discord 登入失敗!");
                 return;
             }
 
@@ -361,7 +361,7 @@ namespace Discord_Stream_Notify_Bot
                         catch (Exception ex)
                         {
                             Log.Error("註冊伺服器專用Slash指令失敗");
-                            Log.Error(ex.ToString());
+                            Log.Error(ex.Demystify().ToString());
                         }
                     }
 #elif RELEASE
@@ -392,7 +392,7 @@ namespace Discord_Stream_Notify_Bot
                         catch (Exception ex)
                         {
                             Log.Error("註冊伺服器專用Slash指令失敗");
-                            Log.Error(ex.ToString());
+                            Log.Error(ex.Demystify().ToString());
                         }
 
                         await interactionService.RegisterCommandsGloballyAsync();
@@ -401,7 +401,7 @@ namespace Discord_Stream_Notify_Bot
                     catch (Exception ex)
                     {
                         Log.Error("取得指令數量失敗，請確認Redis伺服器是否可以存取");
-                        Log.Error(ex.Message);
+                        Log.Error(ex.Demystify().Message);
                         IsDisconnect = true;
                     }
 #endif
@@ -410,7 +410,7 @@ namespace Discord_Stream_Notify_Bot
             catch (Exception ex)
             {
                 Log.Error("註冊Slash指令失敗，關閉中...");
-                Log.Error(ex.ToString());
+                Log.Error(ex.Demystify().ToString());
                 IsDisconnect = true;
             }
             #endregion
@@ -504,7 +504,7 @@ namespace Discord_Stream_Notify_Bot
                         catch (Exception ex)
                         {
                             Log.Error("ChangeStatus");
-                            Log.Error(ex.Message);
+                            Log.Error(ex.Demystify().Message);
                             ChangeStatus();
                         }
                         break;
