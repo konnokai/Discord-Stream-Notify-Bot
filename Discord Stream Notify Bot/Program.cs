@@ -298,8 +298,8 @@ namespace Discord_Stream_Notify_Bot
             UptimeKumaClient.Init(botConfig.UptimeKumaPushUrl, client);
 #endif
 
-            #region 初始化互動指令系統
-            var interactionServices = new ServiceCollection()
+            #region 初始化指令系統
+            var services = new ServiceCollection()
                 .AddHttpClient()
                 .AddSingleton<SharedService.Twitter.TwitterSpacesService>()
                 .AddSingleton<SharedService.Twitch.TwitchService>()
@@ -313,52 +313,38 @@ namespace Discord_Stream_Notify_Bot
                     UseCompiledLambda = true,
                     EnableAutocompleteHandlers = true,
                     DefaultRunMode = Discord.Interactions.RunMode.Async,
-                    ExitOnMissingModalField = true,
-                }));
-
-            //https://blog.darkthread.net/blog/polly/
-            //HandleTransientHttpError 包含 5xx 及 408 錯誤
-            interactionServices.AddHttpClient<DiscordWebhookClient>();
-            interactionServices.AddHttpClient<TwitterClient>();
-            interactionServices.AddHttpClient<TwitCastingClient>()
-                .AddPolicyHandler(HttpPolicyExtensions
-                    .HandleTransientHttpError()
-                    .RetryAsync(3));
-
-            interactionServices.LoadInteractionFrom(Assembly.GetAssembly(typeof(InteractionHandler)));
-            IServiceProvider iService = interactionServices.BuildServiceProvider();
-            await iService.GetService<InteractionHandler>().InitializeAsync();
-            #endregion
-
-            #region 初始化一般指令系統
-            var commandServices = new ServiceCollection()
-                .AddHttpClient()
-                .AddSingleton(iService.GetService<SharedService.Twitter.TwitterSpacesService>())
-                .AddSingleton(iService.GetService<SharedService.Twitch.TwitchService>())
-                .AddSingleton(iService.GetService<SharedService.Youtube.YoutubeStreamService>())
-                .AddSingleton(iService.GetService<SharedService.YoutubeMember.YoutubeMemberService>())
-                .AddSingleton(client)
-                .AddSingleton(botConfig)
+                    ExitOnMissingModalField = true
+                }))
                 .AddSingleton(new CommandService(new CommandServiceConfig()
                 {
                     CaseSensitiveCommands = false,
                     DefaultRunMode = Discord.Commands.RunMode.Async
                 }));
 
-            commandServices.AddHttpClient<DiscordWebhookClient>();
+            //https://blog.darkthread.net/blog/polly/
+            //HandleTransientHttpError 包含 5xx 及 408 錯誤
+            services.AddHttpClient<DiscordWebhookClient>();
+            services.AddHttpClient<TwitterClient>();
+            services.AddHttpClient<TwitCastingClient>()
+                .AddPolicyHandler(HttpPolicyExtensions
+                    .HandleTransientHttpError()
+                    .RetryAsync(3));
 
-            commandServices.LoadCommandFrom(Assembly.GetAssembly(typeof(CommandHandler)));
-            IServiceProvider service = commandServices.BuildServiceProvider();
-            await service.GetService<CommandHandler>().InitializeAsync();
+            services.LoadInteractionFrom(Assembly.GetAssembly(typeof(InteractionHandler)));
+            services.LoadCommandFrom(Assembly.GetAssembly(typeof(CommandHandler)));
+
+            IServiceProvider serviceProvider = services.BuildServiceProvider();
+            await serviceProvider.GetService<InteractionHandler>().InitializeAsync();
+            await serviceProvider.GetService<CommandHandler>().InitializeAsync();
             #endregion
 
             #region 註冊互動指令
             try
             {
-                var commandCount = (await RedisDb.StringGetSetAsync("discord_stream_bot:command_count", iService.GetService<InteractionHandler>().CommandCount)).ToString();
-                if (commandCount != iService.GetService<InteractionHandler>().CommandCount.ToString())
+                var commandCount = (await RedisDb.StringGetSetAsync("discord_stream_bot:command_count", serviceProvider.GetService<InteractionHandler>().CommandCount)).ToString();
+                if (commandCount != serviceProvider.GetService<InteractionHandler>().CommandCount.ToString())
                 {
-                    InteractionService interactionService = iService.GetService<InteractionService>();
+                    InteractionService interactionService = serviceProvider.GetService<InteractionService>();
 #if DEBUG
                     if (botConfig.TestSlashCommandGuildId == 0 || client.GetGuild(botConfig.TestSlashCommandGuildId) == null)
                         Log.Warn("未設定測試Slash指令的伺服器或伺服器不存在，略過");
@@ -443,7 +429,7 @@ namespace Discord_Stream_Notify_Bot
                     }
                 }
 
-                iService.GetService<DiscordWebhookClient>().SendMessageToDiscord($"加入 {guild.Name}({guild.Id})\n擁有者: {guild.OwnerId}");
+                serviceProvider.GetService<DiscordWebhookClient>().SendMessageToDiscord($"加入 {guild.Name}({guild.Id})\n擁有者: {guild.OwnerId}");
                 return Task.CompletedTask;
             };
 
