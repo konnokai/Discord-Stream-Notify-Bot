@@ -203,8 +203,9 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
 
             if (!int.TryParse(twitchId, out _))
             {
-                await Context.Interaction.SendErrorAsync($"設定失敗，找不到對應的 Twitch 直播通知\n" +
+                await Context.Interaction.SendErrorAsync($"設定失敗，無法將頻道名稱轉換成對應的 Twitch 頻道 Id\n" +
                     $"(注意: 設定時請勿切換 Discord 頻道，這會導致自動輸入的頻道名稱跑掉)", true).ConfigureAwait(false);
+                return;
             }
 
             using (var db = DataBase.MainDbContext.GetDbContext())
@@ -215,6 +216,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
                     await Context.Interaction.SendErrorAsync($"並未設定 `{twitchId}` 的 Twitch 直播通知\n" +
                         $"請先使用 `/twitch add {twitchId}` 新增通知後再設定通知訊息\n" +
                         $"(注意: 設定時請勿切換 Discord 頻道，這會導致自動輸入的頻道名稱跑掉)", true).ConfigureAwait(false);
+                    return;
                 }
                 else
                 {
