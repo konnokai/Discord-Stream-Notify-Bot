@@ -29,7 +29,6 @@ public class BotConfig
     public string TwitchCookieAuthToken { get; set; } = "";
     public string TwitchClientId { get; set; } = "";
     public string TwitchClientSecret { get; set; } = "";
-    public string TwitchRecordPath { get; set; } = "";
 
     public string TwitterAuthToken { get; set; } = "";
     public string TwitterCSRFToken { get; set; } = "";
@@ -93,7 +92,6 @@ public class BotConfig
             TwitchCookieAuthToken = config.TwitchCookieAuthToken;
             TwitchClientId = config.TwitchClientId;
             TwitchClientSecret = config.TwitchClientSecret;
-            TwitchRecordPath = config.TwitchRecordPath;
             TwitterAuthToken = config.TwitterAuthToken;
             TwitterCSRFToken = config.TwitterCSRFToken;
             TwitterSpaceRecordPath = config.TwitterSpaceRecordPath;

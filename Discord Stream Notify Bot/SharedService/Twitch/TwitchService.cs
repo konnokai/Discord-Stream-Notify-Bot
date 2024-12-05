@@ -39,7 +39,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
             RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         private bool isRuning = false;
-        private string twitchRecordPath;
 
         private readonly EmojiService _emojiService;
         private readonly DiscordSocketClient _client;
@@ -87,11 +86,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
             }
 
             _apiServerUrl = botConfig.ApiServerDomain;
-
-            twitchRecordPath = botConfig.TwitchRecordPath;
-            if (string.IsNullOrEmpty(twitchRecordPath)) twitchRecordPath = Program.GetDataFilePath("");
-            if (!twitchRecordPath.EndsWith(Program.GetPlatformSlash())) twitchRecordPath += Program.GetPlatformSlash();
-
             _client = client;
             _emojiService = emojiService;
 
