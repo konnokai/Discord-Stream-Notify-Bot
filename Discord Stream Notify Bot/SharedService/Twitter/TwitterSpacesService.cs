@@ -2,7 +2,6 @@
 using Discord_Stream_Notify_Bot.HttpClients.Twitter;
 using Discord_Stream_Notify_Bot.Interaction;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 
 #if RELEASE
 using Microsoft.EntityFrameworkCore;
@@ -21,7 +20,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
         private readonly HashSet<string> hashSet = new HashSet<string>();
 
         private bool isRuning = false;
-        private string twitterSpaceRecordPath = "";
 
         public TwitterSpacesService(DiscordSocketClient client, TwitterClient twitterClient, BotConfig botConfig, EmojiService emojiService)
         {
@@ -34,9 +32,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
 
             _client = client;
             _twitterClient = twitterClient;
-            twitterSpaceRecordPath = botConfig.TwitterSpaceRecordPath;
-            if (string.IsNullOrEmpty(twitterSpaceRecordPath)) twitterSpaceRecordPath = Program.GetDataFilePath("");
-            if (!twitterSpaceRecordPath.EndsWith(Program.GetPlatformSlash())) twitterSpaceRecordPath += Program.GetPlatformSlash();
 
 #if DEBUG_API
             Task.Run(async () => await _twitterClient.GetQueryIdAndFeatureSwitchesAsync());
@@ -106,20 +101,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
 
                                         db.TwitterSpace.Add(spaceData);
 
-                                        if (IsRecordSpace(spaceData) && !string.IsNullOrEmpty(masterUrl))
-                                        {
-                                            try
-                                            {
-                                                RecordSpace(spaceData, masterUrl);
-                                                await SendSpaceMessageAsync(userData, spaceData, true);
-                                            }
-                                            catch (Exception ex)
-                                            {
-                                                Log.Error($"Spaces-Record {item.SpaceId}: {ex}");
-                                                await SendSpaceMessageAsync(userData, spaceData);
-                                            }
-                                        }
-                                        else await SendSpaceMessageAsync(userData, spaceData);
+                                        await SendSpaceMessageAsync(userData, spaceData);
                                     }
                                     catch (Exception ex)
                                     {
@@ -155,26 +137,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
             { return (await _twitterClient.GetUserDataByScreenNameAsync(userScreenName)).Data.User.Result; }
             catch (Exception)
             { return null; }
-        }
-
-        private bool IsRecordSpace(DataBase.Table.TwitterSpace twitterSpace)
-        {
-            using (var db = DataBase.MainDbContext.GetDbContext())
-            {
-                var item = db.TwitterSpaecSpider.FirstOrDefault((x) => x.UserId == twitterSpace.UserId);
-                if (item == null)
-                    return false;
-
-                try
-                {
-                    return item.IsRecord;
-                }
-                catch (Exception ex)
-                {
-                    Log.Error($"IsRecordSpace: {twitterSpace.SpaecId} {ex.Message}\n{ex.StackTrace}");
-                    return false;
-                }
-            }
         }
 
         private async Task SendSpaceMessageAsync(Result userModel, DataBase.Table.TwitterSpace twitterSpace, bool isRecord = false)
@@ -264,35 +226,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                 }
             }
 #endif
-        }
-
-        private void RecordSpace(DataBase.Table.TwitterSpace twitterSpace, string masterUrl)
-        {
-            Log.Info($"{twitterSpace.UserName} ({twitterSpace.SpaecTitle}): {masterUrl}");
-
-            try
-            {
-                if (!Directory.Exists(twitterSpaceRecordPath))
-                    Directory.CreateDirectory(twitterSpaceRecordPath);
-            }
-            catch (Exception ex)
-            {
-                Log.Error($"推特語音保存路徑不存在且不可建立: {twitterSpaceRecordPath}");
-                Log.Error($"更改保存路徑至Data資料夾: {Program.GetDataFilePath("")}");
-                Log.Error(ex.Demystify().ToString());
-
-                twitterSpaceRecordPath = Program.GetDataFilePath("");
-            }
-
-            string procArgs = $"ffmpeg -i \"{masterUrl}\" \"{twitterSpaceRecordPath}[{twitterSpace.UserScreenName}]{twitterSpace.SpaecActualStartTime:yyyyMMdd} - {twitterSpace.SpaecId}.m4a\"";
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) Process.Start("tmux", $"new-window -d -n \"Twitter Space @{twitterSpace.UserScreenName}\" {procArgs}");
-            else Process.Start(new ProcessStartInfo()
-            {
-                FileName = "ffmpeg",
-                Arguments = procArgs.Replace("ffmpeg", ""),
-                CreateNoWindow = false,
-                UseShellExecute = true
-            });
         }
     }
 }

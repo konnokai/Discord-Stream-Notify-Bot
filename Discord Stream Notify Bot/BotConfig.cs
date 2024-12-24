@@ -20,7 +20,6 @@ public class BotConfig
 
     public string TwitterAuthToken { get; set; } = "";
     public string TwitterCSRFToken { get; set; } = "";
-    public string TwitterSpaceRecordPath { get; set; } = "";
 
     public void InitBotConfig()
     {
@@ -78,7 +77,6 @@ public class BotConfig
             TwitchClientSecret = config.TwitchClientSecret;
             TwitterAuthToken = config.TwitterAuthToken;
             TwitterCSRFToken = config.TwitterCSRFToken;
-            TwitterSpaceRecordPath = config.TwitterSpaceRecordPath;
             GoogleClientId = config.GoogleClientId;
             GoogleClientSecret = config.GoogleClientSecret;
             RedisOption = config.RedisOption;
