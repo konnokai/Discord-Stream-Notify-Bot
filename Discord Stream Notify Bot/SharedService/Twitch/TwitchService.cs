@@ -40,12 +40,10 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
 
         private bool isRuning = false;
 
-        private readonly EmojiService _emojiService;
         private readonly DiscordSocketClient _client;
         private readonly Timer _timer;
         private readonly HashSet<string> _hashSet = new();
-        private readonly MessageComponent _messageComponent;
-        private readonly string _apiServerUrl, _twitchOAuthToken, _twitchWebHookSecret;
+        private readonly string _apiServerUrl, _twitchWebHookSecret;
         private readonly ConcurrentDictionary<string, DebounceChannelUpdateMessage> _debounceChannelUpdateMessage = new();
 
         public TwitchService(DiscordSocketClient client, BotConfig botConfig, EmojiService emojiService)
@@ -75,19 +73,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                 return;
             }
 
-            if (string.IsNullOrEmpty(botConfig.TwitchCookieAuthToken) || botConfig.TwitchCookieAuthToken.Length != 30)
-            {
-                Log.Warn($"{nameof(botConfig.TwitchCookieAuthToken)} 遺失或是字元非 30 字");
-                Log.Warn($"請參考 https://streamlink.github.io/cli/plugins/twitch.html#authentication 後設定到 {nameof(botConfig.TwitchCookieAuthToken)}");
-            }
-            else
-            {
-                _twitchOAuthToken = botConfig.TwitchCookieAuthToken;
-            }
-
             _apiServerUrl = botConfig.ApiServerDomain;
             _client = client;
-            _emojiService = emojiService;
 
             TwitchApi = new(() => new()
             {
@@ -100,11 +87,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                     }
                 }
             });
-
-            _messageComponent = new ComponentBuilder()
-                .WithButton("好手氣，隨機帶你到一個影片或直播", style: ButtonStyle.Link, emote: emojiService.YouTubeEmote, url: "https://api.konnokai.me/randomvideo")
-                .WithButton("贊助小幫手 (Patreon) #ad", style: ButtonStyle.Link, emote: emojiService.PatreonEmote, url: Utility.PatreonUrl, row: 1)
-                .WithButton("贊助小幫手 (Paypal) #ad", style: ButtonStyle.Link, emote: emojiService.PayPalEmote, url: Utility.PaypalUrl, row: 1).Build();
 
 #nullable enable
 
@@ -507,7 +489,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                             })
                             .ExecuteAsync(async () =>
                             {
-                                var message = await channel.SendMessageAsync(text: sendMessage, embed: embed, components: noticeType == NoticeType.StartStream ? _messageComponent : null, options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
+                                var message = await channel.SendMessageAsync(text: sendMessage, embed: embed, options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
 
                                 try
                                 {

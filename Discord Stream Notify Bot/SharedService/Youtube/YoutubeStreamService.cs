@@ -1,7 +1,6 @@
 ﻿using Discord.Interactions;
 using Discord.Webhook;
 using Discord_Stream_Notify_Bot.Interaction;
-using Discord_Stream_Notify_Bot.SharedService.Youtube.Json;
 using Google.Apis.Services;
 using Google.Apis.YouTube.v3;
 using HtmlAgilityPack;
@@ -39,28 +38,21 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             Niji
         }
 
-        public ConcurrentBag<NijisanjiLiverJson> NijisanjiLiverContents { get; } = new ConcurrentBag<NijisanjiLiverJson>();
         public ConcurrentDictionary<string, ReminderItem> Reminders { get; } = new ConcurrentDictionary<string, ReminderItem>();
         public bool IsRecord { get; set; } = true;
         public YouTubeService YouTubeService { get; set; }
 
         private bool isSubscribing = false;
-        private Timer holoSchedule, nijisanjiSchedule, otherSchedule, checkScheduleTime, saveDateBase, subscribePubSub, reScheduleTime/*, checkHoloNowStream, holoScheduleEmoji*/;
+        private Timer otherSchedule, checkScheduleTime, saveDateBase, subscribePubSub, reScheduleTime/*, checkHoloNowStream, holoScheduleEmoji*/;
         private readonly DiscordSocketClient _client;
-        private readonly DiscordWebhookClient _webhookClient;
         private readonly IHttpClientFactory _httpClientFactory;
-        private readonly HttpClient _nijisanjiApiHttpClient;
         private readonly ConcurrentDictionary<string, byte> _endLiveBag = new();
         private readonly string _apiServerUrl;
-        private readonly MessageComponent _messageComponent;
 
         public YoutubeStreamService(DiscordSocketClient client, IHttpClientFactory httpClientFactory, BotConfig botConfig, EmojiService emojiService)
         {
             _client = client;
             _httpClientFactory = httpClientFactory;
-
-            _nijisanjiApiHttpClient = _httpClientFactory.CreateClient();
-            _nijisanjiApiHttpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
 
             YouTubeService = new YouTubeService(new BaseClientService.Initializer
             {
@@ -69,57 +61,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             });
 
             _apiServerUrl = botConfig.ApiServerDomain;
-
-            _messageComponent = new ComponentBuilder()
-                        .WithButton("好手氣，隨機帶你到一個影片或直播", style: ButtonStyle.Link, emote: emojiService.YouTubeEmote, url: "https://api.konnokai.me/randomvideo")
-                        .WithButton("贊助小幫手 (Patreon) #ad", style: ButtonStyle.Link, emote: emojiService.PatreonEmote, url: Utility.PatreonUrl, row: 1)
-                        .WithButton("贊助小幫手 (Paypal) #ad", style: ButtonStyle.Link, emote: emojiService.PayPalEmote, url: Utility.PaypalUrl, row: 1).Build();
-
-#if RELEASE
-            if (botConfig.DetectGuildId != 0 && botConfig.DetectCategoryId != 0)
-            {
-                if (!string.IsNullOrEmpty(botConfig.SendMessageWebHookUrl))
-                {
-                    _webhookClient = new DiscordWebhookClient(botConfig.SendMessageWebHookUrl);
-                }
-
-                _client.ChannelCreated += async (channel) =>
-                {
-                    if (channel is not IVoiceChannel voiceChannel)
-                        return;
-
-                    if (voiceChannel.GuildId != botConfig.DetectGuildId)
-                        return;
-
-                    if (voiceChannel.CategoryId != botConfig.DetectCategoryId)
-                        return;
-
-                    string msg = $"`{voiceChannel.Guild}` 建立了新頻道 `{voiceChannel}`";
-
-                    try
-                    {
-                        if (_webhookClient != null)
-                        {
-                            if (botConfig.MentionRoleId != 0)
-                            {
-                                msg = $"<@&{botConfig.MentionRoleId}> `{voiceChannel.Guild}` 建立了新頻道 `{voiceChannel}`";
-                            }
-
-                            await _webhookClient.SendMessageAsync(msg);
-                        }
-                        else
-                        {
-                            await Program.ApplicatonOwner.SendMessageAsync(msg);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Error(ex.Demystify(), "Send Message To Channel Error");
-                        await Program.ApplicatonOwner.SendMessageAsync(msg);
-                    }
-                };
-            }
-#endif
 
             if (Program.Redis != null)
             {
@@ -429,11 +370,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                 DataBase.Table.Video streamVideo;
                                 var youtubeChannelSpider = db.YoutubeChannelSpider.FirstOrDefault((x) => x.ChannelId == youtubePubSubNotification.ChannelId);
 
-                                // 這邊要拿 2434 的資料庫，確認接進來的頻道 Id 是不是 2434 的
-                                using var db2 = DataBase.NijisanjiVideoContext.GetDbContext();
-
-                                if (db.RecordYoutubeChannel.Any((x) => x.YoutubeChannelId == youtubePubSubNotification.ChannelId) // 錄影頻道一律允許
-                                    || db2.Video.Any((x) => x.ChannelId == youtubePubSubNotification.ChannelId) || // 可能是 2434 的頻道，允許
+                                if (db.RecordYoutubeChannel.Any((x) => x.YoutubeChannelId == youtubePubSubNotification.ChannelId) || // 錄影頻道一律允許
                                     (youtubeChannelSpider != null && youtubeChannelSpider.IsTrustedChannel)) // 否則就確認這是不是允許的爬蟲
                                 {
                                     var item = await GetVideoAsync(youtubePubSubNotification.VideoId).ConfigureAwait(false);
@@ -637,16 +574,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             }
 
             reScheduleTime = new Timer((objState) => ReScheduleReminder(), null, TimeSpan.FromSeconds(5), TimeSpan.FromDays(1));
-
-            foreach (var item in new string[] { "nijisanji", "nijisanjien", "virtuareal" })
-            {
-                Task.Run(async () => await GetOrCreateNijisanjiLiverListAsync(item));
-            }
-
-            holoSchedule = new Timer(async (objState) => await HoloScheduleAsync(), null, TimeSpan.FromSeconds(15), TimeSpan.FromMinutes(5));
-
-            nijisanjiSchedule = new Timer(async (objState) => await NijisanjiScheduleAsync(), null, TimeSpan.FromSeconds(10), TimeSpan.FromMinutes(5));
-
+                        
             otherSchedule = new Timer(async (objState) => await OtherScheduleAsync(), null, TimeSpan.FromSeconds(20), TimeSpan.FromMinutes(5));
 
             checkScheduleTime = new Timer(async (objState) => await CheckScheduleTime(), null, TimeSpan.FromMinutes(15), TimeSpan.FromMinutes(15));
@@ -658,87 +586,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 #endif
 
             subscribePubSub = new Timer(async (objState) => await SubscribePubSubAsync(), null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(30));
-        }
-
-        private async Task GetOrCreateNijisanjiLiverListAsync(string affiliation, bool forceRefresh = false)
-        {
-            if (!forceRefresh)
-            {
-                try
-                {
-                    if (await Program.RedisDb.KeyExistsAsync($"youtube.nijisanji.liver.{affiliation}"))
-                    {
-                        var liver = JsonConvert.DeserializeObject<List<NijisanjiLiverJson>>(await Program.RedisDb.StringGetAsync($"youtube.nijisanji.liver.{affiliation}"));
-                        foreach (var item in liver)
-                        {
-                            NijisanjiLiverContents.Add(item);
-                        }
-                        return;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Log.Error(ex.Demystify(), $"GetOrCreateNijisanjiLiverListAsync-GetRedisData-{affiliation}");
-                }
-            }
-
-            try
-            {
-                var json = await _nijisanjiApiHttpClient.GetStringAsync($"https://www.nijisanji.jp/api/livers?limit=300&orderKey=subscriber_count&order=asc&affiliation={affiliation}&locale=ja&includeAll=true");
-                var liver = JsonConvert.DeserializeObject<List<NijisanjiLiverJson>>(json);
-                await Program.RedisDb.StringSetAsync($"youtube.nijisanji.liver.{affiliation}", JsonConvert.SerializeObject(liver), TimeSpan.FromDays(1));
-                foreach (var item in liver)
-                {
-                    NijisanjiLiverContents.Add(item);
-                }
-                Log.New($"GetOrCreateNijisanjiLiverListAsync: {affiliation} 已刷新");
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex.Demystify(), $"GetOrCreateNijisanjiLiverListAsync-GetLiver-{affiliation}");
-            }
-        }
-
-        public async Task<Embed> GetNowStreamingChannel(NowStreamingHost host)
-        {
-            try
-            {
-                List<string> idList = new List<string>();
-                switch (host)
-                {
-                    case NowStreamingHost.Holo:
-                        {
-                            HtmlWeb htmlWeb = new HtmlWeb();
-                            HtmlDocument htmlDocument = htmlWeb.Load("https://schedule.hololive.tv/lives/all");
-                            idList.AddRange(htmlDocument.DocumentNode.Descendants()
-                                .Where((x) => x.Name == "a" &&
-                                    x.Attributes["href"].Value.StartsWith("https://www.youtube.com/watch") &&
-                                    x.Attributes["style"].Value.Contains("border: 3px"))
-                                .Select((x) => x.Attributes["href"].Value.Split("?v=")[1]));
-                        }
-                        break;
-                    case NowStreamingHost.Niji: //Todo: 實作2434現正直播查詢
-                        return null;
-                        break;
-                }
-
-                var video = YouTubeService.Videos.List("snippet");
-                video.Id = string.Join(",", idList);
-                var videoResult = await video.ExecuteAsync().ConfigureAwait(false);
-
-                EmbedBuilder embedBuilder = new EmbedBuilder().WithOkColor()
-                    .WithTitle("正在直播的清單")
-                    .WithThumbnailUrl("https://schedule.hololive.tv/dist/images/logo.png")
-                    .WithCurrentTimestamp()
-                    .WithDescription(string.Join("\n", videoResult.Items.Select((x) => $"{x.Snippet.ChannelTitle} - {Format.Url(x.Snippet.Title, $"https://www.youtube.com/watch?v={x.Id}")}")));
-
-                return embedBuilder.Build();
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex.Demystify(), $"GetNowStreamingChannel: {host}");
-                return null;
-            }
         }
 
         private bool CanRecord(DataBase.MainDbContext db, DataBase.Table.Video streamVideo) =>
@@ -754,8 +601,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             switch (channelUrl.ToLower())
             {
                 case "all":
-                case "holo":
-                case "2434":
                 case "other":
                     return channelUrl.ToLower();
             }

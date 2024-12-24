@@ -80,86 +80,29 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                     if (Extensions.HasStreamVideoByVideoId(streamVideo.VideoId))
                     {
-                        switch (streamVideo.ChannelType)
+                        using (var videoDb = DataBase.OtherVideoContext.GetDbContext())
                         {
-                            case DataBase.Table.Video.YTChannelType.Holo:
-                                using (var videoDb = DataBase.HoloVideoContext.GetDbContext())
+                            try
+                            {
+                                var data = videoDb.Video.FirstOrDefault((x) => x.VideoId == streamVideo.VideoId);
+                                if (data != null)
                                 {
-                                    try
-                                    {
-                                        var data = videoDb.Video.FirstOrDefault((x) => x.VideoId == streamVideo.VideoId);
-                                        if (data != null)
-                                        {
-                                            data.VideoTitle = streamVideo.VideoTitle;
-                                            videoDb.UpdateAndSave(data);
-                                        }
-                                        else if (addNewStreamVideo.ContainsKey(streamVideo.VideoId))
-                                        {
-                                            addNewStreamVideo[streamVideo.VideoId] = streamVideo;
-                                        }
-                                        else
-                                        {
-                                            Log.Error($"({streamVideo.ChannelType}) 直播標題變更保存失敗，找不到資料: {streamVideo.VideoId}");
-                                        }
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        Log.Error(ex.Demystify(), $"({streamVideo.ChannelType}) 直播標題變更保存失敗: {streamVideo.VideoId}");
-                                    }
+                                    data.VideoTitle = streamVideo.VideoTitle;
+                                    videoDb.UpdateAndSave(data);
                                 }
-                                break;
-                            case DataBase.Table.Video.YTChannelType.Nijisanji:
-                                using (var videoDb = DataBase.NijisanjiVideoContext.GetDbContext())
+                                else if (addNewStreamVideo.ContainsKey(streamVideo.VideoId))
                                 {
-                                    try
-                                    {
-                                        var data = videoDb.Video.FirstOrDefault((x) => x.VideoId == streamVideo.VideoId);
-                                        if (data != null)
-                                        {
-                                            data.VideoTitle = streamVideo.VideoTitle;
-                                            videoDb.UpdateAndSave(data);
-                                        }
-                                        else if (addNewStreamVideo.ContainsKey(streamVideo.VideoId))
-                                        {
-                                            addNewStreamVideo[streamVideo.VideoId] = streamVideo;
-                                        }
-                                        else
-                                        {
-                                            Log.Error($"({streamVideo.ChannelType}) 直播標題變更保存失敗，找不到資料: {streamVideo.VideoId}");
-                                        }
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        Log.Error(ex.Demystify(), $"({streamVideo.ChannelType}) 直播標題變更保存失敗: {streamVideo.VideoId}");
-                                    }
+                                    addNewStreamVideo[streamVideo.VideoId] = streamVideo;
                                 }
-                                break;
-                            case DataBase.Table.Video.YTChannelType.Other:
-                                using (var videoDb = DataBase.OtherVideoContext.GetDbContext())
+                                else
                                 {
-                                    try
-                                    {
-                                        var data = videoDb.Video.FirstOrDefault((x) => x.VideoId == streamVideo.VideoId);
-                                        if (data != null)
-                                        {
-                                            data.VideoTitle = streamVideo.VideoTitle;
-                                            videoDb.UpdateAndSave(data);
-                                        }
-                                        else if (addNewStreamVideo.ContainsKey(streamVideo.VideoId))
-                                        {
-                                            addNewStreamVideo[streamVideo.VideoId] = streamVideo;
-                                        }
-                                        else
-                                        {
-                                            Log.Error($"({streamVideo.ChannelType}) 直播標題變更保存失敗，找不到資料: {streamVideo.VideoId}");
-                                        }
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        Log.Error(ex.Demystify(), $"({streamVideo.ChannelType}) 直播標題變更保存失敗: {streamVideo.VideoId}");
-                                    }
+                                    Log.Error($"({streamVideo.ChannelType}) 直播標題變更保存失敗，找不到資料: {streamVideo.VideoId}");
                                 }
-                                break;
+                            }
+                            catch (Exception ex)
+                            {
+                                Log.Error(ex.Demystify(), $"({streamVideo.ChannelType}) 直播標題變更保存失敗: {streamVideo.VideoId}");
+                            }
                         }
                     }
 
@@ -225,76 +168,34 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     .AddField("更改開台時間", startTime.ConvertDateTimeToDiscordMarkdown());
 
                     streamVideo.ScheduledStartTime = startTime;
-                    switch (streamVideo.ChannelType)
+
+                    using (var videoDb = DataBase.OtherVideoContext.GetDbContext())
                     {
-                        case DataBase.Table.Video.YTChannelType.Holo:
-                            using (var videoDb = DataBase.HoloVideoContext.GetDbContext())
+                        try
+                        {
+                            // 查看紀錄後發現，會遇到 Pub/Sub 先發送新影片通知且排程時間非常接近接收到通知的時間
+                            // 小幫手進入 ReminderTimerActionAsync 後檢查發現排程時間被更改了，所以要 Call Db 來更新資料
+                            // 但因為這過程太短，Db 還沒保存就觸發更新機制，導致 Db 回傳找不到資料
+                            // 通常這情況下 addNewStreamVideo 的清單內還會有這筆 VideoId 資料，故直接變更該筆資料
+                            var data = videoDb.Video.FirstOrDefault((x) => x.VideoId == streamVideo.VideoId);
+                            if (data != null)
                             {
-                                var data = videoDb.Video.FirstOrDefault((x) => x.VideoId == streamVideo.VideoId);
-                                if (data != null)
-                                {
-                                    data.ScheduledStartTime = streamVideo.ScheduledStartTime;
-                                    videoDb.UpdateAndSave(data);
-                                }
-                                else if (addNewStreamVideo.ContainsKey(streamVideo.VideoId))
-                                {
-                                    addNewStreamVideo[streamVideo.VideoId] = streamVideo;
-                                }
-                                else
-                                {
-                                    Log.Error($"({streamVideo.ChannelType}) 直播時間變更保存失敗，找不到資料: {streamVideo.VideoId}");
-                                }
+                                data.ScheduledStartTime = streamVideo.ScheduledStartTime;
+                                videoDb.UpdateAndSave(data);
                             }
-                            break;
-                        case DataBase.Table.Video.YTChannelType.Nijisanji:
-                            using (var videoDb = DataBase.NijisanjiVideoContext.GetDbContext())
+                            else if (addNewStreamVideo.ContainsKey(streamVideo.VideoId))
                             {
-                                var data = videoDb.Video.FirstOrDefault((x) => x.VideoId == streamVideo.VideoId);
-                                if (data != null)
-                                {
-                                    data.ScheduledStartTime = streamVideo.ScheduledStartTime;
-                                    videoDb.UpdateAndSave(data);
-                                }
-                                else if (addNewStreamVideo.ContainsKey(streamVideo.VideoId))
-                                {
-                                    addNewStreamVideo[streamVideo.VideoId] = streamVideo;
-                                }
-                                else
-                                {
-                                    Log.Error($"({streamVideo.ChannelType}) 直播時間變更保存失敗，找不到資料: {streamVideo.VideoId}");
-                                }
+                                addNewStreamVideo[streamVideo.VideoId] = streamVideo;
                             }
-                            break;
-                        case DataBase.Table.Video.YTChannelType.Other:
-                            using (var videoDb = DataBase.OtherVideoContext.GetDbContext())
+                            else
                             {
-                                try
-                                {
-                                    // 查看紀錄後發現，會遇到 Pub/Sub 先發送新影片通知且排程時間非常接近接收到通知的時間
-                                    // 小幫手進入 ReminderTimerActionAsync 後檢查發現排程時間被更改了，所以要 Call Db 來更新資料
-                                    // 但因為這過程太短，Db 還沒保存就觸發更新機制，導致 Db 回傳找不到資料
-                                    // 通常這情況下 addNewStreamVideo 的清單內還會有這筆 VideoId 資料，故直接變更該筆資料
-                                    var data = videoDb.Video.FirstOrDefault((x) => x.VideoId == streamVideo.VideoId);
-                                    if (data != null)
-                                    {
-                                        data.ScheduledStartTime = streamVideo.ScheduledStartTime;
-                                        videoDb.UpdateAndSave(data);
-                                    }
-                                    else if (addNewStreamVideo.ContainsKey(streamVideo.VideoId))
-                                    {
-                                        addNewStreamVideo[streamVideo.VideoId] = streamVideo;
-                                    }
-                                    else
-                                    {
-                                        Log.Error($"({streamVideo.ChannelType}) 直播時間變更保存失敗，找不到資料: {streamVideo.VideoId}");
-                                    }
-                                }
-                                catch (Exception ex)
-                                {
-                                    Log.Error(ex.Demystify(), $"({streamVideo.ChannelType}) 直播時間變更保存失敗: {streamVideo.VideoId}");
-                                }
+                                Log.Error($"({streamVideo.ChannelType}) 直播時間變更保存失敗，找不到資料: {streamVideo.VideoId}");
                             }
-                            break;
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Error(ex.Demystify(), $"({streamVideo.ChannelType}) 直播時間變更保存失敗: {streamVideo.VideoId}");
+                        }
                     }
 
                     await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.ChangeTime).ConfigureAwait(false);
@@ -357,19 +258,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             if (!Program.IsConnect)
                 return;
 
-            string type;
-            switch (streamVideo.ChannelType)
-            {
-                case DataBase.Table.Video.YTChannelType.Holo:
-                    type = "holo";
-                    break;
-                case DataBase.Table.Video.YTChannelType.Nijisanji:
-                    type = "2434";
-                    break;
-                default:
-                    type = "other";
-                    break;
-            }
+            string type = "other";
 
             List<NoticeYoutubeStreamChannel> noticeYoutubeStreamChannels = new List<NoticeYoutubeStreamChannel>();
             using (var db = DataBase.MainDbContext.GetDbContext())
@@ -388,8 +277,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 //類型檢查，其他類型的頻道要特別檢查，確保必須是認可的頻道才可被添加到其他類型通知
                 try
                 {
-                    if (type != "other" || //如果不是其他類的頻道，直接添加到對應的類型通知即可
-                        !db.YoutubeChannelSpider.AsNoTracking().Any((x) => x.ChannelId == streamVideo.ChannelId) || //若該頻道非在爬蟲清單內，那也沒有認不認可的問題
+                    if (!db.YoutubeChannelSpider.AsNoTracking().Any((x) => x.ChannelId == streamVideo.ChannelId) || //若該頻道非在爬蟲清單內，那也沒有認不認可的問題
                         db.YoutubeChannelSpider.AsNoTracking().First((x) => x.ChannelId == streamVideo.ChannelId).IsTrustedChannel) //最後該爬蟲必須是已認可的頻道，才可添加至其他類型的通知
                     {
                         noticeYoutubeStreamChannels.AddRange(db.NoticeYoutubeStreamChannel.AsNoTracking().Where((x) => x.YouTubeChannelId == type));
@@ -579,7 +467,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                             })
                             .ExecuteAsync(async () =>
                             {
-                                var message = await channel.SendMessageAsync(text: sendMessage, embed: embed, components: noticeType == NoticeType.Start ? _messageComponent : null, options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
+                                var message = await channel.SendMessageAsync(text: sendMessage, embed: embed, options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
 
                                 try
                                 {

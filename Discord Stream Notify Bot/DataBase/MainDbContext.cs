@@ -7,8 +7,6 @@ namespace Discord_Stream_Notify_Bot.DataBase
     {
         public DbSet<BannerChange> BannerChange { get; set; }
         public DbSet<GuildConfig> GuildConfig { get; set; }
-        public DbSet<GuildYoutubeMemberConfig> GuildYoutubeMemberConfig { get; set; }
-        public DbSet<NoticeTwitCastingStreamChannel> NoticeTwitCastingStreamChannels { get; set; }
         public DbSet<NoticeTwitchStreamChannel> NoticeTwitchStreamChannels { get; set; }
         public DbSet<NoticeTwitterSpaceChannel> NoticeTwitterSpaceChannel { get; set; }
         public DbSet<NoticeYoutubeStreamChannel> NoticeYoutubeStreamChannel { get; set; }
@@ -20,8 +18,6 @@ namespace Discord_Stream_Notify_Bot.DataBase
         public DbSet<YoutubeChannelNameToId> YoutubeChannelNameToId { get; set; }
         public DbSet<YoutubeChannelOwnedType> YoutubeChannelOwnedType { get; set; }
         public DbSet<YoutubeChannelSpider> YoutubeChannelSpider { get; set; }
-        public DbSet<YoutubeMemberAccessToken> YoutubeMemberAccessToken { get; set; }
-        public DbSet<YoutubeMemberCheck> YoutubeMemberCheck { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder options)
             => options.UseSqlite($"Data Source={Program.GetDataFilePath("Database.db")}")

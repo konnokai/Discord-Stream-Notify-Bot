@@ -90,15 +90,9 @@ namespace Discord_Stream_Notify_Bot
 
             using (var db = DataBase.MainDbContext.GetDbContext())
                 db.Database.EnsureCreated();
-            using (var db = DataBase.HoloVideoContext.GetDbContext())
-                db.Database.EnsureCreated();
-            using (var db = DataBase.NijisanjiVideoContext.GetDbContext())
-                db.Database.EnsureCreated();
             using (var db = DataBase.OtherVideoContext.GetDbContext())
                 db.Database.EnsureCreated();
             using (var db = DataBase.NotVTuberVideoContext.GetDbContext())
-                db.Database.EnsureCreated();
-            using (var db = DataBase.TwitCastingStreamContext.GetDbContext())
                 db.Database.EnsureCreated();
             using (var db = DataBase.TwitchStreamContext.GetDbContext())
                 db.Database.EnsureCreated();
@@ -205,10 +199,6 @@ namespace Discord_Stream_Notify_Bot
                         if ((guildConfig = db.GuildConfig.FirstOrDefault(x => x.GuildId == guild.Id)) != null)
                             db.GuildConfig.Remove(guildConfig);
 
-                        IEnumerable<GuildYoutubeMemberConfig> guildYoutubeMemberConfigs;
-                        if ((guildYoutubeMemberConfigs = db.GuildYoutubeMemberConfig.Where(x => x.GuildId == guild.Id)).Any())
-                            db.GuildYoutubeMemberConfig.RemoveRange(guildYoutubeMemberConfigs);
-
                         IEnumerable<BannerChange> bannerChange;
                         if ((bannerChange = db.BannerChange.Where(x => x.GuildId == guild.Id)).Any())
                             db.BannerChange.RemoveRange(bannerChange);
@@ -217,10 +207,6 @@ namespace Discord_Stream_Notify_Bot
                         if ((noticeTwitterSpaceChannels = db.NoticeTwitterSpaceChannel.Where(x => x.GuildId == guild.Id)).Any())
                             db.NoticeTwitterSpaceChannel.RemoveRange(noticeTwitterSpaceChannels);
 
-                        IEnumerable<NoticeTwitCastingStreamChannel> noticeTwitCastingStreamChannels;
-                        if ((noticeTwitCastingStreamChannels = db.NoticeTwitCastingStreamChannels.Where(x => x.GuildId == guild.Id)).Any())
-                            db.NoticeTwitCastingStreamChannels.RemoveRange(noticeTwitCastingStreamChannels);
-
                         IEnumerable<NoticeTwitchStreamChannel> NoticeTwitchStreamChannels;
                         if ((NoticeTwitchStreamChannels = db.NoticeTwitchStreamChannels.Where(x => x.GuildId == guild.Id)).Any())
                             db.NoticeTwitchStreamChannels.RemoveRange(NoticeTwitchStreamChannels);
@@ -228,10 +214,6 @@ namespace Discord_Stream_Notify_Bot
                         IEnumerable<NoticeYoutubeStreamChannel> noticeYoutubeStreamChannels;
                         if ((noticeYoutubeStreamChannels = db.NoticeYoutubeStreamChannel.Where(x => x.GuildId == guild.Id)).Any())
                             db.NoticeYoutubeStreamChannel.RemoveRange(noticeYoutubeStreamChannels);
-
-                        IEnumerable<YoutubeMemberCheck> youtubeMemberChecks;
-                        if ((youtubeMemberChecks = db.YoutubeMemberCheck.Where(x => x.GuildId == guild.Id)).Any())
-                            db.YoutubeMemberCheck.RemoveRange(youtubeMemberChecks);
 
                         var saveTime = DateTime.Now;
                         bool saveFailed;
@@ -304,7 +286,6 @@ namespace Discord_Stream_Notify_Bot
                 .AddSingleton<SharedService.Twitter.TwitterSpacesService>()
                 .AddSingleton<SharedService.Twitch.TwitchService>()
                 .AddSingleton<SharedService.Youtube.YoutubeStreamService>()
-                .AddSingleton<SharedService.YoutubeMember.YoutubeMemberService>()
                 .AddSingleton(client)
                 .AddSingleton(botConfig)
                 .AddSingleton(new InteractionService(client, new InteractionServiceConfig()
@@ -325,10 +306,6 @@ namespace Discord_Stream_Notify_Bot
             //HandleTransientHttpError 包含 5xx 及 408 錯誤
             services.AddHttpClient<DiscordWebhookClient>();
             services.AddHttpClient<TwitterClient>();
-            services.AddHttpClient<TwitCastingClient>()
-                .AddPolicyHandler(HttpPolicyExtensions
-                    .HandleTransientHttpError()
-                    .RetryAsync(3));
 
             services.LoadInteractionFrom(Assembly.GetAssembly(typeof(InteractionHandler)));
             services.LoadCommandFrom(Assembly.GetAssembly(typeof(CommandHandler)));
@@ -482,23 +459,11 @@ namespace Discord_Stream_Notify_Bot
                         Status = BotPlayingStatus.StreamCount;
                         try
                         {
-                            List<DataBase.Table.Video> list = null;
-                            switch (new Random().Next(0, 2))
-                            {
-                                case 0:
-                                    using (var db = DataBase.HoloVideoContext.GetDbContext())
-                                        list = db.Video.ToList();
-                                    break;
-                                case 1:
-                                    using (var db = DataBase.NijisanjiVideoContext.GetDbContext())
-                                        list = db.Video.ToList();
-                                    break;
-                                case 2:
-                                    using (var db = DataBase.OtherVideoContext.GetDbContext())
-                                        list = db.Video.ToList();
-                                    break;
-                            }
+                            using var db = DataBase.OtherVideoContext.GetDbContext();
+
+                            var list = db.Video.ToList();
                             var item = list[new Random().Next(0, list.Count)];
+
                             await client.SetGameAsync(item.VideoTitle, $"https://www.youtube.com/watch?v={item.VideoId}", ActivityType.Streaming);
                         }
                         catch (Exception ex)

@@ -82,8 +82,7 @@ namespace Discord_Stream_Notify_Bot.Interaction
         {
             bool firstCheck = !dbContext.NoticeYoutubeStreamChannel.AsNoTracking().Any((x) => x.GuildId == Context.Guild.Id);
             bool secondCheck = !dbContext.NoticeTwitchStreamChannels.AsNoTracking().Any((x) => x.GuildId == Context.Guild.Id);
-            bool thirdCheck = !dbContext.GuildConfig.AsNoTracking().Any((x) => x.GuildId == Context.Guild.Id && x.LogMemberStatusChannelId != 0);
-            if (firstCheck && secondCheck && thirdCheck)
+            if (firstCheck && secondCheck)
             {
                 await Context.Interaction.SendConfirmAsync("看來是第一次設定通知呢\n" +
                        "請注意 Bot 擁有者會透過通知頻道發送工商或是小幫手相關的通知 (功能更新之類的)\n" +

@@ -228,14 +228,6 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
 
                 using (var db = DataBase.MainDbContext.GetDbContext())
                 {
-                    var guildConfig = db.GuildConfig.FirstOrDefault((x) => x.GuildId == gid);
-                    if (guildConfig != null && guildConfig.LogMemberStatusChannelId != 0)
-                    {
-                        var channel = guild.GetChannel(guildConfig.LogMemberStatusChannelId);
-                        if (channel != null)
-                            result += $"伺服器會限記錄頻道: {channel.Name} ({channel.Id})\n";
-                    }
-
                     var youtubeChannelSpiders = db.YoutubeChannelSpider.Where((x) => x.GuildId == gid);
                     if (youtubeChannelSpiders.Any())
                     {
@@ -274,12 +266,6 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
                         {
                             result += $"設定 YouTube 通知的頻道: \n```{string.Join('\n', channelListResult)}```\n";
                         }
-                    }
-
-                    var memberChcekList = db.GuildYoutubeMemberConfig.Where((x) => x.GuildId == guild.Id);
-                    if (memberChcekList.Any())
-                    {
-                        result += $"設定會限的頻道: \n```{string.Join('\n', memberChcekList.Select((x) => $"{x.MemberCheckChannelTitle}: {x.MemberCheckGrantRoleId}"))}```\n";
                     }
 
                     var twitchSpiders = db.TwitchSpider.Where((x) => x.GuildId == gid);

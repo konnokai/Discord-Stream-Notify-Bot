@@ -206,18 +206,6 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
 
             using (var db = DataBase.MainDbContext.GetDbContext())
             {
-                bool isTwoBox = false;
-                using (var Holodb = DataBase.HoloVideoContext.GetDbContext())
-                    if (Holodb.Video.Any((x) => x.ChannelId == channelId)) isTwoBox = true;
-                using (var Nijidb = DataBase.NijisanjiVideoContext.GetDbContext())
-                    if (Nijidb.Video.Any((x) => x.ChannelId == channelId)) isTwoBox = true;
-
-                if (isTwoBox && !db.YoutubeChannelOwnedType.Any((x) => x.ChannelId == channelId))
-                {
-                    await Context.Interaction.SendErrorAsync($"不可新增兩大箱的頻道", true).ConfigureAwait(false);
-                    return;
-                }
-
                 if (!Discord_Stream_Notify_Bot.Utility.OfficialGuildContains(Context.Guild.Id) && db.YoutubeChannelSpider.Count((x) => x.GuildId == Context.Guild.Id) >= 3)
                 {
                     await Context.Interaction.SendErrorAsync($"此伺服器已設定 3 個 YouTube 爬蟲，請移除後再試\n" +

@@ -16,7 +16,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
         internal bool IsEnable { get; private set; } = true;
 
         private readonly DiscordSocketClient _client;
-        private readonly EmojiService _emojiService;
         private readonly TwitterClient _twitterClient;
         private readonly Timer timer;
         private readonly HashSet<string> hashSet = new HashSet<string>();
@@ -35,7 +34,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
 
             _client = client;
             _twitterClient = twitterClient;
-            _emojiService = emojiService;
             twitterSpaceRecordPath = botConfig.TwitterSpaceRecordPath;
             if (string.IsNullOrEmpty(twitterSpaceRecordPath)) twitterSpaceRecordPath = Program.GetDataFilePath("");
             if (!twitterSpaceRecordPath.EndsWith(Program.GetPlatformSlash())) twitterSpaceRecordPath += Program.GetPlatformSlash();
@@ -199,10 +197,6 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                 if (isRecord) embedBuilder.WithRecordColor();
                 else embedBuilder.WithOkColor();
 
-                MessageComponent comp = new ComponentBuilder()
-                        .WithButton("贊助小幫手 (Patreon) #ad", style: ButtonStyle.Link, emote: _emojiService.PatreonEmote, url: Utility.PatreonUrl, row: 1)
-                        .WithButton("贊助小幫手 (Paypal) #ad", style: ButtonStyle.Link, emote: _emojiService.PayPalEmote, url: Utility.PaypalUrl, row: 1).Build();
-
                 foreach (var item in noticeGuildList)
                 {
                     try
@@ -229,7 +223,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                             })
                             .ExecuteAsync(async () =>
                             {
-                                var message = await channel.SendMessageAsync(text: item.StratTwitterSpaceMessage, embed: embedBuilder.Build(), components: comp, options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
+                                var message = await channel.SendMessageAsync(text: item.StratTwitterSpaceMessage, embed: embedBuilder.Build(), options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
 
                                 try
                                 {

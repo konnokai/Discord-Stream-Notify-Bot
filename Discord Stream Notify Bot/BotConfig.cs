@@ -11,22 +11,10 @@ public class BotConfig
     public ulong TestSlashCommandGuildId { get; set; } = 0;
     public string WebHookUrl { get; set; } = "";
 
-    public ulong DetectGuildId { get; set; } = 0;
-    public ulong DetectCategoryId { get; set; } = 0;
-    public ulong MentionRoleId { get; set; } = 0;
-    public string SendMessageWebHookUrl { get; set; } = "";
-
     public string GoogleApiKey { get; set; } = "";
     public string GoogleClientId { get; set; } = "";
     public string GoogleClientSecret { get; set; } = "";
 
-    public string TwitCastingClientId { get; set; } = "";
-    public string TwitCastingClientSecret { get; set; } = "";
-    public string TwitCastingRecordPath { get; set; } = "";
-
-    // https://streamlink.github.io/cli/plugins/twitch.html#authentication
-    // 先放著，未來可能會用到
-    public string TwitchCookieAuthToken { get; set; } = "";
     public string TwitchClientId { get; set; } = "";
     public string TwitchClientSecret { get; set; } = "";
 
@@ -86,10 +74,6 @@ public class BotConfig
             ApiServerDomain = config.ApiServerDomain;
             GoogleApiKey = config.GoogleApiKey;
             TestSlashCommandGuildId = config.TestSlashCommandGuildId;
-            TwitCastingClientId = config.TwitCastingClientId;
-            TwitCastingClientSecret = config.TwitCastingClientSecret;
-            TwitCastingRecordPath = config.TwitCastingRecordPath;
-            TwitchCookieAuthToken = config.TwitchCookieAuthToken;
             TwitchClientId = config.TwitchClientId;
             TwitchClientSecret = config.TwitchClientSecret;
             TwitterAuthToken = config.TwitterAuthToken;
@@ -100,10 +84,6 @@ public class BotConfig
             RedisOption = config.RedisOption;
             RedisTokenKey = config.RedisTokenKey;
             UptimeKumaPushUrl = config.UptimeKumaPushUrl;
-            DetectGuildId = config.DetectGuildId;
-            DetectCategoryId = config.DetectCategoryId;
-            SendMessageWebHookUrl = config.SendMessageWebHookUrl;
-            MentionRoleId = config.MentionRoleId;
 
             if (string.IsNullOrWhiteSpace(config.RedisTokenKey) || string.IsNullOrWhiteSpace(RedisTokenKey))
             {
