@@ -4,7 +4,6 @@ namespace Discord_Stream_Notify_Bot
 {
     public static class Utility
     {
-        public static string RedisKey { get; set; } = "";
         public static HashSet<ulong> OfficialGuildList { get; set; } = new HashSet<ulong>();
 
         public static List<string> GetNowRecordStreamList()

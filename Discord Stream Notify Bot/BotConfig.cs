@@ -4,7 +4,6 @@ public class BotConfig
 {
     public string ApiServerDomain { get; set; } = "";
     public string RedisOption { get; set; } = "127.0.0.1,syncTimeout=3000";
-    public string RedisTokenKey { get; set; } = "";
     public string UptimeKumaPushUrl { get; set; } = "";
 
     public string DiscordToken { get; set; } = "";
@@ -80,25 +79,7 @@ public class BotConfig
             GoogleClientId = config.GoogleClientId;
             GoogleClientSecret = config.GoogleClientSecret;
             RedisOption = config.RedisOption;
-            RedisTokenKey = config.RedisTokenKey;
             UptimeKumaPushUrl = config.UptimeKumaPushUrl;
-
-            if (string.IsNullOrWhiteSpace(config.RedisTokenKey) || string.IsNullOrWhiteSpace(RedisTokenKey))
-            {
-                Log.Error($"{nameof(RedisTokenKey)} 遺失，將重新建立隨機亂數");
-
-                RedisTokenKey = GenRandomKey();
-
-                try { File.WriteAllText("bot_config.json", JsonConvert.SerializeObject(this, Formatting.Indented)); }
-                catch (Exception ex)
-                {
-                    Log.Error($"設定檔保存失敗: {ex}");
-                    Log.Error($"請手動將此字串填入設定檔中的 \"{nameof(RedisTokenKey)}\" 欄位: {RedisTokenKey}");
-                    Environment.Exit(3);
-                }
-            }
-
-            Utility.RedisKey = RedisTokenKey;
         }
         catch (Exception ex)
         {

@@ -64,6 +64,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
 
                     _twitchWebHookSecret = BotConfig.GenRandomKey(64);
                     Program.RedisDb.StringSet("twitch:webhook_secret", _twitchWebHookSecret);
+
+                    Log.Warn($"請將此 TwitchWebHookSecret 填入 API Server 的 appsettings.json 檔案後重開 Server: {_twitchWebHookSecret}");
                 }
             }
             catch (Exception ex)

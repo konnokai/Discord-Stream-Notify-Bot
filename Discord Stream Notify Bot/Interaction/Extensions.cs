@@ -143,17 +143,6 @@ namespace Discord_Stream_Notify_Bot.Interaction
             return channelId;
         }
 
-        public static string GetTwitCastingChannelTitleByChannelId(this DataBase.MainDbContext dBContext, string channelId)
-        {
-            channelId = channelId.Trim();
-
-            TwitCastingSpider twitcastingSpider;
-            if ((twitcastingSpider = dBContext.TwitCastingSpider.AsNoTracking().FirstOrDefault((x) => x.ChannelId == channelId)) != null)
-                return twitcastingSpider.ChannelTitle;
-
-            return channelId;
-        }
-
         public static string GetTwitchUserNameByUserId(this DataBase.MainDbContext dBContext, string userId)
         {
             userId = userId.Trim();
