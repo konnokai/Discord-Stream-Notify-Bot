@@ -83,8 +83,8 @@ public static class Log
     {
         lock (logLockObj)
         {
-            FormatColorWrite(text, ConsoleColor.DarkRed, newLine);
-            FormatColorWrite(ex.ToString(), ConsoleColor.DarkRed, true);
+            FormatColorWrite(text, ConsoleColor.DarkRed, newLine, true);
+            FormatColorWrite(ex.Demystify().ToString(), ConsoleColor.DarkRed, true, true);
 
             if (writeLog)
             {
@@ -94,12 +94,34 @@ public static class Log
         }
     }
 
-    public static void FormatColorWrite(string text, ConsoleColor consoleColor = ConsoleColor.Gray, bool newLine = true)
+    public static void FormatColorWrite(string text, ConsoleColor consoleColor = ConsoleColor.Gray, bool newLine = true, bool isError = false)
     {
         text = $"[{DateTime.Now:yyyy/MM/dd HH:mm:ss}] {text}";
         Console.ForegroundColor = consoleColor;
-        if (newLine) Console.WriteLine(text);
-        else Console.Write(text);
+
+        if (isError)
+        {
+            if (newLine)
+            {
+                Console.Error.WriteLine(text);
+            }
+            else
+            {
+                Console.Error.Write(text);
+            }
+        }
+        else
+        {
+            if (newLine)
+            {
+                Console.WriteLine(text);
+            }
+            else
+            {
+                Console.Write(text);
+            }
+        }
+
         Console.ForegroundColor = ConsoleColor.Gray;
     }
 
@@ -131,7 +153,8 @@ public static class Log
             !message.Message.Contains("TYPING_START") &&
             (message.Exception is not GatewayReconnectException &&
             message.Exception is not TaskCanceledException &&
-            message.Exception is not JsonSerializationException))
+            message.Exception is not JsonSerializationException &&
+            message.Exception is not NullReferenceException))
         {
             consoleColor = ConsoleColor.DarkRed;
 #if RELEASE

@@ -1,7 +1,6 @@
 ﻿using Discord.Interactions;
 using Discord_Stream_Notify_Bot.DataBase;
 using Discord_Stream_Notify_Bot.Interaction.Utility.Service;
-using System.Diagnostics;
 
 namespace Discord_Stream_Notify_Bot.Interaction.Utility
 {
@@ -96,7 +95,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Utility
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Demystify(), "Set Notice Channel Error");
+                Log.Error(ex, "Set Notice Channel Error");
                 await Context.Interaction.SendErrorAsync($"設定全球通知失敗，請向 Bot 擁有者詢問");
             }
         }

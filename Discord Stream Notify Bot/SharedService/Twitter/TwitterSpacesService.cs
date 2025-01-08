@@ -97,7 +97,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                                         }
                                         catch (Exception ex)
                                         {
-                                            Log.Error(ex.Demystify(), $"GetTwitterSpaceMasterUrl: {item.SpaceId}");
+                                            Log.Error(ex, $"GetTwitterSpaceMasterUrl: {item.SpaceId}");
                                             continue;
                                         }
 
@@ -138,12 +138,12 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                             catch (Exception ex)
                             {
                                 if (!ex.Message.Contains("50") && !ex.Message.Contains("temporarily unavailable"))
-                                    Log.Error(ex.Demystify(), "Prepare-Spaces");
+                                    Log.Error(ex, "Prepare-Spaces");
                             }
                         }
                     }
                 }
-                catch (Exception ex) { Log.Error(ex.Demystify(), "Spaces-Timer"); }
+                catch (Exception ex) { Log.Error(ex, "Spaces-Timer"); }
                 finally { isRuning = false; }
             }, null, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(120));
         }
@@ -265,7 +265,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                     }
                     catch (Exception ex)
                     {
-                        Log.Error(ex.Demystify(), $"Twitter Space 通知 - 未知錯誤 {item.GuildId} / {item.DiscordChannelId}");
+                        Log.Error(ex, $"Twitter Space 通知 - 未知錯誤 {item.GuildId} / {item.DiscordChannelId}");
                     }
                 }
             }
@@ -285,7 +285,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
             {
                 Log.Error($"推特語音保存路徑不存在且不可建立: {twitterSpaceRecordPath}");
                 Log.Error($"更改保存路徑至Data資料夾: {Program.GetDataFilePath("")}");
-                Log.Error(ex.Demystify().ToString());
+                Log.Error(ex.ToString());
 
                 twitterSpaceRecordPath = Program.GetDataFilePath("");
             }

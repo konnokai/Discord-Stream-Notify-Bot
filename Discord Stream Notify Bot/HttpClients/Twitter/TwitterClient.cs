@@ -2,7 +2,6 @@
 using HtmlAgilityPack;
 using Newtonsoft.Json.Linq;
 using Polly;
-using System.Diagnostics;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -47,6 +46,7 @@ namespace Discord_Stream_Notify_Bot.HttpClients
 
                     var data = await Policy.Handle<HttpRequestException>()
                         .Or<WebException>((ex) => ex.Message.Contains("unavailable")) // Resource temporarily unavailable
+                        .Or<TaskCanceledException>((ex) => ex.Message.Contains("HttpClient.Timeout")) // The request was canceled due to the configured HttpClient.Timeout of 100 seconds elapsing
                         .WaitAndRetryAsync(3, (retryAttempt) =>
                         {
                             var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
@@ -105,6 +105,7 @@ namespace Discord_Stream_Notify_Bot.HttpClients
         {
             return await Policy.Handle<HttpRequestException>()
                 .Or<WebException>((ex) => ex.Message.Contains("unavailable")) // Resource temporarily unavailable
+                .Or<TaskCanceledException>((ex) => ex.Message.Contains("HttpClient.Timeout")) // The request was canceled due to the configured HttpClient.Timeout of 100 seconds elapsing
                 .WaitAndRetryAsync(3, (retryAttempt) =>
                 {
                     var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
@@ -186,6 +187,7 @@ namespace Discord_Stream_Notify_Bot.HttpClients
 
                 var mainJsText = await Policy.Handle<HttpRequestException>()
                     .Or<WebException>((ex) => ex.Message.Contains("unavailable")) // Resource temporarily unavailable
+                    .Or<TaskCanceledException>((ex) => ex.Message.Contains("HttpClient.Timeout")) // The request was canceled due to the configured HttpClient.Timeout of 100 seconds elapsing
                     .WaitAndRetryAsync(3, (retryAttempt) =>
                     {
                         var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
@@ -208,7 +210,7 @@ namespace Discord_Stream_Notify_Bot.HttpClients
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Demystify(), $"AddApiQueryData - {fileName}");
+                Log.Error(ex, $"AddApiQueryData - {fileName}");
                 throw;
             }
         }
@@ -233,6 +235,7 @@ namespace Discord_Stream_Notify_Bot.HttpClients
                 string url = $"https://twitter.com/i/api/graphql/{_apiQueryData["UserByScreenName"].QueryId}/UserByScreenName?variables={variables}&features={_apiQueryData["UserByScreenName"].FeatureSwitches}";
                 var json = await Policy.Handle<HttpRequestException>()
                     .Or<WebException>((ex) => ex.Message.Contains("unavailable")) // Resource temporarily unavailable
+                    .Or<TaskCanceledException>((ex) => ex.Message.Contains("HttpClient.Timeout")) // The request was canceled due to the configured HttpClient.Timeout of 100 seconds elapsing
                     .WaitAndRetryAsync(3, (retryAttempt) =>
                     {
                         var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
@@ -276,6 +279,7 @@ namespace Discord_Stream_Notify_Bot.HttpClients
                     // 如果沒Spaces的話會回傳空的資料，所以不用特別判定現在是否正在開
                     var result = await Policy.Handle<HttpRequestException>()
                         .Or<WebException>((ex) => ex.Message.Contains("unavailable")) // Resource temporarily unavailable
+                        .Or<TaskCanceledException>((ex) => ex.Message.Contains("HttpClient.Timeout")) // The request was canceled due to the configured HttpClient.Timeout of 100 seconds elapsing
                         .WaitAndRetryAsync(3, (retryAttempt) =>
                         {
                             var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
@@ -315,7 +319,7 @@ namespace Discord_Stream_Notify_Bot.HttpClients
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex.Demystify(), "GetTwitterSpaceByUsersIdAsync");
+                    Log.Error(ex, "GetTwitterSpaceByUsersIdAsync");
                     throw;
                 }
             }
@@ -343,6 +347,7 @@ namespace Discord_Stream_Notify_Bot.HttpClients
                 string url = $"https://twitter.com/i/api/graphql/{_apiQueryData["AudioSpaceById"].QueryId}/AudioSpaceById?variables={variables}&features={_apiQueryData["AudioSpaceById"].FeatureSwitches}";
                 var json = await Policy.Handle<HttpRequestException>()
                     .Or<WebException>((ex) => ex.Message.Contains("unavailable")) // Resource temporarily unavailable
+                    .Or<TaskCanceledException>((ex) => ex.Message.Contains("HttpClient.Timeout")) // The request was canceled due to the configured HttpClient.Timeout of 100 seconds elapsing
                     .WaitAndRetryAsync(3, (retryAttempt) =>
                     {
                         var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
@@ -375,6 +380,7 @@ namespace Discord_Stream_Notify_Bot.HttpClients
                 string url = $"https://twitter.com/i/api/1.1/live_video_stream/status/{mediaKey}";
                 var json = await Policy.Handle<HttpRequestException>()
                     .Or<WebException>((ex) => ex.Message.Contains("unavailable")) // Resource temporarily unavailable
+                    .Or<TaskCanceledException>((ex) => ex.Message.Contains("HttpClient.Timeout")) // The request was canceled due to the configured HttpClient.Timeout of 100 seconds elapsing
                     .WaitAndRetryAsync(3, (retryAttempt) =>
                     {
                         var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));

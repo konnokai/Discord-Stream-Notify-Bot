@@ -1,7 +1,6 @@
 ﻿using Discord.Interactions;
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.Interaction.Attribute;
-using System.Diagnostics;
 
 namespace Discord_Stream_Notify_Bot.Interaction.Twitter
 {
@@ -308,7 +307,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Demystify(), $"Twitter Set Message Error: {userScreenName}");
+                Log.Error(ex, $"Twitter Set Message Error: {userScreenName}");
                 await Context.Interaction.SendErrorAsync("未知的錯誤，請向 Bot 擁有者回報", true);
             }
         }
@@ -350,7 +349,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                         }
                         catch (Exception ex)
                         {
-                            Log.Error(ex.Demystify().Message + "\n" + ex.StackTrace);
+                            Log.Error(ex.Message + "\n" + ex.StackTrace);
                         }
                     }
                     else
@@ -362,7 +361,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Demystify(), $"Twitter list-message: {Context.Guild.Id}");
+                Log.Error(ex, $"Twitter list-message: {Context.Guild.Id}");
                 await Context.Interaction.SendErrorAsync("未知的錯誤，請向 Bot 擁有者回報");
             }
         }

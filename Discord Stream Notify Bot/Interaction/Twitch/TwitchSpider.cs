@@ -1,6 +1,5 @@
 ﻿using Discord.Interactions;
 using Discord_Stream_Notify_Bot.Interaction.Attribute;
-using System.Diagnostics;
 
 namespace Discord_Stream_Notify_Bot.Interaction.Twitch
 {
@@ -151,7 +150,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
                 catch (Exception ex)
                 {
                     await button.SendErrorAsync(ex.Message, true);
-                    Log.Error(ex.Demystify().ToString());
+                    Log.Error(ex.ToString());
                 }
             };
         }
@@ -211,7 +210,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
                                     .AddField("原伺服器", Context.Guild.Id, false)
                                     .AddField("新伺服器", $"{Context.Guild.Name} ({Context.Guild.Id})", false).Build());
                         }
-                        catch (Exception ex) { Log.Error(ex.Demystify(), "Update Twitch Spider GuildId Error"); }
+                        catch (Exception ex) { Log.Error(ex, "Update Twitch Spider GuildId Error"); }
                     }
 
                     await Context.Interaction.SendConfirmAsync($"`{userData.DisplayName}` 已在爬蟲清單內\n" +
@@ -261,7 +260,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
                             .WithButton("切換頻道狀態", $"spider_twitch:warning:{userData.Id}", ButtonStyle.Danger)
                             .WithButton("切換頻道錄影", $"spider_twitch:record:{userData.Id}", ButtonStyle.Success).Build());
                 }
-                catch (Exception ex) { Log.Error(ex.Demystify().ToString()); }
+                catch (Exception ex) { Log.Error(ex.ToString()); }
             }
         }
 
@@ -304,7 +303,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
                     .AddField("伺服器", $"{Context.Guild.Name} ({Context.Guild.Id})", false)
                     .AddField("執行者", $"{Context.User.Username} ({Context.User.Id})", false).Build());
             }
-            catch (Exception ex) { Log.Error(ex.Demystify().ToString()); }
+            catch (Exception ex) { Log.Error(ex.ToString()); }
         }
 
         [SlashCommand("list", "顯示已加入爬蟲檢測的頻道")]
@@ -331,7 +330,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex.Demystify(), $"Twitch-Spider-List Error");
+                    Log.Error(ex, $"Twitch-Spider-List Error");
                     await Context.Interaction.SendErrorAsync("指令執行失敗", false, true);
                 }
             }

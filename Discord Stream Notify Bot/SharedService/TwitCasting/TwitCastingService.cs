@@ -52,7 +52,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.TwitCasting
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex.Demystify(), "TwitCasting 分類獲取失敗");
+                    Log.Error(ex, "TwitCasting 分類獲取失敗");
                 }
             }, null, TimeSpan.FromSeconds(3), TimeSpan.FromMinutes(30));
 
@@ -250,7 +250,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.TwitCasting
                     }
                     catch (Exception ex)
                     {
-                        Log.Error(ex.Demystify(), $"TwitCasting 通知 - 未知錯誤 {item.GuildId} / {item.DiscordChannelId}");
+                        Log.Error(ex, $"TwitCasting 通知 - 未知錯誤 {item.GuildId} / {item.DiscordChannelId}");
                     }
                 }
             }
@@ -270,7 +270,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.TwitCasting
             {
                 Log.Error($"TwitCasting 保存路徑不存在且不可建立: {twitcastingRecordPath}");
                 Log.Error($"更改保存路徑至Data資料夾: {Program.GetDataFilePath("")}");
-                Log.Error(ex.Demystify().ToString());
+                Log.Error(ex.ToString());
 
                 twitcastingRecordPath = Program.GetDataFilePath("");
             }
@@ -292,7 +292,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.TwitCasting
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Demystify(), "RecordTwitCasting 失敗，請確認是否已安裝 StreamLink");
+                Log.Error(ex, "RecordTwitCasting 失敗，請確認是否已安裝 StreamLink");
                 return false;
             }
         }

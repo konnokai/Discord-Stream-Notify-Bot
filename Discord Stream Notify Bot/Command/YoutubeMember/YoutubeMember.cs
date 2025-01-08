@@ -1,5 +1,4 @@
 ﻿using Discord.Commands;
-using System.Diagnostics;
 
 namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
 {
@@ -103,7 +102,7 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Demystify().ToString());
+                Log.Error(ex.ToString());
                 await Context.Channel.SendErrorAsync(ex.Message);
             }
         }

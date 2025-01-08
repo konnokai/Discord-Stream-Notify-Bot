@@ -1,6 +1,4 @@
-﻿using System.Diagnostics;
-
-namespace Discord_Stream_Notify_Bot.Command.Admin
+﻿namespace Discord_Stream_Notify_Bot.Command.Admin
 {
     public class AdministrationService : ICommandService
     {
@@ -27,7 +25,7 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Demystify(), "WriteOfficialListFile Error");
+                Log.Error(ex, "WriteOfficialListFile Error");
                 return false;
             }
 

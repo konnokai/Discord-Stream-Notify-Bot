@@ -1,7 +1,6 @@
 ﻿using Discord.Commands;
 using Discord_Stream_Notify_Bot.Command.Attribute;
 using Discord_Stream_Notify_Bot.DataBase.Table;
-using System.Diagnostics;
 
 namespace Discord_Stream_Notify_Bot.Command.Twitch
 {
@@ -207,7 +206,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitch
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Demystify(), "TwitchGetLatestVOD Error");
+                Log.Error(ex, "TwitchGetLatestVOD Error");
                 await Context.Channel.SendErrorAsync("Error");
             }
         }

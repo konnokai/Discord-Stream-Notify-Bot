@@ -1,7 +1,6 @@
 ﻿using Discord.Interactions;
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.Interaction.Attribute;
-using System.Diagnostics;
 using static Discord_Stream_Notify_Bot.Interaction.Twitter.TwitterSpaces;
 
 namespace Discord_Stream_Notify_Bot.Interaction.Twitter
@@ -80,7 +79,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                                     .AddField("原伺服器", Context.Guild.Id, false)
                                     .AddField("新伺服器", $"{Context.Guild.Name} ({Context.Guild.Id})", false).Build());
                         }
-                        catch (Exception ex) { Log.Error(ex.Demystify().ToString()); }
+                        catch (Exception ex) { Log.Error(ex.ToString()); }
 
                         item.GuildId = Context.Guild.Id;
                         db.TwitterSpaecSpider.Update(item);
@@ -127,7 +126,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                         .AddField("伺服器", $"{Context.Guild.Name} ({Context.Guild.Id})", false)
                         .AddField("執行者", $"{Context.User.Username} ({Context.User.Id})", false).Build());
                 }
-                catch (Exception ex) { Log.Error(ex.Demystify().ToString()); }
+                catch (Exception ex) { Log.Error(ex.ToString()); }
             }
         }
 
@@ -173,7 +172,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                         .AddField("伺服器", $"{Context.Guild.Name} ({Context.Guild.Id})", false)
                         .AddField("執行者", $"{Context.User.Username} ({Context.User.Id})", false).Build());
                 }
-                catch (Exception ex) { Log.Error(ex.Demystify().ToString()); }
+                catch (Exception ex) { Log.Error(ex.ToString()); }
             }
         }
 
@@ -201,7 +200,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex.Demystify(), $"Twitch-Spider-List Error");
+                    Log.Error(ex, $"Twitch-Spider-List Error");
                     await Context.Interaction.SendErrorAsync("指令執行失敗", false, true);
                 }
             }

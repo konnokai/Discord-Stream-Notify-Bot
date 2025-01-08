@@ -1,6 +1,5 @@
 ﻿using Discord.Interactions;
 using Discord_Stream_Notify_Bot.SharedService.YoutubeMember;
-using System.Diagnostics;
 
 namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
 {
@@ -111,7 +110,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
                 catch (Exception ex)
                 {
                     await Context.Interaction.SendErrorAsync($"資料庫儲存失敗，請向 {Program.ApplicatonOwner} 確認", true);
-                    Log.Error(ex.Demystify().ToString());
+                    Log.Error(ex.ToString());
                 }
             }
         }
@@ -225,7 +224,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
             {
                 await Context.Interaction.SendErrorAsync($"錯誤，請確認是否已到網站上綁定或此 Google 帳號存在 Youtube 頻道\n" +
                     $"如有疑問請向 `{Program.ApplicatonOwner}` 詢問", true);
-                Log.Error(ex.Demystify().ToString());
+                Log.Error(ex.ToString());
             }
         }
     }

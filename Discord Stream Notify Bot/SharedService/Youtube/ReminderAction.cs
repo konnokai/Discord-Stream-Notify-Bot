@@ -2,7 +2,6 @@
 using Discord_Stream_Notify_Bot.Interaction;
 using Microsoft.EntityFrameworkCore;
 using Polly;
-using System.Diagnostics;
 
 namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 {
@@ -32,7 +31,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Demystify(), $"StartReminder: {streamVideo.VideoTitle} - {streamVideo.ScheduledStartTime}");
+                Log.Error(ex, $"StartReminder: {streamVideo.VideoTitle} - {streamVideo.ScheduledStartTime}");
                 throw;
             }
         }
@@ -104,7 +103,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                     }
                                     catch (Exception ex)
                                     {
-                                        Log.Error(ex.Demystify(), $"({streamVideo.ChannelType}) 直播標題變更保存失敗: {streamVideo.VideoId}");
+                                        Log.Error(ex, $"({streamVideo.ChannelType}) 直播標題變更保存失敗: {streamVideo.VideoId}");
                                     }
                                 }
                                 break;
@@ -130,7 +129,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                     }
                                     catch (Exception ex)
                                     {
-                                        Log.Error(ex.Demystify(), $"({streamVideo.ChannelType}) 直播標題變更保存失敗: {streamVideo.VideoId}");
+                                        Log.Error(ex, $"({streamVideo.ChannelType}) 直播標題變更保存失敗: {streamVideo.VideoId}");
                                     }
                                 }
                                 break;
@@ -156,7 +155,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                     }
                                     catch (Exception ex)
                                     {
-                                        Log.Error(ex.Demystify(), $"({streamVideo.ChannelType}) 直播標題變更保存失敗: {streamVideo.VideoId}");
+                                        Log.Error(ex, $"({streamVideo.ChannelType}) 直播標題變更保存失敗: {streamVideo.VideoId}");
                                     }
                                 }
                                 break;
@@ -291,7 +290,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                 }
                                 catch (Exception ex)
                                 {
-                                    Log.Error(ex.Demystify(), $"({streamVideo.ChannelType}) 直播時間變更保存失敗: {streamVideo.VideoId}");
+                                    Log.Error(ex, $"({streamVideo.ChannelType}) 直播時間變更保存失敗: {streamVideo.VideoId}");
                                 }
                             }
                             break;
@@ -305,7 +304,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     StartReminder(streamVideo, streamVideo.ChannelType);
                 }
             }
-            catch (Exception ex) { Log.Error(ex.Demystify(), $"ReminderAction: {streamVideo.VideoId}"); }
+            catch (Exception ex) { Log.Error(ex, $"ReminderAction: {streamVideo.VideoId}"); }
         }
 
         private async Task SendStreamMessageAsync(string videolId, EmbedBuilder embedBuilder, NoticeType noticeType)
@@ -342,7 +341,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         }
                         catch (Exception ex)
                         {
-                            Log.Error(ex.Demystify(), $"SendStreamMessageAsync-GetVideoAsync: {videolId}");
+                            Log.Error(ex, $"SendStreamMessageAsync-GetVideoAsync: {videolId}");
                             return;
                         }
                     }
@@ -382,7 +381,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 catch (Exception ex)
                 {
                     // 原則上不會有錯，我也不知道加這幹嘛
-                    Log.Error(ex.Demystify(), $"SendStreamMessageAsyncChannel: {streamVideo.VideoId}");
+                    Log.Error(ex, $"SendStreamMessageAsyncChannel: {streamVideo.VideoId}");
                 }
 
                 //類型檢查，其他類型的頻道要特別檢查，確保必須是認可的頻道才可被添加到其他類型通知
@@ -397,7 +396,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex.Demystify(), $"SendStreamMessageAsyncOtherChannel: {streamVideo.VideoId}");
+                    Log.Error(ex, $"SendStreamMessageAsyncOtherChannel: {streamVideo.VideoId}");
                 }
 
                 Log.New($"發送 YouTube 通知 ({noticeYoutubeStreamChannels.Count} / {noticeType}): {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
@@ -430,7 +429,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     }
                     catch (Exception ex)
                     {
-                        Log.Error(ex.Demystify(), $"YouTube 通知 ({streamVideo.VideoId}) | 封面下載失敗，可能是找不到圖檔");
+                        Log.Error(ex, $"YouTube 通知 ({streamVideo.VideoId}) | 封面下載失敗，可能是找不到圖檔");
                     }
                 }
 
@@ -541,7 +540,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         }
                         catch (Exception ex)
                         {
-                            Log.Error(ex.Demystify(), $"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} 建立活動失敗");
+                            Log.Error(ex, $"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} 建立活動失敗");
                         }
 
                         string sendMessage = "";
@@ -616,7 +615,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     }
                     catch (Exception ex)
                     {
-                        Log.Error(ex.Demystify(), $"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} / {item.DiscordNoticeVideoChannelId} 未知錯誤");
+                        Log.Error(ex, $"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} / {item.DiscordNoticeVideoChannelId} 未知錯誤");
                     }
                 }
             }

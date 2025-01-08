@@ -7,7 +7,6 @@ using Google.Apis.YouTube.v3;
 using HtmlAgilityPack;
 using System.Collections.Concurrent;
 using System.Data;
-using System.Diagnostics;
 using System.Net;
 using System.Text.RegularExpressions;
 
@@ -114,7 +113,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     }
                     catch (Exception ex)
                     {
-                        Log.Error(ex.Demystify(), "Send Message To Channel Error");
+                        Log.Error(ex, "Send Message To Channel Error");
                         await Program.ApplicatonOwner.SendMessageAsync(msg);
                     }
                 };
@@ -399,7 +398,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                 }
                                 catch (Exception ex)
                                 {
-                                    Log.Error(ex.Demystify(), $"PubSub-AddStream: {item.Id}");
+                                    Log.Error(ex, $"PubSub-AddStream: {item.Id}");
                                 }
                             }
                             else
@@ -449,7 +448,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                     }
                                     catch (Exception ex)
                                     {
-                                        Log.Error(ex.Demystify(), $"PubSub_AddData_CreateOrUpdate: {item.Id}");
+                                        Log.Error(ex, $"PubSub_AddData_CreateOrUpdate: {item.Id}");
                                     }
                                 }
                                 else
@@ -582,7 +581,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 //            await uow.SaveChangesAsync();
                 //        }
                 //    }
-                //    catch (Exception ex) { Log.Error("ChangeStreamTime"); Log.Error(ex.Demystify().Message); }
+                //    catch (Exception ex) { Log.Error("ChangeStreamTime"); Log.Error(ex.Message); }
                 //});
 
                 //Program.redisSub.Subscribe("youtube.newstream", async (channel, videoId) =>
@@ -678,7 +677,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex.Demystify(), $"GetOrCreateNijisanjiLiverListAsync-GetRedisData-{affiliation}");
+                    Log.Error(ex, $"GetOrCreateNijisanjiLiverListAsync-GetRedisData-{affiliation}");
                 }
             }
 
@@ -695,7 +694,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Demystify(), $"GetOrCreateNijisanjiLiverListAsync-GetLiver-{affiliation}");
+                Log.Error(ex, $"GetOrCreateNijisanjiLiverListAsync-GetLiver-{affiliation}");
             }
         }
 
@@ -736,7 +735,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Demystify(), $"GetNowStreamingChannel: {host}");
+                Log.Error(ex, $"GetNowStreamingChannel: {host}");
                 return null;
             }
         }
@@ -791,12 +790,12 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         }
                         catch (UriFormatException ex)
                         {
-                            Log.Error(ex.Demystify(), $"GetChannelIdAsync-GetChannelIdByUrlAsync-UriFormatException: {channelUrl}");
+                            Log.Error(ex, $"GetChannelIdAsync-GetChannelIdByUrlAsync-UriFormatException: {channelUrl}");
                             throw;
                         }
                         catch (Exception ex)
                         {
-                            Log.Error(ex.Demystify(), $"GetChannelIdAsync-GetChannelIdByUrlAsync-Exception: {channelUrl}");
+                            Log.Error(ex, $"GetChannelIdAsync-GetChannelIdByUrlAsync-Exception: {channelUrl}");
                             throw;
                         }
                     }
@@ -833,12 +832,12 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                             }
                             catch (UriFormatException ex)
                             {
-                                Log.Error(ex.Demystify(), $"GetChannelIdAsync-GetChannelIdByUrlAsync-UriFormatException: {channelUrl}");
+                                Log.Error(ex, $"GetChannelIdAsync-GetChannelIdByUrlAsync-UriFormatException: {channelUrl}");
                                 throw;
                             }
                             catch (Exception ex)
                             {
-                                Log.Error(ex.Demystify(), $"GetChannelIdAsync-GetChannelIdByUrlAsync-Exception: {channelUrl}");
+                                Log.Error(ex, $"GetChannelIdAsync-GetChannelIdByUrlAsync-Exception: {channelUrl}");
                                 throw;
                             }
                         }
@@ -936,7 +935,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Demystify(), $"YouTube GetChannelTitle 未知的錯誤: {channelId}");
+                Log.Error(ex, $"YouTube GetChannelTitle 未知的錯誤: {channelId}");
                 return "";
             }
         }
@@ -959,7 +958,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Demystify(), $"YouTube GetChannelTitles 未知的錯誤: {string.Join(", ", channelId)}");
+                Log.Error(ex, $"YouTube GetChannelTitles 未知的錯誤: {string.Join(", ", channelId)}");
                 return null;
             }
         }
@@ -1000,7 +999,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Demystify(), "SubscribePubSubAsync Error");
+                Log.Error(ex, "SubscribePubSubAsync Error");
             }
             finally
             {
@@ -1045,7 +1044,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             catch (Exception ex)
             {
                 Log.Error($"{channelId} PubSub 註冊失敗");
-                Log.Error(ex.Demystify().ToString());
+                Log.Error(ex.ToString());
                 return false;
             }
         }

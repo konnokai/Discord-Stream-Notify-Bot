@@ -1,6 +1,4 @@
-﻿using System.Diagnostics;
-
-namespace Discord_Stream_Notify_Bot
+﻿namespace Discord_Stream_Notify_Bot
 {
     public static class Utility
     {
@@ -19,7 +17,7 @@ namespace Discord_Stream_Notify_Bot
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Demystify().ToString());
+                Log.Error(ex.ToString());
                 return new List<string>();
             }
         }

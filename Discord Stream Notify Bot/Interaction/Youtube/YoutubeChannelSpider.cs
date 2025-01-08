@@ -1,6 +1,5 @@
 ﻿using Discord.Interactions;
 using Discord_Stream_Notify_Bot.Interaction.Attribute;
-using System.Diagnostics;
 
 namespace Discord_Stream_Notify_Bot.Interaction.Youtube
 {
@@ -174,7 +173,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                 catch (Exception ex)
                 {
                     await button.SendErrorAsync(ex.Message, true);
-                    Log.Error(ex.Demystify().ToString());
+                    Log.Error(ex.ToString());
                 }
             };
         }
@@ -250,7 +249,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                                     .AddField("原伺服器", Context.Guild.Id, false)
                                     .AddField("新伺服器", $"{Context.Guild.Name} ({Context.Guild.Id})", false).Build());
                         }
-                        catch (Exception ex) { Log.Error(ex.Demystify().ToString()); }
+                        catch (Exception ex) { Log.Error(ex.ToString()); }
 
                         item.GuildId = Context.Guild.Id;
                         db.YoutubeChannelSpider.Update(item);
@@ -296,7 +295,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                             .WithButton("加入錄影頻道", $"spider_youtube:record:{channelId}", ButtonStyle.Success, row: 1)
                             .WithButton("移除錄影頻道", $"spider_youtube:unrecord:{channelId}", ButtonStyle.Danger, row: 1).Build());
                 }
-                catch (Exception ex) { Log.Error(ex.Demystify().ToString()); }
+                catch (Exception ex) { Log.Error(ex.ToString()); }
             }
         }
 
@@ -355,7 +354,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
 
                 await _service.PostSubscribeRequestAsync(channelId, false);
             }
-            catch (Exception ex) { Log.Error(ex.Demystify().ToString()); }
+            catch (Exception ex) { Log.Error(ex.ToString()); }
         }
 
         [SlashCommand("list", "顯示已加入的爬蟲頻道")]

@@ -1,6 +1,5 @@
 ﻿using Discord.Interactions;
 using Microsoft.Extensions.DependencyInjection;
-using System.Diagnostics;
 
 namespace Discord_Stream_Notify_Bot.Interaction.Help
 {
@@ -40,7 +39,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Help
                 catch (Exception ex)
                 {
                     Log.Error("HelpGetModulesAutocompleteHandler");
-                    Log.Error(ex.Demystify().ToString());
+                    Log.Error(ex.ToString());
                 }
 
                 return AutocompletionResult.FromSuccess(results.Take(25));
