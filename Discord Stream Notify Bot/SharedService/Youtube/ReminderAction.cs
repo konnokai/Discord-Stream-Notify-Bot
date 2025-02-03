@@ -486,6 +486,17 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                     if (noticeType == NoticeType.NewStream)
                                     {
                                         Log.Info($"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} 嘗試建立活動");
+                                        DateTime startTime = streamVideo.ScheduledStartTime;
+
+                                        // 若預定開台時間在現在之後，就從現在時間往後推一分鐘
+                                        // The start time for an event cannot be in the past (Parameter 'startTime')
+                                        if (startTime > DateTime.Now)
+                                        {
+                                            startTime = DateTime.Now.AddMinutes(1);
+                                        }
+
+                                        startTime = startTime.ToUniversalTime();
+
                                         await Policy.Handle<TimeoutException>()
                                             .Or<Discord.Net.HttpException>((httpEx) => ((int)httpEx.HttpCode).ToString().StartsWith("50"))
                                             .WaitAndRetryAsync(3, (retryAttempt) =>
@@ -497,10 +508,10 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                             .ExecuteAsync(async () =>
                                             {
                                                 await guild.CreateEventAsync(streamVideo.VideoTitle,
-                                                    streamVideo.ScheduledStartTime.ToUniversalTime(),
+                                                    startTime,
                                                     GuildScheduledEventType.External,
                                                     description: Format.Url(streamVideo.ChannelTitle, $"https://youtube.com/channel/{streamVideo.ChannelId}"),
-                                                    endTime: streamVideo.ScheduledStartTime.ToUniversalTime().AddHours(1),
+                                                    endTime: startTime.AddHours(1),
                                                     location: $"https://youtube.com/watch?v={streamVideo.VideoId}",
                                                     coverImage: coverImage);
                                             });
