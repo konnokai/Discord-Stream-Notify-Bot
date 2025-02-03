@@ -80,7 +80,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.TwitCasting
                 HtmlAgilityPack.HtmlWeb htmlWeb = new HtmlAgilityPack.HtmlWeb();
                 var htmlDocument = await htmlWeb.LoadFromWebAsync($"https://twitcasting.tv/{channelId}");
                 var htmlNodes = htmlDocument.DocumentNode.Descendants();
-                var htmlNode = htmlNodes.SingleOrDefault((x) => x.Name == "span" && x.HasClass("tw-user-nav-name"));
+                var htmlNode = htmlNodes.FirstOrDefault((x) => x.Name == "span" && x.HasClass("tw-user-nav-name") || x.HasClass("tw-user-nav2-name"));
 
                 if (htmlNode != null)
                 {
