@@ -490,7 +490,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                                         // 若預定開台時間在現在之後，就從現在時間往後推一分鐘
                                         // The start time for an event cannot be in the past (Parameter 'startTime')
-                                        if (startTime > DateTime.Now)
+                                        if (startTime <= DateTime.Now)
                                         {
                                             startTime = DateTime.Now.AddMinutes(1);
                                         }
