@@ -168,6 +168,15 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
                         return;
                     }
 
+                    // 因 Discord 的 SelectMenu 最多只能有 25 個選項，故暫時先做限制避免遇到選單跑不出來的問題
+                    if (db.GuildYoutubeMemberConfig.Count((x) => x.GuildId == Context.Guild.Id) > 25)
+                    {
+                        await Context.Interaction.SendErrorAsync($"此伺服器已使用 25 個頻道做為會限驗證用\n" +
+                            $"因 Discord 限制最多僅能使用 25 個選項\n" +
+                            $"故需要移除未使用到的頻道來繼續新增驗證頻道，或是向 Bot 擁有者詢問", true);
+                        return;
+                    }
+
                     if (guildConfig.LogMemberStatusChannelId == 0)
                     {
                         await Context.Interaction.SendErrorAsync("本伺服器尚未設定會限驗證紀錄頻道\n" +

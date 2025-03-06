@@ -1,5 +1,6 @@
 ﻿using Discord.Interactions;
 using Discord_Stream_Notify_Bot.SharedService.YoutubeMember;
+using System.Diagnostics;
 
 namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
 {
@@ -18,61 +19,70 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
                 return;
             }
 
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            try
             {
-                var guildYoutubeMemberConfigs = db.GuildYoutubeMemberConfig.Where((x) => x.GuildId == Context.Guild.Id);
-                if (!guildYoutubeMemberConfigs.Any())
+                using (var db = DataBase.MainDbContext.GetDbContext())
                 {
-                    await Context.Interaction.SendErrorAsync($"請向管理員確認本伺服器是否已使用會限驗證功能", true);
-                    return;
-                }
-
-                if (guildYoutubeMemberConfigs.Any((x) => string.IsNullOrEmpty(x.MemberCheckChannelTitle) || x.MemberCheckVideoId == "-"))
-                {
-                    await Context.Interaction.SendErrorAsync($"尚有無法檢測的頻道，請等待五分鐘 Bot 初始化完後重新執行此指令", true);
-                    return;
-                }
-
-                if (!await _service.IsExistUserTokenAsync(Context.User.Id.ToString()))
-                {
-                    await Context.Interaction.SendErrorAsync($"請先到 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 登入 Discord 以及 Google\n登入完後再輸入一次本指令", true);
-                    return;
-                }
-
-                if (guildYoutubeMemberConfigs.Count() == 1)
-                {
-                    if (!db.YoutubeMemberCheck.Any((x) =>
-                        x.UserId == Context.User.Id &&
-                        x.GuildId == Context.Guild.Id &&
-                        x.CheckYTChannelId == guildYoutubeMemberConfigs.First().MemberCheckChannelId))
+                    var guildYoutubeMemberConfigs = db.GuildYoutubeMemberConfig.Where((x) => x.GuildId == Context.Guild.Id);
+                    if (!guildYoutubeMemberConfigs.Any())
                     {
-                        db.YoutubeMemberCheck.Add(new DataBase.Table.YoutubeMemberCheck()
-                        {
-                            UserId = Context.User.Id,
-                            GuildId = Context.Guild.Id,
-                            CheckYTChannelId = guildYoutubeMemberConfigs.First().MemberCheckChannelId
-                        });
-                        db.SaveChanges();
+                        await Context.Interaction.SendErrorAsync($"請向管理員確認本伺服器是否已使用會限驗證功能", true);
+                        return;
                     }
-                    await Context.Interaction.SendConfirmAsync("已記錄至資料庫，請稍等至多5分鐘讓Bot驗證\n請確認已開啟本伺服器的 `允許來自伺服器成員的私人訊息` ，以避免收不到通知", true, true);
-                }
-                else
-                {
-                    SelectMenuBuilder selectMenuBuilder = new SelectMenuBuilder()
-                       .WithPlaceholder("頻道")
-                       .WithMinValues(1)
-                       .WithMaxValues(guildYoutubeMemberConfigs.Count())
-                       .WithCustomId($"member:check:{Context.Guild.Id}:{Context.User.Id}");
 
-                    foreach (var item in guildYoutubeMemberConfigs)
-                        selectMenuBuilder.AddOption(item.MemberCheckChannelTitle, item.MemberCheckChannelId);
+                    if (guildYoutubeMemberConfigs.Any((x) => string.IsNullOrEmpty(x.MemberCheckChannelTitle) || x.MemberCheckVideoId == "-"))
+                    {
+                        await Context.Interaction.SendErrorAsync($"尚有無法檢測的頻道，請等待五分鐘 Bot 初始化完後重新執行此指令", true);
+                        return;
+                    }
 
-                    await Context.Interaction.FollowupAsync("選擇你要驗證的頻道\n" +
-                        "(注意: 將移除你現有的會限驗證用戶組並重新驗證)", components: new ComponentBuilder()
-                   .WithSelectMenu(selectMenuBuilder)
-                   .Build());
+                    if (!await _service.IsExistUserTokenAsync(Context.User.Id.ToString()))
+                    {
+                        await Context.Interaction.SendErrorAsync($"請先到 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 登入 Discord 以及 Google\n登入完後再輸入一次本指令", true);
+                        return;
+                    }
+
+                    if (guildYoutubeMemberConfigs.Count() == 1)
+                    {
+                        if (!db.YoutubeMemberCheck.Any((x) =>
+                            x.UserId == Context.User.Id &&
+                            x.GuildId == Context.Guild.Id &&
+                            x.CheckYTChannelId == guildYoutubeMemberConfigs.First().MemberCheckChannelId))
+                        {
+                            db.YoutubeMemberCheck.Add(new DataBase.Table.YoutubeMemberCheck()
+                            {
+                                UserId = Context.User.Id,
+                                GuildId = Context.Guild.Id,
+                                CheckYTChannelId = guildYoutubeMemberConfigs.First().MemberCheckChannelId
+                            });
+                            db.SaveChanges();
+                        }
+                        await Context.Interaction.SendConfirmAsync("已記錄至資料庫，請稍等至多5分鐘讓Bot驗證\n請確認已開啟本伺服器的 `允許來自伺服器成員的私人訊息` ，以避免收不到通知", true, true);
+                    }
+                    else
+                    {
+                        // Todo: 超過 25 個選項時需提供換頁的選項
+                        SelectMenuBuilder selectMenuBuilder = new SelectMenuBuilder()
+                           .WithPlaceholder("頻道")
+                           .WithMinValues(1)
+                           .WithMaxValues(guildYoutubeMemberConfigs.Count())
+                           .WithCustomId($"member:check:{Context.Guild.Id}:{Context.User.Id}");
+
+                        foreach (var item in guildYoutubeMemberConfigs)
+                            selectMenuBuilder.AddOption(item.MemberCheckChannelTitle, item.MemberCheckChannelId);
+
+                        await Context.Interaction.FollowupAsync("選擇你要驗證的頻道\n" +
+                            "(注意: 將移除你現有的會限驗證用戶組並重新驗證)", components: new ComponentBuilder()
+                       .WithSelectMenu(selectMenuBuilder)
+                       .Build());
+                    }
                 }
             }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Demystify(), "Member Check Error");
+                await Context.Interaction.SendErrorAsync($"出現錯誤: {ex.Message}", true);
+            }            
         }
 
         [RequireContext(ContextType.Guild)]
