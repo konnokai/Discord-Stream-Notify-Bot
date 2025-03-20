@@ -25,7 +25,7 @@
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "WriteOfficialListFile Error");
+                Log.Error(ex.Demystify(), "WriteOfficialListFile Error");
                 return false;
             }
 

@@ -139,9 +139,9 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                 }
             };
 
-            checkMemberShipOnlyVideoId = new Timer(CheckMemberShipOnlyVideoId, null, TimeSpan.FromSeconds(10), TimeSpan.FromMinutes(5));
-            checkOldMemberStatus = new Timer(new TimerCallback(async (obj) => await CheckMemberShip(obj)), true, TimeSpan.FromSeconds(Math.Round(Convert.ToDateTime($"{DateTime.Now.AddDays(1):yyyy/MM/dd 04:00:00}").Subtract(DateTime.Now).TotalSeconds)), TimeSpan.FromDays(1));
-            checkNewMemberStatus = new Timer(new TimerCallback(async (obj) => await CheckMemberShip(obj)), false, TimeSpan.FromSeconds(15), TimeSpan.FromMinutes(5));
+            //checkMemberShipOnlyVideoId = new Timer(CheckMemberShipOnlyVideoId, null, TimeSpan.FromSeconds(10), TimeSpan.FromMinutes(5));
+            //checkOldMemberStatus = new Timer(new TimerCallback(async (obj) => await CheckMemberShip(obj)), true, TimeSpan.FromSeconds(Math.Round(Convert.ToDateTime($"{DateTime.Now.AddDays(1):yyyy/MM/dd 04:00:00}").Subtract(DateTime.Now).TotalSeconds)), TimeSpan.FromDays(1));
+            //checkNewMemberStatus = new Timer(new TimerCallback(async (obj) => await CheckMemberShip(obj)), false, TimeSpan.FromSeconds(15), TimeSpan.FromMinutes(5));
 
             Task.Run(async () =>
             {
@@ -179,7 +179,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex, "儲存 Youtube Member Access Token 失敗");
+                    Log.Error(ex.Demystify(), "儲存 Youtube Member Access Token 失敗");
                 }
             });
 
@@ -213,7 +213,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
             catch (Exception ex)
             {
                 await flow.DeleteTokenAsync(discordUserId, CancellationToken.None);
-                Log.Error(ex, "RevokeToken");
+                Log.Error(ex.Demystify(), "RevokeToken");
                 throw;
             }
         }
@@ -253,7 +253,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "AfterRevokeUserCertAsync");
+                Log.Error(ex.Demystify(), "AfterRevokeUserCertAsync");
                 throw;
             }
         }
@@ -428,7 +428,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                 }
                 else
                 {
-                    Log.Error(ex, $"{discordUserId} AccessToken 發生未知錯誤");
+                    Log.Error(ex.Demystify(), $"{discordUserId} AccessToken 發生未知錯誤");
                 }
 
                 await flow.DataStore.DeleteAsync<TokenResponse>(discordUserId);
@@ -498,7 +498,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
             }
             catch (Exception ex)
             {
-                Log.Error(ex, $"YoutubeMemberService-SendConfirmMessageAsync: {userId} ({tc.Name} / {tc.Id})");
+                Log.Error(ex.Demystify(), $"YoutubeMemberService-SendConfirmMessageAsync: {userId} ({tc.Name} / {tc.Id})");
                 throw;
             }
         }
@@ -522,7 +522,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
             }
             catch (Exception ex)
             {
-                Log.Error(ex, $"YoutubeMemberService-SendConfirmMessageAsync: {tc.Name} ({tc.Id})");
+                Log.Error(ex.Demystify(), $"YoutubeMemberService-SendConfirmMessageAsync: {tc.Name} ({tc.Id})");
                 return null;
             }
         }
@@ -559,7 +559,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
             }
             catch (Exception ex)
             {
-                Log.Error(ex, $"YoutubeMemberService-SendErrorMessageAsync: {tc.Name} ({tc.Id})");
+                Log.Error(ex.Demystify(), $"YoutubeMemberService-SendErrorMessageAsync: {tc.Name} ({tc.Id})");
                 return null;
             }
         }
@@ -604,12 +604,12 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                 }
                 else
                 {
-                    Log.Error(ex, $"YoutubeMemberService-SendUserDMConfirmMessageAsync - Discord 錯誤: {userId}");
+                    Log.Error(ex.Demystify(), $"YoutubeMemberService-SendUserDMConfirmMessageAsync - Discord 錯誤: {userId}");
                 }
             }
             catch (Exception ex)
             {
-                Log.Error(ex, $"YoutubeMemberService-SendUserDMConfirmMessageAsync 錯誤: {userId}");
+                Log.Error(ex.Demystify(), $"YoutubeMemberService-SendUserDMConfirmMessageAsync 錯誤: {userId}");
             }
         }
 
@@ -653,12 +653,12 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                 }
                 else
                 {
-                    Log.Error(ex, $"YoutubeMemberService-SendUserDMErrorMessageAsync - Discord 錯誤: {userId}");
+                    Log.Error(ex.Demystify(), $"YoutubeMemberService-SendUserDMErrorMessageAsync - Discord 錯誤: {userId}");
                 }
             }
             catch (Exception ex)
             {
-                Log.Error(ex, $"YoutubeMemberService-SendUserDMErrorMessageAsync 錯誤: {userId}");
+                Log.Error(ex.Demystify(), $"YoutubeMemberService-SendUserDMErrorMessageAsync 錯誤: {userId}");
             }
         }
 
@@ -689,12 +689,12 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                 }
                 else
                 {
-                    Log.Error(ex, $"YoutubeMemberService-SendUserDMErrorMessageAsync - Discord 錯誤: {dc.Name}");
+                    Log.Error(ex.Demystify(), $"YoutubeMemberService-SendUserDMErrorMessageAsync - Discord 錯誤: {dc.Name}");
                 }
             }
             catch (Exception ex)
             {
-                Log.Error(ex, $"YoutubeMemberService-SendUserDMErrorMessageAsync 錯誤: {dc.Name}");
+                Log.Error(ex.Demystify(), $"YoutubeMemberService-SendUserDMErrorMessageAsync 錯誤: {dc.Name}");
             }
         }
     }

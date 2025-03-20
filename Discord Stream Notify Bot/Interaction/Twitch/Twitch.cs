@@ -142,7 +142,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
             }
             catch (Exception ex)
             {
-                Log.Error(ex, $"Twitch Add Error: {twitchUrl}");
+                Log.Error(ex.Demystify(), $"Twitch Add Error: {twitchUrl}");
                 await Context.Interaction.SendErrorAsync("新增失敗，請向 Bot 擁有者回報", true);
             }
         }
@@ -315,7 +315,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Twitch ListMessage");
+                Log.Error(ex.Demystify(), "Twitch ListMessage");
                 await Context.Interaction.SendErrorAsync("錯誤，請向 Bot 擁有者詢問");
             }
         }

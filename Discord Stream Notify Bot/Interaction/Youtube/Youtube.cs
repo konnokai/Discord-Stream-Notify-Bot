@@ -4,7 +4,6 @@ using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.Interaction.Attribute;
 using Discord_Stream_Notify_Bot.SharedService.Youtube;
 using Microsoft.EntityFrameworkCore;
-using System.Diagnostics;
 using Video = Google.Apis.YouTube.v3.Data.Video;
 
 namespace Discord_Stream_Notify_Bot.Interaction.Youtube
@@ -174,7 +173,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             }
             catch (Exception ex)
             {
-                Log.Error(ex, $"GetMemberOnlyPlayListAsync: {channelUrl}");
+                Log.Error(ex.Demystify(), $"GetMemberOnlyPlayListAsync: {channelUrl}");
                 await Context.Interaction.SendErrorAsync("不明的錯誤，請向 Bot 擁有者回報", true);
             }
         }
@@ -286,7 +285,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "CreateEvent");
+                Log.Error(ex.Demystify(), "CreateEvent");
                 await Context.Interaction.SendErrorAsync("不明的錯誤，請向 Bot 擁有者回報", true);
             }
         }
@@ -476,7 +475,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             }
             catch (Exception ex)
             {
-                Log.Error(ex, $"YouTube Add: {Context.Guild.Id} - {channelUrl}");
+                Log.Error(ex.Demystify(), $"YouTube Add: {Context.Guild.Id} - {channelUrl}");
                 await Context.Interaction.SendErrorAsync("出現未知的錯誤，請向 Bot 擁有者詢問", true);
             }
         }
@@ -645,7 +644,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             }
             catch (Exception ex)
             {
-                Log.Error(ex, $"YouTube ListChannel Error: {Context.Guild.Id}");
+                Log.Error(ex.Demystify(), $"YouTube ListChannel Error: {Context.Guild.Id}");
                 await Context.Interaction.SendErrorAsync("未知的錯誤，請向 Bot 擁有者回報");
             }
         }
@@ -833,7 +832,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "YouTube ListMessage");
+                Log.Error(ex.Demystify(), "YouTube ListMessage");
                 await Context.Interaction.SendErrorAsync("錯誤，請向 Bot 擁有者詢問");
             }
         }

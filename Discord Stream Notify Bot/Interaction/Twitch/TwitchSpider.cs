@@ -213,7 +213,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
                                     .AddField("原伺服器", Context.Guild.Id, false)
                                     .AddField("新伺服器", $"{Context.Guild.Name} ({Context.Guild.Id})", false).Build());
                         }
-                        catch (Exception ex) { Log.Error(ex, "Update Twitch Spider GuildId Error"); }
+                        catch (Exception ex) { Log.Error(ex.Demystify(), "Update Twitch Spider GuildId Error"); }
                     }
 
                     await Context.Interaction.SendConfirmAsync($"`{userData.DisplayName}` 已在爬蟲清單內\n" +
@@ -333,7 +333,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex, $"Twitch-Spider-List Error");
+                    Log.Error(ex.Demystify(), $"Twitch-Spider-List Error");
                     await Context.Interaction.SendErrorAsync("指令執行失敗", false, true);
                 }
             }

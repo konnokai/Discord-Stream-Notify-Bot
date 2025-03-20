@@ -1,6 +1,4 @@
-﻿using System.Diagnostics;
-
-public static class Log
+﻿public static class Log
 {
     enum LogType { Verb, Stream, Info, Warn, Error }
     static string logPath = DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss") + ".log";

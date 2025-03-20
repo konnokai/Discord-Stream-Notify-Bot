@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using System.Reflection;
+﻿using System.Reflection;
 
 namespace Discord_Stream_Notify_Bot
 {
@@ -24,11 +23,11 @@ namespace Discord_Stream_Notify_Bot
                     {
                         StreamWriter sw = new StreamWriter($"{DateTime.Now:yyyy-MM-dd hh-mm-ss}_crash.log");
                         sw.WriteLine("### Bot Crash ###");
-                        sw.WriteLine(ex.ToString());
+                        sw.WriteLine(ex.Demystify().ToString());
                         sw.Close();
                     }
 
-                    Log.Error(ex, "UnhandledException", true, false);
+                    Log.Error(ex.Demystify(), "UnhandledException", true, false);
                 }
                 finally
                 {
@@ -48,7 +47,7 @@ namespace Discord_Stream_Notify_Bot
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex, "ReadOfficialListFile Error");
+                    Log.Error(ex.Demystify(), "ReadOfficialListFile Error");
                     return;
                 }
             }

@@ -467,7 +467,7 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex, $"取得伺服器資料失敗: {item}");
+                    Log.Error(ex.Demystify(), $"取得伺服器資料失敗: {item}");
                 }
             }
 

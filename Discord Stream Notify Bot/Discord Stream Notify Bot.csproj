@@ -54,6 +54,7 @@
     <Using Include="Google.Apis.YouTube.v3.Data" />
     <Using Include="Newtonsoft.Json" />
     <Using Include="StackExchange.Redis" />
+    <Using Include="System.Diagnostics" />
   </ItemGroup>  
 
 	<PropertyGroup>

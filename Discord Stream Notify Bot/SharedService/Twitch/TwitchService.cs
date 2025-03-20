@@ -5,7 +5,6 @@ using Discord_Stream_Notify_Bot.Interaction;
 using Dorssel.Utilities;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using System.Text.RegularExpressions;
 using TwitchLib.Api;
 using TwitchLib.Api.Core.Enums;

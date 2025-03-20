@@ -9,7 +9,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Polly;
 using Polly.Extensions.Http;
-using System.Diagnostics;
 using System.Reflection;
 
 namespace Discord_Stream_Notify_Bot
@@ -218,7 +217,7 @@ namespace Discord_Stream_Notify_Bot
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Discord 登入失敗!");
+                Log.Error(ex.Demystify(), "Discord 登入失敗!");
                 return;
             }
 

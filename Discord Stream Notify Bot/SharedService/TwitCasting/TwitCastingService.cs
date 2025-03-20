@@ -4,7 +4,6 @@ using Discord_Stream_Notify_Bot.HttpClients;
 using Discord_Stream_Notify_Bot.HttpClients.TwitCasting;
 using Discord_Stream_Notify_Bot.Interaction;
 using Microsoft.EntityFrameworkCore;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 #if RELEASE
@@ -53,12 +52,12 @@ namespace Discord_Stream_Notify_Bot.SharedService.TwitCasting
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex, "TwitCasting 分類獲取失敗");
+                    Log.Error(ex.Demystify(), "TwitCasting 分類獲取失敗");
                 }
             }, null, TimeSpan.FromSeconds(3), TimeSpan.FromMinutes(30));
 
-            _refreshNowStreamTimer = new Timer(async (obj) => { await TimerHandel(); },
-                null, TimeSpan.FromSeconds(15), TimeSpan.FromMinutes(1));
+            //_refreshNowStreamTimer = new Timer(async (obj) => { await TimerHandel(); },
+            //    null, TimeSpan.FromSeconds(15), TimeSpan.FromMinutes(1));
 
             _dbService = dbService;
         }
@@ -252,7 +251,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.TwitCasting
                     }
                     catch (Exception ex)
                     {
-                        Log.Error(ex, $"TwitCasting 通知 - 未知錯誤 {item.GuildId} / {item.DiscordChannelId}");
+                        Log.Error(ex.Demystify(), $"TwitCasting 通知 - 未知錯誤 {item.GuildId} / {item.DiscordChannelId}");
                     }
                 }
             }
@@ -294,7 +293,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.TwitCasting
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "RecordTwitCasting 失敗，請確認是否已安裝 StreamLink");
+                Log.Error(ex.Demystify(), "RecordTwitCasting 失敗，請確認是否已安裝 StreamLink");
                 return false;
             }
         }

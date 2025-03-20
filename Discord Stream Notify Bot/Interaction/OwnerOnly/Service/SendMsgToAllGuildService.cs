@@ -184,7 +184,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.OwnerOnly.Service
                             }
                             catch (Exception ex)
                             {
-                                Log.Error(ex, $"MSG: {guild.Name} / {textChannel.Name}");
+                                Log.Error(ex.Demystify(), $"MSG: {guild.Name} / {textChannel.Name}");
                             }
                             finally
                             {
@@ -194,7 +194,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.OwnerOnly.Service
                     }
                     catch (Exception ex)
                     {
-                        Log.Error(ex, "Send Message To Global Notice Channel Error");
+                        Log.Error(ex.Demystify(), "Send Message To Global Notice Channel Error");
                     }
 
                     db.SaveChanges();
@@ -278,7 +278,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.OwnerOnly.Service
                         }
                         catch (Exception ex)
                         {
-                            Log.Error(ex, $"MSG: {guild.Name} / {textChannel.Name}");
+                            Log.Error(ex.Demystify(), $"MSG: {guild.Name} / {textChannel.Name}");
                         }
                         finally
                         {
@@ -288,7 +288,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.OwnerOnly.Service
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex, "Send Message To YouTube Notice Channel Error");
+                    Log.Error(ex.Demystify(), "Send Message To YouTube Notice Channel Error");
                 }
 
                 db.SaveChanges();
@@ -362,7 +362,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.OwnerOnly.Service
                         }
                         catch (Exception ex)
                         {
-                            Log.Error(ex, $"MSG: {guild.Name} / {textChannel.Name}");
+                            Log.Error(ex.Demystify(), $"MSG: {guild.Name} / {textChannel.Name}");
                         }
                         finally
                         {
@@ -372,7 +372,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.OwnerOnly.Service
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex, "Send Message To Twitch Notice Channel Error");
+                    Log.Error(ex.Demystify(), "Send Message To Twitch Notice Channel Error");
                 }
 
                 db.SaveChanges();
@@ -449,7 +449,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.OwnerOnly.Service
                         }
                         catch (Exception ex)
                         {
-                            Log.Error(ex, $"MSG: {guild.Name} / {textChannel.Name}");
+                            Log.Error(ex.Demystify(), $"MSG: {guild.Name} / {textChannel.Name}");
                         }
                         finally
                         {
@@ -459,7 +459,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.OwnerOnly.Service
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex, "Send Message To YouTube Memeber Notice Channel Error");
+                    Log.Error(ex.Demystify(), "Send Message To YouTube Memeber Notice Channel Error");
                 }
 
                 db.SaveChanges();

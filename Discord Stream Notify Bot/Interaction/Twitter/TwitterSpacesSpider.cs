@@ -203,7 +203,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex, $"Twitch-Spider-List Error");
+                    Log.Error(ex.Demystify(), $"Twitch-Spider-List Error");
                     await Context.Interaction.SendErrorAsync("指令執行失敗", false, true);
                 }
             }

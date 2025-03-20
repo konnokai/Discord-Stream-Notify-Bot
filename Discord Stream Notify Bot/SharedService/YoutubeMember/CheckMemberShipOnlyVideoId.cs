@@ -63,7 +63,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                 }
                                 else
                                 {
-                                    Log.Error(ex, $"{item.MemberCheckChannelId} 新會限影片檢查錯誤");
+                                    Log.Error(ex.Demystify(), $"{item.MemberCheckChannelId} 新會限影片檢查錯誤");
 
                                     foreach (var item2 in db.GuildYoutubeMemberConfig.Where((x) => x.MemberCheckChannelId == item.MemberCheckChannelId))
                                     {
@@ -117,7 +117,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex, $"CheckMemberShipOnlyVideoId-RemoveRange");
+                    Log.Error(ex.Demystify(), $"CheckMemberShipOnlyVideoId-RemoveRange");
                     await (await Bot.ApplicatonOwner.CreateDMChannelAsync()).SendErrorMessageAsync($"CheckMemberShipOnlyVideoId-RemoveRange: {ex}");
                 }
 
@@ -159,7 +159,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex, $"CheckMemberShipOnlyVideoId-SaveChanges");
+                    Log.Error(ex.Demystify(), $"CheckMemberShipOnlyVideoId-SaveChanges");
                     await (await Bot.ApplicatonOwner.CreateDMChannelAsync()).SendErrorMessageAsync($"CheckMemberShipOnlyVideoId-SaveChanges: {ex}");
                 }
             }

@@ -207,7 +207,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitch
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "TwitchGetLatestVOD Error");
+                Log.Error(ex.Demystify(), "TwitchGetLatestVOD Error");
                 await Context.Channel.SendErrorAsync("Error");
             }
         }

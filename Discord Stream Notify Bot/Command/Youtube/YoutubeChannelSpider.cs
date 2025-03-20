@@ -36,7 +36,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                         }
                         catch (Exception ex)
                         {
-                            Log.Error(ex, $"{item.ChannelTitle}: {item.GuildId}");
+                            Log.Error(ex.Demystify(), $"{item.ChannelTitle}: {item.GuildId}");
                         }
                         finally
                         {
@@ -61,7 +61,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex, "ListDeathChannelSpider");
+                    Log.Error(ex.Demystify(), "ListDeathChannelSpider");
                     await Context.Channel.SendErrorAsync(ex.ToString());
                     return;
                 }
@@ -93,7 +93,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                         }
                         catch (Exception ex)
                         {
-                            Log.Error(ex, $"{item.ChannelTitle}: {item.GuildId}");
+                            Log.Error(ex.Demystify(), $"{item.ChannelTitle}: {item.GuildId}");
                         }
                     }
 
@@ -121,13 +121,13 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                         }
                         catch (Exception ex)
                         {
-                            Log.Error(ex, "儲存資料庫失敗");
+                            Log.Error(ex.Demystify(), "儲存資料庫失敗");
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex, "ListNoNoticeChannelSpider");
+                    Log.Error(ex.Demystify(), "ListNoNoticeChannelSpider");
                     await Context.Channel.SendErrorAsync(ex.ToString());
                     return;
                 }

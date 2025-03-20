@@ -5,6 +5,7 @@ using Discord_Stream_Notify_Bot.SharedService.Youtube.Json;
 using Google.Apis.Services;
 using Google.Apis.YouTube.v3;
 using HtmlAgilityPack;
+using Microsoft.EntityFrameworkCore;
 using System.Collections.Concurrent;
 using System.Data;
 using System.Net;
@@ -353,7 +354,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                 }
                                 catch (Exception ex)
                                 {
-                                    Log.Error(ex, $"PubSub-AddStream: {item.Id}");
+                                    Log.Error(ex.Demystify(), $"PubSub-AddStream: {item.Id}");
                                 }
                             }
                             else
@@ -400,7 +401,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                     }
                                     catch (Exception ex)
                                     {
-                                        Log.Error(ex, $"PubSub_AddData_CreateOrUpdate: {item.Id}");
+                                        Log.Error(ex.Demystify(), $"PubSub_AddData_CreateOrUpdate: {item.Id}");
                                     }
                                 }
                                 else
@@ -629,7 +630,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex, $"GetOrCreateNijisanjiLiverListAsync-GetRedisData-{affiliation}");
+                    Log.Error(ex.Demystify(), $"GetOrCreateNijisanjiLiverListAsync-GetRedisData-{affiliation}");
                 }
             }
 
@@ -646,7 +647,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             }
             catch (Exception ex)
             {
-                Log.Error(ex, $"GetOrCreateNijisanjiLiverListAsync-GetLiver-{affiliation}");
+                Log.Error(ex.Demystify(), $"GetOrCreateNijisanjiLiverListAsync-GetLiver-{affiliation}");
             }
         }
 
@@ -687,13 +688,16 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             }
             catch (Exception ex)
             {
-                Log.Error(ex, $"GetNowStreamingChannel: {host}");
+                Log.Error(ex.Demystify(), $"GetNowStreamingChannel: {host}");
                 return null;
             }
         }
 
-        private bool CanRecord(MainDbContext db, DataBase.Table.Video streamVideo) =>
-             IsRecord && db.RecordYoutubeChannel.Any((x) => x.YoutubeChannelId.Trim() == streamVideo.ChannelId.Trim());
+        private bool CanRecord(DataBase.Table.Video streamVideo)
+        {
+            using var db = _dbService.GetDbContext();
+            return IsRecord && db.RecordYoutubeChannel.AsNoTracking().Any((x) => x.YoutubeChannelId.Trim() == streamVideo.ChannelId.Trim());
+        }
 
         public async Task<string> GetChannelIdAsync(string channelUrl)
         {
@@ -742,12 +746,12 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         }
                         catch (UriFormatException ex)
                         {
-                            Log.Error(ex, $"GetChannelIdAsync-GetChannelIdByUrlAsync-UriFormatException: {channelUrl}");
+                            Log.Error(ex.Demystify(), $"GetChannelIdAsync-GetChannelIdByUrlAsync-UriFormatException: {channelUrl}");
                             throw;
                         }
                         catch (Exception ex)
                         {
-                            Log.Error(ex, $"GetChannelIdAsync-GetChannelIdByUrlAsync-Exception: {channelUrl}");
+                            Log.Error(ex.Demystify(), $"GetChannelIdAsync-GetChannelIdByUrlAsync-Exception: {channelUrl}");
                             throw;
                         }
                     }
@@ -784,12 +788,12 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                             }
                             catch (UriFormatException ex)
                             {
-                                Log.Error(ex, $"GetChannelIdAsync-GetChannelIdByUrlAsync-UriFormatException: {channelUrl}");
+                                Log.Error(ex.Demystify(), $"GetChannelIdAsync-GetChannelIdByUrlAsync-UriFormatException: {channelUrl}");
                                 throw;
                             }
                             catch (Exception ex)
                             {
-                                Log.Error(ex, $"GetChannelIdAsync-GetChannelIdByUrlAsync-Exception: {channelUrl}");
+                                Log.Error(ex.Demystify(), $"GetChannelIdAsync-GetChannelIdByUrlAsync-Exception: {channelUrl}");
                                 throw;
                             }
                         }
@@ -887,7 +891,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             }
             catch (Exception ex)
             {
-                Log.Error(ex, $"YouTube GetChannelTitle 未知的錯誤: {channelId}");
+                Log.Error(ex.Demystify(), $"YouTube GetChannelTitle 未知的錯誤: {channelId}");
                 return "";
             }
         }
@@ -910,7 +914,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             }
             catch (Exception ex)
             {
-                Log.Error(ex, $"YouTube GetChannelTitles 未知的錯誤: {string.Join(", ", channelId)}");
+                Log.Error(ex.Demystify(), $"YouTube GetChannelTitles 未知的錯誤: {string.Join(", ", channelId)}");
                 return null;
             }
         }
@@ -923,35 +927,36 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
             try
             {
-                using (var db = _dbService.GetDbContext())
+                using var db = _dbService.GetDbContext();
+                var list = await db.YoutubeChannelSpider
+                    .Where(x => x.LastSubscribeTime < DateTime.Now.AddDays(-7))
+                    .ToListAsync();
+
+                int i = 0;
+
+                if (list.Count != 0)
                 {
-                    var list = db.YoutubeChannelSpider.Where((x) => x.LastSubscribeTime < DateTime.Now.AddDays(-7));
-
-                    int i = 0;
-                    if (list.Any())
+                    foreach (var item in list)
                     {
-                        foreach (var item in list)
+                        i++;
+                        if (await PostSubscribeRequestAsync(item.ChannelId))
                         {
-                            i++;
-                            if (await PostSubscribeRequestAsync(item.ChannelId))
-                            {
-                                Log.Info($"已註冊 YT PubSub: {item.ChannelTitle} ({item.ChannelId}) ({i}/{list.Count()})");
-                                item.LastSubscribeTime = DateTime.Now;
-                                db.Update(item);
-                            }
-                            else
-                            {
-                                Log.Warn($"註冊 YT PubSub 失敗: {item.ChannelTitle} ({item.ChannelId}) ({i}/{list.Count()})");
-                            }
+                            Log.Info($"已註冊 YT PubSub: {item.ChannelTitle} ({item.ChannelId}) ({i}/{list.Count})");
+                            item.LastSubscribeTime = DateTime.Now;
+                            db.Update(item);
                         }
-
-                        db.SaveChanges();
+                        else
+                        {
+                            Log.Warn($"註冊 YT PubSub 失敗: {item.ChannelTitle} ({item.ChannelId}) ({i}/{list.Count})");
+                        }
                     }
+
+                    await db.SaveChangesAsync();
                 }
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "SubscribePubSubAsync Error");
+                Log.Error(ex.Demystify(), "SubscribePubSubAsync Error");
             }
             finally
             {
@@ -995,8 +1000,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             }
             catch (Exception ex)
             {
-                Log.Error($"{channelId} PubSub 註冊失敗");
-                Log.Error(ex.ToString());
+                Log.Error(ex.Demystify(), $"{channelId} PubSub 註冊失敗");
                 return false;
             }
         }

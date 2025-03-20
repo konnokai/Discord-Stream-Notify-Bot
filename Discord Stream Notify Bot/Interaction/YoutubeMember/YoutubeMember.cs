@@ -1,7 +1,6 @@
 ﻿using Discord.Interactions;
 using Discord_Stream_Notify_Bot.DataBase;
 using Discord_Stream_Notify_Bot.SharedService.YoutubeMember;
-using System.Diagnostics;
 
 namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
 {
