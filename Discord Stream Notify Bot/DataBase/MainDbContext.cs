@@ -5,43 +5,91 @@ namespace Discord_Stream_Notify_Bot.DataBase
 {
     public class MainDbContext : DbContext
     {
+        private readonly string _connectionString;
+
+        public MainDbContext(string connectionString
+            // 要新增 Migration 的時候再把下面的連線字串註解拿掉
+            //= "Server=localhost;Port=3306;User Id=stream_bot;Password=Ch@nge_Me;Database=discord_stream_bot"
+            )
+        {
+            _connectionString = connectionString;
+        }
+
         public DbSet<BannerChange> BannerChange { get; set; }
         public DbSet<GuildConfig> GuildConfig { get; set; }
         public DbSet<GuildYoutubeMemberConfig> GuildYoutubeMemberConfig { get; set; }
-        public DbSet<NoticeTwitCastingStreamChannel> NoticeTwitCastingStreamChannels { get; set; }
+        public DbSet<NoticeTwitcastingStreamChannel> NoticeTwitcastingStreamChannels { get; set; }
         public DbSet<NoticeTwitchStreamChannel> NoticeTwitchStreamChannels { get; set; }
         public DbSet<NoticeTwitterSpaceChannel> NoticeTwitterSpaceChannel { get; set; }
         public DbSet<NoticeYoutubeStreamChannel> NoticeYoutubeStreamChannel { get; set; }
         public DbSet<RecordYoutubeChannel> RecordYoutubeChannel { get; set; }
-        public DbSet<TwitCastingSpider> TwitCastingSpider { get; set; }
+        public DbSet<TwitcastingSpider> TwitcastingSpider { get; set; }
         public DbSet<TwitchSpider> TwitchSpider { get; set; }
         public DbSet<TwitterSpace> TwitterSpace { get; set; }
-        public DbSet<TwitterSpaecSpider> TwitterSpaecSpider { get; set; }
+        public DbSet<TwitterSpaceSpider> TwitterSpaceSpider { get; set; }
         public DbSet<YoutubeChannelNameToId> YoutubeChannelNameToId { get; set; }
         public DbSet<YoutubeChannelOwnedType> YoutubeChannelOwnedType { get; set; }
         public DbSet<YoutubeChannelSpider> YoutubeChannelSpider { get; set; }
         public DbSet<YoutubeMemberAccessToken> YoutubeMemberAccessToken { get; set; }
         public DbSet<YoutubeMemberCheck> YoutubeMemberCheck { get; set; }
 
-        protected override void OnConfiguring(DbContextOptionsBuilder options)
-            => options.UseSqlite($"Data Source={Program.GetDataFilePath("Database.db")}")
-#if DEBUG || DEBUG_DONTREGISTERCOMMAND
-            //.LogTo((act) => System.IO.File.AppendAllText("DbTrackerLog.txt", act), Microsoft.Extensions.Logging.LogLevel.Information)
-#endif
-            .EnableSensitiveDataLogging();
+        #region Video
+        public DbSet<HoloVideos> HoloVideos { get; set; }
+        public DbSet<NijisanjiVideos> NijisanjiVideos { get; set; }
+        public DbSet<OtherVideos> OtherVideos { get; set; }
+        public DbSet<NonApprovedVideos> NonApprovedVideos { get; set; }
+        public DbSet<TwitcastingStream> TwitcastingStreams { get; set; }
+        public DbSet<TwitchStream> TwitchStreams { get; set; }
+        #endregion
 
-        public static MainDbContext GetDbContext()
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            var context = new MainDbContext();
-            context.Database.SetCommandTimeout(60);
-            var conn = context.Database.GetDbConnection();
-            conn.Open();
-            using (var com = conn.CreateCommand())
+            base.OnConfiguring(optionsBuilder);
+            optionsBuilder
+                .UseMySql(_connectionString, ServerVersion.AutoDetect(_connectionString))
+                .UseSnakeCaseNamingConvention();
+        }
+
+        public bool UpdateAndSave(Table.Video video)
+        {
+            Update(video);
+            var saveTime = DateTime.Now;
+            bool saveFailed;
+
+            do
             {
-                com.CommandText = "PRAGMA journal_mode=WAL; PRAGMA synchronous=OFF";
-                com.ExecuteNonQuery();
-            }
-            return context;
+                saveFailed = false;
+                try
+                {
+                    SaveChanges();
+                }
+                catch (DbUpdateConcurrencyException ex)
+                {
+                    saveFailed = true;
+                    foreach (var item in ex.Entries)
+                    {
+                        try
+                        {
+                            item.Reload();
+                        }
+                        catch (Exception ex2)
+                        {
+                            Log.Error($"VideoContext-SaveChanges-Reload");
+                            Log.Error(item.DebugView.ToString());
+                            Log.Error(ex2.ToString());
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Error($"VideoContext-SaveChanges: {ex}");
+                    Log.Error(ChangeTracker.DebugView.LongView);
+                }
+            } while (saveFailed && DateTime.Now.Subtract(saveTime) <= TimeSpan.FromMinutes(1));
+
+            Dispose();
+
+            return DateTime.Now.Subtract(saveTime) >= TimeSpan.FromMinutes(1);
         }
     }
 }

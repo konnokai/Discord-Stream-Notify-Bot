@@ -1,5 +1,4 @@
-﻿using Discord_Stream_Notify_Bot.DataBase;
-using Discord_Stream_Notify_Bot.DataBase.Table;
+﻿using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.Interaction;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,7 +9,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
         //https://github.com/member-gentei/member-gentei/blob/90f62385f554eb4c02ed8732e15061b9dd1dd6d0/gentei/apis/youtube.go#L100
         private async void CheckMemberShipOnlyVideoId(object stats)
         {
-            using (var db = MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 List<GuildYoutubeMemberConfig> needRemoveList = new();
                 foreach (var item in db.GuildYoutubeMemberConfig.Where((x) => !string.IsNullOrEmpty(x.MemberCheckChannelId) && x.MemberCheckChannelId.Length == 24 && (x.MemberCheckVideoId == "-" || string.IsNullOrEmpty(x.MemberCheckChannelTitle))).Distinct((x) => x.MemberCheckChannelId))
@@ -27,7 +26,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                         {
                             if (!videoList.Any())
                             {
-                                await Program.ApplicatonOwner.SendMessageAsync($"{item.MemberCheckChannelId} 無任何可檢測的會限影片!");
+                                await Bot.ApplicatonOwner.SendMessageAsync($"{item.MemberCheckChannelId} 無任何可檢測的會限影片!");
                                 await SendMsgToLogChannelAsync(item.MemberCheckChannelId, $"{item.MemberCheckChannelId} 無會限影片，請等待該頻道主有新的會限影片且可留言時再使用會限驗證功能\n" +
                                     $"你可以使用 `/youtube get-member-only-playlist` 來確認該頻道是否有可驗證的影片");
                                 needRemoveList.Add(item);
@@ -119,7 +118,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                 catch (Exception ex)
                 {
                     Log.Error(ex, $"CheckMemberShipOnlyVideoId-RemoveRange");
-                    await (await Program.ApplicatonOwner.CreateDMChannelAsync()).SendErrorMessageAsync($"CheckMemberShipOnlyVideoId-RemoveRange: {ex}");
+                    await (await Bot.ApplicatonOwner.CreateDMChannelAsync()).SendErrorMessageAsync($"CheckMemberShipOnlyVideoId-RemoveRange: {ex}");
                 }
 
                 try
@@ -161,7 +160,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                 catch (Exception ex)
                 {
                     Log.Error(ex, $"CheckMemberShipOnlyVideoId-SaveChanges");
-                    await (await Program.ApplicatonOwner.CreateDMChannelAsync()).SendErrorMessageAsync($"CheckMemberShipOnlyVideoId-SaveChanges: {ex}");
+                    await (await Bot.ApplicatonOwner.CreateDMChannelAsync()).SendErrorMessageAsync($"CheckMemberShipOnlyVideoId-SaveChanges: {ex}");
                 }
             }
 

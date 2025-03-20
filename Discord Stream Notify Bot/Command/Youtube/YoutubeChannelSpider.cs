@@ -15,7 +15,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
         {
             if (page < 0) page = 0;
 
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 try
                 {
@@ -77,7 +77,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
         {
             if (page < 0) page = 0;
 
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 try
                 {
@@ -143,7 +143,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
         {
             channelId = await _service.GetChannelIdAsync(channelId);
 
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 var youtubeChannelSpider = db.YoutubeChannelSpider.SingleOrDefault((x) => x.ChannelId == channelId);
                 if (youtubeChannelSpider != null)
@@ -174,7 +174,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
         [Alias("lnvcs")]
         public async Task ListNotVTuberChannelSpider()
         {
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 var list = db.YoutubeChannelSpider.Where((x) => !x.IsTrustedChannel).Select((x) => Format.Url(x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}") +
                     $" 由 `" + (x.GuildId == 0 ? "Bot擁有者" : $"{_client.GetGuild(x.GuildId).Name}") + "` 新增");
@@ -214,7 +214,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                 return;
             }
 
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 if (db.YoutubeChannelSpider.Any((x) => x.ChannelId == channelId))
                 {
@@ -256,7 +256,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                 return;
             }
 
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 if (db.YoutubeChannelSpider.Any((x) => x.ChannelId == channelId))
                 {
@@ -298,7 +298,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                 return;
             }
 
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 if (db.YoutubeChannelSpider.Any((x) => x.ChannelId == channelId))
                 {

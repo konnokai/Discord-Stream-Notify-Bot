@@ -1,4 +1,8 @@
-﻿namespace Discord_Stream_Notify_Bot
+﻿using Microsoft.EntityFrameworkCore;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+
+namespace Discord_Stream_Notify_Bot
 {
     public static class Utility
     {
@@ -13,7 +17,7 @@
         {
             try
             {
-                return Program.RedisDb.SetMembers("youtube.nowRecord").Select((x) => x.ToString()).ToList();
+                return Bot.RedisDb.SetMembers("youtube.nowRecord").Select((x) => x.ToString()).ToList();
             }
             catch (Exception ex)
             {
@@ -28,23 +32,27 @@
             {
                 int total = 0;
 
-                using (var db = DataBase.HoloVideoContext.GetDbContext())
-                    total += db.Video.Count();
-                using (var db = DataBase.NijisanjiVideoContext.GetDbContext())
-                    total += db.Video.Count();
-                using (var db = DataBase.OtherVideoContext.GetDbContext())
-                    total += db.Video.Count();
+                using var db = Bot.DbService.GetDbContext();
+                total += db.HoloVideos.AsNoTracking().Count();
+                total += db.NijisanjiVideos.AsNoTracking().Count();
+                total += db.OtherVideos.AsNoTracking().Count();
 
                 return total;
             }
             catch (Exception ex)
             {
-                Log.Error($"{ex}");
+                Log.Error(ex.Demystify(), "Utility-GetDbStreamCount");
                 return 0;
             }
         }
 
         public static bool OfficialGuildContains(ulong guildId) =>
             OfficialGuildList.Contains(guildId);
+
+        public static string GetDataFilePath(string fileName)
+            => $"{AppDomain.CurrentDomain.BaseDirectory}Data{GetPlatformSlash()}{fileName}";
+
+        public static string GetPlatformSlash()
+            => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "\\" : "/";
     }
 }

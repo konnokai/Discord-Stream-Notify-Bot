@@ -1,4 +1,5 @@
 ﻿using Discord.Interactions;
+using Discord_Stream_Notify_Bot.DataBase;
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.Interaction.Attribute;
 
@@ -11,6 +12,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.TwitCasting
     public class TwitCasting : TopLevelModule<SharedService.TwitCasting.TwitCastingService>
     {
         private readonly DiscordSocketClient _client;
+        private readonly MainDbService _dbService;
 
         public class GuildNoticeTwitCastingChannelIdAutocompleteHandler : AutocompleteHandler
         {
@@ -18,11 +20,11 @@ namespace Discord_Stream_Notify_Bot.Interaction.TwitCasting
             {
                 return await Task.Run(() =>
                 {
-                    using var db = DataBase.MainDbContext.GetDbContext();
-                    if (!db.NoticeTwitCastingStreamChannels.Any((x) => x.GuildId == context.Guild.Id))
+                    using var db = Bot.DbService.GetDbContext();
+                    if (!db.NoticeTwitcastingStreamChannels.Any((x) => x.GuildId == context.Guild.Id))
                         return AutocompletionResult.FromSuccess();
 
-                    var channelIdList = db.NoticeTwitCastingStreamChannels.Where((x) => x.GuildId == context.Guild.Id).Select((x) => new KeyValuePair<string, string>(db.GetTwitCastingChannelTitleByChannelId(x.ChannelId), x.ChannelId));
+                    var channelIdList = db.NoticeTwitcastingStreamChannels.Where((x) => x.GuildId == context.Guild.Id).Select((x) => new KeyValuePair<string, string>(db.GetTwitCastingChannelTitleByChannelId(x.ChannelId), x.ChannelId));
 
                     var channelIdList2 = new Dictionary<string, string>();
                     try
@@ -62,9 +64,10 @@ namespace Discord_Stream_Notify_Bot.Interaction.TwitCasting
             }
         }
 
-        public TwitCasting(DiscordSocketClient client)
+        public TwitCasting(DiscordSocketClient client, MainDbService dbService)
         {
             _client = client;
+            _dbService = dbService;
         }
 
         [CommandExample("nana_kaguraaa", "https://twitcasting.tv/nana_kaguraaa")]
@@ -104,15 +107,15 @@ namespace Discord_Stream_Notify_Bot.Interaction.TwitCasting
                 return;
             }
 
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
-                var noticeTwitCastingStreamChannel = db.NoticeTwitCastingStreamChannels.FirstOrDefault((x) => x.GuildId == Context.Guild.Id && x.ChannelId == channelData.ChannelId);
+                var noticeTwitCastingStreamChannel = db.NoticeTwitcastingStreamChannels.FirstOrDefault((x) => x.GuildId == Context.Guild.Id && x.ChannelId == channelData.ChannelId);
                 if (noticeTwitCastingStreamChannel != null)
                 {
                     if (await PromptUserConfirmAsync($"`{channelData.ChannelTitle}` 已在直播通知清單內，是否覆蓋設定?").ConfigureAwait(false))
                     {
                         noticeTwitCastingStreamChannel.DiscordChannelId = textChannel.Id;
-                        db.NoticeTwitCastingStreamChannels.Update(noticeTwitCastingStreamChannel);
+                        db.NoticeTwitcastingStreamChannels.Update(noticeTwitCastingStreamChannel);
                         await Context.Interaction.SendConfirmAsync($"已將 `{channelData.ChannelTitle}` 的通知頻道變更至: {textChannel}", true, true).ConfigureAwait(false);
                     }
                     else return;
@@ -120,9 +123,9 @@ namespace Discord_Stream_Notify_Bot.Interaction.TwitCasting
                 else
                 {
                     string addString = "";
-                    if (!db.TwitCastingSpider.Any((x) => x.ChannelId == channelData.ChannelId))
+                    if (!db.TwitcastingSpider.Any((x) => x.ChannelId == channelData.ChannelId))
                         addString += $"\n\n(注意: 該頻道未加入爬蟲清單\n如長時間無通知請使用 `/help get-command-help twitcasting-spider add` 查看說明並加入爬蟲)";
-                    db.NoticeTwitCastingStreamChannels.Add(new NoticeTwitCastingStreamChannel() { GuildId = Context.Guild.Id, DiscordChannelId = textChannel.Id, ChannelId = channelData.ChannelId });
+                    db.NoticeTwitcastingStreamChannels.Add(new NoticeTwitcastingStreamChannel() { GuildId = Context.Guild.Id, DiscordChannelId = textChannel.Id, ChannelId = channelData.ChannelId });
                     await Context.Interaction.SendConfirmAsync($"已將 `{channelData.ChannelTitle}` 加入到 TwitCasting 通知頻道清單內{addString}", true, true).ConfigureAwait(false);
                 }
 
@@ -145,22 +148,22 @@ namespace Discord_Stream_Notify_Bot.Interaction.TwitCasting
                 return;
             }
 
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
-                if (!db.NoticeTwitCastingStreamChannels.Any((x) => x.GuildId == Context.Guild.Id))
+                if (!db.NoticeTwitcastingStreamChannels.Any((x) => x.GuildId == Context.Guild.Id))
                 {
                     await Context.Interaction.SendErrorAsync("並未設定直播通知...", true).ConfigureAwait(false);
                     return;
                 }
 
-                if (!db.NoticeTwitCastingStreamChannels.Any((x) => x.GuildId == Context.Guild.Id && x.ChannelId == channelData.ChannelId))
+                if (!db.NoticeTwitcastingStreamChannels.Any((x) => x.GuildId == Context.Guild.Id && x.ChannelId == channelData.ChannelId))
                 {
                     await Context.Interaction.SendErrorAsync($"並未設定 `{channelData.ChannelId}` 的直播通知...", true).ConfigureAwait(false);
                     return;
                 }
                 else
                 {
-                    db.NoticeTwitCastingStreamChannels.Remove(db.NoticeTwitCastingStreamChannels.First((x) => x.GuildId == Context.Guild.Id && x.ChannelId == channelData.ChannelId));
+                    db.NoticeTwitcastingStreamChannels.Remove(db.NoticeTwitcastingStreamChannels.First((x) => x.GuildId == Context.Guild.Id && x.ChannelId == channelData.ChannelId));
                     db.SaveChanges();
                     await Context.Interaction.SendConfirmAsync($"已移除 `{channelData.ChannelTitle}`", true, true).ConfigureAwait(false);
                 }
@@ -170,9 +173,9 @@ namespace Discord_Stream_Notify_Bot.Interaction.TwitCasting
         [SlashCommand("list", "顯示現在已加入通知清單的 TwitCasting 直播頻道")]
         public async Task ListChannel([Summary("頁數")] int page = 0)
         {
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
-                var list = Queryable.Where(db.NoticeTwitCastingStreamChannels, (x) => x.GuildId == Context.Guild.Id)
+                var list = Queryable.Where(db.NoticeTwitcastingStreamChannels, (x) => x.GuildId == Context.Guild.Id)
                 .Select((x) => $"`{db.GetTwitCastingChannelTitleByChannelId(x.ChannelId)}` => <#{x.DiscordChannelId}>").ToList();
                 if (list.Count() == 0) { await Context.Interaction.SendErrorAsync("TwitCasting 直播通知清單為空").ConfigureAwait(false); return; }
 
@@ -206,14 +209,14 @@ namespace Discord_Stream_Notify_Bot.Interaction.TwitCasting
                 return;
             }
 
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
-                if (db.NoticeTwitCastingStreamChannels.Any((x) => x.GuildId == Context.Guild.Id && x.ChannelId == channelData.ChannelId))
+                if (db.NoticeTwitcastingStreamChannels.Any((x) => x.GuildId == Context.Guild.Id && x.ChannelId == channelData.ChannelId))
                 {
-                    var noticeStreamChannel = db.NoticeTwitCastingStreamChannels.First((x) => x.GuildId == Context.Guild.Id && x.ChannelId == channelData.ChannelId);
+                    var noticeStreamChannel = db.NoticeTwitcastingStreamChannels.First((x) => x.GuildId == Context.Guild.Id && x.ChannelId == channelData.ChannelId);
 
                     noticeStreamChannel.StartStreamMessage = message.Trim();
-                    db.NoticeTwitCastingStreamChannels.Update(noticeStreamChannel);
+                    db.NoticeTwitcastingStreamChannels.Update(noticeStreamChannel);
                     db.SaveChanges();
 
                     if (message != "") await Context.Interaction.SendConfirmAsync($"已設定 `{channelData.ChannelTitle}` 的 TwitCasting 直播通知訊息為:\n{message}", true, true).ConfigureAwait(false);
@@ -230,11 +233,11 @@ namespace Discord_Stream_Notify_Bot.Interaction.TwitCasting
         [SlashCommand("list-message", "列出已設定的 TwitCasting 直播通知訊息")]
         public async Task ListMessage([Summary("頁數")] int page = 0)
         {
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
-                if (db.NoticeTwitCastingStreamChannels.Any((x) => x.GuildId == Context.Guild.Id))
+                if (db.NoticeTwitcastingStreamChannels.Any((x) => x.GuildId == Context.Guild.Id))
                 {
-                    var noticeTwitterSpaces = db.NoticeTwitCastingStreamChannels.Where((x) => x.GuildId == Context.Guild.Id);
+                    var noticeTwitterSpaces = db.NoticeTwitcastingStreamChannels.Where((x) => x.GuildId == Context.Guild.Id);
                     Dictionary<string, string> dic = new Dictionary<string, string>();
 
                     foreach (var item in noticeTwitterSpaces)

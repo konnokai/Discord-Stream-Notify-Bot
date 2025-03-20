@@ -1,4 +1,5 @@
 ﻿using Discord.Interactions;
+using Discord_Stream_Notify_Bot.DataBase;
 using Polly;
 using System.Net;
 
@@ -33,12 +34,15 @@ namespace Discord_Stream_Notify_Bot.Interaction.OwnerOnly.Service
         }
 
         private readonly DiscordSocketClient _client;
+        private readonly MainDbService _dbService;
         private ButtonCheckData checkData;
         private bool isSending = false;
 
-        public SendMsgToAllGuildService(DiscordSocketClient discordSocketClient)
+        public SendMsgToAllGuildService(DiscordSocketClient discordSocketClient, MainDbService dbService)
         {
             _client = discordSocketClient;
+            _dbService = dbService;
+
             _client.ModalSubmitted += async modal =>
             {
                 if (modal.Data.CustomId != "send_message")
@@ -108,7 +112,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.OwnerOnly.Service
         {
             isSending = true;
             var isSendMessageGuildId = new HashSet<ulong>();
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 if (checkData.NoticeType == NoticeType.Normal)
                 {

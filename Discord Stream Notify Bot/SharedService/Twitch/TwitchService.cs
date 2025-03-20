@@ -5,6 +5,7 @@ using Discord_Stream_Notify_Bot.Interaction;
 using Dorssel.Utilities;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Text.RegularExpressions;
 using TwitchLib.Api;
 using TwitchLib.Api.Core.Enums;
@@ -39,15 +40,16 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
 
         private bool isRuning = false;
 
-        private readonly EmojiService _emojiService;
         private readonly DiscordSocketClient _client;
+        private readonly EmojiService _emojiService;
+        private readonly MainDbService _dbService;
         private readonly Timer _timer;
         private readonly HashSet<string> _hashSet = new();
         private readonly MessageComponent _messageComponent;
         private readonly string _apiServerUrl, _twitchOAuthToken, _twitchWebHookSecret;
         private readonly ConcurrentDictionary<string, DebounceChannelUpdateMessage> _debounceChannelUpdateMessage = new();
 
-        public TwitchService(DiscordSocketClient client, BotConfig botConfig, EmojiService emojiService)
+        public TwitchService(DiscordSocketClient client, BotConfig botConfig, EmojiService emojiService, MainDbService dbService)
         {
             if (string.IsNullOrEmpty(botConfig.TwitchClientId) || string.IsNullOrEmpty(botConfig.TwitchClientSecret))
             {
@@ -58,18 +60,18 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
 
             try
             {
-                _twitchWebHookSecret = Program.RedisDb.StringGet("twitch:webhook_secret");
+                _twitchWebHookSecret = Bot.RedisDb.StringGet("twitch:webhook_secret");
                 if (string.IsNullOrEmpty(_twitchWebHookSecret))
                 {
                     Log.Warn("缺少 TwitchWebHookSecret，嘗試重新建立...");
 
                     _twitchWebHookSecret = BotConfig.GenRandomKey(64);
-                    Program.RedisDb.StringSet("twitch:webhook_secret", _twitchWebHookSecret);
+                    Bot.RedisDb.StringSet("twitch:webhook_secret", _twitchWebHookSecret);
                 }
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "獲取 TwitchWebHookSecret 失敗，無法運行 Twitch 類功能");
+                Log.Error(ex.Demystify(), "獲取 TwitchWebHookSecret 失敗，無法運行 Twitch 類功能");
                 IsEnable = false;
                 return;
             }
@@ -87,6 +89,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
             _apiServerUrl = botConfig.ApiServerDomain;
             _client = client;
             _emojiService = emojiService;
+            _dbService = dbService;
 
             TwitchApi = new(() => new()
             {
@@ -107,7 +110,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
 
 #nullable enable
 
-            Program.RedisSub.Subscribe(new RedisChannel("twitch:stream_offline", RedisChannel.PatternMode.Literal), async (channel, streamData) =>
+            Bot.RedisSub.Subscribe(new RedisChannel("twitch:stream_offline", RedisChannel.PatternMode.Literal), async (channel, streamData) =>
             {
                 var data = JsonConvert.DeserializeObject<TwitchLib.EventSub.Core.SubscriptionTypes.Stream.StreamOffline>(streamData!)!;
                 Log.Info($"Twitch 直播離線: {data.BroadcasterUserId}");
@@ -123,19 +126,19 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex, $"Event Delete Error: {data.BroadcasterUserId}");
+                    Log.Error(ex.Demystify(), $"Event Delete Error: {data.BroadcasterUserId}");
                 }
 
                 TwitchStream? twitchStream = null;
                 try
                 {
-                    var redisJson = await Program.RedisDb.StringGetAsync(new RedisKey($"twitch:stream_data:{data.BroadcasterUserId}"));
+                    var redisJson = await Bot.RedisDb.StringGetAsync(new RedisKey($"twitch:stream_data:{data.BroadcasterUserId}"));
                     if (redisJson.HasValue)
                         twitchStream = JsonConvert.DeserializeObject<TwitchStream>(redisJson!);
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex, $"Twitch Get Redis Data Error: {data.BroadcasterUserId}");
+                    Log.Error(ex.Demystify(), $"Twitch Get Redis Data Error: {data.BroadcasterUserId}");
                 }
 
                 DateTime createAt = DateTime.Now.AddDays(-3), endAt = DateTime.Now;
@@ -185,7 +188,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                     }
                 }
 
-                using var db = MainDbContext.GetDbContext();
+                using var db = _dbService.GetDbContext();
                 var twitchSpider = db.TwitchSpider.AsNoTracking().FirstOrDefault((x) => x.UserId == data.BroadcasterUserId);
                 if (twitchSpider != null)
                 {
@@ -196,7 +199,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                 await Task.Run(() => SendStreamMessageAsync(data.BroadcasterUserId, embedBuilder.Build(), NoticeType.EndStream));
             });
 
-            Program.RedisSub.Subscribe(new RedisChannel("twitch:channel_update", RedisChannel.PatternMode.Literal), async (channel, updateData) =>
+            Bot.RedisSub.Subscribe(new RedisChannel("twitch:channel_update", RedisChannel.PatternMode.Literal), async (channel, updateData) =>
             {
                 var data = JsonConvert.DeserializeObject<TwitchLib.EventSub.Core.SubscriptionTypes.Channel.ChannelUpdate>(updateData!)!;
                 Log.Info($"Twitch 頻道更新: {data.BroadcasterUserName} - {data.Title} ({data.CategoryName})");
@@ -204,13 +207,13 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                 TwitchStream? twitchStream = null;
                 try
                 {
-                    var redisJson = await Program.RedisDb.StringGetAsync(new RedisKey($"twitch:stream_data:{data.BroadcasterUserId}"));
+                    var redisJson = await Bot.RedisDb.StringGetAsync(new RedisKey($"twitch:stream_data:{data.BroadcasterUserId}"));
                     if (redisJson.HasValue)
                         twitchStream = JsonConvert.DeserializeObject<TwitchStream>(redisJson!);
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex, $"Twitch Get Redis Data Error: {data.BroadcasterUserId}");
+                    Log.Error(ex.Demystify(), $"Twitch Get Redis Data Error: {data.BroadcasterUserId}");
                 }
 
                 if (twitchStream == null)
@@ -270,11 +273,11 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                         StreamStartAt = twitchStream?.StreamStartAt ?? DateTime.UtcNow
                     };
 
-                    await Program.RedisDb.StringSetAsync(new($"twitch:stream_data:{data.BroadcasterUserId}"), JsonConvert.SerializeObject(twitchStream));
+                    await Bot.RedisDb.StringSetAsync(new($"twitch:stream_data:{data.BroadcasterUserId}"), JsonConvert.SerializeObject(twitchStream));
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex, $"Twitch Channel Update Set Redis Data Error: {data.BroadcasterUserId}");
+                    Log.Error(ex.Demystify(), $"Twitch Channel Update Set Redis Data Error: {data.BroadcasterUserId}");
                 }
             });
 
@@ -325,8 +328,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
 
             try
             {
-                using var twitchStreamDb = TwitchStreamContext.GetDbContext();
-                using var db = MainDbContext.GetDbContext();
+                using var db = _dbService.GetDbContext();
 
                 foreach (var twitchSpiders in db.TwitchSpider.Distinct((x) => x.UserId).Chunk(100))
                 {
@@ -344,7 +346,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
 
                         _hashSet.Add(stream.Id);
 
-                        if (twitchStreamDb.TwitchStreams.AsNoTracking().Any((x) => x.StreamId == stream.Id))
+                        if (db.TwitchStreams.AsNoTracking().Any((x) => x.StreamId == stream.Id))
                             continue;
 
                         var twitchSpider = twitchSpiders.Single((x) => x.UserId == stream.UserId);
@@ -368,7 +370,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                                 StreamStartAt = stream.StartedAt
                             };
 
-                            twitchStreamDb.TwitchStreams.Add(twitchStream);
+                            db.TwitchStreams.Add(twitchStream);
 
                             EmbedBuilder embedBuilder = new EmbedBuilder()
                                 .WithTitle(twitchStream.StreamTitle)
@@ -392,11 +394,11 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                             {
                                 try
                                 {
-                                    await Program.RedisDb.StringSetAsync(new($"twitch:stream_data:{stream.UserId}"), JsonConvert.SerializeObject(twitchStream));
+                                    await Bot.RedisDb.StringSetAsync(new($"twitch:stream_data:{stream.UserId}"), JsonConvert.SerializeObject(twitchStream));
                                 }
                                 catch (Exception ex)
                                 {
-                                    Log.Error(ex, $"Twitch Set Redis Data Error: {stream.Id}");
+                                    Log.Error(ex.Demystify(), $"Twitch Set Redis Data Error: {stream.Id}");
                                 }
 
 #if RELEASE
@@ -409,21 +411,20 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
 
                             await SendStreamMessageAsync(twitchStream.UserId, embedBuilder.Build(), NoticeType.StartStream);
                         }
-                        catch (Exception ex) { Log.Error(ex, $"TwitchService-GetData: {twitchSpider.UserLogin}"); }
+                        catch (Exception ex) { Log.Error(ex.Demystify(), $"TwitchService-GetData: {twitchSpider.UserLogin}"); }
                     }
                 }
 
                 try
                 {
-                    twitchStreamDb.SaveChanges();
                     db.SaveChanges();
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex, "TwitchService-Timer: SaveDb Error");
+                    Log.Error(ex.Demystify(), "TwitchService-Timer: SaveDb Error");
                 }
             }
-            catch (Exception ex) { Log.Error(ex, "TwitchService-Timer"); }
+            catch (Exception ex) { Log.Error(ex.Demystify(), "TwitchService-Timer"); }
             finally { isRuning = false; }
 
         }
@@ -442,7 +443,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
             }
             catch (Exception ex)
             {
-                Log.Error(ex, $"註冊 {broadcasterUserId} 的 Twitch WebHook 失敗，也許是已經註冊過了?");
+                Log.Error(ex.Demystify(), $"註冊 {broadcasterUserId} 的 Twitch WebHook 失敗，也許是已經註冊過了?");
             }
 
             return false;
@@ -450,13 +451,13 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
 
         internal async Task SendStreamMessageAsync(string twitchUserId, Embed embed, NoticeType noticeType)
         {
-            if (!Program.IsConnect)
+            if (!Bot.IsConnect)
                 return;
 
 #if DEBUG || DEBUG_DONTREGISTERCOMMAND
             Log.New($"Twitch 通知: {twitchUserId} - {embed.Title} ({noticeType})");
 #else
-            using (var db = MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 var noticeGuildList = db.NoticeTwitchStreamChannels.Where((x) => x.NoticeTwitchUserId == twitchUserId).ToList();
                 Log.New($"發送 Twitch 通知 ({noticeGuildList.Count} / {noticeType}): ({twitchUserId}) - {embed.Title}");
@@ -539,7 +540,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                     }
                     catch (Exception ex)
                     {
-                        Log.Error(ex, $"Twitch 通知 ({twitchUserId}) | 未知錯誤 {item.GuildId} / {item.DiscordChannelId}");
+                        Log.Error(ex.Demystify(), $"Twitch 通知 ({twitchUserId}) | 未知錯誤 {item.GuildId} / {item.DiscordChannelId}");
                     }
                 }
             }
@@ -550,9 +551,9 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
         {
             Log.Info($"{twitchStream.UserName} ({twitchStream.StreamId}): {twitchStream.StreamTitle}");
 
-            if (Program.Redis != null)
+            if (Bot.Redis != null)
             {
-                if (await Program.RedisSub.PublishAsync(new RedisChannel("twitch.record", RedisChannel.PatternMode.Literal), twitchStream.UserLogin) != 0)
+                if (await Bot.RedisSub.PublishAsync(new RedisChannel("twitch.record", RedisChannel.PatternMode.Literal), twitchStream.UserLogin) != 0)
                 {
                     Log.Info($"已發送 Twitch 錄影請求: {twitchStream.UserLogin}");
                     return true;
@@ -588,7 +589,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
             }
             catch (Exception ex)
             {
-                Log.Error(ex, $"無法取得 Twitch 資料: ({twitchUserId}) {twitchUserLogin}");
+                Log.Error(ex.Demystify(), $"無法取得 Twitch 資料: ({twitchUserId}) {twitchUserLogin}");
                 return null;
             }
         }
@@ -616,7 +617,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
             }
             catch (Exception ex)
             {
-                Log.Error(ex, $"無法取得 Twitch 資料: {twitchUserLogins.First()}");
+                Log.Error(ex.Demystify(), $"無法取得 Twitch 資料: {twitchUserLogins.First()}");
                 return null;
             }
         }
@@ -635,7 +636,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
             }
             catch (Exception ex)
             {
-                Log.Error(ex, $"無法取得 Twitch 資料: {twitchUserId}");
+                Log.Error(ex.Demystify(), $"無法取得 Twitch 資料: {twitchUserId}");
                 return null;
             }
         }
@@ -661,7 +662,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
             }
             catch (Exception ex)
             {
-                Log.Error(ex, $"無法取得 Twitch 資料: {twitchUserId}");
+                Log.Error(ex.Demystify(), $"無法取得 Twitch 資料: {twitchUserId}");
                 return null;
             }
         }
@@ -684,7 +685,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
             }
             catch (Exception ex)
             {
-                Log.Error(ex, $"無法取得 Twitch 資料，請確認 {nameof(BotConfig.TwitchClientId)} 或 {nameof(BotConfig.TwitchClientSecret)} 是否正常");
+                Log.Error(ex.Demystify(), $"無法取得 Twitch 資料，請確認 {nameof(BotConfig.TwitchClientId)} 或 {nameof(BotConfig.TwitchClientSecret)} 是否正常");
                 return Array.Empty<Stream>();
             }
         }
@@ -728,7 +729,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                         .WithUrl($"https://twitch.tv/{_twitchUserLogin}")
                         .WithDescription(description);
 
-                    using var db = MainDbContext.GetDbContext();
+                    using var db = Bot.DbService.GetDbContext();
                     var twitchSpider = db.TwitchSpider.AsNoTracking().FirstOrDefault((x) => x.UserId == _twitchUserId);
                     if (twitchSpider != null)
                         embedBuilder.WithThumbnailUrl(twitchSpider.ProfileImageUrl);
@@ -737,7 +738,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex, $"{_twitchUserLogin} 訊息去抖動失敗");
+                    Log.Error(ex.Demystify(), $"{_twitchUserLogin} 訊息去抖動失敗");
                 }
                 finally
                 {

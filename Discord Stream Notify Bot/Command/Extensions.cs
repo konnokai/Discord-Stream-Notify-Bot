@@ -1,4 +1,6 @@
 ﻿using Discord.Commands;
+using Discord_Stream_Notify_Bot.DataBase;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System.Data;
 using System.Reflection;
@@ -22,16 +24,14 @@ namespace Discord_Stream_Notify_Bot.Command
         public static string GetProductionName(this DataBase.Table.Video.YTChannelType channelType) =>
                 channelType == DataBase.Table.Video.YTChannelType.Holo ? "Hololive" : channelType == DataBase.Table.Video.YTChannelType.Nijisanji ? "彩虹社" : "其他";
 
-        public static bool HasStreamVideoByVideoId(this DataBase.MainDbContext dBContext, string videoId)
+        public static bool HasStreamVideoByVideoId(this MainDbContext dBContext, string videoId)
         {
             videoId = videoId.Trim();
 
-            using (var db = DataBase.HoloVideoContext.GetDbContext())
-                if (db.Video.Any((x) => x.VideoId == videoId)) return true;
-            using (var db = DataBase.NijisanjiVideoContext.GetDbContext())
-                if (db.Video.Any((x) => x.VideoId == videoId)) return true;
-            using (var db = DataBase.OtherVideoContext.GetDbContext())
-                if (db.Video.Any((x) => x.VideoId == videoId)) return true;
+            if (dBContext.HoloVideos.AsNoTracking().Any((x) => x.VideoId == videoId)) return true;
+            if (dBContext.NijisanjiVideos.AsNoTracking().Any((x) => x.VideoId == videoId)) return true;
+            if (dBContext.OtherVideos.AsNoTracking().Any((x) => x.VideoId == videoId)) return true;
+            if (dBContext.NonApprovedVideos.AsNoTracking().Any((x) => x.VideoId == videoId)) return true;
 
             return false;
         }
@@ -40,14 +40,15 @@ namespace Discord_Stream_Notify_Bot.Command
         {
             videoId = videoId.Trim();
 
-            using (var db = DataBase.HoloVideoContext.GetDbContext())
-                if (db.Video.Any((x) => x.VideoId == videoId)) return db.Video.First((x) => x.VideoId == videoId);
-            using (var db = DataBase.NijisanjiVideoContext.GetDbContext())
-                if (db.Video.Any((x) => x.VideoId == videoId)) return db.Video.First((x) => x.VideoId == videoId);
-            using (var db = DataBase.OtherVideoContext.GetDbContext())
-                if (db.Video.Any((x) => x.VideoId == videoId)) return db.Video.First((x) => x.VideoId == videoId);
-            using (var db = DataBase.NotVTuberVideoContext.GetDbContext())
-                if (db.Video.Any((x) => x.VideoId == videoId)) return db.Video.First((x) => x.VideoId == videoId);
+            using var db = Bot.DbService.GetDbContext();
+            if (db.HoloVideos.AsNoTracking().Any((x) => x.VideoId == videoId))
+                return db.HoloVideos.AsNoTracking().First((x) => x.VideoId == videoId);
+            if (db.NijisanjiVideos.AsNoTracking().Any((x) => x.VideoId == videoId))
+                return db.NijisanjiVideos.AsNoTracking().First((x) => x.VideoId == videoId);
+            if (db.OtherVideos.AsNoTracking().Any((x) => x.VideoId == videoId))
+                return db.OtherVideos.AsNoTracking().First((x) => x.VideoId == videoId);
+            if (db.NonApprovedVideos.AsNoTracking().Any((x) => x.VideoId == videoId))
+                return db.NonApprovedVideos.AsNoTracking().First((x) => x.VideoId == videoId);
 
             return null;
         }

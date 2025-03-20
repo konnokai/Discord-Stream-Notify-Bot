@@ -26,7 +26,7 @@
                             var componentBuilder = new ComponentBuilder()
                                 .WithButton("發送回覆", $"send-reply-to-user:{modal.User.Id}", ButtonStyle.Success);
 
-                            await Program.ApplicatonOwner.SendMessageAsync(embed: embedBuilder.Build(), components: componentBuilder.Build());
+                            await Bot.ApplicatonOwner.SendMessageAsync(embed: embedBuilder.Build(), components: componentBuilder.Build());
 
                             embedBuilder
                                 .WithTitle("")

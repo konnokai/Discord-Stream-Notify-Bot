@@ -1,4 +1,5 @@
-﻿using Discord_Stream_Notify_Bot.HttpClients;
+﻿using Discord_Stream_Notify_Bot.DataBase;
+using Discord_Stream_Notify_Bot.HttpClients;
 using Discord_Stream_Notify_Bot.HttpClients.Twitter;
 using Discord_Stream_Notify_Bot.Interaction;
 using System.Diagnostics;
@@ -20,11 +21,12 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
         private readonly TwitterClient _twitterClient;
         private readonly Timer timer;
         private readonly HashSet<string> hashSet = new HashSet<string>();
+        private readonly MainDbService _dbService;
 
         private bool isRuning = false;
         private string twitterSpaceRecordPath = "";
 
-        public TwitterSpacesService(DiscordSocketClient client, TwitterClient twitterClient, BotConfig botConfig, EmojiService emojiService)
+        public TwitterSpacesService(DiscordSocketClient client, TwitterClient twitterClient, BotConfig botConfig, EmojiService emojiService, MainDbService dbService)
         {
             if (string.IsNullOrWhiteSpace(botConfig.TwitterAuthToken) || string.IsNullOrWhiteSpace(botConfig.TwitterCSRFToken))
             {
@@ -36,9 +38,11 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
             _client = client;
             _twitterClient = twitterClient;
             _emojiService = emojiService;
+            _dbService = dbService;
+
             twitterSpaceRecordPath = botConfig.TwitterSpaceRecordPath;
-            if (string.IsNullOrEmpty(twitterSpaceRecordPath)) twitterSpaceRecordPath = Program.GetDataFilePath("");
-            if (!twitterSpaceRecordPath.EndsWith(Program.GetPlatformSlash())) twitterSpaceRecordPath += Program.GetPlatformSlash();
+            if (string.IsNullOrEmpty(twitterSpaceRecordPath)) twitterSpaceRecordPath = Utility.GetDataFilePath("");
+            if (!twitterSpaceRecordPath.EndsWith(Utility.GetPlatformSlash())) twitterSpaceRecordPath += Utility.GetPlatformSlash();
 
 #if DEBUG_API
             Task.Run(async () => await _twitterClient.GetQueryIdAndFeatureSwitchesAsync());
@@ -56,9 +60,9 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
 
                 try
                 {
-                    using (var db = DataBase.MainDbContext.GetDbContext())
+                    using (var db = _dbService.GetDbContext())
                     {
-                        var userList = db.TwitterSpaecSpider.Select((x) => x.UserId).ToArray();
+                        var userList = db.TwitterSpaceSpider.Select((x) => x.UserId).ToArray();
 
                         for (int i = 0; i < userList.Length; i += 100)
                         {
@@ -79,7 +83,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
 
                                     try
                                     {
-                                        var user = db.TwitterSpaecSpider.FirstOrDefault((x) => x.UserId == item.UserId);
+                                        var user = db.TwitterSpaceSpider.FirstOrDefault((x) => x.UserId == item.UserId);
                                         var userData = await GetTwitterUserAsync(user.UserScreenName);
 
                                         if (user.UserScreenName != userData.Legacy.ScreenName || user.UserName != userData.Legacy.Name)
@@ -161,9 +165,9 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
 
         private bool IsRecordSpace(DataBase.Table.TwitterSpace twitterSpace)
         {
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
-                var item = db.TwitterSpaecSpider.FirstOrDefault((x) => x.UserId == twitterSpace.UserId);
+                var item = db.TwitterSpaceSpider.FirstOrDefault((x) => x.UserId == twitterSpace.UserId);
                 if (item == null)
                     return false;
 
@@ -184,7 +188,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
 #if !RELEASE
             Log.New($"推特空間開台通知: {twitterSpace.UserScreenName} - {twitterSpace.SpaecTitle}");
 #else
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 var noticeGuildList = db.NoticeTwitterSpaceChannel.AsNoTracking().Where((x) => x.NoticeTwitterSpaceUserId == twitterSpace.UserId).ToList();
                 Log.New($"發送推特空間開台通知 ({noticeGuildList.Count}): {twitterSpace.UserScreenName} - {twitterSpace.SpaecTitle}");
@@ -284,10 +288,10 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
             catch (Exception ex)
             {
                 Log.Error($"推特語音保存路徑不存在且不可建立: {twitterSpaceRecordPath}");
-                Log.Error($"更改保存路徑至Data資料夾: {Program.GetDataFilePath("")}");
+                Log.Error($"更改保存路徑至Data資料夾: {Utility.GetDataFilePath("")}");
                 Log.Error(ex.ToString());
 
-                twitterSpaceRecordPath = Program.GetDataFilePath("");
+                twitterSpaceRecordPath = Utility.GetDataFilePath("");
             }
 
             string procArgs = $"ffmpeg -i \"{masterUrl}\" \"{twitterSpaceRecordPath}[{twitterSpace.UserScreenName}]{twitterSpace.SpaecActualStartTime:yyyyMMdd} - {twitterSpace.SpaecId}.m4a\"";

@@ -8,7 +8,7 @@
             return;
 #endif
 
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 foreach (var item in db.BannerChange.Where(x => x.ChannelId == channelId))
                 {

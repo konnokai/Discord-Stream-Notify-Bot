@@ -1,18 +1,19 @@
 ﻿using Discord.Commands;
 using Discord_Stream_Notify_Bot.Command.Attribute;
+using Discord_Stream_Notify_Bot.DataBase;
 using Discord_Stream_Notify_Bot.DataBase.Table;
 
 namespace Discord_Stream_Notify_Bot.Command.Twitch
 {
     public partial class Twitch : TopLevelModule, ICommandService
     {
-        private readonly DiscordSocketClient _client;
         private readonly SharedService.Twitch.TwitchService _service;
+        private readonly MainDbService _dbService;
 
-        public Twitch(DiscordSocketClient client, SharedService.Twitch.TwitchService service)
+        public Twitch(SharedService.Twitch.TwitchService service, MainDbService dbService)
         {
-            _client = client;
             _service = service;
+            _dbService = dbService;
         }
 
         [RequireContext(ContextType.DM)]
@@ -24,7 +25,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitch
         {
             string userLogin = _service.GetUserLoginByUrl(channelUrl);
 
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 var twitchSpider = db.TwitchSpider.SingleOrDefault((x) => x.UserLogin == userLogin);
                 if (twitchSpider != null)
@@ -57,7 +58,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitch
         {
             string userLogin = _service.GetUserLoginByUrl(channelUrl);
 
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 var twitchSpider = db.TwitchSpider.SingleOrDefault((x) => x.UserLogin == userLogin);
                 if (twitchSpider != null)
@@ -85,7 +86,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitch
         {
             string userLogin = _service.GetUserLoginByUrl(channelUrl);
 
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 var twitchSpider = db.TwitchSpider.SingleOrDefault((x) => x.UserLogin == userLogin);
                 if (twitchSpider != null)
@@ -113,7 +114,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitch
         {
             string userLogin = _service.GetUserLoginByUrl(channelUrl);
 
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 var twitchSpider = db.TwitchSpider.SingleOrDefault((x) => x.UserLogin == userLogin);
                 if (twitchSpider != null)

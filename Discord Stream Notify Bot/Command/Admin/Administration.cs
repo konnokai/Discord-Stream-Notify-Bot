@@ -1,46 +1,51 @@
 ﻿using Discord.Commands;
+using Discord_Stream_Notify_Bot.DataBase;
 
 namespace Discord_Stream_Notify_Bot.Command.Admin
 {
     public class Administration : TopLevelModule<AdministrationService>
     {
         private readonly DiscordSocketClient _client;
-        public Administration(DiscordSocketClient discordSocketClient)
+        private readonly MainDbService _dbService;
+
+        public Administration(DiscordSocketClient discordSocketClient, MainDbService dbService)
         {
             _client = discordSocketClient;
+            _dbService = dbService;
         }
 
-        [RequireContext(ContextType.DM)]
-        [Command("UpdateStatus")]
-        [Summary("更新機器人的狀態\n參數: Guild, Member, Stream, StreamCount, Info")]
-        [Alias("UpStats")]
-        [RequireOwner]
-        public async Task UpdateStatusAsync([Summary("狀態")] string stats)
-        {
-            switch (stats.ToLowerInvariant())
-            {
-                case "guild":
-                    Program.Status = Program.BotPlayingStatus.Guild;
-                    break;
-                case "member":
-                    Program.Status = Program.BotPlayingStatus.Member;
-                    break;
-                case "stream":
-                    Program.Status = Program.BotPlayingStatus.Stream;
-                    break;
-                case "streamcount":
-                    Program.Status = Program.BotPlayingStatus.StreamCount;
-                    break;
-                case "info":
-                    Program.Status = Program.BotPlayingStatus.Info;
-                    break;
-                default:
-                    await Context.Channel.SendConfirmAsync(string.Format("找不到 {0} 狀態", stats));
-                    return;
-            }
+        // 暫時移除，ChangeStatus 現在並非 Static
+        //[RequireContext(ContextType.DM)]
+        //[Command("UpdateStatus")]
+        //[Summary("更新機器人的狀態\n參數: Guild, Member, Stream, StreamCount, Info")]
+        //[Alias("UpStats")]
+        //[RequireOwner]
+        //public async Task UpdateStatusAsync([Summary("狀態")] string stats)
+        //{
+        //    switch (stats.ToLowerInvariant())
+        //    {
+        //        case "guild":
+        //            Bot.Status = Bot.BotPlayingStatus.Guild;
+        //            break;
+        //        case "member":
+        //            Bot.Status = Bot.BotPlayingStatus.Member;
+        //            break;
+        //        case "stream":
+        //            Bot.Status = Bot.BotPlayingStatus.Stream;
+        //            break;
+        //        case "streamcount":
+        //            Bot.Status = Bot.BotPlayingStatus.StreamCount;
+        //            break;
+        //        case "info":
+        //            Bot.Status = Bot.BotPlayingStatus.Info;
+        //            break;
+        //        default:
+        //            await Context.Channel.SendConfirmAsync(string.Format("找不到 {0} 狀態", stats));
+        //            return;
+        //    }
 
-            Program.ChangeStatus();
-        }
+        //    Bot.ChangeStatus();
+        //}
 
         [RequireContext(ContextType.DM)]
         [Command("ListServer")]
@@ -120,10 +125,10 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
         [RequireOwner]
         public async Task DieAsync()
         {
-            Program.IsDisconnect = true;
-            Program.IsHoloChannelSpider = false;
-            Program.IsNijisanjiChannelSpider = false;
-            Program.IsOtherChannelSpider = false;
+            Bot.IsDisconnect = true;
+            Bot.IsHoloChannelSpider = false;
+            Bot.IsNijisanjiChannelSpider = false;
+            Bot.IsOtherChannelSpider = false;
             await Context.Channel.SendConfirmAsync("關閉中");
         }
 
@@ -225,7 +230,7 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
                             $"擁有者Id: {guild.OwnerId}\n" +
                             $"人數: {guild.MemberCount}\n";
 
-                using (var db = DataBase.MainDbContext.GetDbContext())
+                using (var db = _dbService.GetDbContext())
                 {
                     var guildConfig = db.GuildConfig.FirstOrDefault((x) => x.GuildId == gid);
                     if (guildConfig != null && guildConfig.LogMemberStatusChannelId != 0)
@@ -305,7 +310,7 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
                         result += $"設定 Twitch 通知的頻道: \n```{string.Join('\n', channelListResult)}```\n";
                     }
 
-                    var twitterSpiders = db.TwitterSpaecSpider.Where((x) => x.GuildId == gid);
+                    var twitterSpiders = db.TwitterSpaceSpider.Where((x) => x.GuildId == gid);
                     if (twitterSpiders.Any())
                     {
                         result += $"設定的 Twitter 爬蟲: \n```{string.Join('\n', twitterSpiders.Select((x) => $"{x.UserName}: {x.UserScreenName}"))}```\n";

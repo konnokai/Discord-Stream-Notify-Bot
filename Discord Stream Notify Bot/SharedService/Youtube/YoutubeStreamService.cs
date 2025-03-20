@@ -1,5 +1,5 @@
 ﻿using Discord.Interactions;
-using Discord.Webhook;
+using Discord_Stream_Notify_Bot.DataBase;
 using Discord_Stream_Notify_Bot.Interaction;
 using Discord_Stream_Notify_Bot.SharedService.Youtube.Json;
 using Google.Apis.Services;
@@ -46,17 +46,18 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
         private bool isSubscribing = false;
         private Timer holoSchedule, nijisanjiSchedule, otherSchedule, checkScheduleTime, saveDateBase, subscribePubSub, reScheduleTime/*, checkHoloNowStream, holoScheduleEmoji*/;
         private readonly DiscordSocketClient _client;
-        private readonly DiscordWebhookClient _webhookClient;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly HttpClient _nijisanjiApiHttpClient;
         private readonly ConcurrentDictionary<string, byte> _endLiveBag = new();
         private readonly string _apiServerUrl;
         private readonly MessageComponent _messageComponent;
+        private readonly MainDbService _dbService;
 
-        public YoutubeStreamService(DiscordSocketClient client, IHttpClientFactory httpClientFactory, BotConfig botConfig, EmojiService emojiService)
+        public YoutubeStreamService(DiscordSocketClient client, IHttpClientFactory httpClientFactory, BotConfig botConfig, EmojiService emojiService, MainDbService dbService)
         {
             _client = client;
             _httpClientFactory = httpClientFactory;
+            _dbService = dbService;
 
             _nijisanjiApiHttpClient = _httpClientFactory.CreateClient();
             _nijisanjiApiHttpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
@@ -74,55 +75,9 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         .WithButton("贊助小幫手 (Patreon) #ad", style: ButtonStyle.Link, emote: emojiService.PatreonEmote, url: Utility.PatreonUrl, row: 1)
                         .WithButton("贊助小幫手 (Paypal) #ad", style: ButtonStyle.Link, emote: emojiService.PayPalEmote, url: Utility.PaypalUrl, row: 1).Build();
 
-#if RELEASE
-            if (botConfig.DetectGuildId != 0 && botConfig.DetectCategoryId != 0)
+            if (Bot.Redis != null)
             {
-                if (!string.IsNullOrEmpty(botConfig.SendMessageWebHookUrl))
-                {
-                    _webhookClient = new DiscordWebhookClient(botConfig.SendMessageWebHookUrl);
-                }
-
-                _client.ChannelCreated += async (channel) =>
-                {
-                    if (channel is not IVoiceChannel voiceChannel)
-                        return;
-
-                    if (voiceChannel.GuildId != botConfig.DetectGuildId)
-                        return;
-
-                    if (voiceChannel.CategoryId != botConfig.DetectCategoryId)
-                        return;
-
-                    string msg = $"`{voiceChannel.Guild}` 建立了新頻道 `{voiceChannel}`";
-
-                    try
-                    {
-                        if (_webhookClient != null)
-                        {
-                            if (botConfig.MentionRoleId != 0)
-                            {
-                                msg = $"<@&{botConfig.MentionRoleId}> `{voiceChannel.Guild}` 建立了新頻道 `{voiceChannel}`";
-                            }
-
-                            await _webhookClient.SendMessageAsync(msg);
-                        }
-                        else
-                        {
-                            await Program.ApplicatonOwner.SendMessageAsync(msg);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Error(ex, "Send Message To Channel Error");
-                        await Program.ApplicatonOwner.SendMessageAsync(msg);
-                    }
-                };
-            }
-#endif
-
-            if (Program.Redis != null)
-            {
-                Program.RedisSub.Subscribe(new RedisChannel("youtube.startstream", RedisChannel.PatternMode.Literal), async (channel, videoData) =>
+                Bot.RedisSub.Subscribe(new RedisChannel("youtube.startstream", RedisChannel.PatternMode.Literal), async (channel, videoData) =>
                 {
                     try
                     {
@@ -146,7 +101,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         if (item == null)
                         {
                             Log.Warn($"{videoId} Delete");
-                            await Program.RedisSub.PublishAsync(new RedisChannel("youtube.deletestream", RedisChannel.PatternMode.Literal), videoId);
+                            await Bot.RedisSub.PublishAsync(new RedisChannel("youtube.deletestream", RedisChannel.PatternMode.Literal), videoId);
                             return;
                         }
 
@@ -176,7 +131,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     }
                 });
 
-                Program.RedisSub.Subscribe(new RedisChannel("youtube.endstream", RedisChannel.PatternMode.Literal), async (channel, videoId) =>
+                Bot.RedisSub.Subscribe(new RedisChannel("youtube.endstream", RedisChannel.PatternMode.Literal), async (channel, videoId) =>
                 {
                     try
                     {
@@ -192,7 +147,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         if (item == null)
                         {
                             Log.Warn($"{videoId} Delete");
-                            await Program.RedisSub.PublishAsync(new RedisChannel("youtube.deletestream", RedisChannel.PatternMode.Literal), videoId);
+                            await Bot.RedisSub.PublishAsync(new RedisChannel("youtube.deletestream", RedisChannel.PatternMode.Literal), videoId);
                             return;
                         }
 
@@ -225,11 +180,11 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     }
                 });
 
-                Program.RedisSub.Subscribe(new RedisChannel("youtube.memberonly", RedisChannel.PatternMode.Literal), async (channel, videoId) =>
+                Bot.RedisSub.Subscribe(new RedisChannel("youtube.memberonly", RedisChannel.PatternMode.Literal), async (channel, videoId) =>
                 {
                     Log.Info($"{channel} - {videoId}");
 
-                    using (var db = DataBase.MainDbContext.GetDbContext())
+                    using (var db = _dbService.GetDbContext())
                     {
                         try
                         {
@@ -241,7 +196,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                 if (item == null)
                                 {
                                     Log.Warn($"{videoId} Delete");
-                                    await Program.RedisSub.PublishAsync(new RedisChannel("youtube.deletestream", RedisChannel.PatternMode.Literal), videoId);
+                                    await Bot.RedisSub.PublishAsync(new RedisChannel("youtube.deletestream", RedisChannel.PatternMode.Literal), videoId);
                                     return;
                                 }
 
@@ -266,7 +221,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                 .AddField("直播時間", $"{endTime.Subtract(startTime):hh'時'mm'分'ss'秒'}")
                                 .AddField("關台時間", endTime.ConvertDateTimeToDiscordMarkdown());
 
-                                if (Program.ApplicatonOwner != null) await Program.ApplicatonOwner.SendMessageAsync("已關台並變更為會限影片", false, embedBuilder.Build()).ConfigureAwait(false);
+                                if (Bot.ApplicatonOwner != null) await Bot.ApplicatonOwner.SendMessageAsync("已關台並變更為會限影片", false, embedBuilder.Build()).ConfigureAwait(false);
                                 await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.End).ConfigureAwait(false);
                             }
                         }
@@ -277,13 +232,13 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     }
                 });
 
-                Program.RedisSub.Subscribe(new RedisChannel("youtube.deletestream", RedisChannel.PatternMode.Literal), async (channel, videoId) =>
+                Bot.RedisSub.Subscribe(new RedisChannel("youtube.deletestream", RedisChannel.PatternMode.Literal), async (channel, videoId) =>
                 {
                     Log.Info($"{channel} - {videoId}");
 
                     _endLiveBag.TryAdd(videoId, 1);
 
-                    using (var db = DataBase.MainDbContext.GetDbContext())
+                    using (var db = _dbService.GetDbContext())
                     {
                         try
                         {
@@ -309,13 +264,13 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     }
                 });
 
-                Program.RedisSub.Subscribe(new RedisChannel("youtube.unarchived", RedisChannel.PatternMode.Literal), async (channel, videoId) =>
+                Bot.RedisSub.Subscribe(new RedisChannel("youtube.unarchived", RedisChannel.PatternMode.Literal), async (channel, videoId) =>
                 {
                     Log.Info($"{channel} - {videoId}");
 
                     _endLiveBag.TryAdd(videoId, 1);
 
-                    using (var db = DataBase.MainDbContext.GetDbContext())
+                    using (var db = _dbService.GetDbContext())
                     {
                         try
                         {
@@ -331,7 +286,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                 .AddField("直播狀態", "已關台並變更為私人存檔")
                                 .AddField("排定開台時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
 
-                                if (Program.ApplicatonOwner != null) await Program.ApplicatonOwner.SendMessageAsync("已關台並變更為私人存檔", false, embedBuilder.Build()).ConfigureAwait(false);
+                                if (Bot.ApplicatonOwner != null) await Bot.ApplicatonOwner.SendMessageAsync("已關台並變更為私人存檔", false, embedBuilder.Build()).ConfigureAwait(false);
                                 await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.Delete).ConfigureAwait(false);
                             }
                         }
@@ -342,12 +297,12 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     }
                 });
 
-                Program.RedisSub.Subscribe(new RedisChannel("youtube.429error", RedisChannel.PatternMode.Literal), async (channel, videoId) =>
+                Bot.RedisSub.Subscribe(new RedisChannel("youtube.429error", RedisChannel.PatternMode.Literal), async (channel, videoId) =>
                 {
                     Log.Info($"{channel} - {videoId}");
                     IsRecord = false;
 
-                    using (var db = DataBase.MainDbContext.GetDbContext())
+                    using (var db = _dbService.GetDbContext())
                     {
                         try
                         {
@@ -363,7 +318,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                 .AddField("直播狀態", "開台中")
                                 .AddField("排定開台時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
 
-                                if (Program.ApplicatonOwner != null) await Program.ApplicatonOwner.SendMessageAsync("429錯誤", false, embedBuilder.Build()).ConfigureAwait(false);
+                                if (Bot.ApplicatonOwner != null) await Bot.ApplicatonOwner.SendMessageAsync("429錯誤", false, embedBuilder.Build()).ConfigureAwait(false);
                                 await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.Start).ConfigureAwait(false);
                             }
                         }
@@ -374,14 +329,14 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     }
                 });
 
-                Program.RedisSub.Subscribe(new RedisChannel("youtube.addstream", RedisChannel.PatternMode.Literal), async (channel, videoId) =>
+                Bot.RedisSub.Subscribe(new RedisChannel("youtube.addstream", RedisChannel.PatternMode.Literal), async (channel, videoId) =>
                 {
                     videoId = GetVideoId(videoId);
                     Log.Info($"{channel} - (手動新增) {videoId}");
 
                     try
                     {
-                        using (var db = DataBase.MainDbContext.GetDbContext())
+                        using (var db = _dbService.GetDbContext())
                         {
                             if (!addNewStreamVideo.ContainsKey(videoId) && !Extensions.HasStreamVideoByVideoId(videoId))
                             {
@@ -413,13 +368,13 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     }
                 });
 
-                Program.RedisSub.Subscribe(new RedisChannel("youtube.pubsub.CreateOrUpdate", RedisChannel.PatternMode.Literal), async (channel, youtubeNotificationJson) =>
+                Bot.RedisSub.Subscribe(new RedisChannel("youtube.pubsub.CreateOrUpdate", RedisChannel.PatternMode.Literal), async (channel, youtubeNotificationJson) =>
                 {
                     YoutubePubSubNotification youtubePubSubNotification = JsonConvert.DeserializeObject<YoutubePubSubNotification>(youtubeNotificationJson.ToString());
 
                     try
                     {
-                        using (var db = DataBase.MainDbContext.GetDbContext())
+                        using (var db = _dbService.GetDbContext())
                         {
                             if (!addNewStreamVideo.ContainsKey(youtubePubSubNotification.VideoId) && !Extensions.HasStreamVideoByVideoId(youtubePubSubNotification.VideoId))
                             {
@@ -428,11 +383,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                 DataBase.Table.Video streamVideo;
                                 var youtubeChannelSpider = db.YoutubeChannelSpider.FirstOrDefault((x) => x.ChannelId == youtubePubSubNotification.ChannelId);
 
-                                // 這邊要拿 2434 的資料庫，確認接進來的頻道 Id 是不是 2434 的
-                                using var db2 = DataBase.NijisanjiVideoContext.GetDbContext();
-
                                 if (db.RecordYoutubeChannel.Any((x) => x.YoutubeChannelId == youtubePubSubNotification.ChannelId) // 錄影頻道一律允許
-                                    || db2.Video.Any((x) => x.ChannelId == youtubePubSubNotification.ChannelId) || // 可能是 2434 的頻道，允許
+                                    || db.NijisanjiVideos.Any((x) => x.ChannelId == youtubePubSubNotification.ChannelId) || // 可能是 2434 的頻道，允許
                                     (youtubeChannelSpider != null && youtubeChannelSpider.IsTrustedChannel)) // 否則就確認這是不是允許的爬蟲
                                 {
                                     var item = await GetVideoAsync(youtubePubSubNotification.VideoId).ConfigureAwait(false);
@@ -456,7 +408,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                     streamVideo = new DataBase.Table.Video()
                                     {
                                         ChannelId = youtubePubSubNotification.ChannelId,
-                                        ChannelTitle = db.GetNotVTuberChannelTitleByChannelId(youtubePubSubNotification.ChannelId),
+                                        ChannelTitle = db.GetNonApprovedChannelTitleByChannelId(youtubePubSubNotification.ChannelId),
                                         VideoId = youtubePubSubNotification.VideoId,
                                         VideoTitle = youtubePubSubNotification.Title,
                                         ScheduledStartTime = youtubePubSubNotification.Published,
@@ -486,7 +438,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     }
                 });
 
-                Program.RedisSub.Subscribe(new RedisChannel("youtube.pubsub.Deleted", RedisChannel.PatternMode.Literal), async (channel, youtubeNotificationJson) =>
+                Bot.RedisSub.Subscribe(new RedisChannel("youtube.pubsub.Deleted", RedisChannel.PatternMode.Literal), async (channel, youtubeNotificationJson) =>
                 {
                     YoutubePubSubNotification youtubePubSubNotification = JsonConvert.DeserializeObject<YoutubePubSubNotification>(youtubeNotificationJson.ToString());
 
@@ -494,7 +446,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                     try
                     {
-                        using (var db = DataBase.MainDbContext.GetDbContext())
+                        using (var db = _dbService.GetDbContext())
                         {
                             if (Extensions.HasStreamVideoByVideoId(youtubePubSubNotification.VideoId))
                             {
@@ -521,9 +473,9 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     }
                 });
 
-                Program.RedisSub.Subscribe(new RedisChannel("youtube.pubsub.NeedRegister", RedisChannel.PatternMode.Literal), async (channel, channelId) =>
+                Bot.RedisSub.Subscribe(new RedisChannel("youtube.pubsub.NeedRegister", RedisChannel.PatternMode.Literal), async (channel, channelId) =>
                 {
-                    using (var db = DataBase.MainDbContext.GetDbContext())
+                    using (var db = _dbService.GetDbContext())
                     {
                         if (db.YoutubeChannelSpider.Any((x) => x.ChannelId == channelId.ToString()))
                         {
@@ -545,7 +497,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 });
 
                 #region Nope
-                //Program.redisSub.Subscribe("youtube.changestreamtime", async (channel, videoId) =>
+                //Bot.redisSub.Subscribe("youtube.changestreamtime", async (channel, videoId) =>
                 //{
                 //    Log.Info($"{channel} - {videoId}");
 
@@ -584,7 +536,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 //    catch (Exception ex) { Log.Error("ChangeStreamTime"); Log.Error(ex.Message); }
                 //});
 
-                //Program.redisSub.Subscribe("youtube.newstream", async (channel, videoId) =>
+                //Bot.redisSub.Subscribe("youtube.newstream", async (channel, videoId) =>
                 //{
                 //    using (var uow = new DBContext())
                 //    {                        
@@ -665,9 +617,9 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             {
                 try
                 {
-                    if (await Program.RedisDb.KeyExistsAsync($"youtube.nijisanji.liver.{affiliation}"))
+                    if (await Bot.RedisDb.KeyExistsAsync($"youtube.nijisanji.liver.{affiliation}"))
                     {
-                        var liver = JsonConvert.DeserializeObject<List<NijisanjiLiverJson>>(await Program.RedisDb.StringGetAsync($"youtube.nijisanji.liver.{affiliation}"));
+                        var liver = JsonConvert.DeserializeObject<List<NijisanjiLiverJson>>(await Bot.RedisDb.StringGetAsync($"youtube.nijisanji.liver.{affiliation}"));
                         foreach (var item in liver)
                         {
                             NijisanjiLiverContents.Add(item);
@@ -685,7 +637,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             {
                 var json = await _nijisanjiApiHttpClient.GetStringAsync($"https://www.nijisanji.jp/api/livers?limit=300&orderKey=subscriber_count&order=asc&affiliation={affiliation}&locale=ja&includeAll=true");
                 var liver = JsonConvert.DeserializeObject<List<NijisanjiLiverJson>>(json);
-                await Program.RedisDb.StringSetAsync($"youtube.nijisanji.liver.{affiliation}", JsonConvert.SerializeObject(liver), TimeSpan.FromDays(1));
+                await Bot.RedisDb.StringSetAsync($"youtube.nijisanji.liver.{affiliation}", JsonConvert.SerializeObject(liver), TimeSpan.FromDays(1));
                 foreach (var item in liver)
                 {
                     NijisanjiLiverContents.Add(item);
@@ -740,7 +692,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             }
         }
 
-        private bool CanRecord(DataBase.MainDbContext db, DataBase.Table.Video streamVideo) =>
+        private bool CanRecord(MainDbContext db, DataBase.Table.Video streamVideo) =>
              IsRecord && db.RecordYoutubeChannel.Any((x) => x.YoutubeChannelId.Trim() == streamVideo.ChannelId.Trim());
 
         public async Task<string> GetChannelIdAsync(string channelUrl)
@@ -776,7 +728,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             {
                 string channelName = matchNewFormat.Groups["CustomId"].Value;
 
-                using (var db = DataBase.MainDbContext.GetDbContext())
+                using (var db = _dbService.GetDbContext())
                 {
                     channelId = db.YoutubeChannelNameToId.SingleOrDefault((x) => x.ChannelName == channelName)?.ChannelId;
 
@@ -818,7 +770,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 {
                     string channelName = WebUtility.UrlDecode(matchOldFormat.Groups["ChannelName"].Value);
 
-                    using (var db = DataBase.MainDbContext.GetDbContext())
+                    using (var db = _dbService.GetDbContext())
                     {
                         channelId = db.YoutubeChannelNameToId.SingleOrDefault((x) => x.ChannelName == channelName)?.ChannelId;
 
@@ -971,7 +923,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
             try
             {
-                using (var db = DataBase.MainDbContext.GetDbContext())
+                using (var db = _dbService.GetDbContext())
                 {
                     var list = db.YoutubeChannelSpider.Where((x) => x.LastSubscribeTime < DateTime.Now.AddDays(-7));
 
@@ -1145,7 +1097,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
         //                            uow.HoloStreamVideo.Add(streamVideo.ConvertToHoloStreamVideo());
         //                            await uow.SaveChangesAsync().ConfigureAwait(false);
 
-        //                            await Program.redisSub.PublishAsync("youtube.record", item.Snippet.ChannelId);
+        //                            await Bot.redisSub.PublishAsync("youtube.record", item.Snippet.ChannelId);
         //                        }
         //                    }
         //                }
