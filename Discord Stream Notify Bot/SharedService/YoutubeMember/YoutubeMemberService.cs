@@ -16,16 +16,18 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
         public bool IsEnable { get; private set; } = true;
 
         Timer checkMemberShipOnlyVideoId, checkOldMemberStatus, checkNewMemberStatus;
-        YoutubeStreamService _streamService;
-        GoogleAuthorizationCodeFlow flow;
-        DiscordSocketClient _client;
-        BotConfig _botConfig;
+        private readonly GoogleAuthorizationCodeFlow flow;
+        private readonly YoutubeStreamService _streamService;
+        private readonly DiscordSocketClient _client;
+        private readonly BotConfig _botConfig;
+        private readonly MainDbService _dbService;
 
-        public YoutubeMemberService(YoutubeStreamService streamService, DiscordSocketClient discordSocketClient, BotConfig botConfig)
+        public YoutubeMemberService(YoutubeStreamService streamService, DiscordSocketClient discordSocketClient, BotConfig botConfig, MainDbService dbService)
         {
-            _botConfig = botConfig;
             _streamService = streamService;
             _client = discordSocketClient;
+            _botConfig = botConfig;
+            _dbService = dbService;
 
             if (string.IsNullOrEmpty(_botConfig.GoogleClientId) || string.IsNullOrEmpty(_botConfig.GoogleClientSecret))
             {
@@ -41,11 +43,11 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                     ClientId = _botConfig.GoogleClientId,
                     ClientSecret = _botConfig.GoogleClientSecret
                 },
-                Scopes = new string[] { "https://www.googleapis.com/auth/youtube.force-ssl" },
+                Scopes = ["https://www.googleapis.com/auth/youtube.force-ssl"],
                 DataStore = new RedisDataStore(RedisConnection.Instance.ConnectionMultiplexer)
             });
 
-            Program.RedisSub.Subscribe(new RedisChannel("member.revokeToken", RedisChannel.PatternMode.Literal), async (channel, value) =>
+            Bot.RedisSub.Subscribe(new RedisChannel("member.revokeToken", RedisChannel.PatternMode.Literal), async (channel, value) =>
             {
                 try
                 {
@@ -74,7 +76,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                     if (customId.Length <= 2 || customId[0] != "member")
                         await component.RespondAsync("選單錯誤");
 
-                    using MainDbContext db = MainDbContext.GetDbContext();
+                    using var db = _dbService.GetDbContext();
                     if (customId[1] == "check" && customId.Length == 4)
                     {
                         await component.DeferAsync(true);
@@ -145,13 +147,13 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
             {
                 try
                 {
-                    var redisKeyList = Program.Redis.GetServer(Program.Redis.GetEndPoints(true).First()).Keys(1, pattern: $"Google.Apis.Auth.OAuth2.Responses.TokenResponse:*", cursor: 0, pageSize: 20000);
+                    var redisKeyList = Bot.Redis.GetServer(Bot.Redis.GetEndPoints(true).First()).Keys(1, pattern: $"Google.Apis.Auth.OAuth2.Responses.TokenResponse:*", cursor: 0, pageSize: 20000);
                     if (redisKeyList.Any())
                     {
                         Log.Info("開始儲存 Youtube Member Access Token");
 
-                        using var db = MainDbContext.GetDbContext();
-                        var redisDb = Program.Redis.GetDatabase(1);
+                        using var db = _dbService.GetDbContext();
+                        var redisDb = Bot.Redis.GetDatabase(1);
 
                         foreach (var item in redisKeyList)
                         {
@@ -181,8 +183,9 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                 }
             });
 
-            Program.RedisSub.Publish(new RedisChannel("member.syncRedisToken", RedisChannel.PatternMode.Literal), _botConfig.RedisTokenKey);
+            Bot.RedisSub.Publish(new RedisChannel("member.syncRedisToken", RedisChannel.PatternMode.Literal), _botConfig.RedisTokenKey);
             Log.Info("已同步 Redis Token");
+            _dbService = dbService;
         }
 
         public async Task<bool> IsExistUserTokenAsync(string discordUserId)
@@ -219,7 +222,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
         {
             try
             {
-                using var db = MainDbContext.GetDbContext();
+                using var db = _dbService.GetDbContext();
 
                 if (!db.YoutubeMemberCheck.Any((x) => x.UserId == userId))
                 {
@@ -324,7 +327,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
 
         private async Task SendMsgToLogChannelAsync(string checkChannelId, string msg, bool isNeedRemove = true, bool isNeedSendToOwner = true)
         {
-            using var db = MainDbContext.GetDbContext();
+            using var db = _dbService.GetDbContext();
 
             foreach (var item in db.GuildYoutubeMemberConfig.Where((x) => x.MemberCheckChannelId == checkChannelId))
             {
@@ -443,13 +446,13 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
         //{
         //    try
         //    {
-        //        var userJson = await Program.RedisDb.StringGetAsync($"discord_stream_bot:restuser:{userId}");
+        //        var userJson = await Bot.RedisDb.StringGetAsync($"discord_stream_bot:restuser:{userId}");
         //        if (userJson.IsNull)
         //        {
-        //            var user = await Program._client.Rest.GetUserAsync(userId);
+        //            var user = await Bot._client.Rest.GetUserAsync(userId);
         //            if (user == null) return null;
 
-        //            await Program.RedisDb.StringSetAsync($"discord_stream_bot:restuser:{userId}", JsonConvert.SerializeObject(user), TimeSpan.FromHours(1));
+        //            await Bot.RedisDb.StringSetAsync($"discord_stream_bot:restuser:{userId}", JsonConvert.SerializeObject(user), TimeSpan.FromHours(1));
         //            return user;
         //        }
         //        else

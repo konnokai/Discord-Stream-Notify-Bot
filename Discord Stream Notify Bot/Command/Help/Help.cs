@@ -84,7 +84,7 @@ namespace Discord_Stream_Notify_Bot.Command.Help
 #if DEBUG || DEBUG_DONTREGISTERCOMMAND
                 embed.Title += " (測試版)";
 #endif
-                embed.WithDescription(System.IO.File.ReadAllText(Program.GetDataFilePath("HelpDescription.txt")).Replace("\\n", "\n") + $"\n\n您可以透過：\nPatreon <{PatreonUrl}> \nPaypal <{PaypalUrl}>\n來贊助直播小幫手");
+                embed.WithDescription(System.IO.File.ReadAllText(Utility.GetDataFilePath("HelpDescription.txt")).Replace("\\n", "\n") + $"\n\n您可以透過：\nPatreon <{PatreonUrl}> \nPaypal <{PaypalUrl}>\n來贊助直播小幫手");
                 await ReplyAsync("", false, embed.Build());
                 return;
             }

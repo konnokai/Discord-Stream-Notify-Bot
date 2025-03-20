@@ -1,4 +1,5 @@
 ﻿using Discord.Interactions;
+using Discord_Stream_Notify_Bot.DataBase;
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.Interaction.Attribute;
 using Discord_Stream_Notify_Bot.SharedService.Twitch;
@@ -12,6 +13,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
     public class Twitch : TopLevelModule<TwitchService>
     {
         private readonly DiscordSocketClient _client;
+        private readonly MainDbService _dbService;
 
         public class GuildNoticeTwitchChannelIdAutocompleteHandler : AutocompleteHandler
         {
@@ -19,7 +21,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
             {
                 return await Task.Run(() =>
                 {
-                    using var db = DataBase.MainDbContext.GetDbContext();
+                    using var db = Bot.DbService.GetDbContext();
                     if (!db.NoticeTwitchStreamChannels.Any((x) => x.GuildId == context.Guild.Id))
                         return AutocompletionResult.FromSuccess();
 
@@ -65,9 +67,10 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
             }
         }
 
-        public Twitch(DiscordSocketClient client)
+        public Twitch(DiscordSocketClient client, MainDbService dbService)
         {
             _client = client;
+            _dbService = dbService;
         }
 
         [CommandExample("998rrr", "https://twitch.tv/998rrr")]
@@ -109,7 +112,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
                     return;
                 }
 
-                using (var db = DataBase.MainDbContext.GetDbContext())
+                using (var db = _dbService.GetDbContext())
                 {
                     await CheckIsFirstSetNoticeAndSendWarningMessageAsync(db);
 
@@ -148,7 +151,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
         [SlashCommand("remove", "移除 Twitch 直播通知的頻道")]
         public async Task RemoveChannel([Summary("頻道名稱", "userName"), Autocomplete(typeof(GuildNoticeTwitchChannelIdAutocompleteHandler))] string twitchId)
         {
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 var noticeTwitchStreamChannel = db.NoticeTwitchStreamChannels.FirstOrDefault((x) => x.GuildId == Context.Guild.Id && x.NoticeTwitchUserId == twitchId);
 
@@ -169,7 +172,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
         [SlashCommand("list", "顯示現在已加入通知清單的 Twitch 直播頻道")]
         public async Task ListChannel([Summary("頁數")] int page = 0)
         {
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 var list = Queryable.Where(db.NoticeTwitchStreamChannels, (x) => x.GuildId == Context.Guild.Id)
                     .Select((x) => $"`{db.GetTwitchUserNameByUserId(x.NoticeTwitchUserId)}` => <#{x.DiscordChannelId}>").ToList();
@@ -207,7 +210,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
                 return;
             }
 
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 var noticeTwitchStreamChannel = db.NoticeTwitchStreamChannels.FirstOrDefault((x) => x.GuildId == Context.Guild.Id && x.NoticeTwitchUserId == twitchId);
                 if (noticeTwitchStreamChannel == null)
@@ -268,7 +271,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
         {
             try
             {
-                using (var db = DataBase.MainDbContext.GetDbContext())
+                using (var db = _dbService.GetDbContext())
                 {
                     if (db.NoticeTwitchStreamChannels.Any((x) => x.GuildId == Context.Guild.Id))
                     {

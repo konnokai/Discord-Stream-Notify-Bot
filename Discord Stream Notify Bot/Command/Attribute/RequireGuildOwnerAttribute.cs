@@ -12,7 +12,7 @@ namespace Discord_Stream_Notify_Bot.Command.Attribute
 
         public override Task<PreconditionResult> CheckPermissionsAsync(ICommandContext context, CommandInfo command, IServiceProvider services)
         {
-            if (context.Message.Author.Id == Program.ApplicatonOwner.Id) return Task.FromResult(PreconditionResult.FromSuccess());
+            if (context.Message.Author.Id == Bot.ApplicatonOwner.Id) return Task.FromResult(PreconditionResult.FromSuccess());
 
             if (context.Message.Author.Id == context.Guild.OwnerId) return Task.FromResult(PreconditionResult.FromSuccess());
             else return Task.FromResult(PreconditionResult.FromError(ErrorMessage));

@@ -1,4 +1,5 @@
 ﻿using Discord.Interactions;
+using Discord_Stream_Notify_Bot.DataBase;
 using Discord_Stream_Notify_Bot.Interaction.Attribute;
 
 namespace Discord_Stream_Notify_Bot.Interaction.Twitch
@@ -10,16 +11,17 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
     public class TwitchSpider : TopLevelModule<SharedService.Twitch.TwitchService>
     {
         private readonly DiscordSocketClient _client;
+        private readonly MainDbService _dbService;
         public class GuildTwitchSpiderAutocompleteHandler : AutocompleteHandler
         {
             public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
             {
                 return await Task.Run(() =>
                 {
-                    using var db = DataBase.MainDbContext.GetDbContext();
+                    using var db = Bot.DbService.GetDbContext();
                     IQueryable<DataBase.Table.TwitchSpider> channelList;
 
-                    if (autocompleteInteraction.User.Id == Program.ApplicatonOwner.Id)
+                    if (autocompleteInteraction.User.Id == Bot.ApplicatonOwner.Id)
                     {
                         channelList = db.TwitchSpider;
                     }
@@ -66,9 +68,10 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
             }
         }
 
-        public TwitchSpider(DiscordSocketClient client)
+        public TwitchSpider(DiscordSocketClient client, MainDbService dbService)
         {
             _client = client;
+            _dbService = dbService;
 
             _client.ButtonExecuted += async (button) =>
             {
@@ -87,7 +90,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
                         return;
                     }
 
-                    using var db = DataBase.MainDbContext.GetDbContext();
+                    using var db = _dbService.GetDbContext();
                     var twitchSpider = db.TwitchSpider.FirstOrDefault((x) => x.UserId == buttonData[2]);
                     if (twitchSpider == null)
                     {
@@ -180,7 +183,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
                 return;
             }
 
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 if (db.TwitchSpider.Any((x) => x.UserId == userData.Id))
                 {
@@ -202,7 +205,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
 
                         try
                         {
-                            await (await Program.ApplicatonOwner.CreateDMChannelAsync())
+                            await (await Bot.ApplicatonOwner.CreateDMChannelAsync())
                                 .SendMessageAsync(embed: new EmbedBuilder()
                                     .WithOkColor()
                                     .WithTitle("已更新 Twitch 爬蟲的持有伺服器")
@@ -237,7 +240,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
                     OfflineImageUrl = userData.OfflineImageUrl
                 };
 
-                if (Context.User.Id == Program.ApplicatonOwner.Id && !await PromptUserConfirmAsync("設定該爬蟲為本伺服器使用?"))
+                if (Context.User.Id == Bot.ApplicatonOwner.Id && !await PromptUserConfirmAsync("設定該爬蟲為本伺服器使用?"))
                     spider.GuildId = 0;
 
                 db.TwitchSpider.Add(spider);
@@ -248,7 +251,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
 
                 try
                 {
-                    await (await Program.ApplicatonOwner.CreateDMChannelAsync()).SendMessageAsync(embed: new EmbedBuilder()
+                    await (await Bot.ApplicatonOwner.CreateDMChannelAsync()).SendMessageAsync(embed: new EmbedBuilder()
                             .WithOkColor()
                             .WithTitle("已新增 Twitch 頻道爬蟲")
                             .AddField("頻道", Format.Url(userData.DisplayName, $"https://twitch.tv/{userData.Login}"), false)
@@ -273,7 +276,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
             await DeferAsync(true).ConfigureAwait(false);
 
             DataBase.Table.TwitchSpider twitchSpider = null;
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 if (!db.TwitchSpider.Any((x) => x.UserId == twitchId))
                 {
@@ -281,7 +284,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
                     return;
                 }
 
-                if (Context.Interaction.User.Id != Program.ApplicatonOwner.Id && !db.TwitchSpider.Any((x) => x.UserId == twitchId && x.GuildId == Context.Guild.Id))
+                if (Context.Interaction.User.Id != Bot.ApplicatonOwner.Id && !db.TwitchSpider.Any((x) => x.UserId == twitchId && x.GuildId == Context.Guild.Id))
                 {
                     await Context.Interaction.SendErrorAsync($"該頻道爬蟲並非本伺服器新增，無法移除", true).ConfigureAwait(false);
                     return;
@@ -296,7 +299,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
 
             try
             {
-                await (await Program.ApplicatonOwner.CreateDMChannelAsync()).SendMessageAsync(embed: new EmbedBuilder()
+                await (await Bot.ApplicatonOwner.CreateDMChannelAsync()).SendMessageAsync(embed: new EmbedBuilder()
                     .WithErrorColor()
                     .WithTitle("已移除 Twitch 頻道爬蟲")
                     .AddField("頻道", Format.Url(twitchSpider?.UserName, $"https://twitch.tv/{twitchSpider.UserLogin}"), false)
@@ -311,7 +314,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
         {
             if (page < 0) page = 0;
 
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 try
                 {
@@ -341,7 +344,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
         {
             if (page < 0) page = 0;
 
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 var list = db.TwitchSpider.Where((x) => x.IsWarningUser).Select((x) => Format.Url(x.UserName, $"https://twitch.tv/{x.UserLogin}") +
                     $" 由 `" + (x.GuildId == 0 ? "Bot 擁有者" : (_client.GetGuild(x.GuildId) != null ? _client.GetGuild(x.GuildId).Name : "已退出的伺服器")) + "` 新增");

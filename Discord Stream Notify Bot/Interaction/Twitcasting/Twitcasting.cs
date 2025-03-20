@@ -1,4 +1,5 @@
 ﻿using Discord.Interactions;
+using Discord_Stream_Notify_Bot.DataBase;
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.Interaction.Attribute;
 
@@ -11,6 +12,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.TwitCasting
     public class TwitCasting : TopLevelModule<SharedService.TwitCasting.TwitCastingService>
     {
         private readonly DiscordSocketClient _client;
+        private readonly MainDbService _dbService;
 
         public class GuildNoticeTwitCastingChannelIdAutocompleteHandler : AutocompleteHandler
         {
@@ -18,7 +20,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.TwitCasting
             {
                 return await Task.Run(() =>
                 {
-                    using var db = DataBase.MainDbContext.GetDbContext();
+                    using var db = Bot.DbService.GetDbContext();
                     if (!db.NoticeTwitCastingStreamChannels.Any((x) => x.GuildId == context.Guild.Id))
                         return AutocompletionResult.FromSuccess();
 
@@ -62,9 +64,10 @@ namespace Discord_Stream_Notify_Bot.Interaction.TwitCasting
             }
         }
 
-        public TwitCasting(DiscordSocketClient client)
+        public TwitCasting(DiscordSocketClient client, MainDbService dbService)
         {
             _client = client;
+            _dbService = dbService;
         }
 
         [CommandExample("nana_kaguraaa", "https://twitcasting.tv/nana_kaguraaa")]
@@ -104,7 +107,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.TwitCasting
                 return;
             }
 
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 var noticeTwitCastingStreamChannel = db.NoticeTwitCastingStreamChannels.FirstOrDefault((x) => x.GuildId == Context.Guild.Id && x.ChannelId == channelData.ChannelId);
                 if (noticeTwitCastingStreamChannel != null)
@@ -145,7 +148,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.TwitCasting
                 return;
             }
 
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 if (!db.NoticeTwitCastingStreamChannels.Any((x) => x.GuildId == Context.Guild.Id))
                 {
@@ -170,7 +173,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.TwitCasting
         [SlashCommand("list", "顯示現在已加入通知清單的 TwitCasting 直播頻道")]
         public async Task ListChannel([Summary("頁數")] int page = 0)
         {
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 var list = Queryable.Where(db.NoticeTwitCastingStreamChannels, (x) => x.GuildId == Context.Guild.Id)
                 .Select((x) => $"`{db.GetTwitCastingChannelTitleByChannelId(x.ChannelId)}` => <#{x.DiscordChannelId}>").ToList();
@@ -206,7 +209,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.TwitCasting
                 return;
             }
 
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 if (db.NoticeTwitCastingStreamChannels.Any((x) => x.GuildId == Context.Guild.Id && x.ChannelId == channelData.ChannelId))
                 {
@@ -230,7 +233,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.TwitCasting
         [SlashCommand("list-message", "列出已設定的 TwitCasting 直播通知訊息")]
         public async Task ListMessage([Summary("頁數")] int page = 0)
         {
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 if (db.NoticeTwitCastingStreamChannels.Any((x) => x.GuildId == Context.Guild.Id))
                 {

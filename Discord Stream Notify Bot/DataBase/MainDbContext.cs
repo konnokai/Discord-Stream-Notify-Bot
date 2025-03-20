@@ -5,6 +5,16 @@ namespace Discord_Stream_Notify_Bot.DataBase
 {
     public class MainDbContext : DbContext
     {
+        private readonly string _connectionString;
+
+        public MainDbContext(string connectionString 
+            // 要新增 Migration 的時候再把下面的連線字串註解拿掉
+            //= "Server=localhost;Port=3306;User Id=stream_bot;Password=Ch@nge_Me;Database=discord_stream_bot"
+            )
+        {
+            _connectionString = connectionString;
+        }
+
         public DbSet<BannerChange> BannerChange { get; set; }
         public DbSet<GuildConfig> GuildConfig { get; set; }
         public DbSet<GuildYoutubeMemberConfig> GuildYoutubeMemberConfig { get; set; }
@@ -23,25 +33,66 @@ namespace Discord_Stream_Notify_Bot.DataBase
         public DbSet<YoutubeMemberAccessToken> YoutubeMemberAccessToken { get; set; }
         public DbSet<YoutubeMemberCheck> YoutubeMemberCheck { get; set; }
 
-        protected override void OnConfiguring(DbContextOptionsBuilder options)
-            => options.UseSqlite($"Data Source={Program.GetDataFilePath("Database.db")}")
-#if DEBUG || DEBUG_DONTREGISTERCOMMAND
-            //.LogTo((act) => System.IO.File.AppendAllText("DbTrackerLog.txt", act), Microsoft.Extensions.Logging.LogLevel.Information)
-#endif
-            .EnableSensitiveDataLogging();
+        #region Video
+        public DbSet<Table.Video> HoloVideo { get; set; }
+        public DbSet<Table.Video> NijisanjiVideo { get; set; }
+        public DbSet<Table.Video> NonApprovedVideo { get; set; }
+        public DbSet<Table.Video> OtherVideo { get; set; }
+        public DbSet<TwitCastingStream> TwitCastingStreams { get; set; }
+        public DbSet<TwitchStream> TwitchStreams { get; set; }
+        #endregion
 
-        public static MainDbContext GetDbContext()
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            var context = new MainDbContext();
-            context.Database.SetCommandTimeout(60);
-            var conn = context.Database.GetDbConnection();
-            conn.Open();
-            using (var com = conn.CreateCommand())
+            base.OnConfiguring(optionsBuilder);
+            optionsBuilder.UseMySql(_connectionString, ServerVersion.AutoDetect(_connectionString));
+        }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+        }
+
+        public bool UpdateAndSave(Table.Video video)
+        {
+            Update(video);
+            var saveTime = DateTime.Now;
+            bool saveFailed;
+
+            do
             {
-                com.CommandText = "PRAGMA journal_mode=WAL; PRAGMA synchronous=OFF";
-                com.ExecuteNonQuery();
-            }
-            return context;
+                saveFailed = false;
+                try
+                {
+                    SaveChanges();
+                }
+                catch (DbUpdateConcurrencyException ex)
+                {
+                    saveFailed = true;
+                    foreach (var item in ex.Entries)
+                    {
+                        try
+                        {
+                            item.Reload();
+                        }
+                        catch (Exception ex2)
+                        {
+                            Log.Error($"VideoContext-SaveChanges-Reload");
+                            Log.Error(item.DebugView.ToString());
+                            Log.Error(ex2.ToString());
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Error($"VideoContext-SaveChanges: {ex}");
+                    Log.Error(ChangeTracker.DebugView.LongView);
+                }
+            } while (saveFailed && DateTime.Now.Subtract(saveTime) <= TimeSpan.FromMinutes(1));
+
+            Dispose();
+
+            return DateTime.Now.Subtract(saveTime) >= TimeSpan.FromMinutes(1);
         }
     }
 }

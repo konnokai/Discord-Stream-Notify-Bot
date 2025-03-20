@@ -116,7 +116,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Help
 #if DEBUG || DEBUG_DONTREGISTERCOMMAND
                 embed.Title += " (測試版)";
 #endif
-                embed.WithDescription(System.IO.File.ReadAllText(Program.GetDataFilePath("HelpDescription.txt")).Replace("\\n", "\n") +
+                embed.WithDescription(File.ReadAllText(Discord_Stream_Notify_Bot.Utility.GetDataFilePath("HelpDescription.txt")).Replace("\\n", "\n") +
                     $"\n\n您可以透過 {Format.Url("Patreon", Discord_Stream_Notify_Bot.Utility.PatreonUrl)} 或 {Format.Url("Paypal", Discord_Stream_Notify_Bot.Utility.PaypalUrl)} 來贊助直播小幫手");
                 await RespondAsync(embed: embed.Build());
                 return;

@@ -1,4 +1,5 @@
 ﻿using Discord.Interactions;
+using Discord_Stream_Notify_Bot.DataBase;
 using Discord_Stream_Notify_Bot.Interaction.Attribute;
 
 namespace Discord_Stream_Notify_Bot.Interaction.Youtube
@@ -10,16 +11,17 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
     public class YoutubeChannelSpider : TopLevelModule<SharedService.Youtube.YoutubeStreamService>
     {
         private readonly DiscordSocketClient _client;
+        private readonly MainDbService _dbService;
         public class GuildYoutubeChannelSpiderAutocompleteHandler : AutocompleteHandler
         {
             public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
             {
                 return await Task.Run(() =>
                 {
-                    using var db = DataBase.MainDbContext.GetDbContext();
+                    using var db = Bot.DbService.GetDbContext();
                     IQueryable<DataBase.Table.YoutubeChannelSpider> channelList;
 
-                    if (autocompleteInteraction.User.Id == Program.ApplicatonOwner.Id)
+                    if (autocompleteInteraction.User.Id == Bot.ApplicatonOwner.Id)
                     {
                         channelList = db.YoutubeChannelSpider;
                     }
@@ -66,9 +68,10 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             }
         }
 
-        public YoutubeChannelSpider(DiscordSocketClient client)
+        public YoutubeChannelSpider(DiscordSocketClient client, MainDbService dbService)
         {
             _client = client;
+            _dbService = dbService;
 
             _client.ButtonExecuted += async (button) =>
             {
@@ -87,7 +90,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                         return;
                     }
 
-                    using var db = DataBase.MainDbContext.GetDbContext();
+                    using var db = _dbService.GetDbContext();
                     var youtubeChannelSpider = db.YoutubeChannelSpider.FirstOrDefault((x) => x.ChannelId == buttonData[2]);
                     if (youtubeChannelSpider == null)
                     {
@@ -203,13 +206,11 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                 return;
             }
 
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 bool isTwoBox = false;
-                using (var Holodb = DataBase.HoloVideoContext.GetDbContext())
-                    if (Holodb.Video.Any((x) => x.ChannelId == channelId)) isTwoBox = true;
-                using (var Nijidb = DataBase.NijisanjiVideoContext.GetDbContext())
-                    if (Nijidb.Video.Any((x) => x.ChannelId == channelId)) isTwoBox = true;
+                if (db.HoloVideo.Any((x) => x.ChannelId == channelId)) { isTwoBox = true; }
+                else if (db.NijisanjiVideo.Any((x) => x.ChannelId == channelId)) { isTwoBox = true; }
 
                 if (isTwoBox && !db.YoutubeChannelOwnedType.Any((x) => x.ChannelId == channelId))
                 {
@@ -241,7 +242,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
 
                         try
                         {
-                            await (await Program.ApplicatonOwner.CreateDMChannelAsync())
+                            await (await Bot.ApplicatonOwner.CreateDMChannelAsync())
                                 .SendMessageAsync(embed: new EmbedBuilder()
                                     .WithOkColor()
                                     .WithTitle("已更新 Youtube 爬蟲的持有伺服器")
@@ -270,7 +271,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                 }
 
                 var spider = new DataBase.Table.YoutubeChannelSpider() { GuildId = Context.Guild.Id, ChannelId = channelId, ChannelTitle = channelTitle };
-                if (Context.User.Id == Program.ApplicatonOwner.Id && !await PromptUserConfirmAsync("設定該爬蟲為本伺服器使用?"))
+                if (Context.User.Id == Bot.ApplicatonOwner.Id && !await PromptUserConfirmAsync("設定該爬蟲為本伺服器使用?"))
                     spider.GuildId = 0;
 
                 db.YoutubeChannelSpider.Add(spider);
@@ -281,7 +282,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
 
                 try
                 {
-                    await (await Program.ApplicatonOwner.CreateDMChannelAsync()).SendMessageAsync(embed: new EmbedBuilder()
+                    await (await Bot.ApplicatonOwner.CreateDMChannelAsync()).SendMessageAsync(embed: new EmbedBuilder()
                             .WithOkColor()
                             .WithTitle("已新增 YouTube 頻道爬蟲")
                             .AddField("頻道", Format.Url(channelTitle, $"https://www.youtube.com/channel/{channelId}"), false)
@@ -324,7 +325,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                 return;
             }
 
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 if (!db.YoutubeChannelSpider.Any((x) => x.ChannelId == channelId))
                 {
@@ -332,7 +333,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                     return;
                 }
 
-                if (Context.Interaction.User.Id != Program.ApplicatonOwner.Id && !db.YoutubeChannelSpider.Any((x) => x.ChannelId == channelId && x.GuildId == Context.Guild.Id))
+                if (Context.Interaction.User.Id != Bot.ApplicatonOwner.Id && !db.YoutubeChannelSpider.Any((x) => x.ChannelId == channelId && x.GuildId == Context.Guild.Id))
                 {
                     await Context.Interaction.SendErrorAsync($"該頻道爬蟲並非本伺服器新增，無法移除", true).ConfigureAwait(false);
                     return;
@@ -345,7 +346,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
 
             try
             {
-                await (await Program.ApplicatonOwner.CreateDMChannelAsync()).SendMessageAsync(embed: new EmbedBuilder()
+                await (await Bot.ApplicatonOwner.CreateDMChannelAsync()).SendMessageAsync(embed: new EmbedBuilder()
                     .WithErrorColor()
                     .WithTitle("已移除 YouTube 頻道爬蟲")
                     .AddField("頻道", $"https://www.youtube.com/channel/{channelId}", false)
@@ -362,7 +363,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
         {
             if (page < 0) page = 0;
 
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 var list = db.YoutubeChannelSpider.Where((x) => x.IsTrustedChannel).Select((x) => Format.Url(x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}") +
                     $" 由 `" + (x.GuildId == 0 ? "Bot 擁有者" : (_client.GetGuild(x.GuildId) != null ? _client.GetGuild(x.GuildId).Name : "已退出的伺服器")) + "` 新增");
@@ -384,7 +385,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
         {
             if (page < 0) page = 0;
 
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 var list = db.YoutubeChannelSpider.Where((x) => !x.IsTrustedChannel).Select((x) => Format.Url(x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}") +
                     $" 由 `" + (x.GuildId == 0 ? "Bot 擁有者" : (_client.GetGuild(x.GuildId) != null ? _client.GetGuild(x.GuildId).Name : "已退出的伺服器")) + "` 新增");

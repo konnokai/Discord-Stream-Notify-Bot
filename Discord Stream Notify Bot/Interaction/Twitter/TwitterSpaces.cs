@@ -1,4 +1,5 @@
 ﻿using Discord.Interactions;
+using Discord_Stream_Notify_Bot.DataBase;
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.Interaction.Attribute;
 
@@ -11,6 +12,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
     public class TwitterSpaces : TopLevelModule<SharedService.Twitter.TwitterSpacesService>
     {
         private readonly DiscordSocketClient _client;
+        private readonly MainDbService _dbService;
 
         public class GuildNoticeTwitterSpaceIdAutocompleteHandler : AutocompleteHandler
         {
@@ -18,7 +20,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
             {
                 return await Task.Run(() =>
                 {
-                    using var db = DataBase.MainDbContext.GetDbContext();
+                    using var db = Bot.DbService.GetDbContext();
                     if (!db.NoticeTwitterSpaceChannel.Any((x) => x.GuildId == context.Guild.Id))
                         return AutocompletionResult.FromSuccess();
 
@@ -68,10 +70,10 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
             {
                 return await Task.Run(() =>
                 {
-                    using var db = DataBase.MainDbContext.GetDbContext();
+                    using var db = Bot.DbService.GetDbContext();
                     IQueryable<TwitterSpaecSpider> channelList;
 
-                    if (autocompleteInteraction.User.Id == Program.ApplicatonOwner.Id)
+                    if (autocompleteInteraction.User.Id == Bot.ApplicatonOwner.Id)
                     {
                         channelList = db.TwitterSpaecSpider;
                     }
@@ -118,9 +120,10 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
             }
         }
 
-        public TwitterSpaces(DiscordSocketClient client)
+        public TwitterSpaces(DiscordSocketClient client, MainDbService dbService)
         {
             _client = client;
+            _dbService = dbService;
         }
 
         [CommandSummary("新增推特語音空間開台通知的頻道\n" +
@@ -171,7 +174,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                 return;
             }
 
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 var noticeTwitterSpaceChannel = db.NoticeTwitterSpaceChannel.FirstOrDefault((x) => x.GuildId == Context.Guild.Id && x.NoticeTwitterSpaceUserId == user.RestId);
 
@@ -210,7 +213,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
 
             userScreenName = userScreenName.Replace("@", "").ToLower();
 
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 if (!db.NoticeTwitterSpaceChannel.Any((x) => x.GuildId == Context.Guild.Id))
                 {
@@ -236,7 +239,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
         [SlashCommand("list", "顯示現在已加入推特語音空間通知的頻道")]
         public async Task ListChannel([Summary("頁數")] int page = 0)
         {
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 var list = db.NoticeTwitterSpaceChannel.Where((x) => x.GuildId == Context.Guild.Id)
                 .Select((x) => new KeyValuePair<string, ulong>(x.NoticeTwitterSpaceUserScreenName, x.DiscordChannelId)).ToList();
@@ -284,7 +287,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                     return;
                 }
 
-                using (var db = DataBase.MainDbContext.GetDbContext())
+                using (var db = _dbService.GetDbContext())
                 {
                     if (db.NoticeTwitterSpaceChannel.Any((x) => x.GuildId == Context.Guild.Id && x.NoticeTwitterSpaceUserId == user.RestId))
                     {
@@ -319,7 +322,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
 
             try
             {
-                using (var db = DataBase.MainDbContext.GetDbContext())
+                using (var db = _dbService.GetDbContext())
                 {
                     if (db.NoticeTwitterSpaceChannel.Any((x) => x.GuildId == Context.Guild.Id))
                     {

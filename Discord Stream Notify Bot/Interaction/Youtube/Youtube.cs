@@ -1,4 +1,5 @@
 ﻿using Discord.Interactions;
+using Discord_Stream_Notify_Bot.DataBase;
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.Interaction.Attribute;
 using Discord_Stream_Notify_Bot.SharedService.Youtube;
@@ -11,6 +12,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
     public class Youtube : TopLevelModule<YoutubeStreamService>
     {
         private readonly DiscordSocketClient _client;
+        private readonly MainDbService _dbService;
 
         public class GuildNoticeYoutubeChannelIdAutocompleteHandler : AutocompleteHandler
         {
@@ -18,7 +20,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             {
                 return await Task.Run(() =>
                 {
-                    using var db = DataBase.MainDbContext.GetDbContext();
+                    using var db = Bot.DbService.GetDbContext();
                     if (!db.NoticeYoutubeStreamChannel.Any((x) => x.GuildId == context.Guild.Id))
                         return AutocompletionResult.FromSuccess();
 
@@ -62,9 +64,10 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             }
         }
 
-        public Youtube(DiscordSocketClient client)
+        public Youtube(DiscordSocketClient client, MainDbService dbService)
         {
             _client = client;
+            _dbService = dbService;
         }
 
         [RequireContext(ContextType.Guild)]
@@ -73,7 +76,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
         [SlashCommand("list-record-channel", "顯示直播記錄頻道")]
         public async Task ListRecordChannel([Summary("頁數")] int page = 0)
         {
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 if (db.RecordYoutubeChannel.Any())
                 {
@@ -121,7 +124,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                     result.AddRange((await yt.ExecuteAsync().ConfigureAwait(false)).Items);
                 }
 
-                using (var db = DataBase.MainDbContext.GetDbContext())
+                using (var db = _dbService.GetDbContext())
                 {
                     result = result.OrderBy((x) => x.LiveStreamingDetails.ScheduledStartTimeDateTimeOffset).ToList();
                     await Context.SendPaginatedConfirmAsync(page, (act) =>
@@ -202,7 +205,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                     return;
                 }
 
-                using var db = DataBase.MainDbContext.GetDbContext();
+                using var db = _dbService.GetDbContext();
                 var noticeYoutubeStreamChannel = db.NoticeYoutubeStreamChannel.First((x) => x.GuildId == Context.Guild.Id && x.YouTubeChannelId == channelId);
 
                 //var channel = Context.Guild.GetTextChannel(noticeYoutubeStreamChannel.DiscordNoticeStreamChannelId);
@@ -300,7 +303,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
         [SlashCommand("set-banner-change", "設定伺服器橫幅使用指定頻道的最新影片(直播)縮圖")]
         public async Task SetBannerChange([Summary("頻道網址")] string channelUrl = "")
         {
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 if (channelUrl == "")
                 {
@@ -416,7 +419,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                     return;
                 }
 
-                using (var db = DataBase.MainDbContext.GetDbContext())
+                using (var db = _dbService.GetDbContext())
                 {
                     await CheckIsFirstSetNoticeAndSendWarningMessageAsync(db);
 
@@ -507,7 +510,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                 return;
             }
 
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 if (!db.NoticeYoutubeStreamChannel.Any((x) => x.GuildId == Context.Guild.Id))
                 {
@@ -580,7 +583,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                 return;
             }
 
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 var noticeYoutubeStreamChannel = db.NoticeYoutubeStreamChannel.FirstOrDefault((x) => x.GuildId == Context.Guild.Id && x.YouTubeChannelId == channelId);
                 if (noticeYoutubeStreamChannel != null)
@@ -609,7 +612,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
 
             try
             {
-                using (var db = DataBase.MainDbContext.GetDbContext())
+                using (var db = _dbService.GetDbContext())
                 {
                     if (!db.NoticeYoutubeStreamChannel.Any((x) => x.GuildId == Context.Guild.Id))
                     {
@@ -682,7 +685,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                 return;
             }
 
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 var channelTitle = db.GetYoutubeChannelTitleByChannelId(channelId);
                 var noticeStreamChannel = db.NoticeYoutubeStreamChannel.FirstOrDefault((x) => x.GuildId == Context.Guild.Id && x.YouTubeChannelId == channelId);
@@ -781,7 +784,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
         {
             try
             {
-                using (var db = DataBase.MainDbContext.GetDbContext())
+                using (var db = _dbService.GetDbContext())
                 {
                     if (db.NoticeYoutubeStreamChannel.Any((x) => x.GuildId == Context.Guild.Id))
                     {

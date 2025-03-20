@@ -3,6 +3,7 @@ using Discord_Stream_Notify_Bot.Command.Attribute;
 using Discord_Stream_Notify_Bot.DataBase;
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using Microsoft.EntityFrameworkCore;
+using System.Diagnostics;
 using System.Text.RegularExpressions;
 
 namespace Discord_Stream_Notify_Bot.Command.Youtube
@@ -11,11 +12,13 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
     {
         private readonly DiscordSocketClient _client;
         private readonly SharedService.Youtube.YoutubeStreamService _service;
+        private readonly MainDbService _dbService;
 
-        public YoutubeStream(DiscordSocketClient client, SharedService.Youtube.YoutubeStreamService service)
+        public YoutubeStream(DiscordSocketClient client, SharedService.Youtube.YoutubeStreamService service, MainDbService dbService)
         {
             _client = client;
             _service = service;
+            _dbService = dbService;
         }
 
         [RequireContext(ContextType.DM)]
@@ -74,15 +77,15 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
             var description = $"{Format.Url(video.Snippet.Title, $"https://www.youtube.com/watch?v={videoId}")}\n" +
                     $"{Format.Url(video.Snippet.ChannelTitle, $"https://www.youtube.com/channel/{video.Snippet.ChannelId}")}";
 
-            using var db = MainDbContext.GetDbContext();
+            using var db = _dbService.GetDbContext();
             if (!db.HasStreamVideoByVideoId(videoId))
                 await _service.AddOtherDataAsync(video, true);
 
             try
             {
-                if (Program.Redis != null)
+                if (Bot.Redis != null)
                 {
-                    if (await Program.RedisSub.PublishAsync(new RedisChannel("youtube.record", RedisChannel.PatternMode.Literal), videoId) != 0)
+                    if (await Bot.RedisSub.PublishAsync(new RedisChannel("youtube.record", RedisChannel.PatternMode.Literal), videoId) != 0)
                     {
                         Log.Info($"已發送錄影請求: {videoId}");
                         await Context.Channel.SendConfirmAsync("已開始錄影", description).ConfigureAwait(false);
@@ -151,7 +154,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                 return;
             }
 
-            using var db = MainDbContext.GetDbContext();
+            using var db = _dbService.GetDbContext();
             if (!db.HasStreamVideoByVideoId(videoId))
             {
                 await _service.AddOtherDataAsync(video, false);
@@ -189,7 +192,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                 return;
             }
 
-            using var db = MainDbContext.GetDbContext();
+            using var db = _dbService.GetDbContext();
 
             if (channelId == "all")
             {
@@ -247,7 +250,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                 return;
             }
 
-            using var db = MainDbContext.GetDbContext();
+            using var db = _dbService.GetDbContext();
 
             var youtubeChannelSpider = db.YoutubeChannelSpider.AsNoTracking().FirstOrDefault((x) => x.ChannelId == channelId);
 
@@ -297,7 +300,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                 return;
             }
 
-            using (var db = MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 if (db.RecordYoutubeChannel.Any((x) => x.YoutubeChannelId == channelId))
                 {
@@ -342,7 +345,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                 return;
             }
 
-            using (var db = MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 if (!db.RecordYoutubeChannel.Any((x) => x.YoutubeChannelId == channelId))
                 {
@@ -367,7 +370,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
         {
             await Context.Channel.TriggerTypingAsync().ConfigureAwait(false);
 
-            using (var db = MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 var nowRecordList = db.RecordYoutubeChannel.Select((x) => x.YoutubeChannelId).ToList();
 
@@ -480,7 +483,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                 return;
             }
 
-            using (var db = MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 var channel = db.YoutubeChannelOwnedType.FirstOrDefault((x) => x.ChannelId == channelId);
                 if (channel == null)
@@ -505,16 +508,16 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
         [Alias("FixND")]
         public async Task FixNijisanjiDatabase()
         {
-            using (var db = NijisanjiVideoContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 try
                 {
-                    var needFixList = db.Video.Where((x) => x.ChannelId.StartsWith("https"));
+                    var needFixList = db.NijisanjiVideo.Where((x) => x.ChannelId.StartsWith("https"));
 
                     foreach (var item in needFixList)
                     {
                         item.ChannelId = await _service.GetChannelIdAsync(item.ChannelId);
-                        db.Video.Update(item);
+                        db.NijisanjiVideo.Update(item);
                     }
 
                     int result = await db.SaveChangesAsync();
@@ -523,7 +526,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex, "FixNijisanjiDatabase");
+                    Log.Error(ex.Demystify(), "FixNijisanjiDatabase");
                 }
             }
         }
@@ -539,7 +542,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Message + "\n" + ex.StackTrace);
+                Log.Error(ex.Demystify(), "GetChannelTitle");
                 return "";
             }
         }
@@ -555,7 +558,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Message + "\n" + ex.StackTrace);
+                Log.Error(ex.Demystify(), "GetChannelTitle");
                 return null;
             }
         }

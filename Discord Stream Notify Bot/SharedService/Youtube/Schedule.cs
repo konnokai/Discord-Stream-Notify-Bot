@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json.Linq;
 using Polly;
 using System.Data;
+using System.Diagnostics;
 using System.Net;
 using System.Text.RegularExpressions;
 using Extensions = Discord_Stream_Notify_Bot.Interaction.Extensions;
@@ -20,39 +21,33 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
         private void ReScheduleReminder()
         {
             List<string> recordChannelId = new();
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 if (db.RecordYoutubeChannel.Any())
                     recordChannelId = db.RecordYoutubeChannel.AsNoTracking().Select((x) => x.YoutubeChannelId).ToList();
-            }
-            using (var db = DataBase.HoloVideoContext.GetDbContext())
-            {
-                foreach (var streamVideo in db.Video.AsNoTracking().Where((x) => x.ScheduledStartTime > DateTime.Now && !x.IsPrivate))
+
+                foreach (var streamVideo in db.HoloVideo.AsNoTracking().Where((x) => x.ScheduledStartTime > DateTime.Now && !x.IsPrivate))
                 {
                     StartReminder(streamVideo, DataBase.Table.Video.YTChannelType.Holo);
                 }
-            }
-            using (var db = DataBase.NijisanjiVideoContext.GetDbContext())
-            {
-                foreach (var streamVideo in db.Video.AsNoTracking().Where((x) => x.ScheduledStartTime > DateTime.Now && !x.IsPrivate))
+
+                foreach (var streamVideo in db.NijisanjiVideo.AsNoTracking().Where((x) => x.ScheduledStartTime > DateTime.Now && !x.IsPrivate))
                 {
-                    StartReminder(streamVideo, DataBase.Table.Video.YTChannelType.Nijisanji);
+                    StartReminder(streamVideo, DataBase.Table.Video.YTChannelType.Holo);
                 }
-            }
-            using (var db = DataBase.OtherVideoContext.GetDbContext())
-            {
-                foreach (var streamVideo in db.Video.AsNoTracking().Where((x) => x.ScheduledStartTime > DateTime.Now && !x.IsPrivate))
+
+                foreach (var streamVideo in db.OtherVideo.AsNoTracking().Where((x) => x.ScheduledStartTime > DateTime.Now && !x.IsPrivate))
                 {
-                    StartReminder(streamVideo, DataBase.Table.Video.YTChannelType.Other);
+                    StartReminder(streamVideo, DataBase.Table.Video.YTChannelType.Holo);
                 }
             }
         }
 
         private async Task HoloScheduleAsync()
         {
-            if (Program.IsHoloChannelSpider || Program.IsDisconnect) return;
+            if (Bot.IsHoloChannelSpider || Bot.IsDisconnect) return;
             //Log.Info("Holo影片清單整理開始");
-            Program.IsHoloChannelSpider = true;
+            Bot.IsHoloChannelSpider = true;
 
             try
             {
@@ -193,7 +188,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     Log.Error($"HoloStream: {ex}");
             }
 
-            Program.IsHoloChannelSpider = false; isFirstHolo = false;
+            Bot.IsHoloChannelSpider = false; isFirstHolo = false;
             //Log.Info("Holo影片清單整理完成");
         }
 
@@ -208,7 +203,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
         // KR跟ID沒看到網站有請求
         private async Task NijisanjiScheduleAsync()
         {
-            if (Program.IsNijisanjiChannelSpider || Program.IsDisconnect)
+            if (Bot.IsNijisanjiChannelSpider || Bot.IsDisconnect)
             {
                 Log.Warn("彩虹社影片清單整理已取消");
                 return;
@@ -217,7 +212,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
             try
             {
-                Program.IsNijisanjiChannelSpider = true;
+                Bot.IsNijisanjiChannelSpider = true;
 
                 List<Data> datas = new List<Data>();
                 NijisanjiStreamJson nijisanjiStreamJson = null;
@@ -245,7 +240,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 if (!datas.Any())
                 {
                     Log.Warn("NijisanjiScheduleAsync: 直播清單無資料");
-                    Program.IsNijisanjiChannelSpider = false;
+                    Bot.IsNijisanjiChannelSpider = false;
                     return;
                 }
 
@@ -369,7 +364,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 Log.Error($"NijisanjiScheduleAsync: {ex}");
             }
 
-            Program.IsNijisanjiChannelSpider = false; isFirst2434 = false;
+            Bot.IsNijisanjiChannelSpider = false; isFirst2434 = false;
             //Log.Info("彩虹社影片清單整理完成");
         }
 
@@ -379,14 +374,14 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
         // https://docs.microsoft.com/en-us/dotnet/standard/collections/thread-safe/blockingcollection-overview
         private async Task OtherScheduleAsync()
         {
-            if (Program.IsOtherChannelSpider || Program.IsDisconnect) return;
+            if (Bot.IsOtherChannelSpider || Bot.IsDisconnect) return;
 
 #if RELEASE
             try
             {
-                if (Program.RedisDb.KeyExists("youtube.otherStart"))
+                if (Bot.RedisDb.KeyExists("youtube.otherStart"))
                 {
-                    var time = await Program.RedisDb.KeyTimeToLiveAsync("youtube.otherStart");
+                    var time = await Bot.RedisDb.KeyTimeToLiveAsync("youtube.otherStart");
                     Log.Warn($"已跑過突襲開台檢測爬蟲，剩餘 {time:mm\\:ss}");
                     isFirstOther = false;
                     return;
@@ -398,12 +393,12 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             }
 #endif
 
-            await Program.RedisDb.StringSetAsync("youtube.otherStart", "0", TimeSpan.FromMinutes(4));
-            Program.IsOtherChannelSpider = true;
+            await Bot.RedisDb.StringSetAsync("youtube.otherStart", "0", TimeSpan.FromMinutes(4));
+            Bot.IsOtherChannelSpider = true;
             Dictionary<string, List<string>> otherVideoDic = new Dictionary<string, List<string>>();
             var addVideoIdList = new List<string>();
 
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 var channelList = db.YoutubeChannelSpider.Where((x) => db.RecordYoutubeChannel.Any((x2) => x.ChannelId == x2.YoutubeChannelId));
                 using var httpClient = _httpClientFactory.CreateClient();
@@ -413,7 +408,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 Log.Info($"突襲開台檢測開始: {channelList.Count()} 個頻道");
                 foreach (var item in channelList)
                 {
-                    if (Program.IsDisconnect) break;
+                    if (Bot.IsDisconnect) break;
 
                     try
                     {
@@ -478,7 +473,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                         {
                                             Log.Warn($"{item.ChannelTitle} ({item.ChannelId}) 頻道錯誤: {alertRenderer["text"]["simpleText"]}");
 
-                                            await Program.ApplicatonOwner.SendMessageAsync($"`{item.ChannelTitle}` ({item.ChannelId}) 頻道錯誤: {alertRenderer["text"]["simpleText"]}");
+                                            await Bot.ApplicatonOwner.SendMessageAsync($"`{item.ChannelTitle}` ({item.ChannelId}) 頻道錯誤: {alertRenderer["text"]["simpleText"]}");
 
                                             db.YoutubeChannelSpider.Remove(item);
                                             db.SaveChanges();
@@ -533,7 +528,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
                 for (int i = 0; i < addVideoIdList.Count; i += 50)
                 {
-                    if (Program.IsDisconnect) break;
+                    if (Bot.IsDisconnect) break;
 
                     IEnumerable<Video> videos;
                     try
@@ -543,7 +538,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     catch (Exception ex)
                     {
                         Log.Error($"OtherSchedule-GetVideosAsync: {ex}");
-                        Program.IsOtherChannelSpider = false;
+                        Bot.IsOtherChannelSpider = false;
                         return;
                     }
 
@@ -561,12 +556,13 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 }
             }
 
-            Program.IsOtherChannelSpider = false; isFirstOther = false;
+            Bot.IsOtherChannelSpider = false; isFirstOther = false;
             //Log.Info("其他勢影片清單整理完成");
         }
 
         private async Task CheckScheduleTime()
         {
+            using var db = _dbService.GetDbContext();
             try
             {
                 // Key原則上不會有null或空白的情況才對
@@ -585,11 +581,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             List<string> recordChannelId = new();
             try
             {
-                using (var db = DataBase.MainDbContext.GetDbContext())
-                {
-                    if (db.RecordYoutubeChannel.Any())
-                        recordChannelId = db.RecordYoutubeChannel.Select((x) => x.YoutubeChannelId).ToList();
-                }
+                if (db.RecordYoutubeChannel.Any())
+                    recordChannelId = db.RecordYoutubeChannel.Select((x) => x.YoutubeChannelId).ToList();
             }
             catch (Exception ex)
             {
@@ -640,19 +633,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                 Reminders.TryRemove(reminder.Key, out var reminderItem);
 
                                 reminder.Value.StreamVideo.IsPrivate = true;
-
-                                switch (reminder.Value.ChannelType)
-                                {
-                                    case DataBase.Table.Video.YTChannelType.Holo:
-                                        DataBase.HoloVideoContext.GetDbContext().UpdateAndSave(reminder.Value.StreamVideo);
-                                        break;
-                                    case DataBase.Table.Video.YTChannelType.Nijisanji:
-                                        DataBase.NijisanjiVideoContext.GetDbContext().UpdateAndSave(reminder.Value.StreamVideo);
-                                        break;
-                                    default:
-                                        DataBase.OtherVideoContext.GetDbContext().UpdateAndSave(reminder.Value.StreamVideo);
-                                        break;
-                                }
+                                db.UpdateAndSave(reminder.Value.StreamVideo);
 
                                 continue;
                             }
@@ -673,7 +654,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                     .AddField("直播狀態", "直播排程資料遺失")
                                     .AddField("原先預定開台時間", reminder.Value.StreamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
 
-                                if (Program.ApplicatonOwner != null) await Program.ApplicatonOwner.SendMessageAsync(null, false, embedBuilder.Build()).ConfigureAwait(false);
+                                if (Bot.ApplicatonOwner != null) await Bot.ApplicatonOwner.SendMessageAsync(null, false, embedBuilder.Build()).ConfigureAwait(false);
                                 await SendStreamMessageAsync(reminder.Value.StreamVideo, embedBuilder.Build(), NoticeType.Start).ConfigureAwait(false);
                                 continue;
                             }
@@ -700,18 +681,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                         ChannelType = reminder.Value.StreamVideo.ChannelType
                                     };
 
-                                    switch (streamVideo.ChannelType)
-                                    {
-                                        case DataBase.Table.Video.YTChannelType.Holo:
-                                            DataBase.HoloVideoContext.GetDbContext().UpdateAndSave(streamVideo);
-                                            break;
-                                        case DataBase.Table.Video.YTChannelType.Nijisanji:
-                                            DataBase.NijisanjiVideoContext.GetDbContext().UpdateAndSave(streamVideo);
-                                            break;
-                                        default:
-                                            DataBase.OtherVideoContext.GetDbContext().UpdateAndSave(streamVideo);
-                                            break;
-                                    }
+                                    db.UpdateAndSave(reminder.Value.StreamVideo);
 
                                     Log.Info($"時間已更改 {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
 
@@ -867,112 +837,103 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
             try
             {
-                if (!Program.IsHoloChannelSpider && addNewStreamVideo.Any((x) => x.Value.ChannelType == DataBase.Table.Video.YTChannelType.Holo))
-                {
-                    using (var db = DataBase.HoloVideoContext.GetDbContext())
-                    {
-                        foreach (var item in addNewStreamVideo.Where((x) => x.Value.ChannelType == DataBase.Table.Video.YTChannelType.Holo))
-                        {
-                            if (!db.Video.Any((x) => x.VideoId == item.Key))
-                            {
-                                try
-                                {
-                                    db.Video.Add(item.Value); saveNum++;
-                                }
-                                catch (Exception ex)
-                                {
-                                    Log.Error($"SaveHoloDateBase {ex}");
-                                }
-                            }
+                using var db = Bot.DbService.GetDbContext();
 
-                            addNewStreamVideo.Remove(item.Key);
+                if (!Bot.IsHoloChannelSpider && addNewStreamVideo.Any((x) => x.Value.ChannelType == DataBase.Table.Video.YTChannelType.Holo))
+                {
+                    foreach (var item in addNewStreamVideo.Where((x) => x.Value.ChannelType == DataBase.Table.Video.YTChannelType.Holo))
+                    {
+                        if (!db.HoloVideo.AsNoTracking().Any((x) => x.VideoId == item.Key))
+                        {
+                            try
+                            {
+                                db.HoloVideo.Add(item.Value); saveNum++;
+                            }
+                            catch (Exception ex)
+                            {
+                                Log.Error(ex.Demystify(), $"SaveHoloVideo: {item.Key}");
+                            }
                         }
 
-                        Log.Info($"Holo 資料庫已儲存: {db.SaveChanges()} 筆");
+                        addNewStreamVideo.Remove(item.Key);
                     }
+
+                    Log.Info($"Holo 資料庫已儲存: {db.SaveChanges()} 筆");
                 }
 
-                if (!Program.IsNijisanjiChannelSpider && addNewStreamVideo.Any((x) => x.Value.ChannelType == DataBase.Table.Video.YTChannelType.Nijisanji))
+                if (!Bot.IsNijisanjiChannelSpider && addNewStreamVideo.Any((x) => x.Value.ChannelType == DataBase.Table.Video.YTChannelType.Nijisanji))
                 {
-                    using (var db = DataBase.NijisanjiVideoContext.GetDbContext())
+                    foreach (var item in addNewStreamVideo.Where((x) => x.Value.ChannelType == DataBase.Table.Video.YTChannelType.Nijisanji))
                     {
-                        foreach (var item in addNewStreamVideo.Where((x) => x.Value.ChannelType == DataBase.Table.Video.YTChannelType.Nijisanji))
+                        if (!db.NijisanjiVideo.AsNoTracking().Any((x) => x.VideoId == item.Key))
                         {
-                            if (!db.Video.Any((x) => x.VideoId == item.Key))
+                            try
                             {
-                                try
-                                {
-                                    db.Video.Add(item.Value); saveNum++;
-                                }
-                                catch (Exception ex)
-                                {
-                                    Log.Error($"Save2434DateBase {ex}");
-                                }
+                                db.NijisanjiVideo.Add(item.Value); saveNum++;
                             }
-
-                            addNewStreamVideo.Remove(item.Key);
+                            catch (Exception ex)
+                            {
+                                Log.Error(ex.Demystify(), $"SaveNijisanjiVideo: {item.Key}");
+                            }
                         }
 
-                        Log.Info($"2434 資料庫已儲存: {db.SaveChanges()} 筆");
+                        addNewStreamVideo.Remove(item.Key);
                     }
+
+                    Log.Info($"2434 資料庫已儲存: {db.SaveChanges()} 筆");
                 }
 
-                if (!Program.IsOtherChannelSpider && addNewStreamVideo.Any((x) => x.Value.ChannelType == DataBase.Table.Video.YTChannelType.Other))
+                if (!Bot.IsOtherChannelSpider && addNewStreamVideo.Any((x) => x.Value.ChannelType == DataBase.Table.Video.YTChannelType.Other))
                 {
-                    using (var db = DataBase.OtherVideoContext.GetDbContext())
+                    foreach (var item in addNewStreamVideo.Where((x) => x.Value.ChannelType == DataBase.Table.Video.YTChannelType.Other))
                     {
-                        foreach (var item in addNewStreamVideo.Where((x) => x.Value.ChannelType == DataBase.Table.Video.YTChannelType.Other))
+                        if (!db.OtherVideo.AsNoTracking().Any((x) => x.VideoId == item.Key))
                         {
-                            if (!db.Video.Any((x) => x.VideoId == item.Key))
+                            try
                             {
-                                try
-                                {
-                                    db.Video.Add(item.Value); saveNum++;
-                                }
-                                catch (Exception ex)
-                                {
-                                    Log.Error($"SaveOtherDateBase {ex}");
-                                }
+                                db.OtherVideo.Add(item.Value); saveNum++;
                             }
-
-                            addNewStreamVideo.Remove(item.Key);
+                            catch (Exception ex)
+                            {
+                                Log.Error(ex.Demystify(), $"SaveOtherVideo: {item.Key}");
+                            }
                         }
 
-                        Log.Info($"Other 資料庫已儲存: {db.SaveChanges()} 筆");
+                        addNewStreamVideo.Remove(item.Key);
                     }
+
+                    Log.Info($"Other 資料庫已儲存: {db.SaveChanges()} 筆");
                 }
 
                 if (addNewStreamVideo.Any((x) => x.Value.ChannelType == DataBase.Table.Video.YTChannelType.NonApproved))
                 {
-                    using (var db = DataBase.NotVTuberVideoContext.GetDbContext())
+                    foreach (var item in addNewStreamVideo.Where((x) => x.Value.ChannelType == DataBase.Table.Video.YTChannelType.NonApproved))
                     {
-                        foreach (var item in addNewStreamVideo.Where((x) => x.Value.ChannelType == DataBase.Table.Video.YTChannelType.NonApproved))
+                        if (!db.NonApprovedVideo.AsNoTracking().Any((x) => x.VideoId == item.Key))
                         {
-                            if (!db.Video.Any((x) => x.VideoId == item.Key))
+                            try
                             {
-                                try
-                                {
-                                    db.Video.Add(item.Value); saveNum++;
-                                }
-                                catch (Exception ex)
-                                {
-                                    Log.Error($"SaveNotVTuberDateBase {ex}");
-                                }
+                                db.NonApprovedVideo.Add(item.Value); saveNum++;
                             }
-
-                            addNewStreamVideo.Remove(item.Key);
+                            catch (Exception ex)
+                            {
+                                Log.Error(ex.Demystify(), $"SaveNonApprovedVideo: {item.Key}");
+                            }
                         }
 
-                        Log.Info($"NotVTuber 資料庫已儲存: {db.SaveChanges()} 筆");
+                        addNewStreamVideo.Remove(item.Key);
                     }
+
+                    Log.Info($"NonApproved 資料庫已儲存: {db.SaveChanges()} 筆");
                 }
             }
             catch (Exception ex)
             {
-                Log.Error($"SaveDateBase {ex}");
+                Log.Error(ex.Demystify(), $"SaveDateBase");
             }
 
-            if (saveNum != 0) Log.Info($"資料庫已儲存完畢: {saveNum} 筆");
+            if (saveNum != 0)
+                Log.Info($"資料庫已儲存完畢: {saveNum} 筆");
         }
     }
 }

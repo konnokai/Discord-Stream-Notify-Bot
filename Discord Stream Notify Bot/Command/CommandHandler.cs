@@ -49,7 +49,7 @@ namespace Discord_Stream_Notify_Bot.Command
                     }
                     else
                     {
-                        try { if (context.Message.Author.Id == Program.ApplicatonOwner.Id || context.Message.CleanContent == "s!ymlc") await message.DeleteAsync(); }
+                        try { if (context.Message.Author.Id == Bot.ApplicatonOwner.Id || context.Message.CleanContent == "s!ymlc") await message.DeleteAsync(); }
                         catch { }
                         Log.FormatColorWrite($"[{context.Guild?.Name}/{context.Message.Channel?.Name}] {message.Author.Username} 執行 {context.Message}", ConsoleColor.DarkYellow);
                     }

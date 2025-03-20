@@ -2,19 +2,16 @@
 
 public class BotConfig
 {
-    public string ApiServerDomain { get; set; } = "";
+    public string MySqlConnectionString { get; set; } = "Server=localhost;Port=3306;User Id=stream_bot;Password=Ch@nge_Me;Database=discord_stream_bot";
     public string RedisOption { get; set; } = "127.0.0.1,syncTimeout=3000";
     public string RedisTokenKey { get; set; } = "";
+
+    public string ApiServerDomain { get; set; } = "";
     public string UptimeKumaPushUrl { get; set; } = "";
 
     public string DiscordToken { get; set; } = "";
     public ulong TestSlashCommandGuildId { get; set; } = 0;
     public string WebHookUrl { get; set; } = "";
-
-    public ulong DetectGuildId { get; set; } = 0;
-    public ulong DetectCategoryId { get; set; } = 0;
-    public ulong MentionRoleId { get; set; } = 0;
-    public string SendMessageWebHookUrl { get; set; } = "";
 
     public string GoogleApiKey { get; set; } = "";
     public string GoogleClientId { get; set; } = "";
@@ -81,9 +78,12 @@ public class BotConfig
                 Environment.Exit(3);
             }
 
+            MySqlConnectionString = config.MySqlConnectionString;
+            RedisOption = config.RedisOption;
+            RedisTokenKey = config.RedisTokenKey;
+            ApiServerDomain = config.ApiServerDomain;
             DiscordToken = config.DiscordToken;
             WebHookUrl = config.WebHookUrl;
-            ApiServerDomain = config.ApiServerDomain;
             GoogleApiKey = config.GoogleApiKey;
             TestSlashCommandGuildId = config.TestSlashCommandGuildId;
             TwitCastingClientId = config.TwitCastingClientId;
@@ -97,13 +97,7 @@ public class BotConfig
             TwitterSpaceRecordPath = config.TwitterSpaceRecordPath;
             GoogleClientId = config.GoogleClientId;
             GoogleClientSecret = config.GoogleClientSecret;
-            RedisOption = config.RedisOption;
-            RedisTokenKey = config.RedisTokenKey;
             UptimeKumaPushUrl = config.UptimeKumaPushUrl;
-            DetectGuildId = config.DetectGuildId;
-            DetectCategoryId = config.DetectCategoryId;
-            SendMessageWebHookUrl = config.SendMessageWebHookUrl;
-            MentionRoleId = config.MentionRoleId;
 
             if (string.IsNullOrWhiteSpace(config.RedisTokenKey) || string.IsNullOrWhiteSpace(RedisTokenKey))
             {

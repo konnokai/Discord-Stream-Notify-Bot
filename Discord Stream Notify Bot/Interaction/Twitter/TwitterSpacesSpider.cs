@@ -1,4 +1,5 @@
 ﻿using Discord.Interactions;
+using Discord_Stream_Notify_Bot.DataBase;
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.Interaction.Attribute;
 using static Discord_Stream_Notify_Bot.Interaction.Twitter.TwitterSpaces;
@@ -12,9 +13,11 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
     public class TwitterSpacesSpider : TopLevelModule<SharedService.Twitter.TwitterSpacesService>
     {
         private readonly DiscordSocketClient _client;
-        public TwitterSpacesSpider(DiscordSocketClient client)
+        private readonly MainDbService _dbService;
+        public TwitterSpacesSpider(DiscordSocketClient client, MainDbService dbService)
         {
             _client = client;
+            _dbService = dbService;
         }
 
         [RequireGuildMemberCount(500)]
@@ -45,7 +48,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
 
             userScreenName = userScreenName.Replace("@", "");
 
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 var user = await _service.GetTwitterUserAsync(userScreenName);
 
@@ -71,7 +74,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
 
                         try
                         {
-                            await (await Program.ApplicatonOwner.CreateDMChannelAsync())
+                            await (await Bot.ApplicatonOwner.CreateDMChannelAsync())
                                 .SendMessageAsync(embed: new EmbedBuilder()
                                     .WithOkColor()
                                     .WithTitle("已更新推特語音爬蟲的持有伺服器")
@@ -106,8 +109,8 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                     return;
                 }
 
-                var spider = new TwitterSpaecSpider() { GuildId = Context.User.Id == Program.ApplicatonOwner.Id ? 0 : Context.Guild.Id, UserId = user.RestId, UserName = user.Legacy.Name, UserScreenName = user.Legacy.ScreenName };
-                if (Context.User.Id == Program.ApplicatonOwner.Id && !await PromptUserConfirmAsync("設定該爬蟲為本伺服器使用?"))
+                var spider = new TwitterSpaecSpider() { GuildId = Context.User.Id == Bot.ApplicatonOwner.Id ? 0 : Context.Guild.Id, UserId = user.RestId, UserName = user.Legacy.Name, UserScreenName = user.Legacy.ScreenName };
+                if (Context.User.Id == Bot.ApplicatonOwner.Id && !await PromptUserConfirmAsync("設定該爬蟲為本伺服器使用?"))
                     spider.GuildId = 0;
 
                 db.TwitterSpaecSpider.Add(spider);
@@ -119,7 +122,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                 try
                 {
 
-                    await (await Program.ApplicatonOwner.CreateDMChannelAsync()).SendMessageAsync(embed: new EmbedBuilder()
+                    await (await Bot.ApplicatonOwner.CreateDMChannelAsync()).SendMessageAsync(embed: new EmbedBuilder()
                         .WithOkColor()
                         .WithTitle("已新增推特語音爬蟲")
                         .AddField("推主", Format.Url(userScreenName, $"https://twitter.com/{userScreenName}"), false)
@@ -144,7 +147,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
 
             userScreenName = userScreenName.Replace("@", "");
 
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 if (!db.TwitterSpaecSpider.Any((x) => x.UserScreenName == userScreenName))
                 {
@@ -152,7 +155,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                     return;
                 }
 
-                if (Context.User.Id != Program.ApplicatonOwner.Id && !db.TwitterSpaecSpider.Any((x) => x.UserScreenName == userScreenName && x.GuildId == Context.Guild.Id))
+                if (Context.User.Id != Bot.ApplicatonOwner.Id && !db.TwitterSpaecSpider.Any((x) => x.UserScreenName == userScreenName && x.GuildId == Context.Guild.Id))
                 {
                     await Context.Interaction.SendErrorAsync($"該語音空間爬蟲並非本伺服器新增，無法移除").ConfigureAwait(false);
                     return;
@@ -165,7 +168,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
 
                 try
                 {
-                    await (await Program.ApplicatonOwner.CreateDMChannelAsync()).SendMessageAsync(embed: new EmbedBuilder()
+                    await (await Bot.ApplicatonOwner.CreateDMChannelAsync()).SendMessageAsync(embed: new EmbedBuilder()
                         .WithErrorColor()
                         .WithTitle("已移除推特語音爬蟲")
                         .AddField("推主", Format.Url(userScreenName, $"https://twitter.com/{userScreenName}"), false)
@@ -181,7 +184,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
         {
             if (page < 0) page = 0;
 
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 try
                 {

@@ -16,7 +16,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
             bool isOldCheck = (bool)stats;
             int totalCheckMemberCount = 0, totalIsMemberCount = 0;
 
-            using (var db = MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 var needCheckList = db.GuildYoutubeMemberConfig.Where((x) => !string.IsNullOrEmpty(x.MemberCheckChannelId) && !string.IsNullOrEmpty(x.MemberCheckChannelTitle) && x.MemberCheckVideoId != "-");
                 if (isOldCheck && needCheckList.Any())
@@ -27,9 +27,9 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                         int needCheckCount = needCheckList.Count() / splitDay;
                         int checkRound = 0, skipCount, lastSkipCount = 0;
 
-                        if (File.Exists(Program.GetDataFilePath("MemberCheck.dat")))
+                        if (File.Exists(Utility.GetDataFilePath("MemberCheck.dat")))
                         {
-                            string[] data = File.ReadAllText(Program.GetDataFilePath("MemberCheck.dat")).Split(',');
+                            string[] data = File.ReadAllText(Utility.GetDataFilePath("MemberCheck.dat")).Split(',');
 
                             checkRound = int.Parse(data[0]);
                             lastSkipCount = int.Parse(data[1]);
@@ -55,7 +55,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                             lastSkipCount = 0;
                         }
 
-                        File.WriteAllText(Program.GetDataFilePath("MemberCheck.dat"), $"{checkRound},{lastSkipCount}");
+                        File.WriteAllText(Utility.GetDataFilePath("MemberCheck.dat"), $"{checkRound},{lastSkipCount}");
                     }
                     catch (Exception ex)
                     {
@@ -209,7 +209,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                     {
                                         Log.Warn($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {member.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 的會限資格取得失敗");
                                         Log.Warn($"{guildYoutubeMemberConfig.MemberCheckChannelTitle} ({guildYoutubeMemberConfig.MemberCheckChannelId}): {guildYoutubeMemberConfig.MemberCheckVideoId}已關閉留言");
-                                        await Program.ApplicatonOwner.Id.SendErrorMessageAsync(_client, $"{guildYoutubeMemberConfig.GuildId} - {member.UserId} 會限資格取得失敗: {guildYoutubeMemberConfig.MemberCheckVideoId}已關閉留言", logChannel);
+                                        await Bot.ApplicatonOwner.Id.SendErrorMessageAsync(_client, $"{guildYoutubeMemberConfig.GuildId} - {member.UserId} 會限資格取得失敗: {guildYoutubeMemberConfig.MemberCheckVideoId}已關閉留言", logChannel);
 
                                         //foreach (var item in db.GuildYoutubeMemberConfig.Where((x) => x.MemberCheckChannelId == guildYoutubeMemberConfig.MemberCheckChannelId))  
                                         //{
@@ -226,7 +226,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                     {
                                         Log.Warn($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {member.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 的會限資格取得失敗");
                                         Log.Warn($"{guildYoutubeMemberConfig.MemberCheckChannelTitle} ({guildYoutubeMemberConfig.MemberCheckChannelId}): {guildYoutubeMemberConfig.MemberCheckVideoId} 已刪除影片");
-                                        await Program.ApplicatonOwner.Id.SendErrorMessageAsync(_client, $"{guildYoutubeMemberConfig.GuildId} - {member.UserId} 會限資格取得失敗: {guildYoutubeMemberConfig.MemberCheckVideoId} 已刪除影片", logChannel);
+                                        await Bot.ApplicatonOwner.Id.SendErrorMessageAsync(_client, $"{guildYoutubeMemberConfig.GuildId} - {member.UserId} 會限資格取得失敗: {guildYoutubeMemberConfig.MemberCheckVideoId} 已刪除影片", logChannel);
 
                                         guildYoutubeMemberConfig.MemberCheckVideoId = "-";
                                         db.GuildYoutubeMemberConfig.Update(guildYoutubeMemberConfig);
@@ -276,7 +276,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                             await member.UserId.SendErrorMessageAsync(_client, $"無法在 `{guild.Name}` 的 `{guildYoutubeMemberConfig.MemberCheckChannelTitle}` 上存取會限資格\n" +
                                                 $"請先使用 `/member show-youtube-account` 確認綁定的頻道是否正確，並確認已購買會員\n" +
                                                 $"如要取消驗證請到 `{guild.Name}` 上輸入 `/member cancel-member-check`\n" +
-                                                $"若都正確請向 `{Program.ApplicatonOwner}` 確認問題", logChannel);
+                                                $"若都正確請向 `{Bot.ApplicatonOwner}` 確認問題", logChannel);
                                         }
                                         continue;
                                     }
@@ -342,7 +342,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                         Log.Error(ex.ToString());
 
                                         await logChannel.SendErrorMessageAsync(_client, member.UserId, guildYoutubeMemberConfig.MemberCheckChannelTitle, "不明的錯誤");
-                                        await member.UserId.SendErrorMessageAsync(_client, $"無法驗證您的帳號，可能是 Google 內部錯誤\n請向 {Program.ApplicatonOwner} 確認問題", logChannel);
+                                        await member.UserId.SendErrorMessageAsync(_client, $"無法驗證您的帳號，可能是 Google 內部錯誤\n請向 {Bot.ApplicatonOwner} 確認問題", logChannel);
                                         continue;
                                     }
                                 }
@@ -472,7 +472,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                     {
                         Log.Error($"CheckMemberShip-SaveChanges: {ex}");
                         Log.Error(db.ChangeTracker.DebugView.LongView);
-                        await (await Program.ApplicatonOwner.CreateDMChannelAsync()).SendErrorMessageAsync($"CheckMemberShip-SaveChanges: {ex}");
+                        await (await Bot.ApplicatonOwner.CreateDMChannelAsync()).SendErrorMessageAsync($"CheckMemberShip-SaveChanges: {ex}");
                     }
                 } while (saveFailed && DateTime.Now.Subtract(saveTime) <= TimeSpan.FromMinutes(1));
 

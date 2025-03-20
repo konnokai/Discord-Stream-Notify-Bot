@@ -1,5 +1,6 @@
 ﻿using Discord.Commands;
 using Discord_Stream_Notify_Bot.Command.Attribute;
+using Discord_Stream_Notify_Bot.DataBase;
 using Discord_Stream_Notify_Bot.DataBase.Table;
 
 namespace Discord_Stream_Notify_Bot.Command.Twitter
@@ -8,11 +9,13 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
     {
         private readonly DiscordSocketClient _client;
         private readonly SharedService.Twitter.TwitterSpacesService _service;
+        private readonly MainDbService _dbService;
 
-        public TwitterSpaces(DiscordSocketClient client, SharedService.Twitter.TwitterSpacesService service)
+        public TwitterSpaces(DiscordSocketClient client, SharedService.Twitter.TwitterSpacesService service, MainDbService dbService)
         {
             _client = client;
             _service = service;
+            _dbService = dbService;
         }
 
         [RequireContext(ContextType.DM)]
@@ -23,7 +26,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
         {
             if (page < 0) page = 0;
 
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 var list = db.TwitterSpaecSpider.Where((x) => !x.IsWarningUser).Select((x) => Format.Url(x.UserScreenName, $"https://twitter.com/{x.UserScreenName}") +
                     $" 由 `" + (x.GuildId == 0 ? "Bot擁有者" : (_client.GetGuild(x.GuildId) != null ? _client.GetGuild(x.GuildId).Name : "已退出的伺服器")) + "` 新增");
@@ -49,7 +52,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
         {
             if (page < 0) page = 0;
 
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 var list = db.TwitterSpaecSpider.Where((x) => x.IsWarningUser).Select((x) => Format.Url(x.UserScreenName, $"https://twitter.com/{x.UserScreenName}") +
                     $" 由 `" + (x.GuildId == 0 ? "Bot擁有者" : (_client.GetGuild(x.GuildId) != null ? _client.GetGuild(x.GuildId).Name : "已退出的伺服器")) + "` 新增");
@@ -73,7 +76,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
         {
             if (page < 0) page = 0;
 
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 var nowRecordList = db.TwitterSpaecSpider.Where((x) => x.IsRecord && !x.IsWarningUser)
                     .Select((x) => $"{x.UserName} ({Format.Url($"{x.UserScreenName}", $"https://twitter.com/{x.UserScreenName}")})")
@@ -110,7 +113,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
             await Context.Channel.TriggerTypingAsync().ConfigureAwait(false);
             if (page < 0) page = 0;
 
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 var nowRecordList = db.TwitterSpaecSpider.Where((x) => x.IsRecord && x.IsWarningUser).Select((x) => $"{x.UserName} ({Format.Url($"{x.UserScreenName}", $"https://twitter.com/{x.UserScreenName}")})").ToList();
 
@@ -152,7 +155,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
 
             userScreenName = userScreenName.Replace("@", "");
 
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 var user = await _service.GetTwitterUserAsync(userScreenName);
 
@@ -203,7 +206,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
 
             userScreenName = userScreenName.Replace("@", "");
 
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 if (db.TwitterSpaecSpider.Any((x) => x.UserScreenName == userScreenName))
                 {

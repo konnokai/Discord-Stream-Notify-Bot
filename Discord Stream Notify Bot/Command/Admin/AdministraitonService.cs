@@ -21,7 +21,7 @@
         {
             try
             {
-                File.WriteAllText(Program.GetDataFilePath("OfficialList.json"), JsonConvert.SerializeObject(Utility.OfficialGuildList));
+                File.WriteAllText(Utility.GetDataFilePath("OfficialList.json"), JsonConvert.SerializeObject(Utility.OfficialGuildList));
             }
             catch (Exception ex)
             {

@@ -1,4 +1,5 @@
 ﻿using Discord.Interactions;
+using Discord_Stream_Notify_Bot.DataBase;
 using Discord_Stream_Notify_Bot.SharedService.YoutubeMember;
 using System.Diagnostics;
 
@@ -7,6 +8,12 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
     [Group("member", "YouTube 會限驗證相關指令")]
     public class YoutubeMember : TopLevelModule<YoutubeMemberService>
     {
+        private readonly MainDbService _dbService;
+        public YoutubeMember(MainDbService dbService)
+        {
+            _dbService = dbService;
+        }
+
         [RequireContext(ContextType.Guild)]
         [SlashCommand("check", "確認是否已到網站登入綁定")]
         public async Task CheckAsync()
@@ -15,13 +22,13 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
 
             if (!_service.IsEnable)
             {
-                await Context.Interaction.SendErrorAsync($"該 Bot 未啟用會限驗證系統，請向 {Program.ApplicatonOwner} 確認", true);
+                await Context.Interaction.SendErrorAsync($"該 Bot 未啟用會限驗證系統，請向 {Bot.ApplicatonOwner} 確認", true);
                 return;
             }
 
             try
             {
-                using (var db = DataBase.MainDbContext.GetDbContext())
+                using (var db = _dbService.GetDbContext())
                 {
                     var guildYoutubeMemberConfigs = db.GuildYoutubeMemberConfig.Where((x) => x.GuildId == Context.Guild.Id);
                     if (!guildYoutubeMemberConfigs.Any())
@@ -91,7 +98,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
         {
             await DeferAsync(true);
 
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 try
                 {
@@ -119,7 +126,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
                 }
                 catch (Exception ex)
                 {
-                    await Context.Interaction.SendErrorAsync($"資料庫儲存失敗，請向 {Program.ApplicatonOwner} 確認", true);
+                    await Context.Interaction.SendErrorAsync($"資料庫儲存失敗，請向 {Bot.ApplicatonOwner} 確認", true);
                     Log.Error(ex.ToString());
                 }
             }
@@ -132,11 +139,11 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
 
             if (!_service.IsEnable)
             {
-                await Context.Interaction.SendErrorAsync($"該 Bot 未啟用會限驗證系統，請向 {Program.ApplicatonOwner} 確認", true);
+                await Context.Interaction.SendErrorAsync($"該 Bot 未啟用會限驗證系統，請向 {Bot.ApplicatonOwner} 確認", true);
                 return;
             }
 
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 if (await _service.IsExistUserTokenAsync(Context.User.Id.ToString()))
                 {
@@ -144,7 +151,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
                         "(注意: 解除綁定後也會一併解除會限用戶組，如要重新獲得需重新至網站綁定)"))
                         return;
 
-                    await Program.RedisSub.PublishAsync(new RedisChannel("member.revokeToken", RedisChannel.PatternMode.Literal), Context.User.Id);
+                    await Bot.RedisSub.PublishAsync(new RedisChannel("member.revokeToken", RedisChannel.PatternMode.Literal), Context.User.Id);
 
                     try
                     {
@@ -159,7 +166,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
                     }
                     catch (Exception)
                     {
-                        await Context.Interaction.SendErrorAsync($"解除綁定失敗，請向 {Program.ApplicatonOwner} 確認問題", true, true);
+                        await Context.Interaction.SendErrorAsync($"解除綁定失敗，請向 {Bot.ApplicatonOwner} 確認問題", true, true);
                     }
                 }
                 else
@@ -173,7 +180,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
         [SlashCommand("list-can-check-channel", "顯示現在可供驗證的會限頻道清單")]
         public async Task ListCheckChannel()
         {
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 var guildYoutubeMemberConfigs = db.GuildYoutubeMemberConfig.Where((x) => x.GuildId == Context.Guild.Id);
                 if (!guildYoutubeMemberConfigs.Any())
@@ -202,7 +209,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
 
             if (!_service.IsEnable)
             {
-                await Context.Interaction.SendErrorAsync($"該 Bot 未啟用會限驗證系統，請向 {Program.ApplicatonOwner} 確認", true);
+                await Context.Interaction.SendErrorAsync($"該 Bot 未啟用會限驗證系統，請向 {Bot.ApplicatonOwner} 確認", true);
                 return;
             }
 
@@ -225,7 +232,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
                         break;
                     default:
                         await Context.Interaction.SendErrorAsync($"錯誤，請確認是否已到網站上綁定或此 Google 帳號存在 Youtube 頻道\n" +
-                            $"如有疑問請向 `{Program.ApplicatonOwner}` 詢問", true);
+                            $"如有疑問請向 `{Bot.ApplicatonOwner}` 詢問", true);
                         Log.Error(nullEx.ToString());
                         break;
                 }
@@ -233,7 +240,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
             catch (Exception ex)
             {
                 await Context.Interaction.SendErrorAsync($"錯誤，請確認是否已到網站上綁定或此 Google 帳號存在 Youtube 頻道\n" +
-                    $"如有疑問請向 `{Program.ApplicatonOwner}` 詢問", true);
+                    $"如有疑問請向 `{Bot.ApplicatonOwner}` 詢問", true);
                 Log.Error(ex.ToString());
             }
         }

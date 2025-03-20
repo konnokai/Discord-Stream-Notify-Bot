@@ -1,4 +1,5 @@
 ﻿using Discord.Interactions;
+using Discord_Stream_Notify_Bot.DataBase;
 using Discord_Stream_Notify_Bot.Interaction.Attribute;
 using Discord_Stream_Notify_Bot.SharedService.Youtube;
 using Discord_Stream_Notify_Bot.SharedService.YoutubeMember;
@@ -13,11 +14,13 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
     {
         private readonly DiscordSocketClient _client;
         private readonly YoutubeStreamService _ytservice;
+        private readonly MainDbService _dbService;
 
-        public YoutubeMemberSetting(DiscordSocketClient client, YoutubeStreamService youtubeStreamService)
+        public YoutubeMemberSetting(DiscordSocketClient client, YoutubeStreamService youtubeStreamService, MainDbService dbService)
         {
             _client = client;
             _ytservice = youtubeStreamService;
+            _dbService = dbService;
         }
 
         public class GuildYoutubeMemberCheckChannelIdAutocompleteHandler : AutocompleteHandler
@@ -26,7 +29,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
             {
                 return await Task.Run(() =>
                 {
-                    using var db = DataBase.MainDbContext.GetDbContext();
+                    using var db = Bot.DbService.GetDbContext();
                     if (!db.GuildYoutubeMemberConfig.Any((x) => x.GuildId == context.Guild.Id))
                         return AutocompletionResult.FromSuccess();
 
@@ -77,11 +80,11 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
 
             if (!_service.IsEnable)
             {
-                await Context.Interaction.SendErrorAsync($"該 Bot 未啟用會限驗證系統，請向 {Program.ApplicatonOwner} 確認", true);
+                await Context.Interaction.SendErrorAsync($"該 Bot 未啟用會限驗證系統，請向 {Bot.ApplicatonOwner} 確認", true);
                 return;
             }
 
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 var permissions = Context.Guild.GetUser(_client.CurrentUser.Id).GetPermissions(textChannel);
                 if (!permissions.ViewChannel || !permissions.SendMessages)
@@ -124,7 +127,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
         {
             if (!_service.IsEnable)
             {
-                await Context.Interaction.SendErrorAsync($"該 Bot 未啟用會限驗證系統，請向 {Program.ApplicatonOwner} 確認");
+                await Context.Interaction.SendErrorAsync($"該 Bot 未啟用會限驗證系統，請向 {Bot.ApplicatonOwner} 確認");
                 return;
             }
 
@@ -141,7 +144,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
                 return;
             }
 
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 try
                 {
@@ -220,7 +223,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
 
                         try
                         {
-                            await (await Program.ApplicatonOwner.CreateDMChannelAsync()).SendMessageAsync(embed: new EmbedBuilder()
+                            await (await Bot.ApplicatonOwner.CreateDMChannelAsync()).SendMessageAsync(embed: new EmbedBuilder()
                                 .WithOkColor()
                                 .WithTitle("已新增會限驗證頻道")
                                 .AddField("頻道", Format.Url(channelId, $"https://www.youtube.com/channel/{channelId}"), false)
@@ -256,7 +259,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
         {
             await DeferAsync(true);
 
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 try
                 {
@@ -274,7 +277,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
 
                         try
                         {
-                            await (await Program.ApplicatonOwner.CreateDMChannelAsync()).SendMessageAsync(embed: new EmbedBuilder()
+                            await (await Bot.ApplicatonOwner.CreateDMChannelAsync()).SendMessageAsync(embed: new EmbedBuilder()
                                 .WithOkColor()
                                 .WithTitle("已移除會限驗證頻道")
                                 .AddField("頻道", Format.Url(channelId, $"https://www.youtube.com/channel/{channelId}"), false)
@@ -297,7 +300,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
         [SlashCommand("list-checked-member", "顯示現在已成功驗證的成員清單")]
         public async Task ListCheckedMemberAsync([Summary("頁數")] int page = 1)
         {
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 var youtubeMemberChecks = db.YoutubeMemberCheck.Where((x) => x.GuildId == Context.Guild.Id && x.IsChecked);
                 if (!youtubeMemberChecks.Any())

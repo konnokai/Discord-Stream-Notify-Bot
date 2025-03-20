@@ -9,11 +9,13 @@ namespace Discord_Stream_Notify_Bot.Interaction.Utility
     {
         private readonly DiscordSocketClient _client;
         private readonly HttpClients.DiscordWebhookClient _discordWebhookClient;
+        private readonly MainDbService _dbService;
 
-        public Utility(DiscordSocketClient client, HttpClients.DiscordWebhookClient discordWebhookClient)
+        public Utility(DiscordSocketClient client, HttpClients.DiscordWebhookClient discordWebhookClient, MainDbService dbService)
         {
             _client = client;
             _discordWebhookClient = discordWebhookClient;
+            _dbService = dbService;
         }
 
         [SlashCommand("ping", "延遲檢測")]
@@ -26,7 +28,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Utility
         public async Task InviteAsync()
         {
 #if RELEASE
-            if (Context.User.Id != Program.ApplicatonOwner.Id)
+            if (Context.User.Id != Bot.ApplicatonOwner.Id)
             {
                 _discordWebhookClient.SendMessageToDiscord($"[{Context.Guild.Name}-{Context.Channel.Name}] {Context.User.Username}:({Context.User.Id}) 使用了邀請指令");
             }
@@ -46,10 +48,10 @@ namespace Discord_Stream_Notify_Bot.Interaction.Utility
 
             embedBuilder.WithDescription($"建置版本 {Program.Version}");
             embedBuilder.AddField("作者", "孤之界 (konnokai)", true);
-            embedBuilder.AddField("擁有者", $"{Program.ApplicatonOwner}", true);
+            embedBuilder.AddField("擁有者", $"{Bot.ApplicatonOwner}", true);
             embedBuilder.AddField("狀態", $"伺服器 {_client.Guilds.Count}\n服務成員數 {_client.Guilds.Sum((x) => x.MemberCount)}", false);
             embedBuilder.AddField("看過的直播數量", Discord_Stream_Notify_Bot.Utility.GetDbStreamCount(), true);
-            embedBuilder.AddField("上線時間", $"{Program.StopWatch.Elapsed:d\\天\\ hh\\:mm\\:ss}", false);
+            embedBuilder.AddField("上線時間", $"{Bot.StopWatch.Elapsed:d\\天\\ hh\\:mm\\:ss}", false);
 
             await RespondAsync(embed: embedBuilder.Build());
         }
@@ -86,7 +88,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Utility
                     return;
                 }
 
-                using var db = MainDbContext.GetDbContext();
+                using var db = _dbService.GetDbContext();
                 var guildConfig = db.GuildConfig.FirstOrDefault((x) => x.GuildId == Context.Guild.Id) ?? new DataBase.Table.GuildConfig();
                 guildConfig.NoticeChannelId = channel.Id;
                 db.SaveChanges();

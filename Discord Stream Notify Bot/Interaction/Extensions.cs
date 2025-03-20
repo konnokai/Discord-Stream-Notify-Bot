@@ -1,4 +1,5 @@
-﻿using Discord_Stream_Notify_Bot.DataBase.Table;
+﻿using Discord_Stream_Notify_Bot.DataBase;
+using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.Interaction;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -29,7 +30,7 @@ namespace Discord_Stream_Notify_Bot.Interaction
 
         public static DataBase.Table.Video.YTChannelType GetProductionType(this DataBase.Table.Video streamVideo)
         {
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = Bot.DbService.GetDbContext())
             {
                 DataBase.Table.Video.YTChannelType type;
                 var channel = db.YoutubeChannelOwnedType.AsNoTracking().FirstOrDefault((x) => x.ChannelId == streamVideo.ChannelId);
@@ -73,14 +74,11 @@ namespace Discord_Stream_Notify_Bot.Interaction
         {
             videoId = videoId.Trim();
 
-            using (var db = DataBase.HoloVideoContext.GetDbContext())
-                if (db.Video.AsNoTracking().Any((x) => x.VideoId == videoId)) return true;
-            using (var db = DataBase.NijisanjiVideoContext.GetDbContext())
-                if (db.Video.AsNoTracking().Any((x) => x.VideoId == videoId)) return true;
-            using (var db = DataBase.OtherVideoContext.GetDbContext())
-                if (db.Video.AsNoTracking().Any((x) => x.VideoId == videoId)) return true;
-            using (var db = DataBase.NotVTuberVideoContext.GetDbContext())
-                if (db.Video.AsNoTracking().Any((x) => x.VideoId == videoId)) return true;
+            using var db = Bot.DbService.GetDbContext();
+            if (db.HoloVideo.AsNoTracking().Any((x) => x.VideoId == videoId)) return true;
+            if (db.NijisanjiVideo.AsNoTracking().Any((x) => x.VideoId == videoId)) return true;
+            if (db.OtherVideo.AsNoTracking().Any((x) => x.VideoId == videoId)) return true;
+            if (db.NonApprovedVideo.AsNoTracking().Any((x) => x.VideoId == videoId)) return true;
 
             return false;
         }
@@ -89,52 +87,51 @@ namespace Discord_Stream_Notify_Bot.Interaction
         {
             videoId = videoId.Trim();
 
-            using (var db = DataBase.HoloVideoContext.GetDbContext())
-                if (db.Video.AsNoTracking().Any((x) => x.VideoId == videoId)) return db.Video.First((x) => x.VideoId == videoId);
-            using (var db = DataBase.NijisanjiVideoContext.GetDbContext())
-                if (db.Video.AsNoTracking().Any((x) => x.VideoId == videoId)) return db.Video.First((x) => x.VideoId == videoId);
-            using (var db = DataBase.OtherVideoContext.GetDbContext())
-                if (db.Video.AsNoTracking().Any((x) => x.VideoId == videoId)) return db.Video.First((x) => x.VideoId == videoId);
-            using (var db = DataBase.NotVTuberVideoContext.GetDbContext())
-                if (db.Video.AsNoTracking().Any((x) => x.VideoId == videoId)) return db.Video.First((x) => x.VideoId == videoId);
+            using var db = Bot.DbService.GetDbContext();
+            if (db.HoloVideo.AsNoTracking().Any((x) => x.VideoId == videoId))
+                return db.HoloVideo.AsNoTracking().First((x) => x.VideoId == videoId);
+            if (db.NijisanjiVideo.AsNoTracking().Any((x) => x.VideoId == videoId))
+                return db.NijisanjiVideo.AsNoTracking().First((x) => x.VideoId == videoId);
+            if (db.OtherVideo.AsNoTracking().Any((x) => x.VideoId == videoId))
+                return db.OtherVideo.AsNoTracking().First((x) => x.VideoId == videoId);
+            if (db.NonApprovedVideo.AsNoTracking().Any((x) => x.VideoId == videoId))
+                return db.NonApprovedVideo.AsNoTracking().First((x) => x.VideoId == videoId);
 
             return null;
         }
 
+        // 照開始直播時間排序好像會遇到聊天用待機室的問題，函數先保留起來可能之後會用到?
         public static DataBase.Table.Video GetLastStreamVideoByChannelId(string channelId)
         {
             channelId = channelId.Trim();
 
-            using (var db = DataBase.HoloVideoContext.GetDbContext())
-                if (db.Video.AsNoTracking().Any((x) => x.ChannelId == channelId)) return db.Video.OrderByDescending((x) => x.ScheduledStartTime).First((x) => x.ChannelId == channelId);
-            using (var db = DataBase.NijisanjiVideoContext.GetDbContext())
-                if (db.Video.AsNoTracking().Any((x) => x.ChannelId == channelId)) return db.Video.OrderByDescending((x) => x.ScheduledStartTime).First((x) => x.ChannelId == channelId);
-            using (var db = DataBase.OtherVideoContext.GetDbContext())
-                if (db.Video.AsNoTracking().Any((x) => x.ChannelId == channelId)) return db.Video.OrderByDescending((x) => x.ScheduledStartTime).First((x) => x.ChannelId == channelId);
-            using (var db = DataBase.NotVTuberVideoContext.GetDbContext())
-                if (db.Video.AsNoTracking().Any((x) => x.ChannelId == channelId)) return db.Video.OrderByDescending((x) => x.ScheduledStartTime).First((x) => x.ChannelId == channelId);
+            using var db = Bot.DbService.GetDbContext();
+            if (db.HoloVideo.AsNoTracking().Any((x) => x.ChannelId == channelId))
+                return db.HoloVideo.AsNoTracking().OrderByDescending((x) => x.ScheduledStartTime).First((x) => x.ChannelId == channelId);
+            if (db.NijisanjiVideo.AsNoTracking().Any((x) => x.ChannelId == channelId))
+                return db.NijisanjiVideo.AsNoTracking().OrderByDescending((x) => x.ScheduledStartTime).First((x) => x.ChannelId == channelId);
+            if (db.OtherVideo.AsNoTracking().Any((x) => x.ChannelId == channelId))
+                return db.OtherVideo.AsNoTracking().OrderByDescending((x) => x.ScheduledStartTime).First((x) => x.ChannelId == channelId);
+            if (db.NonApprovedVideo.AsNoTracking().Any((x) => x.ChannelId == channelId))
+                return db.NonApprovedVideo.AsNoTracking().OrderByDescending((x) => x.ScheduledStartTime).First((x) => x.ChannelId == channelId);
 
             return null;
         }
 
         public static bool IsChannelInDb(string channelId)
         {
-
             channelId = channelId.Trim();
 
-            using (var db = DataBase.HoloVideoContext.GetDbContext())
-                if (db.Video.AsNoTracking().Any((x) => x.ChannelId == channelId)) return true;
-            using (var db = DataBase.NijisanjiVideoContext.GetDbContext())
-                if (db.Video.AsNoTracking().Any((x) => x.ChannelId == channelId)) return true;
-            using (var db = DataBase.OtherVideoContext.GetDbContext())
-                if (db.Video.AsNoTracking().Any((x) => x.ChannelId == channelId)) return true;
-            using (var db = DataBase.NotVTuberVideoContext.GetDbContext())
-                if (db.Video.AsNoTracking().Any((x) => x.ChannelId == channelId)) return true;
+            using var db = Bot.DbService.GetDbContext();
+            if (db.HoloVideo.AsNoTracking().Any((x) => x.ChannelId == channelId)) return true;
+            if (db.NijisanjiVideo.AsNoTracking().Any((x) => x.ChannelId == channelId)) return true;
+            if (db.OtherVideo.AsNoTracking().Any((x) => x.ChannelId == channelId)) return true;
+            if (db.NonApprovedVideo.AsNoTracking().Any((x) => x.ChannelId == channelId)) return true;
 
             return false;
         }
 
-        public static string GetYoutubeChannelTitleByChannelId(this DataBase.MainDbContext dBContext, string channelId)
+        public static string GetYoutubeChannelTitleByChannelId(this MainDbContext dBContext, string channelId)
         {
             channelId = channelId.Trim();
 
@@ -142,31 +139,31 @@ namespace Discord_Stream_Notify_Bot.Interaction
             if ((youtubeChannelSpider = dBContext.YoutubeChannelSpider.AsNoTracking().FirstOrDefault((x) => x.ChannelId == channelId)) != null)
                 return youtubeChannelSpider.ChannelTitle;
 
-            using (var db = DataBase.HoloVideoContext.GetDbContext())
-                if (db.Video.AsNoTracking().Any((x) => x.ChannelId == channelId)) return db.Video.OrderByDescending((x) => x.ScheduledStartTime).First((x) => x.ChannelId == channelId).ChannelTitle;
-            using (var db = DataBase.NijisanjiVideoContext.GetDbContext())
-                if (db.Video.AsNoTracking().Any((x) => x.ChannelId == channelId)) return db.Video.OrderByDescending((x) => x.ScheduledStartTime).First((x) => x.ChannelId == channelId).ChannelTitle;
-            using (var db = DataBase.OtherVideoContext.GetDbContext())
-                if (db.Video.AsNoTracking().Any((x) => x.ChannelId == channelId)) return db.Video.OrderByDescending((x) => x.ScheduledStartTime).First((x) => x.ChannelId == channelId).ChannelTitle;
+            if (dBContext.HoloVideo.AsNoTracking().Any((x) => x.ChannelId == channelId))
+                return dBContext.HoloVideo.AsNoTracking().OrderByDescending((x) => x.ScheduledStartTime).First((x) => x.ChannelId == channelId).ChannelTitle;
+            if (dBContext.NijisanjiVideo.AsNoTracking().Any((x) => x.ChannelId == channelId))
+                return dBContext.NijisanjiVideo.AsNoTracking().OrderByDescending((x) => x.ScheduledStartTime).First((x) => x.ChannelId == channelId).ChannelTitle;
+            if (dBContext.OtherVideo.AsNoTracking().Any((x) => x.ChannelId == channelId))
+                return dBContext.OtherVideo.AsNoTracking().OrderByDescending((x) => x.ScheduledStartTime).First((x) => x.ChannelId == channelId).ChannelTitle;
 
             return channelId;
         }
 
-        public static string GetNotVTuberChannelTitleByChannelId(this DataBase.MainDbContext dBContext, string channelId)
+        public static string GetNonApprovedChannelTitleByChannelId(this MainDbContext dBContext, string channelId)
         {
             channelId = channelId.Trim();
 
             YoutubeChannelSpider youtubeChannelSpider;
             if ((youtubeChannelSpider = dBContext.YoutubeChannelSpider.FirstOrDefault((x) => x.ChannelId == channelId)) != null)
                 return youtubeChannelSpider.ChannelTitle;
-
-            using (var db = DataBase.NotVTuberVideoContext.GetDbContext())
-                if (db.Video.AsNoTracking().Any((x) => x.ChannelId == channelId)) return db.Video.OrderByDescending((x) => x.ScheduledStartTime).First((x) => x.ChannelId == channelId).ChannelId;
+            
+            if (dBContext.NonApprovedVideo.AsNoTracking().Any((x) => x.ChannelId == channelId))
+                return dBContext.NonApprovedVideo.OrderByDescending((x) => x.ScheduledStartTime).First((x) => x.ChannelId == channelId).ChannelId;
 
             return channelId;
         }
 
-        public static string GetTwitCastingChannelTitleByChannelId(this DataBase.MainDbContext dBContext, string channelId)
+        public static string GetTwitCastingChannelTitleByChannelId(this MainDbContext dBContext, string channelId)
         {
             channelId = channelId.Trim();
 
@@ -177,7 +174,7 @@ namespace Discord_Stream_Notify_Bot.Interaction
             return channelId;
         }
 
-        public static string GetTwitchUserNameByUserId(this DataBase.MainDbContext dBContext, string userId)
+        public static string GetTwitchUserNameByUserId(this MainDbContext dBContext, string userId)
         {
             userId = userId.Trim();
 
@@ -188,7 +185,7 @@ namespace Discord_Stream_Notify_Bot.Interaction
             return userId;
         }
 
-        public static string GetTwitterUserNameByUserScreenName(this DataBase.MainDbContext dBContext, string userScreenName)
+        public static string GetTwitterUserNameByUserScreenName(this MainDbContext dBContext, string userScreenName)
         {
             userScreenName = userScreenName.Trim();
             var twitterSpaecSpider = dBContext.TwitterSpaecSpider.AsNoTracking().FirstOrDefault((x) => x.UserScreenName.ToLower() == userScreenName.ToLower());
@@ -198,7 +195,7 @@ namespace Discord_Stream_Notify_Bot.Interaction
                 return userScreenName;
         }
 
-        public static bool IsTwitterUserInDb(this DataBase.MainDbContext dBContext, string userId)
+        public static bool IsTwitterUserInDb(this MainDbContext dBContext, string userId)
             => dBContext.TwitterSpaecSpider.AsNoTracking().Any((x) => x.UserId == userId);
 
         public static Task SendConfirmAsync(this IDiscordInteraction di, string des, bool isFollowerup = false, bool ephemeral = false)

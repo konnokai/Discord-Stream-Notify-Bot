@@ -1,4 +1,5 @@
 ﻿using Discord.Commands;
+using Discord_Stream_Notify_Bot.DataBase;
 
 namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
 {
@@ -6,11 +7,13 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
     {
         private readonly SharedService.Youtube.YoutubeStreamService _service;
         private readonly SharedService.YoutubeMember.YoutubeMemberService _ytMemberService;
+        private readonly MainDbService _dbService;
 
-        public YoutubeMember(SharedService.Youtube.YoutubeStreamService service, SharedService.YoutubeMember.YoutubeMemberService youtubeMemberService)
+        public YoutubeMember(SharedService.Youtube.YoutubeStreamService service, SharedService.YoutubeMember.YoutubeMemberService youtubeMemberService, MainDbService dbService)
         {
             _service = service;
             _ytMemberService = youtubeMemberService;
+            _dbService = dbService;
         }
 
         [Command("ListAllGuildCheckedMember")]
@@ -20,7 +23,7 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
         [RequireOwner]
         public async Task ListAllGuildCheckedMemberAsync(int page = 0)
         {
-            using (var db = DataBase.MainDbContext.GetDbContext())
+            using (var db = _dbService.GetDbContext())
             {
                 var guildYoutubeMemberConfigs = db.GuildYoutubeMemberConfig.Where((x) => !string.IsNullOrEmpty(x.MemberCheckChannelTitle) && x.MemberCheckVideoId != "-");
                 if (!guildYoutubeMemberConfigs.Any())
@@ -81,7 +84,7 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
 
             try
             {
-                using (var db = DataBase.MainDbContext.GetDbContext())
+                using (var db = _dbService.GetDbContext())
                 {
                     var guildYoutubeMemberConfigs = db.GuildYoutubeMemberConfig.Where((x) => x.MemberCheckChannelId == channelId);
                     if (!guildYoutubeMemberConfigs.Any())
