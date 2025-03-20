@@ -1,6 +1,6 @@
 ﻿namespace Discord_Stream_Notify_Bot.DataBase.Table
 {
-    public class TwitCastingSpider : DbEntity
+    public class TwitcastingSpider : DbEntity
     {
         public ulong GuildId { get; set; }
         public string ChannelTitle { get; set; }

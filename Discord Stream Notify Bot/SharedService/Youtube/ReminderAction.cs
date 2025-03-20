@@ -84,13 +84,13 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                         switch (streamVideo.ChannelType)
                         {
                             case DataBase.Table.Video.YTChannelType.Holo:
-                                video = db.HoloVideo.FirstOrDefault((x) => x.VideoId == streamVideo.VideoId);
+                                video = db.HoloVideos.FirstOrDefault((x) => x.VideoId == streamVideo.VideoId);
                                 break;
                             case DataBase.Table.Video.YTChannelType.Nijisanji:
-                                video = db.NijisanjiVideo.FirstOrDefault((x) => x.VideoId == streamVideo.VideoId);
+                                video = db.NijisanjiVideos.FirstOrDefault((x) => x.VideoId == streamVideo.VideoId);
                                 break;
                             case DataBase.Table.Video.YTChannelType.Other:
-                                video = db.OtherVideo.FirstOrDefault((x) => x.VideoId == streamVideo.VideoId);
+                                video = db.OtherVideos.FirstOrDefault((x) => x.VideoId == streamVideo.VideoId);
                                 break;
                         }
 
@@ -179,13 +179,13 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                     switch (streamVideo.ChannelType)
                     {
                         case DataBase.Table.Video.YTChannelType.Holo:
-                            video = db.HoloVideo.FirstOrDefault((x) => x.VideoId == streamVideo.VideoId);
+                            video = db.HoloVideos.FirstOrDefault((x) => x.VideoId == streamVideo.VideoId);
                             break;
                         case DataBase.Table.Video.YTChannelType.Nijisanji:
-                            video = db.NijisanjiVideo.FirstOrDefault((x) => x.VideoId == streamVideo.VideoId);
+                            video = db.NijisanjiVideos.FirstOrDefault((x) => x.VideoId == streamVideo.VideoId);
                             break;
                         case DataBase.Table.Video.YTChannelType.Other:
-                            video = db.OtherVideo.FirstOrDefault((x) => x.VideoId == streamVideo.VideoId);
+                            video = db.OtherVideos.FirstOrDefault((x) => x.VideoId == streamVideo.VideoId);
                             break;
                     }
 

@@ -7,7 +7,7 @@ namespace Discord_Stream_Notify_Bot.DataBase
     {
         private readonly string _connectionString;
 
-        public MainDbContext(string connectionString 
+        public MainDbContext(string connectionString
             // 要新增 Migration 的時候再把下面的連線字串註解拿掉
             //= "Server=localhost;Port=3306;User Id=stream_bot;Password=Ch@nge_Me;Database=discord_stream_bot"
             )
@@ -18,15 +18,15 @@ namespace Discord_Stream_Notify_Bot.DataBase
         public DbSet<BannerChange> BannerChange { get; set; }
         public DbSet<GuildConfig> GuildConfig { get; set; }
         public DbSet<GuildYoutubeMemberConfig> GuildYoutubeMemberConfig { get; set; }
-        public DbSet<NoticeTwitCastingStreamChannel> NoticeTwitCastingStreamChannels { get; set; }
+        public DbSet<NoticeTwitcastingStreamChannel> NoticeTwitcastingStreamChannels { get; set; }
         public DbSet<NoticeTwitchStreamChannel> NoticeTwitchStreamChannels { get; set; }
         public DbSet<NoticeTwitterSpaceChannel> NoticeTwitterSpaceChannel { get; set; }
         public DbSet<NoticeYoutubeStreamChannel> NoticeYoutubeStreamChannel { get; set; }
         public DbSet<RecordYoutubeChannel> RecordYoutubeChannel { get; set; }
-        public DbSet<TwitCastingSpider> TwitCastingSpider { get; set; }
+        public DbSet<TwitcastingSpider> TwitcastingSpider { get; set; }
         public DbSet<TwitchSpider> TwitchSpider { get; set; }
         public DbSet<TwitterSpace> TwitterSpace { get; set; }
-        public DbSet<TwitterSpaecSpider> TwitterSpaecSpider { get; set; }
+        public DbSet<TwitterSpaceSpider> TwitterSpaceSpider { get; set; }
         public DbSet<YoutubeChannelNameToId> YoutubeChannelNameToId { get; set; }
         public DbSet<YoutubeChannelOwnedType> YoutubeChannelOwnedType { get; set; }
         public DbSet<YoutubeChannelSpider> YoutubeChannelSpider { get; set; }
@@ -34,23 +34,20 @@ namespace Discord_Stream_Notify_Bot.DataBase
         public DbSet<YoutubeMemberCheck> YoutubeMemberCheck { get; set; }
 
         #region Video
-        public DbSet<Table.Video> HoloVideo { get; set; }
-        public DbSet<Table.Video> NijisanjiVideo { get; set; }
-        public DbSet<Table.Video> NonApprovedVideo { get; set; }
-        public DbSet<Table.Video> OtherVideo { get; set; }
-        public DbSet<TwitCastingStream> TwitCastingStreams { get; set; }
+        public DbSet<HoloVideos> HoloVideos { get; set; }
+        public DbSet<NijisanjiVideos> NijisanjiVideos { get; set; }
+        public DbSet<OtherVideos> OtherVideos { get; set; }
+        public DbSet<NonApprovedVideos> NonApprovedVideos { get; set; }
+        public DbSet<TwitcastingStream> TwitcastingStreams { get; set; }
         public DbSet<TwitchStream> TwitchStreams { get; set; }
         #endregion
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             base.OnConfiguring(optionsBuilder);
-            optionsBuilder.UseMySql(_connectionString, ServerVersion.AutoDetect(_connectionString));
-        }
-
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
-            base.OnModelCreating(modelBuilder);
+            optionsBuilder
+                .UseMySql(_connectionString, ServerVersion.AutoDetect(_connectionString))
+                .UseSnakeCaseNamingConvention();
         }
 
         public bool UpdateAndSave(Table.Video video)

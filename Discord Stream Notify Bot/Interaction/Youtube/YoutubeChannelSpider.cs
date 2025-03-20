@@ -209,8 +209,8 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
             using (var db = _dbService.GetDbContext())
             {
                 bool isTwoBox = false;
-                if (db.HoloVideo.Any((x) => x.ChannelId == channelId)) { isTwoBox = true; }
-                else if (db.NijisanjiVideo.Any((x) => x.ChannelId == channelId)) { isTwoBox = true; }
+                if (db.HoloVideos.Any((x) => x.ChannelId == channelId)) { isTwoBox = true; }
+                else if (db.NijisanjiVideos.Any((x) => x.ChannelId == channelId)) { isTwoBox = true; }
 
                 if (isTwoBox && !db.YoutubeChannelOwnedType.Any((x) => x.ChannelId == channelId))
                 {

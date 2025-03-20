@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Net;
 using System.Text.RegularExpressions;
 using Extensions = Discord_Stream_Notify_Bot.Interaction.Extensions;
+using Video = Google.Apis.YouTube.v3.Data.Video;
 
 namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 {
@@ -26,17 +27,17 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 if (db.RecordYoutubeChannel.Any())
                     recordChannelId = db.RecordYoutubeChannel.AsNoTracking().Select((x) => x.YoutubeChannelId).ToList();
 
-                foreach (var streamVideo in db.HoloVideo.AsNoTracking().Where((x) => x.ScheduledStartTime > DateTime.Now && !x.IsPrivate))
+                foreach (var streamVideo in db.HoloVideos.AsNoTracking().Where((x) => x.ScheduledStartTime > DateTime.Now && !x.IsPrivate))
                 {
                     StartReminder(streamVideo, DataBase.Table.Video.YTChannelType.Holo);
                 }
 
-                foreach (var streamVideo in db.NijisanjiVideo.AsNoTracking().Where((x) => x.ScheduledStartTime > DateTime.Now && !x.IsPrivate))
+                foreach (var streamVideo in db.NijisanjiVideos.AsNoTracking().Where((x) => x.ScheduledStartTime > DateTime.Now && !x.IsPrivate))
                 {
                     StartReminder(streamVideo, DataBase.Table.Video.YTChannelType.Holo);
                 }
 
-                foreach (var streamVideo in db.OtherVideo.AsNoTracking().Where((x) => x.ScheduledStartTime > DateTime.Now && !x.IsPrivate))
+                foreach (var streamVideo in db.OtherVideos.AsNoTracking().Where((x) => x.ScheduledStartTime > DateTime.Now && !x.IsPrivate))
                 {
                     StartReminder(streamVideo, DataBase.Table.Video.YTChannelType.Holo);
                 }
@@ -843,11 +844,21 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 {
                     foreach (var item in addNewStreamVideo.Where((x) => x.Value.ChannelType == DataBase.Table.Video.YTChannelType.Holo))
                     {
-                        if (!db.HoloVideo.AsNoTracking().Any((x) => x.VideoId == item.Key))
+                        if (!db.HoloVideos.AsNoTracking().Any((x) => x.VideoId == item.Key))
                         {
                             try
                             {
-                                db.HoloVideo.Add(item.Value); saveNum++;
+                                db.HoloVideos.Add(new()
+                                {
+                                    ChannelId = item.Value.ChannelId,
+                                    ChannelTitle = item.Value.ChannelTitle,
+                                    VideoId = item.Value.VideoId,
+                                    VideoTitle = item.Value.VideoTitle,
+                                    ScheduledStartTime = item.Value.ScheduledStartTime,
+                                    ChannelType = item.Value.ChannelType,
+                                    IsPrivate = item.Value.IsPrivate
+                                });
+                                saveNum++;
                             }
                             catch (Exception ex)
                             {
@@ -865,11 +876,21 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 {
                     foreach (var item in addNewStreamVideo.Where((x) => x.Value.ChannelType == DataBase.Table.Video.YTChannelType.Nijisanji))
                     {
-                        if (!db.NijisanjiVideo.AsNoTracking().Any((x) => x.VideoId == item.Key))
+                        if (!db.NijisanjiVideos.AsNoTracking().Any((x) => x.VideoId == item.Key))
                         {
                             try
                             {
-                                db.NijisanjiVideo.Add(item.Value); saveNum++;
+                                db.NijisanjiVideos.Add(new()
+                                {
+                                    ChannelId = item.Value.ChannelId,
+                                    ChannelTitle = item.Value.ChannelTitle,
+                                    VideoId = item.Value.VideoId,
+                                    VideoTitle = item.Value.VideoTitle,
+                                    ScheduledStartTime = item.Value.ScheduledStartTime,
+                                    ChannelType = item.Value.ChannelType,
+                                    IsPrivate = item.Value.IsPrivate
+                                });
+                                saveNum++;
                             }
                             catch (Exception ex)
                             {
@@ -887,11 +908,21 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 {
                     foreach (var item in addNewStreamVideo.Where((x) => x.Value.ChannelType == DataBase.Table.Video.YTChannelType.Other))
                     {
-                        if (!db.OtherVideo.AsNoTracking().Any((x) => x.VideoId == item.Key))
+                        if (!db.OtherVideos.AsNoTracking().Any((x) => x.VideoId == item.Key))
                         {
                             try
                             {
-                                db.OtherVideo.Add(item.Value); saveNum++;
+                                db.OtherVideos.Add(new()
+                                {
+                                    ChannelId = item.Value.ChannelId,
+                                    ChannelTitle = item.Value.ChannelTitle,
+                                    VideoId = item.Value.VideoId,
+                                    VideoTitle = item.Value.VideoTitle,
+                                    ScheduledStartTime = item.Value.ScheduledStartTime,
+                                    ChannelType = item.Value.ChannelType,
+                                    IsPrivate = item.Value.IsPrivate
+                                });
+                                saveNum++;
                             }
                             catch (Exception ex)
                             {
@@ -909,11 +940,21 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                 {
                     foreach (var item in addNewStreamVideo.Where((x) => x.Value.ChannelType == DataBase.Table.Video.YTChannelType.NonApproved))
                     {
-                        if (!db.NonApprovedVideo.AsNoTracking().Any((x) => x.VideoId == item.Key))
+                        if (!db.NonApprovedVideos.AsNoTracking().Any((x) => x.VideoId == item.Key))
                         {
                             try
                             {
-                                db.NonApprovedVideo.Add(item.Value); saveNum++;
+                                db.NonApprovedVideos.Add(new()
+                                {
+                                    ChannelId = item.Value.ChannelId,
+                                    ChannelTitle = item.Value.ChannelTitle,
+                                    VideoId = item.Value.VideoId,
+                                    VideoTitle = item.Value.VideoTitle,
+                                    ScheduledStartTime = item.Value.ScheduledStartTime,
+                                    ChannelType = item.Value.ChannelType,
+                                    IsPrivate = item.Value.IsPrivate
+                                });
+                                saveNum++;
                             }
                             catch (Exception ex)
                             {

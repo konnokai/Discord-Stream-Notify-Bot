@@ -107,7 +107,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.TwitCasting
 
             try
             {
-                foreach (var item in db.TwitCastingSpider.Distinct((x) => x.ChannelId))
+                foreach (var item in db.TwitcastingSpider.Distinct((x) => x.ChannelId))
                 {
                     var data = await _twitcastingClient.GetNewStreamDataAsync(item.ChannelId);
                     if (data == null || !data.Movie.Live)
@@ -116,7 +116,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.TwitCasting
                     if (hashSet.Contains(data.Movie.Id))
                         continue;
 
-                    if (db.TwitCastingStreams.AsNoTracking().Any((x) => x.StreamId == data.Movie.Id))
+                    if (db.TwitcastingStreams.AsNoTracking().Any((x) => x.StreamId == data.Movie.Id))
                     {
                         hashSet.Add(data.Movie.Id);
                         continue;
@@ -133,7 +133,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.TwitCasting
                             continue;
                         }
 
-                        var twitcastingStream = new TwitCastingStream()
+                        var twitcastingStream = new TwitcastingStream()
                         {
                             ChannelId = item.ChannelId,
                             ChannelTitle = item.ChannelTitle,
@@ -145,7 +145,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.TwitCasting
                             StreamStartAt = UnixTimeStampToDateTime(streamData.Movie.Created)
                         };
 
-                        db.TwitCastingStreams.Add(twitcastingStream);
+                        db.TwitcastingStreams.Add(twitcastingStream);
 
                         await SendStreamMessageAsync(twitcastingStream, streamData.Movie.IsProtected, !streamData.Movie.IsProtected && item.IsRecord && RecordTwitCasting(twitcastingStream));
                     }
@@ -160,14 +160,14 @@ namespace Discord_Stream_Notify_Bot.SharedService.TwitCasting
             db.SaveChanges();
         }
 
-        private async Task SendStreamMessageAsync(TwitCastingStream twitcastingStream, bool isPrivate = false, bool isRecord = false)
+        private async Task SendStreamMessageAsync(TwitcastingStream twitcastingStream, bool isPrivate = false, bool isRecord = false)
         {
 #if DEBUG
             Log.New($"TwitCasting 開台通知: {twitcastingStream.ChannelTitle} - {twitcastingStream.StreamTitle} (isPrivate: {isPrivate})");
 #else
             using (var db = _dbService.GetDbContext())
             {
-                var noticeGuildList = db.NoticeTwitCastingStreamChannels.AsNoTracking().Where((x) => x.ChannelId == twitcastingStream.ChannelId).ToList();
+                var noticeGuildList = db.NoticeTwitcastingStreamChannels.AsNoTracking().Where((x) => x.ChannelId == twitcastingStream.ChannelId).ToList();
                 Log.New($"發送 TwitCasting 開台通知 ({noticeGuildList.Count}): {twitcastingStream.ChannelTitle} - {twitcastingStream.StreamTitle} (私人直播: {isPrivate})");
 
                 EmbedBuilder embedBuilder = new EmbedBuilder()
@@ -198,7 +198,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.TwitCasting
                         if (guild == null)
                         {
                             Log.Warn($"TwitCasting 通知 ({item.DiscordChannelId}) | 找不到伺服器 {item.GuildId}");
-                            db.NoticeTwitCastingStreamChannels.RemoveRange(db.NoticeTwitCastingStreamChannels.Where((x) => x.GuildId == item.GuildId));
+                            db.NoticeTwitcastingStreamChannels.RemoveRange(db.NoticeTwitcastingStreamChannels.Where((x) => x.GuildId == item.GuildId));
                             db.SaveChanges();
                             continue;
                         }
@@ -234,7 +234,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.TwitCasting
                         if (httpEx.DiscordCode.HasValue && (httpEx.DiscordCode.Value == DiscordErrorCode.InsufficientPermissions || httpEx.DiscordCode.Value == DiscordErrorCode.MissingPermissions))
                         {
                             Log.Warn($"TwitCasting 通知 - 遺失權限 {item.GuildId} / {item.DiscordChannelId}");
-                            db.NoticeTwitCastingStreamChannels.RemoveRange(db.NoticeTwitCastingStreamChannels.Where((x) => x.DiscordChannelId == item.DiscordChannelId));
+                            db.NoticeTwitcastingStreamChannels.RemoveRange(db.NoticeTwitcastingStreamChannels.Where((x) => x.DiscordChannelId == item.DiscordChannelId));
                             db.SaveChanges();
                         }
                         else if (((int)httpEx.HttpCode).ToString().StartsWith("50"))
@@ -259,7 +259,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.TwitCasting
 #endif
         }
 
-        private bool RecordTwitCasting(TwitCastingStream twitcastingStream)
+        private bool RecordTwitCasting(TwitcastingStream twitcastingStream)
         {
             Log.Info($"{twitcastingStream.ChannelTitle} ({twitcastingStream.StreamId}): {twitcastingStream.StreamTitle}");
 

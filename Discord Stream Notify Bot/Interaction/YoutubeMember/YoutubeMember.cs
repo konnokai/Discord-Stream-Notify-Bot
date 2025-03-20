@@ -89,7 +89,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
             {
                 Log.Error(ex.Demystify(), "Member Check Error");
                 await Context.Interaction.SendErrorAsync($"出現錯誤: {ex.Message}", true);
-            }            
+            }
         }
 
         [RequireContext(ContextType.Guild)]

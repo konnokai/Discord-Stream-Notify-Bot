@@ -512,12 +512,12 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
             {
                 try
                 {
-                    var needFixList = db.NijisanjiVideo.Where((x) => x.ChannelId.StartsWith("https"));
+                    var needFixList = db.NijisanjiVideos.Where((x) => x.ChannelId.StartsWith("https"));
 
                     foreach (var item in needFixList)
                     {
                         item.ChannelId = await _service.GetChannelIdAsync(item.ChannelId);
-                        db.NijisanjiVideo.Update(item);
+                        db.NijisanjiVideos.Update(item);
                     }
 
                     int result = await db.SaveChangesAsync();

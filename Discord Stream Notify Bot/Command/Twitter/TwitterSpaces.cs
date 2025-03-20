@@ -28,9 +28,9 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
 
             using (var db = _dbService.GetDbContext())
             {
-                var list = db.TwitterSpaecSpider.Where((x) => !x.IsWarningUser).Select((x) => Format.Url(x.UserScreenName, $"https://twitter.com/{x.UserScreenName}") +
+                var list = db.TwitterSpaceSpider.Where((x) => !x.IsWarningUser).Select((x) => Format.Url(x.UserScreenName, $"https://twitter.com/{x.UserScreenName}") +
                     $" 由 `" + (x.GuildId == 0 ? "Bot擁有者" : (_client.GetGuild(x.GuildId) != null ? _client.GetGuild(x.GuildId).Name : "已退出的伺服器")) + "` 新增");
-                int warningChannelNum = db.TwitterSpaecSpider.Count((x) => x.IsWarningUser);
+                int warningChannelNum = db.TwitterSpaceSpider.Count((x) => x.IsWarningUser);
 
                 await Context.SendPaginatedConfirmAsync(page, page =>
                 {
@@ -54,7 +54,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
 
             using (var db = _dbService.GetDbContext())
             {
-                var list = db.TwitterSpaecSpider.Where((x) => x.IsWarningUser).Select((x) => Format.Url(x.UserScreenName, $"https://twitter.com/{x.UserScreenName}") +
+                var list = db.TwitterSpaceSpider.Where((x) => x.IsWarningUser).Select((x) => Format.Url(x.UserScreenName, $"https://twitter.com/{x.UserScreenName}") +
                     $" 由 `" + (x.GuildId == 0 ? "Bot擁有者" : (_client.GetGuild(x.GuildId) != null ? _client.GetGuild(x.GuildId).Name : "已退出的伺服器")) + "` 新增");
 
                 await Context.SendPaginatedConfirmAsync(page, page =>
@@ -78,10 +78,10 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
 
             using (var db = _dbService.GetDbContext())
             {
-                var nowRecordList = db.TwitterSpaecSpider.Where((x) => x.IsRecord && !x.IsWarningUser)
+                var nowRecordList = db.TwitterSpaceSpider.Where((x) => x.IsRecord && !x.IsWarningUser)
                     .Select((x) => $"{x.UserName} ({Format.Url($"{x.UserScreenName}", $"https://twitter.com/{x.UserScreenName}")})")
                     .ToList();
-                int warningUserNum = db.TwitterSpaecSpider.Count((x) => x.IsWarningUser);
+                int warningUserNum = db.TwitterSpaceSpider.Count((x) => x.IsWarningUser);
 
                 if (nowRecordList.Count > 0)
                 {
@@ -115,7 +115,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
 
             using (var db = _dbService.GetDbContext())
             {
-                var nowRecordList = db.TwitterSpaecSpider.Where((x) => x.IsRecord && x.IsWarningUser).Select((x) => $"{x.UserName} ({Format.Url($"{x.UserScreenName}", $"https://twitter.com/{x.UserScreenName}")})").ToList();
+                var nowRecordList = db.TwitterSpaceSpider.Where((x) => x.IsRecord && x.IsWarningUser).Select((x) => $"{x.UserName} ({Format.Url($"{x.UserScreenName}", $"https://twitter.com/{x.UserScreenName}")})").ToList();
 
                 if (nowRecordList.Count > 0)
                 {
@@ -165,10 +165,10 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
                     return;
                 }
 
-                TwitterSpaecSpider twitterSpaecSpider = null;
-                if (db.TwitterSpaecSpider.Any((x) => x.UserId == user.RestId))
+                TwitterSpaceSpider twitterSpaecSpider = null;
+                if (db.TwitterSpaceSpider.Any((x) => x.UserId == user.RestId))
                 {
-                    twitterSpaecSpider = db.TwitterSpaecSpider.First((x) => x.UserId == user.RestId);
+                    twitterSpaecSpider = db.TwitterSpaceSpider.First((x) => x.UserId == user.RestId);
                     twitterSpaecSpider.IsRecord = !twitterSpaecSpider.IsRecord;
                 }
                 else
@@ -179,8 +179,8 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
                         return;
                     }
 
-                    twitterSpaecSpider = new TwitterSpaecSpider() { GuildId = 0, UserId = user.RestId, UserScreenName = user.Legacy.ScreenName, UserName = user.Legacy.Name, IsRecord = true };
-                    db.TwitterSpaecSpider.Add(twitterSpaecSpider);
+                    twitterSpaecSpider = new TwitterSpaceSpider() { GuildId = 0, UserId = user.RestId, UserScreenName = user.Legacy.ScreenName, UserName = user.Legacy.Name, IsRecord = true };
+                    db.TwitterSpaceSpider.Add(twitterSpaecSpider);
                 }
 
                 if (db.SaveChanges() >= 1)
@@ -208,11 +208,11 @@ namespace Discord_Stream_Notify_Bot.Command.Twitter
 
             using (var db = _dbService.GetDbContext())
             {
-                if (db.TwitterSpaecSpider.Any((x) => x.UserScreenName == userScreenName))
+                if (db.TwitterSpaceSpider.Any((x) => x.UserScreenName == userScreenName))
                 {
-                    var twitterSpaec = db.TwitterSpaecSpider.First((x) => x.UserScreenName == userScreenName);
+                    var twitterSpaec = db.TwitterSpaceSpider.First((x) => x.UserScreenName == userScreenName);
                     twitterSpaec.IsWarningUser = !twitterSpaec.IsWarningUser;
-                    db.TwitterSpaecSpider.Update(twitterSpaec);
+                    db.TwitterSpaceSpider.Update(twitterSpaec);
                     db.SaveChanges();
 
                     await Context.Channel.SendConfirmAsync($"已設定 {twitterSpaec.UserName} 為 " + (twitterSpaec.IsWarningUser ? "警告" : "普通") + " 狀態").ConfigureAwait(false);

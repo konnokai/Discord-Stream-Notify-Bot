@@ -28,10 +28,10 @@ namespace Discord_Stream_Notify_Bot.Command
         {
             videoId = videoId.Trim();
 
-            if (dBContext.HoloVideo.AsNoTracking().Any((x) => x.VideoId == videoId)) return true;
-            if (dBContext.NijisanjiVideo.AsNoTracking().Any((x) => x.VideoId == videoId)) return true;
-            if (dBContext.OtherVideo.AsNoTracking().Any((x) => x.VideoId == videoId)) return true;
-            if (dBContext.NonApprovedVideo.AsNoTracking().Any((x) => x.VideoId == videoId)) return true;
+            if (dBContext.HoloVideos.AsNoTracking().Any((x) => x.VideoId == videoId)) return true;
+            if (dBContext.NijisanjiVideos.AsNoTracking().Any((x) => x.VideoId == videoId)) return true;
+            if (dBContext.OtherVideos.AsNoTracking().Any((x) => x.VideoId == videoId)) return true;
+            if (dBContext.NonApprovedVideos.AsNoTracking().Any((x) => x.VideoId == videoId)) return true;
 
             return false;
         }
@@ -41,14 +41,14 @@ namespace Discord_Stream_Notify_Bot.Command
             videoId = videoId.Trim();
 
             using var db = Bot.DbService.GetDbContext();
-            if (db.HoloVideo.AsNoTracking().Any((x) => x.VideoId == videoId))
-                return db.HoloVideo.AsNoTracking().First((x) => x.VideoId == videoId);
-            if (db.NijisanjiVideo.AsNoTracking().Any((x) => x.VideoId == videoId))
-                return db.NijisanjiVideo.AsNoTracking().First((x) => x.VideoId == videoId);
-            if (db.OtherVideo.AsNoTracking().Any((x) => x.VideoId == videoId))
-                return db.OtherVideo.AsNoTracking().First((x) => x.VideoId == videoId);
-            if (db.NonApprovedVideo.AsNoTracking().Any((x) => x.VideoId == videoId))
-                return db.NonApprovedVideo.AsNoTracking().First((x) => x.VideoId == videoId);
+            if (db.HoloVideos.AsNoTracking().Any((x) => x.VideoId == videoId))
+                return db.HoloVideos.AsNoTracking().First((x) => x.VideoId == videoId);
+            if (db.NijisanjiVideos.AsNoTracking().Any((x) => x.VideoId == videoId))
+                return db.NijisanjiVideos.AsNoTracking().First((x) => x.VideoId == videoId);
+            if (db.OtherVideos.AsNoTracking().Any((x) => x.VideoId == videoId))
+                return db.OtherVideos.AsNoTracking().First((x) => x.VideoId == videoId);
+            if (db.NonApprovedVideos.AsNoTracking().Any((x) => x.VideoId == videoId))
+                return db.NonApprovedVideos.AsNoTracking().First((x) => x.VideoId == videoId);
 
             return null;
         }

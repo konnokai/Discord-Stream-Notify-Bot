@@ -327,7 +327,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
             isRuning = true;
 
             try
-            {    
+            {
                 using var db = _dbService.GetDbContext();
 
                 foreach (var twitchSpiders in db.TwitchSpider.Distinct((x) => x.UserId).Chunk(100))

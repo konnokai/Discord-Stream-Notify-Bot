@@ -76,7 +76,6 @@ namespace Discord_Stream_Notify_Bot
             }
 
             var bot = new Bot(shardId, totalShards);
-            bot.Initialize();
             bot.StartAndBlockAsync().GetAwaiter().GetResult();
         }
 

@@ -2,7 +2,7 @@
 
 namespace Discord_Stream_Notify_Bot.DataBase.Table
 {
-    public class TwitterSpaecSpider
+    public class TwitterSpaceSpider
     {
         [Key]
         public string UserId { get; set; }

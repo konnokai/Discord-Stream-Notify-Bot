@@ -62,7 +62,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                 {
                     using (var db = _dbService.GetDbContext())
                     {
-                        var userList = db.TwitterSpaecSpider.Select((x) => x.UserId).ToArray();
+                        var userList = db.TwitterSpaceSpider.Select((x) => x.UserId).ToArray();
 
                         for (int i = 0; i < userList.Length; i += 100)
                         {
@@ -83,7 +83,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
 
                                     try
                                     {
-                                        var user = db.TwitterSpaecSpider.FirstOrDefault((x) => x.UserId == item.UserId);
+                                        var user = db.TwitterSpaceSpider.FirstOrDefault((x) => x.UserId == item.UserId);
                                         var userData = await GetTwitterUserAsync(user.UserScreenName);
 
                                         if (user.UserScreenName != userData.Legacy.ScreenName || user.UserName != userData.Legacy.Name)
@@ -167,7 +167,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
         {
             using (var db = _dbService.GetDbContext())
             {
-                var item = db.TwitterSpaecSpider.FirstOrDefault((x) => x.UserId == twitterSpace.UserId);
+                var item = db.TwitterSpaceSpider.FirstOrDefault((x) => x.UserId == twitterSpace.UserId);
                 if (item == null)
                     return false;
 

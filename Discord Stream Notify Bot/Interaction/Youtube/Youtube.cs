@@ -4,6 +4,7 @@ using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.Interaction.Attribute;
 using Discord_Stream_Notify_Bot.SharedService.Youtube;
 using Microsoft.EntityFrameworkCore;
+using System.Diagnostics;
 using Video = Google.Apis.YouTube.v3.Data.Video;
 
 namespace Discord_Stream_Notify_Bot.Interaction.Youtube
@@ -25,8 +26,8 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                         return AutocompletionResult.FromSuccess();
 
                     var channelIdList = db.NoticeYoutubeStreamChannel.Where((x) => x.GuildId == context.Guild.Id).Select((x) => new KeyValuePair<string, string>(db.GetYoutubeChannelTitleByChannelId(x.YouTubeChannelId), x.YouTubeChannelId));
-
                     var channelIdList2 = new Dictionary<string, string>();
+
                     try
                     {
                         string value = autocompleteInteraction.Data.Current.Value.ToString();
@@ -50,7 +51,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                     }
                     catch (Exception ex)
                     {
-                        Log.Error($"GuildNoticeYoutubeChannelIdAutocompleteHandler - {ex}");
+                        Log.Error(ex.Demystify(), $"GuildNoticeYoutubeChannelIdAutocompleteHandler");
                     }
 
                     List<AutocompleteResult> results = new();

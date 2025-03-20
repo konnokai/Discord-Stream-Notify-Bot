@@ -183,14 +183,14 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
                     if (guildConfig.LogMemberStatusChannelId == 0)
                     {
                         await Context.Interaction.SendErrorAsync("本伺服器尚未設定會限驗證紀錄頻道\n" +
-                            "請新增頻道並設定本機器人 `讀取` & `發送` 與 `嵌入連結` 權限後使用 `/youtube-member-set set-notice-member-status-channel` 設定紀錄頻道\n" +
+                            "請新增頻道並設定本機器人 `讀取` & `發送` 與 `嵌入連結` 權限後使用 `/member-set set-notice-member-status-channel` 設定紀錄頻道\n" +
                             "紀錄頻道為強制需要，若無頻道則無法驗證會限", true);
                         return;
                     }
                     else if (Context.Guild.GetTextChannel(guildConfig.LogMemberStatusChannelId) == null)
                     {
                         await Context.Interaction.SendErrorAsync("本伺服器所設定的會限驗證紀錄頻道已刪除\n" +
-                            "請新增頻道並設定本機器人 `讀取` & `發送` 與 `嵌入連結` 權限後使用 `/youtube-member-set set-notice-member-status-channel` 設定紀錄頻道\n" +
+                            "請新增頻道並設定本機器人 `讀取` & `發送` 與 `嵌入連結` 權限後使用 `/member-set set-notice-member-status-channel` 設定紀錄頻道\n" +
                             "紀錄頻道為強制需要，若無頻道則無法驗證會限", true);
 
                         guildConfig.LogMemberStatusChannelId = 0;

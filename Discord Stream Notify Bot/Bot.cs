@@ -48,10 +48,7 @@ namespace Discord_Stream_Notify_Bot
             _botConfig.InitBotConfig();
             DbService = new MainDbService(_botConfig.MySqlConnectionString);
             timerUpdateStatus = new Timer(TimerHandler);
-        }
 
-        public void Initialize()
-        {
             Log.Info($"Shard {_shardId} / {_totalShardCount} 正在初始化...");
 
             try
@@ -152,9 +149,9 @@ namespace Discord_Stream_Notify_Bot
                         if ((noticeTwitterSpaceChannels = db.NoticeTwitterSpaceChannel.Where(x => x.GuildId == guild.Id)).Any())
                             db.NoticeTwitterSpaceChannel.RemoveRange(noticeTwitterSpaceChannels);
 
-                        IEnumerable<NoticeTwitCastingStreamChannel> noticeTwitCastingStreamChannels;
-                        if ((noticeTwitCastingStreamChannels = db.NoticeTwitCastingStreamChannels.Where(x => x.GuildId == guild.Id)).Any())
-                            db.NoticeTwitCastingStreamChannels.RemoveRange(noticeTwitCastingStreamChannels);
+                        IEnumerable<NoticeTwitcastingStreamChannel> noticeTwitCastingStreamChannels;
+                        if ((noticeTwitCastingStreamChannels = db.NoticeTwitcastingStreamChannels.Where(x => x.GuildId == guild.Id)).Any())
+                            db.NoticeTwitcastingStreamChannels.RemoveRange(noticeTwitCastingStreamChannels);
 
                         IEnumerable<NoticeTwitchStreamChannel> NoticeTwitchStreamChannels;
                         if ((NoticeTwitchStreamChannels = db.NoticeTwitchStreamChannels.Where(x => x.GuildId == guild.Id)).Any())
@@ -422,17 +419,17 @@ namespace Discord_Stream_Notify_Bot
                         {
                             using var db = DbService.GetDbContext();
 
-                            List<DataBase.Table.Video> list = null;                            
+                            List<DataBase.Table.Video> list = null;
                             switch (new Random().Next(0, 2))
                             {
                                 case 0:
-                                    list = db.HoloVideo.ToList();
+                                    list = db.HoloVideos.Cast<DataBase.Table.Video>().ToList();
                                     break;
                                 case 1:
-                                    list = db.NijisanjiVideo.ToList();
+                                    list = db.NijisanjiVideos.Cast<DataBase.Table.Video>().ToList();
                                     break;
                                 case 2:
-                                    list = db.OtherVideo.ToList();
+                                    list = db.OtherVideos.Cast<DataBase.Table.Video>().ToList();
                                     break;
                             }
 

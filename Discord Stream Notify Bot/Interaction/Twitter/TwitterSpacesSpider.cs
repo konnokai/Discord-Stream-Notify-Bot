@@ -58,9 +58,9 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                     return;
                 }
 
-                if (db.TwitterSpaecSpider.Any((x) => x.UserId == user.RestId))
+                if (db.TwitterSpaceSpider.Any((x) => x.UserId == user.RestId))
                 {
-                    var item = db.TwitterSpaecSpider.FirstOrDefault((x) => x.UserId == user.RestId);
+                    var item = db.TwitterSpaceSpider.FirstOrDefault((x) => x.UserId == user.RestId);
                     bool isGuildExist = true;
                     string guild = "";
 
@@ -85,7 +85,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                         catch (Exception ex) { Log.Error(ex.ToString()); }
 
                         item.GuildId = Context.Guild.Id;
-                        db.TwitterSpaecSpider.Update(item);
+                        db.TwitterSpaceSpider.Update(item);
                         db.SaveChanges();
                     }
 
@@ -101,7 +101,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                     return;
                 }
 
-                if (!Discord_Stream_Notify_Bot.Utility.OfficialGuildContains(Context.Guild.Id) && db.TwitterSpaecSpider.Count((x) => x.GuildId == Context.Guild.Id) >= 3)
+                if (!Discord_Stream_Notify_Bot.Utility.OfficialGuildContains(Context.Guild.Id) && db.TwitterSpaceSpider.Count((x) => x.GuildId == Context.Guild.Id) >= 3)
                 {
                     await Context.Interaction.SendErrorAsync($"此伺服器已設定 3 個推特語音空間爬蟲，請移除後再試\n" +
                         $"如有特殊需求請向 Bot 擁有者詢問\n" +
@@ -109,11 +109,11 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                     return;
                 }
 
-                var spider = new TwitterSpaecSpider() { GuildId = Context.User.Id == Bot.ApplicatonOwner.Id ? 0 : Context.Guild.Id, UserId = user.RestId, UserName = user.Legacy.Name, UserScreenName = user.Legacy.ScreenName };
+                var spider = new TwitterSpaceSpider() { GuildId = Context.User.Id == Bot.ApplicatonOwner.Id ? 0 : Context.Guild.Id, UserId = user.RestId, UserName = user.Legacy.Name, UserScreenName = user.Legacy.ScreenName };
                 if (Context.User.Id == Bot.ApplicatonOwner.Id && !await PromptUserConfirmAsync("設定該爬蟲為本伺服器使用?"))
                     spider.GuildId = 0;
 
-                db.TwitterSpaecSpider.Add(spider);
+                db.TwitterSpaceSpider.Add(spider);
                 db.SaveChanges();
 
                 await Context.Interaction.SendConfirmAsync($"已將 `{userScreenName}` 加入到推特語音爬蟲清單內\n" +
@@ -149,19 +149,19 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
 
             using (var db = _dbService.GetDbContext())
             {
-                if (!db.TwitterSpaecSpider.Any((x) => x.UserScreenName == userScreenName))
+                if (!db.TwitterSpaceSpider.Any((x) => x.UserScreenName == userScreenName))
                 {
                     await Context.Interaction.SendErrorAsync($"並未設定 {userScreenName} 語音空間檢測爬蟲...").ConfigureAwait(false);
                     return;
                 }
 
-                if (Context.User.Id != Bot.ApplicatonOwner.Id && !db.TwitterSpaecSpider.Any((x) => x.UserScreenName == userScreenName && x.GuildId == Context.Guild.Id))
+                if (Context.User.Id != Bot.ApplicatonOwner.Id && !db.TwitterSpaceSpider.Any((x) => x.UserScreenName == userScreenName && x.GuildId == Context.Guild.Id))
                 {
                     await Context.Interaction.SendErrorAsync($"該語音空間爬蟲並非本伺服器新增，無法移除").ConfigureAwait(false);
                     return;
                 }
 
-                db.TwitterSpaecSpider.Remove(db.TwitterSpaecSpider.First((x) => x.UserScreenName == userScreenName));
+                db.TwitterSpaceSpider.Remove(db.TwitterSpaceSpider.First((x) => x.UserScreenName == userScreenName));
                 db.SaveChanges();
 
                 await Context.Interaction.SendConfirmAsync($"已移除 {userScreenName}", false, true).ConfigureAwait(false);
@@ -188,9 +188,9 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
             {
                 try
                 {
-                    var list = db.TwitterSpaecSpider.Where((x) => !x.IsWarningUser).Select((x) => Format.Url(x.UserScreenName, $"https://twitter.com/{x.UserScreenName}") +
+                    var list = db.TwitterSpaceSpider.Where((x) => !x.IsWarningUser).Select((x) => Format.Url(x.UserScreenName, $"https://twitter.com/{x.UserScreenName}") +
                     $" 由 `" + (x.GuildId == 0 ? "Bot 擁有者" : (_client.GetGuild(x.GuildId) != null ? _client.GetGuild(x.GuildId).Name : "已退出的伺服器")) + "` 新增");
-                    int warningChannelNum = db.TwitterSpaecSpider.Count((x) => x.IsWarningUser);
+                    int warningChannelNum = db.TwitterSpaceSpider.Count((x) => x.IsWarningUser);
 
                     await Context.SendPaginatedConfirmAsync(page, page =>
                     {
