@@ -783,50 +783,48 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
         {
             try
             {
-                using (var db = _dbService.GetDbContext())
+                using var db = _dbService.GetDbContext();
+                if (await db.NoticeYoutubeStreamChannel.AnyAsync((x) => x.GuildId == Context.Guild.Id))
                 {
-                    if (db.NoticeYoutubeStreamChannel.Any((x) => x.GuildId == Context.Guild.Id))
+                    var noticeStreamChannels = db.NoticeYoutubeStreamChannel.AsNoTracking().Where((x) => x.GuildId == Context.Guild.Id).ToList();
+                    Dictionary<string, string> dic = new Dictionary<string, string>();
+
+                    foreach (var item in noticeStreamChannels)
                     {
-                        var noticeStreamChannels = db.NoticeYoutubeStreamChannel.Where((x) => x.GuildId == Context.Guild.Id);
-                        Dictionary<string, string> dic = new Dictionary<string, string>();
-
-                        foreach (var item in noticeStreamChannels)
+                        var channelTitle = item.YouTubeChannelId;
+                        if (channelTitle.StartsWith("UC"))
                         {
-                            var channelTitle = item.YouTubeChannelId;
-                            if (channelTitle.StartsWith("UC"))
-                            {
-                                var ytChannelTitle = db.GetYoutubeChannelTitleByChannelId(channelTitle);
-                                channelTitle = (ytChannelTitle.StartsWith("UC") ? "__找不到頻道名稱__" : ytChannelTitle) + $" ({item.YouTubeChannelId})";
-                            }
-
-                            dic.Add(channelTitle,
-                                $"是否會自動建立新活動: " + (item.IsCreateEventForNewStream ? "是" : "否") + "\n" +
-                                $"新待機所: {GetCurrectMessage(item.NewStreamMessage)}\n" +
-                                $"新影片: {GetCurrectMessage(item.NewVideoMessage)}\n" +
-                                $"開始直播: {GetCurrectMessage(item.StratMessage)}\n" +
-                                $"結束直播: {GetCurrectMessage(item.EndMessage)}\n" +
-                                $"變更直播時間: {GetCurrectMessage(item.ChangeTimeMessage)}\n" +
-                                $"刪除直播: {GetCurrectMessage(item.DeleteMessage)}");
+                            var ytChannelTitle = db.GetYoutubeChannelTitleByChannelId(channelTitle);
+                            channelTitle = (ytChannelTitle.StartsWith("UC") ? "__找不到頻道名稱__" : ytChannelTitle) + $" ({item.YouTubeChannelId})";
                         }
 
-                        await Context.SendPaginatedConfirmAsync(page, (page) =>
-                        {
-                            EmbedBuilder embedBuilder = new EmbedBuilder().WithOkColor().WithTitle("YouTube 通知訊息清單")
-                                .WithDescription("如果沒訊息的話就代表沒設定\n不用擔心會Tag到用戶組，Embed 不會有 Ping 的反應");
-
-                            foreach (var item in dic.Skip(page * 4).Take(4))
-                            {
-                                embedBuilder.AddField(item.Key, item.Value);
-                            }
-
-                            return embedBuilder;
-                        }, dic.Count, 4);
+                        dic.Add(channelTitle,
+                            $"是否會自動建立新活動: " + (item.IsCreateEventForNewStream ? "是" : "否") + "\n" +
+                            $"新待機所: {GetCurrectMessage(item.NewStreamMessage)}\n" +
+                            $"新影片: {GetCurrectMessage(item.NewVideoMessage)}\n" +
+                            $"開始直播: {GetCurrectMessage(item.StratMessage)}\n" +
+                            $"結束直播: {GetCurrectMessage(item.EndMessage)}\n" +
+                            $"變更直播時間: {GetCurrectMessage(item.ChangeTimeMessage)}\n" +
+                            $"刪除直播: {GetCurrectMessage(item.DeleteMessage)}");
                     }
-                    else
+
+                    await Context.SendPaginatedConfirmAsync(page, (page) =>
                     {
-                        await Context.Interaction.SendErrorAsync($"並未設定 YouTube 通知\n" +
-                            $"請先使用 `/help get-command-help youtube add` 查看說明並新增直播通知").ConfigureAwait(false);
-                    }
+                        EmbedBuilder embedBuilder = new EmbedBuilder().WithOkColor().WithTitle("YouTube 通知訊息清單")
+                            .WithDescription("如果沒訊息的話就代表沒設定\n不用擔心會Tag到用戶組，Embed 不會有 Ping 的反應");
+
+                        foreach (var item in dic.Skip(page * 4).Take(4))
+                        {
+                            embedBuilder.AddField(item.Key, item.Value);
+                        }
+
+                        return embedBuilder;
+                    }, dic.Count, 4);
+                }
+                else
+                {
+                    await Context.Interaction.SendErrorAsync($"並未設定 YouTube 通知\n" +
+                        $"請先使用 `/help get-command-help youtube add` 查看說明並新增直播通知").ConfigureAwait(false);
                 }
             }
             catch (Exception ex)

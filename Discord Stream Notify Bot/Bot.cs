@@ -257,7 +257,7 @@ namespace Discord_Stream_Notify_Bot
             //HandleTransientHttpError 包含 5xx 及 408 錯誤
             services.AddHttpClient<DiscordWebhookClient>();
             services.AddHttpClient<TwitterClient>();
-            services.AddHttpClient<TwitCastingClient>()
+            services.AddHttpClient<TwitcastingClient>()
                 .AddPolicyHandler(HttpPolicyExtensions
                     .HandleTransientHttpError()
                     .RetryAsync(3));

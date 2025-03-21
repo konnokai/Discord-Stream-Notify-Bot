@@ -5,26 +5,26 @@ using System.Text;
 
 namespace Discord_Stream_Notify_Bot.HttpClients
 {
-    public class TwitCastingClient
+    public class TwitcastingClient
     {
         private readonly HttpClient _httpClient;
         private readonly HttpClient? _apiHttpClient;
 
-        private readonly string? _twitCastingAccessToken;
+        private readonly string? _twitcastingAccessToken;
 
-        public TwitCastingClient(HttpClient httpClient, BotConfig botConfig)
+        public TwitcastingClient(HttpClient httpClient, BotConfig botConfig)
         {
             _httpClient = httpClient;
 
             // https://apiv2-doc.twitcasting.tv/#access-token
             if (!string.IsNullOrEmpty(botConfig.TwitCastingClientId) && !string.IsNullOrEmpty(botConfig.TwitCastingClientSecret))
             {
-                _twitCastingAccessToken = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{botConfig.TwitCastingClientId}:{botConfig.TwitCastingClientSecret}"));
+                _twitcastingAccessToken = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{botConfig.TwitCastingClientId}:{botConfig.TwitCastingClientSecret}"));
 
                 _apiHttpClient = new HttpClient();
                 _apiHttpClient.BaseAddress = new Uri("https://apiv2.twitcasting.tv/");
                 _apiHttpClient.DefaultRequestHeaders.Add("Accept", $"application/json");
-                _apiHttpClient.DefaultRequestHeaders.Add("Authorization", $"Basic {_twitCastingAccessToken}");
+                _apiHttpClient.DefaultRequestHeaders.Add("Authorization", $"Basic {_twitcastingAccessToken}");
                 _apiHttpClient.DefaultRequestHeaders.Add("X-Api-Version", $"2.0");
             }
         }

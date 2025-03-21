@@ -9,7 +9,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.TwitCasting
     [Group("twitcasting", "TwitCasting 通知")]
     [RequireUserPermission(GuildPermission.ManageMessages)]
     [DefaultMemberPermissions(GuildPermission.ManageMessages)]
-    public class TwitCasting : TopLevelModule<SharedService.TwitCasting.TwitCastingService>
+    public class Twitcasting : TopLevelModule<SharedService.Twitcasting.TwitcastingService>
     {
         private readonly DiscordSocketClient _client;
         private readonly MainDbService _dbService;
@@ -64,7 +64,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.TwitCasting
             }
         }
 
-        public TwitCasting(DiscordSocketClient client, MainDbService dbService)
+        public Twitcasting(DiscordSocketClient client, MainDbService dbService)
         {
             _client = client;
             _dbService = dbService;

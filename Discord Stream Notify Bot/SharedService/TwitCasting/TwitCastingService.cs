@@ -10,15 +10,15 @@ using System.Runtime.InteropServices;
 using Polly;
 #endif
 
-namespace Discord_Stream_Notify_Bot.SharedService.TwitCasting
+namespace Discord_Stream_Notify_Bot.SharedService.Twitcasting
 {
-    public class TwitCastingService : IInteractionService
+    public class TwitcastingService : IInteractionService
     {
         public bool IsEnable { get; private set; } = true;
 
         private readonly HashSet<int> hashSet = new HashSet<int>();
         private readonly DiscordSocketClient _client;
-        private readonly TwitCastingClient _twitcastingClient;
+        private readonly TwitcastingClient _twitcastingClient;
         private readonly EmojiService _emojiService;
         private readonly MainDbService _dbService;
         private readonly Timer _refreshCategoriesTimer, _refreshNowStreamTimer;
@@ -27,7 +27,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.TwitCasting
         private string twitcastingRecordPath = "";
         private bool isRuning = false;
 
-        public TwitCastingService(DiscordSocketClient client, TwitCastingClient twitcastingClient, BotConfig botConfig, EmojiService emojiService, MainDbService dbService)
+        public TwitcastingService(DiscordSocketClient client, TwitcastingClient twitcastingClient, BotConfig botConfig, EmojiService emojiService, MainDbService dbService)
         {
             if (string.IsNullOrEmpty(botConfig.TwitCastingClientId) || string.IsNullOrEmpty(botConfig.TwitCastingClientSecret))
             {
@@ -56,8 +56,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.TwitCasting
                 }
             }, null, TimeSpan.FromSeconds(3), TimeSpan.FromMinutes(30));
 
-            //_refreshNowStreamTimer = new Timer(async (obj) => { await TimerHandel(); },
-            //    null, TimeSpan.FromSeconds(15), TimeSpan.FromMinutes(1));
+            _refreshNowStreamTimer = new Timer(async (obj) => { await TimerHandel(); },
+                null, TimeSpan.FromSeconds(15), TimeSpan.FromMinutes(1));
 
             _dbService = dbService;
         }
@@ -100,13 +100,15 @@ namespace Discord_Stream_Notify_Bot.SharedService.TwitCasting
 
         private async Task TimerHandel()
         {
-            if (isRuning) return; isRuning = true;
+            if (isRuning) return;
+            isRuning = true;
 
             using var db = _dbService.GetDbContext();
+            var list = db.TwitcastingSpider.AsNoTracking().ToList();
 
             try
             {
-                foreach (var item in db.TwitcastingSpider.Distinct((x) => x.ChannelId))
+                foreach (var item in list)
                 {
                     var data = await _twitcastingClient.GetNewStreamDataAsync(item.ChannelId);
                     if (data == null || !data.Movie.Live)
@@ -115,7 +117,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.TwitCasting
                     if (hashSet.Contains(data.Movie.Id))
                         continue;
 
-                    if (db.TwitcastingStreams.AsNoTracking().Any((x) => x.StreamId == data.Movie.Id))
+                    if (await db.TwitcastingStreams.AsNoTracking().AnyAsync((x) => x.StreamId == data.Movie.Id))
                     {
                         hashSet.Add(data.Movie.Id);
                         continue;
@@ -144,7 +146,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.TwitCasting
                             StreamStartAt = UnixTimeStampToDateTime(streamData.Movie.Created)
                         };
 
-                        db.TwitcastingStreams.Add(twitcastingStream);
+                        await db.TwitcastingStreams.AddAsync(twitcastingStream);
 
                         await SendStreamMessageAsync(twitcastingStream, streamData.Movie.IsProtected, !streamData.Movie.IsProtected && item.IsRecord && RecordTwitCasting(twitcastingStream));
                     }
@@ -156,7 +158,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.TwitCasting
             catch (Exception ex) { Log.Error($"TwitCastingService-Timer {ex}"); }
             finally { isRuning = false; }
 
-            db.SaveChanges();
+            await db.SaveChangesAsync();
         }
 
         private async Task SendStreamMessageAsync(TwitcastingStream twitcastingStream, bool isPrivate = false, bool isRecord = false)

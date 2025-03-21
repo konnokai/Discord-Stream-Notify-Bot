@@ -1,6 +1,7 @@
 ﻿using Discord.Interactions;
 using Discord_Stream_Notify_Bot.DataBase;
 using Discord_Stream_Notify_Bot.Interaction.Attribute;
+using Microsoft.EntityFrameworkCore;
 
 namespace Discord_Stream_Notify_Bot.Interaction.TwitCasting
 {
@@ -8,7 +9,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.TwitCasting
     [Group("twitcasting-spider", "TwitCasting 爬蟲設定")]
     [RequireUserPermission(GuildPermission.Administrator)]
     [DefaultMemberPermissions(GuildPermission.Administrator)]
-    public class TwitCastingSpider : TopLevelModule<SharedService.TwitCasting.TwitCastingService>
+    public class TwitcastingSpider : TopLevelModule<SharedService.Twitcasting.TwitcastingService>
     {
         private readonly DiscordSocketClient _client;
         private readonly MainDbService _dbService;
@@ -16,7 +17,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.TwitCasting
         {
             public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
             {
-                return await Task.Run(() =>
+                return await Task.Run(async () =>
                 {
                     using var db = Bot.DbService.GetDbContext();
                     IQueryable<DataBase.Table.TwitcastingSpider> channelList;
@@ -27,10 +28,10 @@ namespace Discord_Stream_Notify_Bot.Interaction.TwitCasting
                     }
                     else
                     {
-                        if (!db.TwitcastingSpider.Any((x) => x.GuildId == autocompleteInteraction.GuildId))
+                        if (!(await db.TwitcastingSpider.AsNoTracking().AnyAsync((x) => x.GuildId == autocompleteInteraction.GuildId)))
                             return AutocompletionResult.FromSuccess();
 
-                        channelList = db.TwitcastingSpider.Where((x) => x.GuildId == autocompleteInteraction.GuildId);
+                        channelList = db.TwitcastingSpider.AsNoTracking().Where((x) => x.GuildId == autocompleteInteraction.GuildId);
                     }
 
                     var channelList2 = new List<DataBase.Table.TwitcastingSpider>();
@@ -68,7 +69,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.TwitCasting
             }
         }
 
-        public TwitCastingSpider(DiscordSocketClient client, MainDbService dbService)
+        public TwitcastingSpider(DiscordSocketClient client, MainDbService dbService)
         {
             _client = client;
             _dbService = dbService;
@@ -91,7 +92,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.TwitCasting
                     }
 
                     using var db = _dbService.GetDbContext();
-                    var twitcastingSpider = db.TwitcastingSpider.FirstOrDefault((x) => x.ChannelId == buttonData[2]);
+                    var twitcastingSpider = await db.TwitcastingSpider.FirstOrDefaultAsync((x) => x.ChannelId == buttonData[2]);
                     if (twitcastingSpider == null)
                     {
                         await button.SendErrorAsync("找不到此按鈕的頻道，可能已被移除", true, false);
@@ -102,7 +103,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.TwitCasting
                     {
                         twitcastingSpider.IsWarningUser = !twitcastingSpider.IsWarningUser;
                         db.TwitcastingSpider.Update(twitcastingSpider);
-                        db.SaveChanges();
+                        await db.SaveChangesAsync();
 
                         await button.SendConfirmAsync($"已切換 `{twitcastingSpider.ChannelTitle}` 為 `" + (twitcastingSpider.IsWarningUser ? "警告" : "普通") + "` 狀態", true, true);
                     }
@@ -110,12 +111,12 @@ namespace Discord_Stream_Notify_Bot.Interaction.TwitCasting
                     {
                         twitcastingSpider.IsRecord = !twitcastingSpider.IsRecord;
                         db.TwitcastingSpider.Update(twitcastingSpider);
-                        db.SaveChanges();
+                        await db.SaveChangesAsync();
 
                         await button.SendConfirmAsync($"已切換 `{twitcastingSpider.ChannelTitle}` 為 `" + (twitcastingSpider.IsRecord ? "開啟" : "關閉") + "` 錄影", true, true);
                     }
 
-                    db.SaveChanges();
+                    await db.SaveChangesAsync();
 
                     try
                     {
@@ -185,9 +186,9 @@ namespace Discord_Stream_Notify_Bot.Interaction.TwitCasting
 
             using (var db = _dbService.GetDbContext())
             {
-                if (db.TwitcastingSpider.Any((x) => x.ChannelId == channelData.ChannelId))
+                if (await db.TwitcastingSpider.AnyAsync((x) => x.ChannelId == channelData.ChannelId))
                 {
-                    var item = db.TwitcastingSpider.FirstOrDefault((x) => x.ChannelId == channelData.ChannelId);
+                    var item = await db.TwitcastingSpider.FirstOrDefaultAsync((x) => x.ChannelId == channelData.ChannelId);
                     bool isGuildExist = true;
                     string guild = "";
 
@@ -213,7 +214,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.TwitCasting
 
                         item.GuildId = Context.Guild.Id;
                         db.TwitcastingSpider.Update(item);
-                        db.SaveChanges();
+                        await db.SaveChangesAsync();
                     }
 
                     await Context.Interaction.SendConfirmAsync($"`{channelData.ChannelTitle}` 已在爬蟲清單內\n" +
@@ -222,7 +223,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.TwitCasting
                     return;
                 }
 
-                if (db.TwitcastingSpider.Count((x) => x.GuildId == Context.Guild.Id) >= 2)
+                if (db.TwitcastingSpider.AsNoTracking().Count((x) => x.GuildId == Context.Guild.Id) >= 2)
                 {
                     await Context.Interaction.SendErrorAsync($"此伺服器已設定 2 個 TwitCasting 爬蟲頻道，請移除後再試\n" +
                         $"如有特殊需求請向 Bot 擁有者詢問\n" +
@@ -234,8 +235,8 @@ namespace Discord_Stream_Notify_Bot.Interaction.TwitCasting
                 if (Context.User.Id == Bot.ApplicatonOwner.Id && !await PromptUserConfirmAsync("設定該爬蟲為本伺服器使用?"))
                     spider.GuildId = 0;
 
-                db.TwitcastingSpider.Add(spider);
-                db.SaveChanges();
+                await db.TwitcastingSpider.AddAsync(spider);
+                await db.SaveChangesAsync();
 
                 await Context.Interaction.SendConfirmAsync($"已將 `{channelData.ChannelTitle}` 加入到爬蟲清單內\n" +
                     $"請到通知頻道內使用 `/twitcasting add {channelData.ChannelId}` 來開啟通知", true, true).ConfigureAwait(false);
@@ -289,7 +290,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.TwitCasting
                 }
 
                 db.TwitcastingSpider.Remove(db.TwitcastingSpider.First((x) => x.ChannelId == channelData.ChannelId));
-                db.SaveChanges();
+                await db.SaveChangesAsync();
             }
             await Context.Interaction.SendConfirmAsync($"已移除 {channelData.ChannelTitle}", true).ConfigureAwait(false);
 
@@ -312,9 +313,9 @@ namespace Discord_Stream_Notify_Bot.Interaction.TwitCasting
 
             using (var db = _dbService.GetDbContext())
             {
-                var list = db.TwitcastingSpider.Where((x) => !x.IsWarningUser).Select((x) => Format.Url(x.ChannelTitle, $"https://twitcasting.tv/{x.ChannelId}") +
+                var list = db.TwitcastingSpider.AsNoTracking().Where((x) => !x.IsWarningUser).Select((x) => Format.Url(x.ChannelTitle, $"https://twitcasting.tv/{x.ChannelId}") +
                     $" 由 `" + (x.GuildId == 0 ? "Bot 擁有者" : (_client.GetGuild(x.GuildId) != null ? _client.GetGuild(x.GuildId).Name : "已退出的伺服器")) + "` 新增");
-                int warningChannelNum = db.TwitcastingSpider.Count((x) => x.IsWarningUser);
+                int warningChannelNum = db.TwitcastingSpider.AsNoTracking().Count((x) => x.IsWarningUser);
 
                 await Context.SendPaginatedConfirmAsync(page, page =>
                 {
@@ -334,7 +335,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.TwitCasting
 
             using (var db = _dbService.GetDbContext())
             {
-                var list = db.TwitcastingSpider.Where((x) => x.IsWarningUser).Select((x) => Format.Url(x.ChannelTitle, $"https://twitcasting.tv/{x.ChannelId}") +
+                var list = db.TwitcastingSpider.AsNoTracking().Where((x) => x.IsWarningUser).Select((x) => Format.Url(x.ChannelTitle, $"https://twitcasting.tv/{x.ChannelId}") +
                     $" 由 `" + (x.GuildId == 0 ? "Bot 擁有者" : (_client.GetGuild(x.GuildId) != null ? _client.GetGuild(x.GuildId).Name : "已退出的伺服器")) + "` 新增");
 
                 await Context.SendPaginatedConfirmAsync(page, page =>
