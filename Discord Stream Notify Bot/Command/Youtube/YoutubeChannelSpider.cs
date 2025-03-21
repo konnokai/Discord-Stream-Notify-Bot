@@ -15,62 +15,69 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
         {
             if (page < 0) page = 0;
 
+            List<YoutubeChannelSpider> youtubeChannelSpiders;
             using (var db = _dbService.GetDbContext())
             {
-                try
+                youtubeChannelSpiders = await db.YoutubeChannelSpider.AsNoTracking().Where((x) => x.GuildId != 0).ToListAsync();
+            }
+
+            try
+            {
+                await Context.Channel.TriggerTypingAsync();
+
+                var list = new List<string>();
+                var checkedGuildHashSet = new HashSet<ulong>();
+                foreach (var item in youtubeChannelSpiders)
                 {
-                    await Context.Channel.TriggerTypingAsync();
+                    if (checkedGuildHashSet.Contains(item.GuildId))
+                        continue;
 
-                    var list = new List<string>();
-                    var checkedGuildHashSet = new HashSet<ulong>();
-                    foreach (var item in db.YoutubeChannelSpider.AsNoTracking().Where((x) => x.GuildId != 0))
+                    try
                     {
-                        if (checkedGuildHashSet.Contains(item.GuildId))
-                            continue;
-
-                        try
+                        var guild = _client.GetGuild(item.GuildId);
+                        if (guild == null)
                         {
-                            var guild = _client.GetGuild(item.GuildId);
-                            if (guild == null)
+                            using (var db2 = _dbService.GetDbContext())
                             {
-                                list.AddRange(db.YoutubeChannelSpider
+                                list.AddRange(db2.YoutubeChannelSpider
                                     .AsNoTracking()
                                     .Where((x) => x.GuildId == item.GuildId)
                                     .Select((x) => Format.Url(x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}")));
                             }
                         }
-                        catch (Exception ex)
-                        {
-                            Log.Error(ex.Demystify(), $"{item.ChannelTitle}: {item.GuildId}");
-                        }
-                        finally
-                        {
-                            checkedGuildHashSet.Add(item.GuildId);
-                        }
                     }
-
-                    if (list.Count == 0)
+                    catch (Exception ex)
                     {
-                        await Context.Channel.SendConfirmAsync("無已死去的爬蟲...");
-                        return;
+                        Log.Error(ex.Demystify(), $"{item.ChannelTitle}: {item.GuildId}");
                     }
-
-                    await Context.SendPaginatedConfirmAsync(page, page =>
+                    finally
                     {
-                        return new EmbedBuilder()
-                            .WithOkColor()
-                            .WithTitle("死去的直播爬蟲清單")
-                            .WithDescription(string.Join('\n', list.Skip(page * 20).Take(20)))
-                            .WithFooter($"{Math.Min(list.Count, (page + 1) * 20)} / {list.Count}個頻道");
-                    }, list.Count, 20, false).ConfigureAwait(false);
+                        checkedGuildHashSet.Add(item.GuildId);
+                    }
                 }
-                catch (Exception ex)
+
+                if (list.Count == 0)
                 {
-                    Log.Error(ex.Demystify(), "ListDeathChannelSpider");
-                    await Context.Channel.SendErrorAsync(ex.ToString());
+                    await Context.Channel.SendConfirmAsync("無已死去的爬蟲...");
                     return;
                 }
+
+                await Context.SendPaginatedConfirmAsync(page, page =>
+                {
+                    return new EmbedBuilder()
+                        .WithOkColor()
+                        .WithTitle("死去的直播爬蟲清單")
+                        .WithDescription(string.Join('\n', list.Skip(page * 20).Take(20)))
+                        .WithFooter($"{Math.Min(list.Count, (page + 1) * 20)} / {list.Count}個頻道");
+                }, list.Count, 20, false).ConfigureAwait(false);
             }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Demystify(), "ListDeathChannelSpider");
+                await Context.Channel.SendErrorAsync(ex.ToString());
+                return;
+            }
+
         }
 
         [RequireContext(ContextType.DM)]
@@ -93,8 +100,11 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                     {
                         try
                         {
-                            if (!await db.NoticeYoutubeStreamChannel.AsNoTracking().AnyAsync((x) => x.YouTubeChannelId == item.ChannelId))
-                                list.Add(item);
+                            using (var db2 = _dbService.GetDbContext())
+                            {
+                                if (!await db2.NoticeYoutubeStreamChannel.AsNoTracking().AnyAsync((x) => x.YouTubeChannelId == item.ChannelId))
+                                    list.Add(item);
+                            }
                         }
                         catch (Exception ex)
                         {
