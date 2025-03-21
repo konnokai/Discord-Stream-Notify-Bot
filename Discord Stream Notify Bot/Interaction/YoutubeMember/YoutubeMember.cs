@@ -29,7 +29,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
             {
                 using (var db = _dbService.GetDbContext())
                 {
-                    var guildYoutubeMemberConfigs = db.GuildYoutubeMemberConfig.Where((x) => x.GuildId == Context.Guild.Id);
+                    var guildYoutubeMemberConfigs = db.GuildYoutubeMemberConfig.AsNoTracking().Where((x) => x.GuildId == Context.Guild.Id);
                     if (!guildYoutubeMemberConfigs.Any())
                     {
                         await Context.Interaction.SendErrorAsync($"請向管理員確認本伺服器是否已使用會限驗證功能", true);
@@ -63,7 +63,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
                             });
                             db.SaveChanges();
                         }
-                        await Context.Interaction.SendConfirmAsync("已記錄至資料庫，請稍等至多5分鐘讓Bot驗證\n請確認已開啟本伺服器的 `允許來自伺服器成員的私人訊息` ，以避免收不到通知", true, true);
+                        await Context.Interaction.SendConfirmAsync("已記錄至資料庫，請稍等至多 5 分鐘讓 Bot 驗證\n請確認已開啟本伺服器的 `允許來自伺服器成員的私人訊息` ，以避免收不到通知", true, true);
                     }
                     else
                     {

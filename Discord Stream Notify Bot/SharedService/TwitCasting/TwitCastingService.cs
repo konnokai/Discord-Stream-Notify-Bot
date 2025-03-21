@@ -3,7 +3,6 @@ using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.HttpClients;
 using Discord_Stream_Notify_Bot.HttpClients.TwitCasting;
 using Discord_Stream_Notify_Bot.Interaction;
-using Microsoft.EntityFrameworkCore;
 using System.Runtime.InteropServices;
 
 #if RELEASE

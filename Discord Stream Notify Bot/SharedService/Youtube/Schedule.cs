@@ -1,7 +1,6 @@
 ﻿using Discord_Stream_Notify_Bot.Interaction;
 using Discord_Stream_Notify_Bot.SharedService.Youtube.Json;
 using HtmlAgilityPack;
-using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json.Linq;
 using Polly;
 using System.Data;

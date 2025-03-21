@@ -19,13 +19,14 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
         {
             public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
             {
-                return await Task.Run(() =>
+                return await Task.Run(async () =>
                 {
                     using var db = Bot.DbService.GetDbContext();
-                    if (!db.NoticeTwitchStreamChannels.Any((x) => x.GuildId == context.Guild.Id))
+                    if (!await db.NoticeTwitchStreamChannels.AsNoTracking().AnyAsync((x) => x.GuildId == context.Guild.Id))
                         return AutocompletionResult.FromSuccess();
 
                     var channelIdList = db.NoticeTwitchStreamChannels
+                        .AsNoTracking()
                         .Where((x) => x.GuildId == context.Guild.Id)
                         .Select((x) => new KeyValuePair<string, string>(db.GetTwitchUserNameByUserId(x.NoticeTwitchUserId), x.NoticeTwitchUserId));
 

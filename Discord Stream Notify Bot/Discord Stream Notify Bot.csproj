@@ -52,6 +52,7 @@
     <Using Include="Discord" />
     <Using Include="Discord.WebSocket" />
     <Using Include="Google.Apis.YouTube.v3.Data" />
+    <Using Include="Microsoft.EntityFrameworkCore" />
     <Using Include="Newtonsoft.Json" />
     <Using Include="StackExchange.Redis" />
     <Using Include="System.Diagnostics" />

@@ -16,7 +16,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
         {
             public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
             {
-                return await Task.Run(() =>
+                return await Task.Run(async () =>
                 {
                     using var db = Bot.DbService.GetDbContext();
                     IQueryable<DataBase.Table.TwitchSpider> channelList;
@@ -27,10 +27,10 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
                     }
                     else
                     {
-                        if (!db.TwitchSpider.Any((x) => x.GuildId == autocompleteInteraction.GuildId))
+                        if (!await db.TwitchSpider.AsNoTracking().AnyAsync((x) => x.GuildId == autocompleteInteraction.GuildId))
                             return AutocompletionResult.FromSuccess();
 
-                        channelList = db.TwitchSpider.Where((x) => x.GuildId == autocompleteInteraction.GuildId);
+                        channelList = db.TwitchSpider.AsNoTracking().Where((x) => x.GuildId == autocompleteInteraction.GuildId);
                     }
 
                     var channelList2 = new List<DataBase.Table.TwitchSpider>();

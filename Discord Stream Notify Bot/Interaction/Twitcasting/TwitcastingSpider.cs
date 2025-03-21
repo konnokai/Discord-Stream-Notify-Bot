@@ -1,7 +1,6 @@
 ﻿using Discord.Interactions;
 using Discord_Stream_Notify_Bot.DataBase;
 using Discord_Stream_Notify_Bot.Interaction.Attribute;
-using Microsoft.EntityFrameworkCore;
 
 namespace Discord_Stream_Notify_Bot.Interaction.TwitCasting
 {

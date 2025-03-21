@@ -27,7 +27,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitch
 
             using (var db = _dbService.GetDbContext())
             {
-                var twitchSpider = db.TwitchSpider.SingleOrDefault((x) => x.UserLogin == userLogin);
+                var twitchSpider = await db.TwitchSpider.AsNoTracking().SingleOrDefaultAsync((x) => x.UserLogin == userLogin);
                 if (twitchSpider != null)
                 {
                     await Context.Channel.SendErrorAsync($"`{userLogin}` 已被 `{twitchSpider.GuildId}` 設定").ConfigureAwait(false);
@@ -42,7 +42,7 @@ namespace Discord_Stream_Notify_Bot.Command.Twitch
                 }
 
                 db.TwitchSpider.Add(new TwitchSpider() { UserId = user.Id, GuildId = guildId, UserLogin = user.Login, IsWarningUser = false, UserName = user.DisplayName });
-                db.SaveChanges();
+                await db.SaveChangesAsync();
 
                 await Context.Channel.SendConfirmAsync($"已將 `{user.DisplayName}` (`{user.Login}`) 設定至 `{guildId}`").ConfigureAwait(false);
             }
@@ -60,12 +60,12 @@ namespace Discord_Stream_Notify_Bot.Command.Twitch
 
             using (var db = _dbService.GetDbContext())
             {
-                var twitchSpider = db.TwitchSpider.SingleOrDefault((x) => x.UserLogin == userLogin);
+                var twitchSpider = await db.TwitchSpider.SingleOrDefaultAsync((x) => x.UserLogin == userLogin);
                 if (twitchSpider != null)
                 {
                     twitchSpider.GuildId = guildId;
                     db.TwitchSpider.Update(twitchSpider);
-                    db.SaveChanges();
+                    await db.SaveChangesAsync();
 
                     await Context.Channel.SendConfirmAsync($"已設定 `{twitchSpider.UserName}` (`{twitchSpider.UserLogin}`) 的 GuildId 為 `{guildId}`").ConfigureAwait(false);
                 }
@@ -88,12 +88,12 @@ namespace Discord_Stream_Notify_Bot.Command.Twitch
 
             using (var db = _dbService.GetDbContext())
             {
-                var twitchSpider = db.TwitchSpider.SingleOrDefault((x) => x.UserLogin == userLogin);
+                var twitchSpider = await db.TwitchSpider.SingleOrDefaultAsync((x) => x.UserLogin == userLogin);
                 if (twitchSpider != null)
                 {
                     twitchSpider.IsWarningUser = !twitchSpider.IsWarningUser;
                     db.TwitchSpider.Update(twitchSpider);
-                    db.SaveChanges();
+                    await db.SaveChangesAsync();
 
                     await Context.Channel.SendConfirmAsync($"已設定 `{twitchSpider.UserName}` (`{twitchSpider.UserLogin}`) 為 __" + (twitchSpider.IsWarningUser ? "已" : "未") + "__ 認可頻道").ConfigureAwait(false);
                 }
@@ -116,11 +116,11 @@ namespace Discord_Stream_Notify_Bot.Command.Twitch
 
             using (var db = _dbService.GetDbContext())
             {
-                var twitchSpider = db.TwitchSpider.SingleOrDefault((x) => x.UserLogin == userLogin);
+                var twitchSpider = await db.TwitchSpider.SingleOrDefaultAsync((x) => x.UserLogin == userLogin);
                 if (twitchSpider != null)
                 {
                     db.TwitchSpider.Remove(twitchSpider);
-                    db.SaveChanges();
+                    await db.SaveChangesAsync();
 
                     await Context.Channel.SendConfirmAsync($"已移除 `{twitchSpider.UserName}` 的爬蟲").ConfigureAwait(false);
                 }

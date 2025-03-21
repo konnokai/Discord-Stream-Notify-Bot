@@ -27,13 +27,16 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
         {
             public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
             {
-                return await Task.Run(() =>
+                return await Task.Run(async () =>
                 {
                     using var db = Bot.DbService.GetDbContext();
-                    if (!db.GuildYoutubeMemberConfig.Any((x) => x.GuildId == context.Guild.Id))
+                    if (!await db.GuildYoutubeMemberConfig.AsNoTracking().AnyAsync((x) => x.GuildId == context.Guild.Id))
                         return AutocompletionResult.FromSuccess();
 
-                    var channelIdList = db.GuildYoutubeMemberConfig.Where((x) => x.GuildId == context.Guild.Id).Select((x) => new KeyValuePair<string, string>(x.MemberCheckChannelTitle, x.MemberCheckChannelId));
+                    var channelIdList = db.GuildYoutubeMemberConfig
+                        .AsNoTracking()
+                        .Where((x) => x.GuildId == context.Guild.Id)
+                        .Select((x) => new KeyValuePair<string, string>(x.MemberCheckChannelTitle, x.MemberCheckChannelId));
 
                     var channelIdList2 = new Dictionary<string, string>();
                     try

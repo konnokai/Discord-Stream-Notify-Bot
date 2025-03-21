@@ -2,7 +2,6 @@
 using Discord_Stream_Notify_Bot.DataBase;
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.Interaction.Attribute;
-using Microsoft.EntityFrameworkCore;
 
 namespace Discord_Stream_Notify_Bot.Interaction.Twitter
 {
@@ -19,13 +18,14 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
         {
             public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
             {
-                return await Task.Run(() =>
+                return await Task.Run(async () =>
                 {
                     using var db = Bot.DbService.GetDbContext();
-                    if (!db.NoticeTwitterSpaceChannel.Any((x) => x.GuildId == context.Guild.Id))
+                    if (!await db.NoticeTwitterSpaceChannel.AnyAsync((x) => x.GuildId == context.Guild.Id))
                         return AutocompletionResult.FromSuccess();
 
                     var channelIdList = db.NoticeTwitterSpaceChannel
+                        .AsNoTracking()
                         .Where((x) => x.GuildId == context.Guild.Id)
                         .Select((x) => new KeyValuePair<string, string>(GetTwitterUserNameByUserScreenName(x.NoticeTwitterSpaceUserScreenName), x.NoticeTwitterSpaceUserScreenName));
 

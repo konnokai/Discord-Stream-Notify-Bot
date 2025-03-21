@@ -232,15 +232,17 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
 
                 using (var db = _dbService.GetDbContext())
                 {
-                    var guildConfig = db.GuildConfig.FirstOrDefault((x) => x.GuildId == gid);
+                    var guildConfig = await db.GuildConfig.AsNoTracking().FirstOrDefaultAsync((x) => x.GuildId == gid);
                     if (guildConfig != null && guildConfig.LogMemberStatusChannelId != 0)
                     {
                         var channel = guild.GetChannel(guildConfig.LogMemberStatusChannelId);
                         if (channel != null)
                             result += $"伺服器會限記錄頻道: {channel.Name} ({channel.Id})\n";
+                        else
+                            result += $"伺服器會限記錄頻道: (不存在) {guildConfig.LogMemberStatusChannelId}\n";
                     }
 
-                    var youtubeChannelSpiders = db.YoutubeChannelSpider.Where((x) => x.GuildId == gid);
+                    var youtubeChannelSpiders = db.YoutubeChannelSpider.AsNoTracking().Where((x) => x.GuildId == gid);
                     if (youtubeChannelSpiders.Any())
                     {
                         bool isTooMany = youtubeChannelSpiders.Count() > 20;
@@ -254,7 +256,7 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
                         }
                     }
 
-                    var youtubeChannelList = db.NoticeYoutubeStreamChannel.Where((x) => x.GuildId == guild.Id);
+                    var youtubeChannelList = db.NoticeYoutubeStreamChannel.AsNoTracking().Where((x) => x.GuildId == guild.Id);
                     if (youtubeChannelList.Any())
                     {
                         List<string> channelListResult = new List<string>();
@@ -280,19 +282,19 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
                         }
                     }
 
-                    var memberChcekList = db.GuildYoutubeMemberConfig.Where((x) => x.GuildId == guild.Id);
+                    var memberChcekList = db.GuildYoutubeMemberConfig.AsNoTracking().Where((x) => x.GuildId == guild.Id);
                     if (memberChcekList.Any())
                     {
                         result += $"設定會限的頻道: \n```{string.Join('\n', memberChcekList.Select((x) => $"{x.MemberCheckChannelTitle}: {x.MemberCheckGrantRoleId}"))}```\n";
                     }
 
-                    var twitchSpiders = db.TwitchSpider.Where((x) => x.GuildId == gid);
+                    var twitchSpiders = db.TwitchSpider.AsNoTracking().Where((x) => x.GuildId == gid);
                     if (twitchSpiders.Any())
                     {
                         result += $"設定的 Twitch 爬蟲: \n```{string.Join('\n', twitchSpiders.Select((x) => $"{x.UserName}: {x.UserLogin}"))}```\n";
                     }
 
-                    var noticeTwitchStreamChannels = db.NoticeTwitchStreamChannels.Where((x) => x.GuildId == guild.Id);
+                    var noticeTwitchStreamChannels = db.NoticeTwitchStreamChannels.AsNoTracking().Where((x) => x.GuildId == guild.Id);
                     if (noticeTwitchStreamChannels.Any())
                     {
                         List<string> channelListResult = new List<string>();
@@ -310,13 +312,13 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
                         result += $"設定 Twitch 通知的頻道: \n```{string.Join('\n', channelListResult)}```\n";
                     }
 
-                    var twitterSpiders = db.TwitterSpaceSpider.Where((x) => x.GuildId == gid);
+                    var twitterSpiders = db.TwitterSpaceSpider.AsNoTracking().Where((x) => x.GuildId == gid);
                     if (twitterSpiders.Any())
                     {
                         result += $"設定的 Twitter 爬蟲: \n```{string.Join('\n', twitterSpiders.Select((x) => $"{x.UserName}: {x.UserScreenName}"))}```\n";
                     }
 
-                    var twitterChannelList = db.NoticeTwitterSpaceChannel.Where((x) => x.GuildId == guild.Id);
+                    var twitterChannelList = db.NoticeTwitterSpaceChannel.AsNoTracking().Where((x) => x.GuildId == guild.Id);
                     if (twitterChannelList.Any())
                     {
                         List<string> channelListResult = new List<string>();

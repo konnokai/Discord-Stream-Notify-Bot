@@ -1,6 +1,5 @@
 ﻿using Discord.Commands;
 using Discord_Stream_Notify_Bot.DataBase;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System.Data;
 using System.Reflection;
@@ -24,14 +23,15 @@ namespace Discord_Stream_Notify_Bot.Command
         public static string GetProductionName(this DataBase.Table.Video.YTChannelType channelType) =>
                 channelType == DataBase.Table.Video.YTChannelType.Holo ? "Hololive" : channelType == DataBase.Table.Video.YTChannelType.Nijisanji ? "彩虹社" : "其他";
 
-        public static bool HasStreamVideoByVideoId(this MainDbContext dBContext, string videoId)
+        public static bool HasStreamVideoByVideoId(string videoId)
         {
             videoId = videoId.Trim();
 
-            if (dBContext.HoloVideos.AsNoTracking().Any((x) => x.VideoId == videoId)) return true;
-            if (dBContext.NijisanjiVideos.AsNoTracking().Any((x) => x.VideoId == videoId)) return true;
-            if (dBContext.OtherVideos.AsNoTracking().Any((x) => x.VideoId == videoId)) return true;
-            if (dBContext.NonApprovedVideos.AsNoTracking().Any((x) => x.VideoId == videoId)) return true;
+            using var db = Bot.DbService.GetDbContext();
+            if (db.HoloVideos.AsNoTracking().Any((x) => x.VideoId == videoId)) return true;
+            if (db.NijisanjiVideos.AsNoTracking().Any((x) => x.VideoId == videoId)) return true;
+            if (db.OtherVideos.AsNoTracking().Any((x) => x.VideoId == videoId)) return true;
+            if (db.NonApprovedVideos.AsNoTracking().Any((x) => x.VideoId == videoId)) return true;
 
             return false;
         }

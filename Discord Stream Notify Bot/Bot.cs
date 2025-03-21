@@ -5,7 +5,6 @@ using Discord_Stream_Notify_Bot.DataBase;
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.HttpClients;
 using Discord_Stream_Notify_Bot.Interaction;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Polly;
 using Polly.Extensions.Http;
@@ -115,10 +114,10 @@ namespace Discord_Stream_Notify_Bot
                 {
                     foreach (var guild in client.Guilds)
                     {
-                        if (!db.GuildConfig.Any(x => x.GuildId == guild.Id))
+                        if (!await db.GuildConfig.AnyAsync(x => x.GuildId == guild.Id))
                         {
                             db.GuildConfig.Add(new GuildConfig() { GuildId = guild.Id });
-                            db.SaveChanges();
+                            await db.SaveChangesAsync();
                         }
                     }
                 }
@@ -422,13 +421,13 @@ namespace Discord_Stream_Notify_Bot
                             switch (new Random().Next(0, 2))
                             {
                                 case 0:
-                                    list = db.HoloVideos.Cast<DataBase.Table.Video>().ToList();
+                                    list = db.HoloVideos.AsNoTracking().Cast<DataBase.Table.Video>().ToList();
                                     break;
                                 case 1:
-                                    list = db.NijisanjiVideos.Cast<DataBase.Table.Video>().ToList();
+                                    list = db.NijisanjiVideos.AsNoTracking().Cast<DataBase.Table.Video>().ToList();
                                     break;
                                 case 2:
-                                    list = db.OtherVideos.Cast<DataBase.Table.Video>().ToList();
+                                    list = db.OtherVideos.AsNoTracking().Cast<DataBase.Table.Video>().ToList();
                                     break;
                             }
 

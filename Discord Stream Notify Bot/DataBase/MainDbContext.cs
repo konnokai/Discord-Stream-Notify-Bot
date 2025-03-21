@@ -1,5 +1,4 @@
 ﻿using Discord_Stream_Notify_Bot.DataBase.Table;
-using Microsoft.EntityFrameworkCore;
 
 namespace Discord_Stream_Notify_Bot.DataBase
 {

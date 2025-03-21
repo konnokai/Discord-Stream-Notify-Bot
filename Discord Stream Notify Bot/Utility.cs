@@ -1,5 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 
 namespace Discord_Stream_Notify_Bot
 {

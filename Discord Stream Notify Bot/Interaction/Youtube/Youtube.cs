@@ -3,7 +3,6 @@ using Discord_Stream_Notify_Bot.DataBase;
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.Interaction.Attribute;
 using Discord_Stream_Notify_Bot.SharedService.Youtube;
-using Microsoft.EntityFrameworkCore;
 using Video = Google.Apis.YouTube.v3.Data.Video;
 
 namespace Discord_Stream_Notify_Bot.Interaction.Youtube
@@ -18,15 +17,18 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
         {
             public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
             {
-                return await Task.Run(() =>
+                return await Task.Run(async () =>
                 {
                     using var db = Bot.DbService.GetDbContext();
-                    if (!db.NoticeYoutubeStreamChannel.Any((x) => x.GuildId == context.Guild.Id))
+                    if (!await db.NoticeYoutubeStreamChannel.AsNoTracking().AnyAsync((x) => x.GuildId == context.Guild.Id))
                         return AutocompletionResult.FromSuccess();
 
-                    var channelIdList = db.NoticeYoutubeStreamChannel.Where((x) => x.GuildId == context.Guild.Id).Select((x) => new KeyValuePair<string, string>(db.GetYoutubeChannelTitleByChannelId(x.YouTubeChannelId), x.YouTubeChannelId));
-                    var channelIdList2 = new Dictionary<string, string>();
+                    var channelIdList = db.NoticeYoutubeStreamChannel
+                        .AsNoTracking()
+                        .Where((x) => x.GuildId == context.Guild.Id)
+                        .Select((x) => new KeyValuePair<string, string>(db.GetYoutubeChannelTitleByChannelId(x.YouTubeChannelId), x.YouTubeChannelId));
 
+                    var channelIdList2 = new Dictionary<string, string>();
                     try
                     {
                         string value = autocompleteInteraction.Data.Current.Value.ToString();

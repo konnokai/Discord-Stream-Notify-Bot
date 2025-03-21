@@ -5,7 +5,6 @@ using Discord_Stream_Notify_Bot.SharedService.Youtube.Json;
 using Google.Apis.Services;
 using Google.Apis.YouTube.v3;
 using HtmlAgilityPack;
-using Microsoft.EntityFrameworkCore;
 using System.Collections.Concurrent;
 using System.Data;
 using System.Net;

@@ -25,7 +25,9 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
         {
             using (var db = _dbService.GetDbContext())
             {
-                var guildYoutubeMemberConfigs = db.GuildYoutubeMemberConfig.Where((x) => !string.IsNullOrEmpty(x.MemberCheckChannelTitle) && x.MemberCheckVideoId != "-");
+                var guildYoutubeMemberConfigs = db.GuildYoutubeMemberConfig
+                    .AsNoTracking()
+                    .Where((x) => !string.IsNullOrEmpty(x.MemberCheckChannelTitle) && x.MemberCheckVideoId != "-");
                 if (!guildYoutubeMemberConfigs.Any())
                 {
                     await Context.Channel.SendErrorAsync($"清單為空");
@@ -44,7 +46,7 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
                     string guildName = (await Context.Client.GetGuildAsync(item.GuildId)).Name;
                     string formatStr = $"{Format.Url(item.MemberCheckChannelTitle, $"https://www.youtube.com/channel/{item.MemberCheckChannelId}")}: {checkedMemberCount}人";
 
-                    if (dic.ContainsKey(guildName)) dic[guildName].Add(formatStr);
+                    if (dic.TryGetValue(guildName, out List<string> value)) value.Add(formatStr);
                     else dic.Add(guildName, new List<string>() { formatStr });
                 }
 
@@ -99,7 +101,7 @@ namespace Discord_Stream_Notify_Bot.Command.YoutubeMember
                         db.GuildYoutubeMemberConfig.Update(guildYoutubeMemberConfig);
                     }
 
-                    db.SaveChanges();
+                    await db.SaveChangesAsync();
                     await Context.Channel.SendConfirmAsync($"已將 `{guildYoutubeMemberConfigs.First().MemberCheckChannelTitle}` 的會限檢測影片更改為 `{guildYoutubeMemberConfigs.First().MemberCheckVideoId}`");
                 }
             }

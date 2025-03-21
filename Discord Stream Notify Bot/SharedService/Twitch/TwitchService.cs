@@ -3,7 +3,6 @@ using Discord_Stream_Notify_Bot.DataBase;
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.Interaction;
 using Dorssel.Utilities;
-using Microsoft.EntityFrameworkCore;
 using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
 using TwitchLib.Api;

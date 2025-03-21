@@ -1,6 +1,5 @@
 ﻿using Discord.Interactions;
 using Discord_Stream_Notify_Bot.DataBase;
-using Microsoft.EntityFrameworkCore;
 
 namespace Discord_Stream_Notify_Bot.Interaction
 {

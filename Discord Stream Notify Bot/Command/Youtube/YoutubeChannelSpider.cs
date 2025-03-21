@@ -23,7 +23,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
 
                     var list = new List<string>();
                     var checkedGuildHashSet = new HashSet<ulong>();
-                    foreach (var item in db.YoutubeChannelSpider.Where((x) => x.GuildId != 0))
+                    foreach (var item in db.YoutubeChannelSpider.AsNoTracking().Where((x) => x.GuildId != 0))
                     {
                         if (checkedGuildHashSet.Contains(item.GuildId))
                             continue;
@@ -32,7 +32,12 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                         {
                             var guild = _client.GetGuild(item.GuildId);
                             if (guild == null)
-                                list.AddRange(db.YoutubeChannelSpider.Where((x) => x.GuildId == item.GuildId).Select((x) => Format.Url(x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}")));
+                            {
+                                list.AddRange(db.YoutubeChannelSpider
+                                    .AsNoTracking()
+                                    .Where((x) => x.GuildId == item.GuildId)
+                                    .Select((x) => Format.Url(x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}")));
+                            }
                         }
                         catch (Exception ex)
                         {
@@ -44,7 +49,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                         }
                     }
 
-                    if (!list.Any())
+                    if (list.Count == 0)
                     {
                         await Context.Channel.SendConfirmAsync("無已死去的爬蟲...");
                         return;
@@ -84,11 +89,11 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                     await Context.Channel.TriggerTypingAsync();
 
                     var list = new List<YoutubeChannelSpider>();
-                    foreach (var item in db.YoutubeChannelSpider.Where((x) => x.GuildId != 0))
+                    foreach (var item in db.YoutubeChannelSpider.AsNoTracking().Where((x) => x.GuildId != 0))
                     {
                         try
                         {
-                            if (!db.NoticeYoutubeStreamChannel.Any((x) => x.YouTubeChannelId == item.ChannelId))
+                            if (!await db.NoticeYoutubeStreamChannel.AsNoTracking().AnyAsync((x) => x.YouTubeChannelId == item.ChannelId))
                                 list.Add(item);
                         }
                         catch (Exception ex)
@@ -97,7 +102,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                         }
                     }
 
-                    if (!list.Any())
+                    if (list.Count == 0)
                     {
                         await Context.Channel.SendConfirmAsync("無未設定通知的爬蟲...");
                         return;
@@ -117,7 +122,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                         try
                         {
                             db.YoutubeChannelSpider.RemoveRange(list);
-                            db.SaveChanges();
+                            await db.SaveChangesAsync();
                         }
                         catch (Exception ex)
                         {
@@ -145,7 +150,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
 
             using (var db = _dbService.GetDbContext())
             {
-                var youtubeChannelSpider = db.YoutubeChannelSpider.SingleOrDefault((x) => x.ChannelId == channelId);
+                var youtubeChannelSpider = await db.YoutubeChannelSpider.AsNoTracking().SingleOrDefaultAsync((x) => x.ChannelId == channelId);
                 if (youtubeChannelSpider != null)
                 {
                     await Context.Channel.SendErrorAsync($"`{channelId}` 已被 `{youtubeChannelSpider.GuildId}` 設定").ConfigureAwait(false);
@@ -160,7 +165,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                 }
 
                 db.YoutubeChannelSpider.Add(new YoutubeChannelSpider() { ChannelId = channelId, GuildId = guildId, ChannelTitle = channelTitle, IsTrustedChannel = true });
-                db.SaveChanges();
+                await db.SaveChangesAsync();
 
                 await Context.Channel.SendConfirmAsync($"已將 `{channelTitle}` 設定至 `{guildId}`，等待爬蟲註冊...").ConfigureAwait(false);
             }
@@ -176,8 +181,11 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
         {
             using (var db = _dbService.GetDbContext())
             {
-                var list = db.YoutubeChannelSpider.Where((x) => !x.IsTrustedChannel).Select((x) => Format.Url(x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}") +
-                    $" 由 `" + (x.GuildId == 0 ? "Bot擁有者" : $"{_client.GetGuild(x.GuildId).Name}") + "` 新增");
+                var list = db.YoutubeChannelSpider
+                    .AsNoTracking()
+                    .Where((x) => !x.IsTrustedChannel)
+                    .Select((x) => Format.Url(x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}") +
+                        $" 由 `" + (x.GuildId == 0 ? "Bot擁有者" : $"{_client.GetGuild(x.GuildId).Name}") + "` 新增");
 
                 await Context.SendPaginatedConfirmAsync(0, page =>
                 {
@@ -216,12 +224,12 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
 
             using (var db = _dbService.GetDbContext())
             {
-                if (db.YoutubeChannelSpider.Any((x) => x.ChannelId == channelId))
+                if (await db.YoutubeChannelSpider.AnyAsync((x) => x.ChannelId == channelId))
                 {
-                    var channel = db.YoutubeChannelSpider.First((x) => x.ChannelId == channelId);
+                    var channel = await db.YoutubeChannelSpider.FirstAsync((x) => x.ChannelId == channelId);
                     channel.IsTrustedChannel = !channel.IsTrustedChannel;
                     db.YoutubeChannelSpider.Update(channel);
-                    db.SaveChanges();
+                    await db.SaveChangesAsync();
 
                     await Context.Channel.SendConfirmAsync($"已設定 `{channel.ChannelTitle}` 為 __" + (channel.IsTrustedChannel ? "已" : "未") + "__ 認可頻道").ConfigureAwait(false);
                 }
@@ -258,12 +266,12 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
 
             using (var db = _dbService.GetDbContext())
             {
-                if (db.YoutubeChannelSpider.Any((x) => x.ChannelId == channelId))
+                if (await db.YoutubeChannelSpider.AnyAsync((x) => x.ChannelId == channelId))
                 {
-                    var channel = db.YoutubeChannelSpider.First((x) => x.ChannelId == channelId);
+                    var channel = await db.YoutubeChannelSpider.FirstAsync((x) => x.ChannelId == channelId);
                     channel.GuildId = guildId;
                     db.YoutubeChannelSpider.Update(channel);
-                    db.SaveChanges();
+                    await db.SaveChangesAsync();
 
                     await Context.Channel.SendConfirmAsync($"已設定 `{channel.ChannelTitle}` 的 GuildId 為 `{guildId}`").ConfigureAwait(false);
                 }
@@ -300,11 +308,11 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
 
             using (var db = _dbService.GetDbContext())
             {
-                if (db.YoutubeChannelSpider.Any((x) => x.ChannelId == channelId))
+                if (await db.YoutubeChannelSpider.AnyAsync((x) => x.ChannelId == channelId))
                 {
-                    var channel = db.YoutubeChannelSpider.First((x) => x.ChannelId == channelId);
+                    var channel = await db.YoutubeChannelSpider.FirstAsync((x) => x.ChannelId == channelId);
                     db.YoutubeChannelSpider.Remove(channel);
-                    db.SaveChanges();
+                    await db.SaveChangesAsync();
 
                     await Context.Channel.SendConfirmAsync($"已移除 `{channel.ChannelTitle}` 的爬蟲").ConfigureAwait(false);
 

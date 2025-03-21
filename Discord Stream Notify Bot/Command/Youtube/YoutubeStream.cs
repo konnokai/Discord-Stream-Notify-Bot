@@ -2,7 +2,6 @@
 using Discord_Stream_Notify_Bot.Command.Attribute;
 using Discord_Stream_Notify_Bot.DataBase;
 using Discord_Stream_Notify_Bot.DataBase.Table;
-using Microsoft.EntityFrameworkCore;
 using System.Text.RegularExpressions;
 
 namespace Discord_Stream_Notify_Bot.Command.Youtube
@@ -76,8 +75,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
             var description = $"{Format.Url(video.Snippet.Title, $"https://www.youtube.com/watch?v={videoId}")}\n" +
                     $"{Format.Url(video.Snippet.ChannelTitle, $"https://www.youtube.com/channel/{video.Snippet.ChannelId}")}";
 
-            using var db = _dbService.GetDbContext();
-            if (!db.HasStreamVideoByVideoId(videoId))
+            if (!Extensions.HasStreamVideoByVideoId(videoId))
                 await _service.AddOtherDataAsync(video, true);
 
             try
@@ -153,8 +151,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                 return;
             }
 
-            using var db = _dbService.GetDbContext();
-            if (!db.HasStreamVideoByVideoId(videoId))
+            if (!Extensions.HasStreamVideoByVideoId(videoId))
             {
                 await _service.AddOtherDataAsync(video, false);
                 await Context.Channel.SendConfirmAsync($"已添加資料: {video.Snippet.ChannelTitle} - {video.Snippet.Title}");
@@ -205,7 +202,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
             }
             else
             {
-                var youtubeChannelSpider = db.YoutubeChannelSpider.FirstOrDefault((x) => x.ChannelId == channelId);
+                var youtubeChannelSpider = await db.YoutubeChannelSpider.FirstOrDefaultAsync((x) => x.ChannelId == channelId);
                 if (youtubeChannelSpider == null)
                 {
                     await Context.Channel.SendErrorAsync($"資料庫中找不到 {channelId} 的爬蟲");
@@ -217,7 +214,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                 }
             }
 
-            db.SaveChanges();
+            await db.SaveChangesAsync();
 
             await Context.Channel.SendConfirmAsync("已變更，等待爬蟲註冊中...");
             await _service.SubscribePubSubAsync();
@@ -251,7 +248,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
 
             using var db = _dbService.GetDbContext();
 
-            var youtubeChannelSpider = db.YoutubeChannelSpider.AsNoTracking().FirstOrDefault((x) => x.ChannelId == channelId);
+            var youtubeChannelSpider = await db.YoutubeChannelSpider.AsNoTracking().FirstOrDefaultAsync((x) => x.ChannelId == channelId);
 
             var guildList = new List<string>();
             foreach (var item in db.NoticeYoutubeStreamChannel.AsNoTracking().Where((x) => x.YouTubeChannelId == channelId))
@@ -301,7 +298,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
 
             using (var db = _dbService.GetDbContext())
             {
-                if (db.RecordYoutubeChannel.Any((x) => x.YoutubeChannelId == channelId))
+                if (await db.RecordYoutubeChannel.AsNoTracking().AnyAsync((x) => x.YoutubeChannelId == channelId))
                 {
                     await Context.Channel.SendConfirmAsync($"{channelId} 已存在於直播記錄清單");
                     return;
@@ -315,8 +312,8 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                     return;
                 }
 
-                db.RecordYoutubeChannel.Add(new RecordYoutubeChannel() { YoutubeChannelId = channelId });
-                db.SaveChanges();
+                await db.RecordYoutubeChannel.AddAsync(new RecordYoutubeChannel() { YoutubeChannelId = channelId });
+                await db.SaveChangesAsync();
                 await Context.Channel.SendConfirmAsync($"已新增 {channelTitle} 至直播記錄清單").ConfigureAwait(false);
             }
         }
@@ -346,7 +343,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
 
             using (var db = _dbService.GetDbContext())
             {
-                if (!db.RecordYoutubeChannel.Any((x) => x.YoutubeChannelId == channelId))
+                if (!await db.RecordYoutubeChannel.AsNoTracking().AnyAsync((x) => x.YoutubeChannelId == channelId))
                 {
                     await Context.Channel.SendConfirmAsync($"直播記錄清單中沒有 {channelId}").ConfigureAwait(false);
                     return;
@@ -355,8 +352,8 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                 string channelTitle = await GetChannelTitle(channelId);
                 if (string.IsNullOrEmpty(channelTitle)) channelTitle = channelId;
 
-                db.RecordYoutubeChannel.Remove(db.RecordYoutubeChannel.First((x) => x.YoutubeChannelId == channelId));
-                db.SaveChanges();
+                db.RecordYoutubeChannel.Remove(await db.RecordYoutubeChannel.FirstAsync((x) => x.YoutubeChannelId == channelId));
+                await db.SaveChangesAsync();
                 await Context.Channel.SendConfirmAsync($"已從直播記錄清單中移除 {channelTitle}").ConfigureAwait(false);
             }
         }
@@ -371,7 +368,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
 
             using (var db = _dbService.GetDbContext())
             {
-                var nowRecordList = db.RecordYoutubeChannel.Select((x) => x.YoutubeChannelId).ToList();
+                var nowRecordList = db.RecordYoutubeChannel.AsNoTracking().Select((x) => x.YoutubeChannelId).ToList();
 
                 if (nowRecordList.Count > 0)
                 {
@@ -484,10 +481,10 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
 
             using (var db = _dbService.GetDbContext())
             {
-                var channel = db.YoutubeChannelOwnedType.FirstOrDefault((x) => x.ChannelId == channelId);
+                var channel = await db.YoutubeChannelOwnedType.FirstOrDefaultAsync((x) => x.ChannelId == channelId);
                 if (channel == null)
                 {
-                    db.YoutubeChannelOwnedType.Add(new YoutubeChannelOwnedType() { ChannelId = channelId, ChannelTitle = title, ChannelType = channelType });
+                    await db.YoutubeChannelOwnedType.AddAsync(new YoutubeChannelOwnedType() { ChannelId = channelId, ChannelTitle = title, ChannelType = channelType });
                 }
                 else
                 {
@@ -496,7 +493,7 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
                     db.YoutubeChannelOwnedType.Update(channel);
                 }
 
-                db.SaveChanges();
+                await db.SaveChangesAsync();
                 await Context.Channel.SendConfirmAsync($"`{title}` 的所屬已改為 `{channelType.GetProductionName()}`");
             }
         }

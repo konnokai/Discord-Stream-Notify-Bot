@@ -18,13 +18,16 @@ namespace Discord_Stream_Notify_Bot.Interaction.TwitCasting
         {
             public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
             {
-                return await Task.Run(() =>
+                return await Task.Run(async () =>
                 {
                     using var db = Bot.DbService.GetDbContext();
-                    if (!db.NoticeTwitcastingStreamChannels.Any((x) => x.GuildId == context.Guild.Id))
+                    if (!await db.NoticeTwitcastingStreamChannels.AsNoTracking().AnyAsync((x) => x.GuildId == context.Guild.Id))
                         return AutocompletionResult.FromSuccess();
 
-                    var channelIdList = db.NoticeTwitcastingStreamChannels.Where((x) => x.GuildId == context.Guild.Id).Select((x) => new KeyValuePair<string, string>(db.GetTwitCastingChannelTitleByChannelId(x.ChannelId), x.ChannelId));
+                    var channelIdList = db.NoticeTwitcastingStreamChannels
+                        .AsNoTracking()
+                        .Where((x) => x.GuildId == context.Guild.Id)
+                        .Select((x) => new KeyValuePair<string, string>(db.GetTwitCastingChannelTitleByChannelId(x.ChannelId), x.ChannelId));
 
                     var channelIdList2 = new Dictionary<string, string>();
                     try
