@@ -87,8 +87,6 @@ namespace Discord_Stream_Notify_Bot.DataBase
                 }
             } while (saveFailed && DateTime.Now.Subtract(saveTime) <= TimeSpan.FromMinutes(1));
 
-            Dispose();
-
             return DateTime.Now.Subtract(saveTime) >= TimeSpan.FromMinutes(1);
         }
     }
