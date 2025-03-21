@@ -384,10 +384,9 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
         public async Task AddChannel([Summary("頻道網址")] string channelUrl,
             [Summary("發送通知的頻道"), ChannelTypes(ChannelType.Text, ChannelType.News)] IChannel channel)
         {
-            await DeferAsync(true).ConfigureAwait(false);
-
             try
             {
+                await DeferAsync(true).ConfigureAwait(false);
 
                 var textChannel = channel as IGuildChannel;
                 var permissions = Context.Guild.GetUser(_client.CurrentUser.Id).GetPermissions(textChannel);

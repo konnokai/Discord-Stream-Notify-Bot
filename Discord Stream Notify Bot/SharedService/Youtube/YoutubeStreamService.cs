@@ -730,30 +730,38 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
             if (matchNewFormat.Success)
             {
-                string channelName = matchNewFormat.Groups["CustomId"].Value;
+                string channelName = matchNewFormat.Groups["CustomId"].Value.ToLower();
 
                 using (var db = _dbService.GetDbContext())
                 {
-                    channelId = db.YoutubeChannelNameToId.SingleOrDefault((x) => x.ChannelName == channelName)?.ChannelId;
-
-                    if (string.IsNullOrEmpty(channelId))
+                    try
                     {
-                        try
+                        channelId = db.YoutubeChannelNameToId.SingleOrDefault((x) => x.ChannelName == channelName)?.ChannelId;
+
+                        if (string.IsNullOrEmpty(channelId))
                         {
-                            channelId = await GetChannelIdByUrlAsync($"https://www.youtube.com/@{channelName}");
-                            db.YoutubeChannelNameToId.Add(new DataBase.Table.YoutubeChannelNameToId() { ChannelName = channelName, ChannelId = channelId });
-                            await db.SaveChangesAsync();
+                            try
+                            {
+                                channelId = await GetChannelIdByUrlAsync($"https://www.youtube.com/@{channelName}");
+                                db.YoutubeChannelNameToId.Add(new DataBase.Table.YoutubeChannelNameToId() { ChannelName = channelName, ChannelId = channelId });
+                                await db.SaveChangesAsync();
+                            }
+                            catch (UriFormatException ex)
+                            {
+                                Log.Error(ex.Demystify(), $"GetChannelIdAsync-GetChannelIdByUrlAsync-UriFormatException: {channelUrl}");
+                                throw;
+                            }
+                            catch (Exception ex)
+                            {
+                                Log.Error(ex.Demystify(), $"GetChannelIdAsync-GetChannelIdByUrlAsync-Exception: {channelUrl}");
+                                throw;
+                            }
                         }
-                        catch (UriFormatException ex)
-                        {
-                            Log.Error(ex.Demystify(), $"GetChannelIdAsync-GetChannelIdByUrlAsync-UriFormatException: {channelUrl}");
-                            throw;
-                        }
-                        catch (Exception ex)
-                        {
-                            Log.Error(ex.Demystify(), $"GetChannelIdAsync-GetChannelIdByUrlAsync-Exception: {channelUrl}");
-                            throw;
-                        }
+                    }
+                    catch (InvalidOperationException ex)
+                    {
+                        Log.Error(ex.Demystify(), $"GetChannelIdAsync-GetChannelIdByUrlAsync-InvalidOperationException: {channelUrl}");
+                        throw new FormatException("網址格式化錯誤，請向 Bot 擁有者回報此問題");
                     }
                 }
             }

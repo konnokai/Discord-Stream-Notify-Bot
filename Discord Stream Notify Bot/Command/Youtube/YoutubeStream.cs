@@ -530,6 +530,37 @@ namespace Discord_Stream_Notify_Bot.Command.Youtube
             }
         }
 
+        [RequireContext(ContextType.DM)]
+        [RequireOwner]
+        [Command("FixYoutubeChannelNameToId")]
+        [Alias("FixYTCNTI")]
+        public async Task FixYoutubeChannelNameToId()
+        {
+            await Context.Channel.TriggerTypingAsync();
+
+            using (var db = _dbService.GetDbContext())
+            {
+                try
+                {
+                    var list = await db.YoutubeChannelNameToId.ToListAsync();
+
+                    foreach (var item in list)
+                    {
+                        item.ChannelName = item.ChannelName.ToLower();
+                    }
+
+                    int result = await db.SaveChangesAsync();
+
+                    await Context.Channel.SendConfirmAsync($"已修正 {result} 個頻道名稱");
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex.Demystify(), "FixYoutubeChannelNameToId");
+                    await Context.Channel.SendErrorAsync(ex.Message);
+                }
+            }
+        }
+
         private async Task<string> GetChannelTitle(string channelId)
         {
             try
