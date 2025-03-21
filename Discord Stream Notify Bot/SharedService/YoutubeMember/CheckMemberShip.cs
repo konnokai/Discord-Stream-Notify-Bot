@@ -1,4 +1,5 @@
-﻿using Discord_Stream_Notify_Bot.DataBase.Table;
+﻿using Discord;
+using Discord_Stream_Notify_Bot.DataBase.Table;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
 using Google.Apis.YouTube.v3;
@@ -13,16 +14,22 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
         {
             bool isOldCheck = (bool)stats;
             int totalCheckMemberCount = 0, totalIsMemberCount = 0;
+            List<GuildYoutubeMemberConfig> needCheckList;
 
-            using var db = _dbService.GetDbContext();
+            using (var db = _dbService.GetDbContext())
+            {
+                needCheckList = await db.GuildYoutubeMemberConfig
+                    .AsNoTracking()
+                    .Where((x) => !string.IsNullOrEmpty(x.MemberCheckChannelId) && !string.IsNullOrEmpty(x.MemberCheckChannelTitle) && x.MemberCheckVideoId != "-")
+                    .ToListAsync();
+            }
 
-            var needCheckList = db.GuildYoutubeMemberConfig.Where((x) => !string.IsNullOrEmpty(x.MemberCheckChannelId) && !string.IsNullOrEmpty(x.MemberCheckChannelTitle) && x.MemberCheckVideoId != "-");
-            if (isOldCheck && needCheckList.Any())
+            if (isOldCheck && needCheckList.Count != 0)
             {
                 try
                 {
                     int splitDay = 3;
-                    int needCheckCount = needCheckList.Count() / splitDay;
+                    int needCheckCount = needCheckList.Count / splitDay;
                     int checkRound = 0, skipCount, lastSkipCount = 0;
 
                     if (File.Exists(Utility.GetDataFilePath("MemberCheck.dat")))
@@ -38,14 +45,14 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
 
                     if (checkRound >= splitDay)
                     {
-                        needCheckCount = needCheckList.Count() - lastSkipCount;
+                        needCheckCount = needCheckList.Count - lastSkipCount;
                     }
                     else
                     {
                         lastSkipCount += needCheckCount;
                     }
 
-                    needCheckList = needCheckList.Skip(skipCount).Take(needCheckCount);
+                    needCheckList = needCheckList.Skip(skipCount).Take(needCheckCount).ToList();
 
                     if (checkRound >= splitDay)
                     {
@@ -64,20 +71,21 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
             Log.Info((isOldCheck ? "舊" : "新") + $"會限檢查開始: {needCheckList.Count()} 個頻道");
 
             HashSet<string> checkedMemberSet = new();
-            List<YoutubeMemberCheck> needRemoveList = new();
             foreach (var guildYoutubeMemberConfig in needCheckList)
             {
-                var list = db.YoutubeMemberCheck
+                using var db = _dbService.GetDbContext();
+
+                var list = await db.YoutubeMemberCheck
                     .Where((x) => x.GuildId == guildYoutubeMemberConfig.GuildId && x.CheckYTChannelId == guildYoutubeMemberConfig.MemberCheckChannelId)
                     .Where((x) => (isOldCheck && x.IsChecked) || (!isOldCheck && !x.IsChecked))
-                    .ToList();
+                    .ToListAsync();
 
                 if (list.Count == 0)
                     continue;
 
                 int totalCheckCount = list.Count;
 
-                var guildConfig = db.GuildConfig.FirstOrDefault((x) => x.GuildId == guildYoutubeMemberConfig.GuildId);
+                var guildConfig = await db.GuildConfig.FirstOrDefaultAsync((x) => x.GuildId == guildYoutubeMemberConfig.GuildId);
                 if (guildConfig == null)
                 {
                     db.GuildConfig.Add(new GuildConfig() { GuildId = guildYoutubeMemberConfig.GuildId });
@@ -218,7 +226,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
 
                                     guildYoutubeMemberConfig.MemberCheckVideoId = "-";
                                     db.GuildYoutubeMemberConfig.Update(guildYoutubeMemberConfig);
-                                    db.SaveChanges();
+                                    await db.SaveChangesAsync();
 
                                     break;
                                 }
@@ -230,7 +238,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
 
                                     guildYoutubeMemberConfig.MemberCheckVideoId = "-";
                                     db.GuildYoutubeMemberConfig.Update(guildYoutubeMemberConfig);
-                                    db.SaveChanges();
+                                    await db.SaveChangesAsync();
 
                                     break;
                                 }
@@ -238,7 +246,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                                 {
                                     Log.Warn($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {member.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 的會限資格取得失敗: 無會員");
 
-                                    needRemoveList.Add(member);
+                                    db.YoutubeMemberCheck.Remove(member);
 
                                     try
                                     {
@@ -379,7 +387,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                         {
                             await logChannel.SendErrorMessageAsync(_client, member.UserId, guildYoutubeMemberConfig.MemberCheckChannelTitle, "未知的使用者");
                             Log.Warn($"用戶已離開伺服器: {guild.Id} / {member.UserId}");
-                            needRemoveList.Add(member);
+                            db.YoutubeMemberCheck.Remove(member);
                         }
                         else
                         {
@@ -428,55 +436,9 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
 
                 await logChannel.SendConfirmMessageAsync((isOldCheck ? "舊" : "新") + "會限驗證完成", $"檢查頻道: {guildYoutubeMemberConfig.MemberCheckChannelTitle}\n" +
                     $"本次驗證 {totalCheckCount} 位成員，共 {checkedMemberCount} 位驗證成功");
+
+                await db.SaveChangesAsync();
             }
-
-            foreach (var item in needRemoveList)
-            {
-                try
-                {
-                    db.YoutubeMemberCheck.Remove(item);
-                }
-                catch (Exception ex)
-                {
-                    Log.Error($"CheckMemberShip-Remove: {ex}");
-                }
-            }
-
-            var saveTime = DateTime.Now;
-            bool saveFailed;
-            do
-            {
-                saveFailed = false;
-                try
-                {
-                    db.SaveChanges();
-                }
-                catch (DbUpdateConcurrencyException ex)
-                {
-                    saveFailed = true;
-                    foreach (var item in ex.Entries)
-                    {
-                        try
-                        {
-                            item.Reload();
-                        }
-                        catch (Exception ex2)
-                        {
-                            Log.Error($"CheckMemberShip-SaveChanges-Reload");
-                            Log.Error(item.DebugView.ToString());
-                            Log.Error(ex2.ToString());
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Log.Error($"CheckMemberShip-SaveChanges: {ex}");
-                    Log.Error(db.ChangeTracker.DebugView.LongView);
-                    await (await Bot.ApplicatonOwner.CreateDMChannelAsync()).SendErrorMessageAsync($"CheckMemberShip-SaveChanges: {ex}");
-                }
-            } while (saveFailed && DateTime.Now.Subtract(saveTime) <= TimeSpan.FromMinutes(1));
-
-            needRemoveList.Clear();
 
             if (totalCheckMemberCount > 0)
             {

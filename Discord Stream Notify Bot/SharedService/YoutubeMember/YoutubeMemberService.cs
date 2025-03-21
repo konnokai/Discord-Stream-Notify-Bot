@@ -139,9 +139,9 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                 }
             };
 
-            //checkMemberShipOnlyVideoId = new Timer(CheckMemberShipOnlyVideoId, null, TimeSpan.FromSeconds(10), TimeSpan.FromMinutes(5));
-            //checkOldMemberStatus = new Timer(new TimerCallback(async (obj) => await CheckMemberShip(obj)), true, TimeSpan.FromSeconds(Math.Round(Convert.ToDateTime($"{DateTime.Now.AddDays(1):yyyy/MM/dd 04:00:00}").Subtract(DateTime.Now).TotalSeconds)), TimeSpan.FromDays(1));
-            //checkNewMemberStatus = new Timer(new TimerCallback(async (obj) => await CheckMemberShip(obj)), false, TimeSpan.FromSeconds(15), TimeSpan.FromMinutes(5));
+            checkMemberShipOnlyVideoId = new Timer(CheckMemberShipOnlyVideoId, null, TimeSpan.FromSeconds(10), TimeSpan.FromMinutes(5));
+            checkOldMemberStatus = new Timer(new TimerCallback(async (obj) => await CheckMemberShip(obj)), true, TimeSpan.FromSeconds(Math.Round(Convert.ToDateTime($"{DateTime.Now.AddDays(1):yyyy/MM/dd 04:00:00}").Subtract(DateTime.Now).TotalSeconds)), TimeSpan.FromDays(1));
+            checkNewMemberStatus = new Timer(new TimerCallback(async (obj) => await CheckMemberShip(obj)), false, TimeSpan.FromSeconds(15), TimeSpan.FromMinutes(5));
 
             Task.Run(async () =>
             {
@@ -329,7 +329,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
         {
             using var db = _dbService.GetDbContext();
 
-            foreach (var item in db.GuildYoutubeMemberConfig.Where((x) => x.MemberCheckChannelId == checkChannelId))
+            foreach (var item in await db.GuildYoutubeMemberConfig.AsNoTracking().Where((x) => x.MemberCheckChannelId == checkChannelId).ToListAsync())
             {
                 try
                 {
@@ -343,11 +343,11 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                         continue;
                     }
 
-                    var guildConfig = db.GuildConfig.FirstOrDefault((x) => x.GuildId == item.GuildId);
+                    var guildConfig = await db.GuildConfig.FirstOrDefaultAsync((x) => x.GuildId == item.GuildId);
                     if (guildConfig == null)
                     {
                         Log.Warn($"SendMsgToLogChannelAsync: {item.GuildId} 無 GuildConfig");
-                        db.GuildConfig.Add(new GuildConfig { GuildId = guild.Id });
+                        await db.GuildConfig.AddAsync(new GuildConfig { GuildId = guild.Id });
                         db.GuildYoutubeMemberConfig.Remove(item);
 
                         msg += $"\n另外: `{guild.Name}` 無會限紀錄頻道，請新增頻道並給予小幫手 `讀取、發送及嵌入連結` 權限後使用 `/member-set set-notice-member-status-channel` 設定";
@@ -398,6 +398,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.YoutubeMember
                     Log.Error($"SendMsgToLogChannelAsync: {ex}");
                 }
             }
+
+            await db.SaveChangesAsync();
         }
 
         private async Task<UserCredential> GetUserCredentialAsync(string discordUserId, TokenResponse token)
