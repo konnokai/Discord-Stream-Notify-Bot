@@ -53,7 +53,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                     }
                     catch (Exception ex)
                     {
-                        Log.Error($"GuildNoticeTwitterSpaceIdAutocompleteHandler - {ex}");
+                        Log.Error(ex.Demystify(), $"GuildNoticeTwitterSpaceIdAutocompleteHandler");
                     }
 
                     List<AutocompleteResult> results = new();
@@ -66,10 +66,11 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                 });
             }
 
-            private string GetTwitterUserNameByUserScreenName(string userScreenName)
+            private static string GetTwitterUserNameByUserScreenName(string userScreenName)
             {
-                using var db = Bot.DbService.GetDbContext();
                 userScreenName = userScreenName.Trim();
+
+                using var db = Bot.DbService.GetDbContext();
                 var twitterSpaceSpider = db.TwitterSpaceSpider.AsNoTracking().FirstOrDefault((x) => x.UserScreenName.ToLower() == userScreenName.ToLower());
                 if (twitterSpaceSpider != null)
                     return twitterSpaceSpider.UserName;

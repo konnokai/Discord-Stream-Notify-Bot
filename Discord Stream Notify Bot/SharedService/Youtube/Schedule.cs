@@ -574,7 +574,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             }
             catch (Exception ex)
             {
-                Log.Error($"CheckScheduleTime-TryRemove: {ex}");
+                Log.Error(ex.Demystify(), $"CheckScheduleTime-TryRemove");
             }
 
             List<string> recordChannelId = new();
@@ -585,7 +585,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             }
             catch (Exception ex)
             {
-                Log.Error($"CheckScheduleTime-GetRecordYoutubeChannel: {ex}");
+                Log.Error(ex.Demystify(), $"CheckScheduleTime-GetRecordYoutubeChannel");
             }
 
             int changeVideoNum = 0;
