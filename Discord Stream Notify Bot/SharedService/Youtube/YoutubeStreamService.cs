@@ -34,8 +34,8 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
         {
             [ChoiceDisplay("Holo")]
             Holo,
-            [ChoiceDisplay("彩虹社")]
-            Niji
+            //[ChoiceDisplay("彩虹社")]
+            //Niji
         }
 
         public ConcurrentBag<NijisanjiLiverJson> NijisanjiLiverContents { get; } = new ConcurrentBag<NijisanjiLiverJson>();
@@ -668,9 +668,9 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                 .Select((x) => x.Attributes["href"].Value.Split("?v=")[1]));
                         }
                         break;
-                    case NowStreamingHost.Niji: //Todo: 實作2434現正直播查詢
-                        return null;
-                        break;
+                    //case NowStreamingHost.Niji: //Todo: 實作2434現正直播查詢
+                    //    return null;
+                    //    break;
                 }
 
                 var video = YouTubeService.Videos.List("snippet");
