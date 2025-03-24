@@ -51,9 +51,25 @@ namespace Discord_Stream_Notify_Bot.DataBase
 
         public bool UpdateAndSave(Table.Video video)
         {
-            Update(video);
+            Table.Video updatedVideo = video switch
+            {
+                { ChannelType: Table.Video.YTChannelType.Holo } => video as HoloVideos,
+                { ChannelType: Table.Video.YTChannelType.Nijisanji } => video as NijisanjiVideos,
+                { ChannelType: Table.Video.YTChannelType.Other } => video as OtherVideos,
+                { ChannelType: Table.Video.YTChannelType.NonApproved } => video as NonApprovedVideos,
+                _ => null
+            };
+
+            if (updatedVideo == null)
+            {
+                return false;
+            }
+
+            Update(updatedVideo);
             var saveTime = DateTime.Now;
             bool saveFailed;
+            int retryCount = 0;
+            const int maxRetryCount = 5;
 
             do
             {
@@ -65,6 +81,7 @@ namespace Discord_Stream_Notify_Bot.DataBase
                 catch (DbUpdateConcurrencyException ex)
                 {
                     saveFailed = true;
+                    retryCount++;
                     foreach (var item in ex.Entries)
                     {
                         try
@@ -84,9 +101,9 @@ namespace Discord_Stream_Notify_Bot.DataBase
                     Log.Error($"VideoContext-SaveChanges: {ex}");
                     Log.Error(ChangeTracker.DebugView.LongView);
                 }
-            } while (saveFailed && DateTime.Now.Subtract(saveTime) <= TimeSpan.FromMinutes(1));
+            } while (saveFailed && retryCount < maxRetryCount && DateTime.Now.Subtract(saveTime) <= TimeSpan.FromMinutes(1));
 
-            return DateTime.Now.Subtract(saveTime) >= TimeSpan.FromMinutes(1);
+            return retryCount >= maxRetryCount || DateTime.Now.Subtract(saveTime) >= TimeSpan.FromMinutes(1);
         }
     }
 }
