@@ -415,7 +415,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                         ChannelType = DataBase.Table.Video.YTChannelType.NonApproved
                                     };
 
-                                    Log.New($"(非已認可的新影片) | {youtubePubSubNotification.Published} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
+                                    Log.New($"(非已認可的新影片) | {youtubePubSubNotification.Published} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle} ({streamVideo.VideoId})");
 
                                     EmbedBuilder embedBuilder = new EmbedBuilder();
                                     embedBuilder.WithOkColor()
