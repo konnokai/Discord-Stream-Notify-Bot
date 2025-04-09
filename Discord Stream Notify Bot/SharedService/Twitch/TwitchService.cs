@@ -168,9 +168,11 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitch
 
                 if (twitchStream != null)
                 {
+                    var streamTime = DateTime.Now.Subtract(twitchStream.StreamStartAt);
+
                     embedBuilder
                         .WithTitle(twitchStream.StreamTitle)
-                        .AddField("直播時長", $"{DateTime.Now.Subtract(twitchStream.StreamStartAt):hh'時'mm'分'ss'秒'}");
+                        .AddField("直播時長", streamTime.TotalDays >= 1 ? $"{streamTime:d' 天 'h' 時 'm' 分 's' 秒'}" : $"{streamTime:h' 時 'm' 分 's' 秒'}");
                 }
 
                 embedBuilder.AddField("關台時間", DateTime.UtcNow.ConvertDateTimeToDiscordMarkdown());
