@@ -405,7 +405,7 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
 
             Utility.OfficialGuildList.Add(guildId);
 
-            if (_service.WriteOfficialListFile())
+            if (_service.WriteAndReloadOfficialListFile())
             {
                 await Context.Channel.SendConfirmAsync($"已添加 {guildId} 至官方伺服器名單內");
             }
@@ -430,7 +430,7 @@ namespace Discord_Stream_Notify_Bot.Command.Admin
 
             Utility.OfficialGuildList.Remove(guildId);
 
-            if (_service.WriteOfficialListFile())
+            if (_service.WriteAndReloadOfficialListFile())
             {
                 await Context.Channel.SendConfirmAsync($"已從官方伺服器名單內移除 {guildId}");
             }
