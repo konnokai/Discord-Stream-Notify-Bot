@@ -60,7 +60,7 @@
                                 Image image = new Image(memStream);
                                 await guild.ModifyAsync((func) => func.Banner = image);
                             }
-                            
+
                             item.LastChangeStreamId = videoId;
 
                             using (var db = _dbService.GetDbContext())

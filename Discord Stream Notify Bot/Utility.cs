@@ -4,7 +4,7 @@ namespace Discord_Stream_Notify_Bot
 {
     public static class Utility
     {
-        public const string PatreonUrl = "https://patreon.com/konnokai";
+        public const string ECPayUrl = "https://p.ecpay.com.tw/B8CCC";
         public const string PaypalUrl = "https://paypal.me/jun112561";
 
         //static Regex videoIdRegex = new Regex(@"youtube_(?'ChannelId'[\w\-]{24})_(?'Date'[\d]{8})_(?'Time'[\d]{6})_(?'VideoId'[\w\-]{11}).mp4.part");

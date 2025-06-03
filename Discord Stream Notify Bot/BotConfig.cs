@@ -31,6 +31,10 @@ public class BotConfig
     public string TwitterCSRFToken { get; set; } = "";
     public string TwitterSpaceRecordPath { get; set; } = "";
 
+    public ulong YouTubeEmoteId { get; set; } = 1265158558299848827;
+    public ulong PayPalEmoteId { get; set; } = 1265158658015236107;
+    public ulong ECPayEmoteId { get; set; } = 1379272194210795622;
+
     public void InitBotConfig()
     {
         try { File.WriteAllText("bot_config_example.json", JsonConvert.SerializeObject(new BotConfig(), Formatting.Indented)); } catch { }
@@ -98,6 +102,9 @@ public class BotConfig
             GoogleClientId = config.GoogleClientId;
             GoogleClientSecret = config.GoogleClientSecret;
             UptimeKumaPushUrl = config.UptimeKumaPushUrl;
+            YouTubeEmoteId = config.YouTubeEmoteId;
+            PayPalEmoteId = config.PayPalEmoteId;
+            ECPayEmoteId = config.ECPayEmoteId;
 
             if (string.IsNullOrWhiteSpace(config.RedisTokenKey) || string.IsNullOrWhiteSpace(RedisTokenKey))
             {

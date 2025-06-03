@@ -1,5 +1,4 @@
 ﻿using Discord.Commands;
-using Discord_Stream_Notify_Bot.DataBase;
 using Microsoft.Extensions.DependencyInjection;
 using System.Data;
 using System.Reflection;

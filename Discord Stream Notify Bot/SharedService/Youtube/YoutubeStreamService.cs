@@ -72,7 +72,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 
             _messageComponent = new ComponentBuilder()
                         .WithButton("好手氣，隨機帶你到一個影片或直播", style: ButtonStyle.Link, emote: emojiService.YouTubeEmote, url: "https://api.konnokai.me/randomvideo")
-                        .WithButton("贊助小幫手 (Patreon) #ad", style: ButtonStyle.Link, emote: emojiService.PatreonEmote, url: Utility.PatreonUrl, row: 1)
+                        .WithButton("贊助小幫手 (綠界) #ad", style: ButtonStyle.Link, emote: emojiService.ECPayEmote, url: Utility.ECPayUrl, row: 1)
                         .WithButton("贊助小幫手 (Paypal) #ad", style: ButtonStyle.Link, emote: emojiService.PayPalEmote, url: Utility.PaypalUrl, row: 1).Build();
 
             if (Bot.Redis != null)
@@ -668,9 +668,9 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
                                 .Select((x) => x.Attributes["href"].Value.Split("?v=")[1]));
                         }
                         break;
-                    //case NowStreamingHost.Niji: //Todo: 實作2434現正直播查詢
-                    //    return null;
-                    //    break;
+                        //case NowStreamingHost.Niji: //Todo: 實作2434現正直播查詢
+                        //    return null;
+                        //    break;
                 }
 
                 var video = YouTubeService.Videos.List("snippet");

@@ -4,82 +4,45 @@ namespace Discord_Stream_Notify_Bot.SharedService
 {
     public class EmojiService : IInteractionService
     {
-        // 好像要把 Emote Id 給拉到 BotConfig 設定還是怎樣的
-        public Emote YouTubeEmote
-        {
-            get
-            {
-#if !RELEASE
-                return null;
-#endif
-                if (youTubeEmote == null)
-                {
-                    try
-                    {
-                        Task.Run(async () => youTubeEmote = await _client.GetApplicationEmoteAsync(1265158558299848827));
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Error($"無法取得YouTube Emote: {ex}");
-                        youTubeEmote = null;
-                    }
-                }
-                return youTubeEmote;
-            }
-        }
+        public Emote YouTubeEmote { get; private set; }
+        public Emote PayPalEmote { get; private set; }
+        public Emote ECPayEmote { get; private set; }
 
-        public Emote PatreonEmote
-        {
-            get
-            {
-#if !RELEASE
-                return null;
-#endif
-                if (patreonEmote == null)
-                {
-                    try
-                    {
-                        Task.Run(async () => patreonEmote = await _client.GetApplicationEmoteAsync(1265158902962458769));
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Error($"無法取得Patreon Emote: {ex}");
-                        patreonEmote = null;
-                    }
-                }
-                return patreonEmote;
-            }
-        }
-
-        public Emote PayPalEmote
-        {
-            get
-            {
-#if !RELEASE
-                return null;
-#endif
-                if (payPalEmote == null)
-                {
-                    try
-                    {
-                        Task.Run(async () => payPalEmote = await _client.GetApplicationEmoteAsync(1265158658015236107));
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Error($"無法取得PayPal Emote: {ex}");
-                        payPalEmote = null;
-                    }
-                }
-                return payPalEmote;
-            }
-        }
-
-        private Emote youTubeEmote, patreonEmote, payPalEmote;
         private readonly DiscordSocketClient _client;
 
-        public EmojiService(DiscordSocketClient client)
+        public EmojiService(DiscordSocketClient client, BotConfig botConfig)
         {
             _client = client;
+
+            try
+            {
+                YouTubeEmote = _client.GetApplicationEmoteAsync(botConfig.YouTubeEmoteId).GetAwaiter().GetResult();
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"無法取得 YouTube Emote: {ex}");
+                YouTubeEmote = null;
+            }
+
+            try
+            {
+                PayPalEmote = _client.GetApplicationEmoteAsync(botConfig.PayPalEmoteId).GetAwaiter().GetResult();
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"無法取得 PayPal Emote: {ex}");
+                PayPalEmote = null;
+            }
+
+            try
+            {
+                ECPayEmote = _client.GetApplicationEmoteAsync(botConfig.ECPayEmoteId).GetAwaiter().GetResult();
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"無法取得 ECPay Emote: {ex}");
+                ECPayEmote = null;
+            }
         }
     }
 }

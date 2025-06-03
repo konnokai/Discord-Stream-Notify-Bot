@@ -5,7 +5,6 @@ using Discord_Stream_Notify_Bot.Interaction;
 using System.Runtime.InteropServices;
 
 #if RELEASE
-using Microsoft.EntityFrameworkCore;
 using Polly;
 #endif
 
@@ -204,7 +203,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitter
                 else embedBuilder.WithOkColor();
 
                 MessageComponent comp = new ComponentBuilder()
-                        .WithButton("贊助小幫手 (Patreon) #ad", style: ButtonStyle.Link, emote: _emojiService.PatreonEmote, url: Utility.PatreonUrl, row: 1)
+                        .WithButton("贊助小幫手 (綠界) #ad", style: ButtonStyle.Link, emote: _emojiService.ECPayEmote, url: Utility.ECPayUrl, row: 1)
                         .WithButton("贊助小幫手 (Paypal) #ad", style: ButtonStyle.Link, emote: _emojiService.PayPalEmote, url: Utility.PaypalUrl, row: 1).Build();
 
                 foreach (var item in noticeGuildList)
