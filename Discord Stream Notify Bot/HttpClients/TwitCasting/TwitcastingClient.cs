@@ -70,7 +70,7 @@ namespace Discord_Stream_Notify_Bot.HttpClients
             }
             catch (Exception ex)
             {
-                Log.Error($"TwitCastingClient.GetBackendStreamDataAsync: {ex}");
+                Log.Error($"TwitCastingClient.GetNewStreamDataAsync: {ex}");
                 return null;
             }
         }

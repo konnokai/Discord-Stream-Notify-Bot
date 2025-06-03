@@ -13,6 +13,9 @@
 
         [JsonProperty("llfmp4")]
         public Llfmp4 Llfmp4 { get; set; }
+
+        [JsonProperty("webrtc")]
+        public Webrtc Webrtc { get; set; }
     }
 
     public class Fmp4
@@ -24,10 +27,10 @@
         public string Proto { get; set; }
 
         [JsonProperty("source")]
-        public bool? Source { get; set; }
+        public bool Source { get; set; }
 
         [JsonProperty("mobilesource")]
-        public bool? Mobilesource { get; set; }
+        public bool Mobilesource { get; set; }
     }
 
     public class Hls
@@ -39,7 +42,7 @@
         public string Proto { get; set; }
 
         [JsonProperty("source")]
-        public bool? Source { get; set; }
+        public bool Source { get; set; }
     }
 
     public class Llfmp4
@@ -62,10 +65,25 @@
         [JsonProperty("main")]
         public string Main { get; set; }
 
-        [JsonProperty("mobilesource")]
-        public string Mobilesource { get; set; }
-
         [JsonProperty("base")]
         public string Base { get; set; }
+    }
+
+    public class Webrtc
+    {
+        [JsonProperty("streams")]
+        public Streams Streams { get; set; }
+
+        [JsonProperty("app")]
+        public App App { get; set; }
+    }
+
+    public class App
+    {
+        [JsonProperty("mode")]
+        public string Mode { get; set; }
+
+        [JsonProperty("url")]
+        public string Url { get; set; }
     }
 }
