@@ -1,9 +1,10 @@
 ﻿using Discord_Stream_Notify_Bot.DataBase;
 using Discord_Stream_Notify_Bot.DataBase.Table;
 using Discord_Stream_Notify_Bot.HttpClients;
-using Discord_Stream_Notify_Bot.HttpClients.TwitCasting;
 using Discord_Stream_Notify_Bot.Interaction;
 using System.Runtime.InteropServices;
+using Discord_Stream_Notify_Bot.HttpClients.Twitcasting.Model;
+
 
 #if RELEASE
 using Polly;
@@ -20,7 +21,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitcasting
         private readonly TwitcastingClient _twitcastingClient;
         private readonly EmojiService _emojiService;
         private readonly MainDbService _dbService;
-        private readonly Timer _refreshCategoriesTimer, _refreshNowStreamTimer;
+        private readonly Timer _refreshCategoriesTimer, _refreshWebHookTimer;
 
         private List<Category> categories;
         private string twitcastingRecordPath = "";
@@ -43,7 +44,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitcasting
             if (string.IsNullOrEmpty(twitcastingRecordPath)) twitcastingRecordPath = Utility.GetDataFilePath("");
             if (!twitcastingRecordPath.EndsWith(Utility.GetPlatformSlash())) twitcastingRecordPath += Utility.GetPlatformSlash();
 
-            _refreshCategoriesTimer = new Timer(async (obj) =>
+            _refreshCategoriesTimer = new Timer(async (_) =>
             {
                 try
                 {
@@ -55,31 +56,66 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitcasting
                 }
             }, null, TimeSpan.FromSeconds(3), TimeSpan.FromMinutes(30));
 
-            _refreshNowStreamTimer = new Timer(async (obj) => { await TimerHandel(); },
-                null, TimeSpan.FromSeconds(15), TimeSpan.FromMinutes(1));
+            _refreshWebHookTimer = new Timer(async (_) => { await TimerHandel(); },
+                null, TimeSpan.FromSeconds(15), TimeSpan.FromMinutes(15));
 
             _dbService = dbService;
+
+            Bot.RedisSub.Subscribe(new RedisChannel("twitcasting.pubsub.startlive", RedisChannel.PatternMode.Literal), async (channel, message) =>
+            {
+                var webHookJson = JsonConvert.DeserializeObject<TwitCastingWebHookJson>(message);
+                if (webHookJson == null)
+                {
+                    Log.Error("TwitCasting WebHook JSON 反序列化失敗");
+                    return;
+                }
+
+                using var db = _dbService.GetDbContext();
+                if (await db.TwitcastingStreams.AsNoTracking().AnyAsync((x) => x.StreamId == int.Parse(webHookJson.Movie.Id)))
+                {
+                    Log.Warn($"TwitCasting 重複開台通知: {webHookJson.Movie.Id} - {webHookJson.Movie.Title}");
+                    return;
+                }
+
+                bool isRecord = db.TwitcastingSpider.SingleOrDefault((x) => x.ScreenId == webHookJson.Broadcaster.Id)?.IsRecord ?? false;
+                var twitcastingStream = new TwitcastingStream()
+                {
+                    ChannelId = webHookJson.Broadcaster.Id,
+                    ChannelTitle = webHookJson.Broadcaster.Name,
+                    StreamId = int.Parse(webHookJson.Movie.Id),
+                    StreamTitle = webHookJson.Movie.Title ?? "無標題",
+                    StreamSubTitle = webHookJson.Movie.Subtitle,
+                    Category = GetCategorieNameById(webHookJson.Movie.Category),
+                    ThumbnailUrl = webHookJson.Movie.LargeThumbnail,
+                    StreamStartAt = UnixTimeStampToDateTime(webHookJson.Movie.Created)
+                };
+
+                await db.TwitcastingStreams.AddAsync(twitcastingStream);
+                await db.SaveChangesAsync();
+
+                await SendStreamMessageAsync(twitcastingStream, webHookJson.Movie.IsProtected, !webHookJson.Movie.IsProtected && isRecord && RecordTwitCasting(twitcastingStream));
+            });
         }
 
-        public async Task<(string ChannelId, string ChannelTitle)> GetChannelIdAndTitleAsync(string channelUrl)
+#nullable enable
+
+        public async Task<HttpClients.Twitcasting.Model.Broadcaster?> GetChannelNameAndTitleAsync(string channelUrl)
         {
-            string channelId = channelUrl.Split('?')[0].Replace("https://twitcasting.tv/", "").Split('/')[0];
-            if (string.IsNullOrEmpty(channelId))
-                return (string.Empty, string.Empty);
+            string channelName = channelUrl.Split('?')[0].Replace("https://twitcasting.tv/", "").Split('/')[0];
+            if (string.IsNullOrEmpty(channelName))
+                return null;
 
-            string channelTitle = await GetChannelTitleAsync(channelId).ConfigureAwait(false);
-            if (string.IsNullOrEmpty(channelTitle))
-                return (string.Empty, string.Empty);
+            var data = await _twitcastingClient.GetUserInfoAsync(channelName).ConfigureAwait(false);
 
-            return (channelId, channelTitle);
+            return data?.User;
         }
 
-        public async Task<string> GetChannelTitleAsync(string channelId)
+        public async Task<string?> GetChannelTitleAsync(string channelName)
         {
             try
             {
                 HtmlAgilityPack.HtmlWeb htmlWeb = new HtmlAgilityPack.HtmlWeb();
-                var htmlDocument = await htmlWeb.LoadFromWebAsync($"https://twitcasting.tv/{channelId}");
+                var htmlDocument = await htmlWeb.LoadFromWebAsync($"https://twitcasting.tv/{channelName}");
                 var htmlNodes = htmlDocument.DocumentNode.Descendants();
                 var htmlNode = htmlNodes.FirstOrDefault((x) => x.Name == "span" && x.HasClass("tw-user-nav-name") || x.HasClass("tw-user-nav2-name"));
 
@@ -103,58 +139,37 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitcasting
             isRuning = true;
 
             using var db = _dbService.GetDbContext();
-            var list = db.TwitcastingSpider.AsNoTracking().ToList();
+            var spiderList = db.TwitcastingSpider.AsNoTracking().ToList();
 
             try
             {
-                foreach (var item in list)
+                // 取得所有已註冊的 webhook
+                var registeredWebhooks = await _twitcastingClient.GetAllRegistedWebHookAsync();
+                if (registeredWebhooks == null)
                 {
-                    var data = await _twitcastingClient.GetNewStreamDataAsync(item.ChannelId);
-                    if (data == null || !data.Movie.Live)
-                        continue;
+                    Log.Error("TwitCastingService-Timer: 無法獲取已註冊的 Webhook 列表，請檢查 TwitCasting API 設定是否正確。");
+                    return;
+                }
+                var registeredChannelIds = registeredWebhooks.Select(x => x.UserId).ToHashSet();
 
-                    if (hashSet.Contains(data.Movie.Id))
-                        continue;
+                // 需要註冊 webhook 的頻道
+                var spiderChannelIds = spiderList.Where((x) => !string.IsNullOrEmpty(x.ChannelId)).Select(x => x.ChannelId).ToHashSet();
 
-                    if (await db.TwitcastingStreams.AsNoTracking().AnyAsync((x) => x.StreamId == data.Movie.Id))
-                    {
-                        hashSet.Add(data.Movie.Id);
-                        continue;
-                    }
+                // 註冊缺少的 webhook
+                foreach (var channelId in spiderChannelIds.Except(registeredChannelIds))
+                {
+                    await _twitcastingClient.RegisterWebHookAsync(channelId);
+                    Log.Info($"註冊 TwitCasting Webhook: {channelId}");
+                }
 
-                    try
-                    {
-                        hashSet.Add(data.Movie.Id);
-
-                        var streamData = await _twitcastingClient.GetMovieInfoAsync(data.Movie.Id);
-                        if (streamData == null)
-                        {
-                            Log.Error($"TwitCastingService-GetMovieInfoAsync: {item.ChannelId} / {data.Movie.Id}");
-                            continue;
-                        }
-
-                        var twitcastingStream = new TwitcastingStream()
-                        {
-                            ChannelId = item.ChannelId,
-                            ChannelTitle = item.ChannelTitle,
-                            StreamId = data.Movie.Id,
-                            StreamTitle = streamData.Movie.Title ?? "無標題",
-                            StreamSubTitle = streamData.Movie.Subtitle,
-                            Category = GetCategorieNameById(streamData.Movie.Category),
-                            ThumbnailUrl = streamData.Movie.LargeThumbnail,
-                            StreamStartAt = UnixTimeStampToDateTime(streamData.Movie.Created)
-                        };
-
-                        await db.TwitcastingStreams.AddAsync(twitcastingStream);
-
-                        await SendStreamMessageAsync(twitcastingStream, streamData.Movie.IsProtected, !streamData.Movie.IsProtected && item.IsRecord && RecordTwitCasting(twitcastingStream));
-                    }
-                    catch (Exception ex) { Log.Error($"TwitCastingService-GetData {item.ChannelId}: {ex}"); }
-
-                    await Task.Delay(1000); // 等個一秒鐘避免觸發 429 之類的錯誤，雖然也不知道有沒有用
+                // 移除多餘的 webhook
+                foreach (var channelId in registeredChannelIds.Except(spiderChannelIds))
+                {
+                    await _twitcastingClient.RemoveWebHookAsync(channelId);
+                    Log.Info($"移除 TwitCasting Webhook: {channelId}");
                 }
             }
-            catch (Exception ex) { Log.Error($"TwitCastingService-Timer {ex}"); }
+            catch (Exception ex) { Log.Error(ex.Demystify(), "TwitCastingService-Timer"); }
             finally { isRuning = false; }
 
             await db.SaveChangesAsync();
@@ -167,7 +182,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitcasting
 #else
             using (var db = _dbService.GetDbContext())
             {
-                var noticeGuildList = db.NoticeTwitcastingStreamChannels.AsNoTracking().Where((x) => x.ChannelId == twitcastingStream.ChannelId).ToList();
+                var noticeGuildList = db.NoticeTwitcastingStreamChannels.AsNoTracking().Where((x) => x.ScreenId == twitcastingStream.ChannelId).ToList();
                 Log.New($"發送 TwitCasting 開台通知 ({noticeGuildList.Count}): {twitcastingStream.ChannelTitle} - {twitcastingStream.StreamTitle} (私人直播: {isPrivate})");
 
                 EmbedBuilder embedBuilder = new EmbedBuilder()

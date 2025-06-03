@@ -1,4 +1,4 @@
-﻿namespace Discord_Stream_Notify_Bot.HttpClients.TwitCasting
+﻿namespace Discord_Stream_Notify_Bot.HttpClients.Twitcasting.Model
 {
     public class TcBackendStreamData
     {

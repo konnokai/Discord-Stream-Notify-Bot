@@ -1,5 +1,17 @@
-﻿namespace Discord_Stream_Notify_Bot.HttpClients.TwitCasting
+﻿namespace Discord_Stream_Notify_Bot.SharedService.Twitcasting
 {
+    public class TwitCastingWebHookJson
+    {
+        [JsonProperty("signature")]
+        public string Signature { get; set; }
+
+        [JsonProperty("movie")]
+        public Movie Movie { get; set; }
+
+        [JsonProperty("broadcaster")]
+        public Broadcaster Broadcaster { get; set; }
+    }
+
     public class Broadcaster
     {
         [JsonProperty("id")]
@@ -51,7 +63,7 @@
         public string Subtitle { get; set; }
 
         [JsonProperty("last_owner_comment")]
-        public object LastOwnerComment { get; set; }
+        public string LastOwnerComment { get; set; }
 
         [JsonProperty("category")]
         public string Category { get; set; }
@@ -99,18 +111,6 @@
         public int TotalViewCount { get; set; }
 
         [JsonProperty("hls_url")]
-        public object HlsUrl { get; set; }
-    }
-
-    public class GetMovieInfoResponse
-    {
-        [JsonProperty("movie")]
-        public Movie Movie { get; set; }
-
-        [JsonProperty("broadcaster")]
-        public Broadcaster Broadcaster { get; set; }
-
-        [JsonProperty("tags")]
-        public List<object> Tags { get; set; }
+        public string HlsUrl { get; set; }
     }
 }

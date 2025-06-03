@@ -1,4 +1,4 @@
-﻿using Discord_Stream_Notify_Bot.HttpClients.TwitCasting;
+﻿using Discord_Stream_Notify_Bot.HttpClients.Twitcasting.Model;
 using System.Text;
 
 #nullable enable
@@ -11,6 +11,7 @@ namespace Discord_Stream_Notify_Bot.HttpClients
         private readonly HttpClient? _apiHttpClient;
 
         private readonly string? _twitcastingAccessToken;
+        private static readonly string[] _events = ["livestart"];
 
         public TwitcastingClient(HttpClient httpClient, BotConfig botConfig)
         {
@@ -30,10 +31,10 @@ namespace Discord_Stream_Notify_Bot.HttpClients
         }
 
         /// <summary>
-        /// 取得頻道正在直播的資料
+        /// 取得直播分類資料
         /// </summary>
         /// <param name="channelId"></param>
-        /// <returns>如果正在直播，則回傳 (<see langword="true"/>, <see cref="int">影片 Id</see>)，否則為 (<see langword="false"/>, <see cref="int">0</see>)</returns>
+        /// <returns></returns>
         public async Task<List<Category>?> GetCategoriesAsync()
         {
             if (_apiHttpClient == null)
@@ -47,7 +48,7 @@ namespace Discord_Stream_Notify_Bot.HttpClients
             }
             catch (Exception ex)
             {
-                Log.Error($"TwitCastingClient.GetCategoriesAsync: {ex}");
+                Log.Error(ex.Demystify(), "TwitCastingClient.GetCategoriesAsync");
                 return null;
             }
         }
@@ -70,7 +71,7 @@ namespace Discord_Stream_Notify_Bot.HttpClients
             }
             catch (Exception ex)
             {
-                Log.Error($"TwitCastingClient.GetNewStreamDataAsync: {ex}");
+                Log.Error(ex.Demystify(), "TwitCastingClient.GetNewStreamDataAsync");
                 return null;
             }
         }
@@ -97,9 +98,146 @@ namespace Discord_Stream_Notify_Bot.HttpClients
             }
             catch (Exception ex)
             {
-                Log.Error($"TwitCastingClient.GetMovieInfoAsync: {ex}");
+                Log.Error(ex.Demystify(), "TwitCastingClient.GetMovieInfoAsync");
                 return null;
             }
         }
+
+        /// <summary>
+        /// 取得使用者資訊
+        /// </summary>
+        /// <param name="userIdOrScreenId">使用者 id 或 screen_id</param>
+        /// <returns><see cref="GetUserInfoResponse"/></returns>
+        public async Task<GetUserInfoResponse?> GetUserInfoAsync(string userIdOrScreenId)
+        {
+            if (_apiHttpClient == null)
+                throw new NullReferenceException(nameof(_apiHttpClient));
+
+            if (string.IsNullOrEmpty(userIdOrScreenId))
+                throw new ArgumentNullException(nameof(userIdOrScreenId));
+
+            try
+            {
+                var json = await _apiHttpClient.GetStringAsync($"users/{userIdOrScreenId}");
+                var data = JsonConvert.DeserializeObject<GetUserInfoResponse>(json);
+                return data;
+            }
+            catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                // Not Found
+                return null;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Demystify(), "TwitCastingClient.GetUserInfoAsync");
+                return null;
+            }
+        }
+
+        #region WebHook
+        /// <summary>
+        /// 取得所有已註冊的 WebHook
+        /// </summary>
+        /// <returns>返回 WebHook 列表</returns>
+        /// <exception cref="NullReferenceException"></exception>
+        public async Task<List<Webhook>?> GetAllRegistedWebHookAsync()
+        {
+            if (_apiHttpClient == null)
+                throw new NullReferenceException(nameof(_apiHttpClient));
+
+            const int pageSize = 50;
+            int offset = 0;
+            int allCount = int.MaxValue;
+            var result = new List<Webhook>();
+
+            try
+            {
+                while (result.Count < allCount)
+                {
+                    var url = $"webhooks?limit={pageSize}&offset={offset}";
+                    var jsonResponse = await _apiHttpClient.GetStringAsync(url);
+                    var data = JsonConvert.DeserializeObject<GetAllRegistedWebHookJson>(jsonResponse);
+
+                    if (data?.Webhooks == null || data.Webhooks.Count == 0)
+                        break;
+
+                    if (allCount == int.MaxValue)
+                        allCount = data.AllCount;
+
+                    result.AddRange(data.Webhooks);
+                    offset += pageSize;
+                }
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Demystify(), "TwitCastingClient.GetAllRegistedWebHookAsync");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 註冊 WebHook
+        /// </summary>
+        /// <param name="channelId"></param>
+        /// <returns></returns>
+        /// <exception cref="NullReferenceException"></exception>
+        public async Task<bool?> RegisterWebHookAsync(string channelId)
+        {
+            if (_apiHttpClient == null)
+                throw new NullReferenceException(nameof(_apiHttpClient));
+
+            if (string.IsNullOrEmpty(channelId))
+                throw new NullReferenceException(nameof(channelId));
+
+            try
+            {
+                var responseMessage = await _apiHttpClient.PostAsync("webhooks", new StringContent(JsonConvert.SerializeObject(new
+                {
+                    user_id = channelId,
+                    events = _events
+                })));
+
+                responseMessage.EnsureSuccessStatusCode();
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Demystify(), "TwitCastingClient.RegisterWebHookAsync");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 取消註冊 WebHook
+        /// </summary>
+        /// <param name="channelId"></param>
+        /// <returns></returns>
+        /// <exception cref="NullReferenceException"></exception>
+        public async Task<bool?> RemoveWebHookAsync(string channelId)
+        {
+            if (_apiHttpClient == null)
+                throw new NullReferenceException(nameof(_apiHttpClient));
+
+            if (string.IsNullOrEmpty(channelId))
+                throw new NullReferenceException(nameof(channelId));
+
+            try
+            {
+                var responseMessage = await _apiHttpClient.DeleteAsync($"webhooks?user_id={channelId}&events[]=livestart");
+
+                responseMessage.EnsureSuccessStatusCode();
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Demystify(), "TwitCastingClient.RemoveWebHookAsync");
+                return null;
+            }
+        }
+        #endregion
     }
 }
