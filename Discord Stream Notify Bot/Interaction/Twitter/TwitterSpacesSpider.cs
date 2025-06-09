@@ -101,7 +101,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitter
                     return;
                 }
 
-                if (!Discord_Stream_Notify_Bot.Utility.OfficialGuildContains(Context.Guild.Id) && db.TwitterSpaceSpider.Count((x) => x.GuildId == Context.Guild.Id) >= 3)
+                if (!Discord_Stream_Notify_Bot.Utility.OfficialGuildContains(Context.Guild.Id) && db.TwitterSpaceSpider.AsNoTracking().Count((x) => x.GuildId == Context.Guild.Id) >= 3)
                 {
                     await Context.Interaction.SendErrorAsync($"此伺服器已設定 3 個推特語音空間爬蟲，請移除後再試\n" +
                         $"如有特殊需求請向 Bot 擁有者詢問\n" +

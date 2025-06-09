@@ -212,13 +212,13 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                 if (db.HoloVideos.Any((x) => x.ChannelId == channelId)) { isTwoBox = true; }
                 else if (db.NijisanjiVideos.Any((x) => x.ChannelId == channelId)) { isTwoBox = true; }
 
-                if (isTwoBox && !db.YoutubeChannelOwnedType.Any((x) => x.ChannelId == channelId))
+                if (isTwoBox && !db.YoutubeChannelOwnedType.AsNoTracking().Any((x) => x.ChannelId == channelId))
                 {
                     await Context.Interaction.SendErrorAsync($"不可新增兩大箱的頻道", true).ConfigureAwait(false);
                     return;
                 }
 
-                if (!Discord_Stream_Notify_Bot.Utility.OfficialGuildContains(Context.Guild.Id) && db.YoutubeChannelSpider.Count((x) => x.GuildId == Context.Guild.Id) >= 3)
+                if (!Discord_Stream_Notify_Bot.Utility.OfficialGuildContains(Context.Guild.Id) && db.YoutubeChannelSpider.AsNoTracking().Count((x) => x.GuildId == Context.Guild.Id) >= 3)
                 {
                     await Context.Interaction.SendErrorAsync($"此伺服器已設定 3 個 YouTube 爬蟲，請移除後再試\n" +
                         $"如有特殊需求請向 Bot 擁有者詢問\n" +
@@ -226,7 +226,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                     return;
                 }
 
-                if (db.YoutubeChannelSpider.Any((x) => x.ChannelId == channelId))
+                if (db.YoutubeChannelSpider.AsNoTracking().Any((x) => x.ChannelId == channelId))
                 {
                     var item = db.YoutubeChannelSpider.FirstOrDefault((x) => x.ChannelId == channelId);
                     bool isGuildExist = true;

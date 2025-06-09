@@ -222,7 +222,7 @@ namespace Discord_Stream_Notify_Bot.Interaction.TwitCasting
                     return;
                 }
 
-                if (db.TwitcastingSpider.AsNoTracking().Count((x) => x.GuildId == Context.Guild.Id) >= 2)
+                if (!Discord_Stream_Notify_Bot.Utility.OfficialGuildContains(Context.Guild.Id) && db.TwitcastingSpider.AsNoTracking().Count((x) => x.GuildId == Context.Guild.Id) >= 2)
                 {
                     await Context.Interaction.SendErrorAsync($"此伺服器已設定 2 個 TwitCasting 爬蟲頻道，請移除後再試\n" +
                         $"如有特殊需求請向 Bot 擁有者詢問\n" +
