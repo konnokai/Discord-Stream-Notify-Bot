@@ -1,0 +1,26 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            // 使用 IntelliSense 找出 C# 偵錯具有哪些屬性
+            // 針對現有屬性的描述使用暫留
+            // 如需詳細資訊，請造訪 https://github.com/dotnet/vscode-csharp/blob/main/debugger-launchjson.md
+            "name": ".NET Core Launch (console)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            // 如果您已變更目標 Framework，請務必更新程式路徑。
+            "program": "${workspaceFolder}/Discord Stream Notify Bot/bin/Debug/net8.0/Discord Stream Notify Bot.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/Discord Stream Notify Bot",
+            // 如需 [主控台] 欄位的詳細資訊，請參閱 https://aka.ms/VSCode-CS-LaunchJson-Console
+            "console": "internalConsole",
+            "stopAtEntry": false
+        },
+        {
+            "name": ".NET Core Attach",
+            "type": "coreclr",
+            "request": "attach"
+        }
+    ]
+}
