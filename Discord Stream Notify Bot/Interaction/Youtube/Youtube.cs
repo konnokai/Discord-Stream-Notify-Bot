@@ -38,7 +38,13 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                             {
                                 if (item.Key.Contains(value, StringComparison.CurrentCultureIgnoreCase) || item.Value.Contains(value, StringComparison.CurrentCultureIgnoreCase))
                                 {
-                                    channelIdList2.Add(item.Key, item.Value);
+                                    // 後來發現是有一個備用頻道的名稱跟主頻道名稱相同，之後備用頻道才改名稱，導致 Dictionary 出現重複的資料
+                                    // 所以如果判定到有相同名稱的話就加上 "_2" 來區分
+
+                                    if (channelIdList2.ContainsKey(item.Key))
+                                        channelIdList2.Add(item.Key + "_2", item.Value);
+                                    else
+                                        channelIdList2.Add(item.Key, item.Value);
                                 }
                             }
                         }
@@ -46,7 +52,10 @@ namespace Discord_Stream_Notify_Bot.Interaction.Youtube
                         {
                             foreach (var item in channelIdList)
                             {
-                                channelIdList2.Add(item.Key, item.Value);
+                                if (channelIdList2.ContainsKey(item.Key))
+                                    channelIdList2.Add(item.Key + "_2", item.Value);
+                                else
+                                    channelIdList2.Add(item.Key, item.Value);
                             }
                         }
                     }
