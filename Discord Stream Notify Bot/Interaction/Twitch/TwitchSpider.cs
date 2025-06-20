@@ -222,9 +222,15 @@ namespace Discord_Stream_Notify_Bot.Interaction.Twitch
                     return;
                 }
 
-                if (!Discord_Stream_Notify_Bot.Utility.OfficialGuildContains(Context.Guild.Id) && db.TwitchSpider.AsNoTracking().Count((x) => x.GuildId == Context.Guild.Id) >= 3)
+                // 取得最大數量設定
+                var guildConfig = db.GuildConfig.AsNoTracking().FirstOrDefault((x) => x.GuildId == Context.Guild.Id);
+                int maxCount = 3;
+                if (guildConfig != null && guildConfig.MaxTwitchSpiderCount > 0)
+                    maxCount = (int)guildConfig.MaxTwitchSpiderCount;
+
+                if (!Discord_Stream_Notify_Bot.Utility.OfficialGuildContains(Context.Guild.Id) && db.TwitchSpider.AsNoTracking().Count((x) => x.GuildId == Context.Guild.Id) >= maxCount)
                 {
-                    await Context.Interaction.SendErrorAsync($"此伺服器已設定 3 個 Twitch 爬蟲頻道，請移除後再試\n" +
+                    await Context.Interaction.SendErrorAsync($"此伺服器已設定 {maxCount} 個 Twitch 爬蟲頻道，請移除後再試\n" +
                         $"如有特殊需求請向 Bot 擁有者詢問\n" +
                         $"(你可使用 `/utility send-message-to-bot-owner` 對擁有者發送訊息)", true).ConfigureAwait(false);
                     return;

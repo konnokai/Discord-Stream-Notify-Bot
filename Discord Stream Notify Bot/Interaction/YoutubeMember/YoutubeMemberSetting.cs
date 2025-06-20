@@ -166,10 +166,14 @@ namespace Discord_Stream_Notify_Bot.Interaction.YoutubeMember
                         guildConfig = new DataBase.Table.GuildConfig() { GuildId = Context.Guild.Id };
                         db.GuildConfig.Add(guildConfig);
                     }
+                    
+                    int maxCount = 5;
+                    if (guildConfig != null && guildConfig.MaxYouTubeMemberCheckCount > 0)
+                        maxCount = (int)guildConfig.MaxYouTubeMemberCheckCount;
 
-                    if (!Discord_Stream_Notify_Bot.Utility.OfficialGuildContains(Context.Guild.Id) && db.GuildYoutubeMemberConfig.Count((x) => x.GuildId == Context.Guild.Id) > 5)
+                    if (!Discord_Stream_Notify_Bot.Utility.OfficialGuildContains(Context.Guild.Id) && db.GuildYoutubeMemberConfig.Count((x) => x.GuildId == Context.Guild.Id) >= maxCount)
                     {
-                        await Context.Interaction.SendErrorAsync($"此伺服器已使用 5 個頻道做為會限驗證用\n" +
+                        await Context.Interaction.SendErrorAsync($"此伺服器已使用 {maxCount} 個頻道做為會限驗證用\n" +
                             $"請移除未使用到的頻道來繼續新增驗證頻道，或是向 Bot 擁有者詢問", true);
                         return;
                     }

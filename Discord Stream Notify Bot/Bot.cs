@@ -258,8 +258,8 @@ namespace Discord_Stream_Notify_Bot
             services.AddHttpClient<TwitterClient>();
             services.AddHttpClient<TwitcastingClient>()
                 .AddPolicyHandler(HttpPolicyExtensions
-                    .HandleTransientHttpError()
-                    .RetryAsync(3));
+                .HandleTransientHttpError()
+                .RetryAsync(3));
 
             services.LoadInteractionFrom(Assembly.GetAssembly(typeof(InteractionHandler)));
             services.LoadCommandFrom(Assembly.GetAssembly(typeof(CommandHandler)));
