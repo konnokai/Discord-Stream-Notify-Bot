@@ -135,6 +135,10 @@ namespace Discord_Stream_Notify_Bot.SharedService.Twitcasting
 
         private async Task TimerHandel()
         {
+#if DEBUG
+            return;
+#endif
+
             if (isRuning) return;
             isRuning = true;
 

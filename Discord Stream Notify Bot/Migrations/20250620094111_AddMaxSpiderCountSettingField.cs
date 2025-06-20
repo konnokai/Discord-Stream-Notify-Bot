@@ -15,35 +15,35 @@ namespace Discord_Stream_Notify_Bot.Migrations
                 table: "guild_config",
                 type: "int unsigned",
                 nullable: false,
-                defaultValue: 0u);
+                defaultValue: 3u);
 
             migrationBuilder.AddColumn<uint>(
                 name: "max_twitch_spider_count",
                 table: "guild_config",
                 type: "int unsigned",
                 nullable: false,
-                defaultValue: 0u);
+                defaultValue: 3u);
 
             migrationBuilder.AddColumn<uint>(
                 name: "max_twitter_space_spider_count",
                 table: "guild_config",
                 type: "int unsigned",
                 nullable: false,
-                defaultValue: 0u);
+                defaultValue: 3u);
 
             migrationBuilder.AddColumn<uint>(
                 name: "max_you_tube_member_check_count",
                 table: "guild_config",
                 type: "int unsigned",
                 nullable: false,
-                defaultValue: 0u);
+                defaultValue: 5u);
 
             migrationBuilder.AddColumn<uint>(
                 name: "max_you_tube_spider_count",
                 table: "guild_config",
                 type: "int unsigned",
                 nullable: false,
-                defaultValue: 0u);
+                defaultValue: 3u);
         }
 
         /// <inheritdoc />
