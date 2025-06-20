@@ -52,6 +52,7 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
         private readonly string _apiServerUrl;
         private readonly MessageComponent _messageComponent;
         private readonly MainDbService _dbService;
+        private Timer channelTitleCheckTimer;
 
         public YoutubeStreamService(DiscordSocketClient client, IHttpClientFactory httpClientFactory, BotConfig botConfig, EmojiService emojiService, MainDbService dbService)
         {
@@ -609,6 +610,12 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
 #endif
 
             subscribePubSub = new Timer(async (objState) => await SubscribePubSubAsync(), null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(30));
+
+            // 新增每日 00:00 定時檢查 YouTube 頻道名稱的 Timer
+            var now = DateTime.Now;
+            var nextMidnight = now.Date.AddDays(1);
+            var dueTime = nextMidnight - now;
+            channelTitleCheckTimer = new Timer(async _ => await CheckAndUpdateYoutubeChannelTitlesAsync(), null, dueTime, TimeSpan.FromDays(1));
         }
 
         private async Task GetOrCreateNijisanjiLiverListAsync(string affiliation, bool forceRefresh = false)
@@ -1009,6 +1016,65 @@ namespace Discord_Stream_Notify_Bot.SharedService.Youtube
             {
                 Log.Error(ex.Demystify(), $"{channelId} PubSub 註冊失敗");
                 return false;
+            }
+        }
+
+        /// <summary>
+        /// 每天 00:00 檢查所有 YoutubeChannelSpider 的頻道名稱，若有異動則自動更新。
+        /// </summary>
+        private async Task CheckAndUpdateYoutubeChannelTitlesAsync()
+        {
+            int updatedCount = 0;
+            int totalCount = 0;
+            try
+            {
+                using (var db = _dbService.GetDbContext())
+                {
+                    var allChannels = db.YoutubeChannelSpider.AsNoTracking().ToList();
+                    var channelIdList = allChannels.Select(x => x.ChannelId).Where(x => !string.IsNullOrEmpty(x)).Distinct().ToList();
+                    totalCount = channelIdList.Count;
+                    var chunkSize = 50;
+                    for (int i = 0; i < channelIdList.Count; i += chunkSize)
+                    {
+                        var chunk = channelIdList.Skip(i).Take(chunkSize).ToList();
+                        try
+                        {
+                            var request = YouTubeService.Channels.List("snippet");
+                            request.Id = string.Join(",", chunk);
+                            var response = await request.ExecuteAsync();
+                            var channelTitleDict = response.Items.ToDictionary(x => x.Id, x => x.Snippet.Title);
+
+                            foreach (var channelId in chunk)
+                            {
+                                var spider = db.YoutubeChannelSpider.FirstOrDefault(x => x.ChannelId == channelId);
+                                if (spider == null) continue;
+                                if (channelTitleDict.TryGetValue(channelId, out var newTitle))
+                                {
+                                    if (spider.ChannelTitle != newTitle)
+                                    {
+                                        spider.ChannelTitle = newTitle;
+                                        db.YoutubeChannelSpider.Update(spider);
+                                        updatedCount++;
+                                    }
+                                }
+                                else
+                                {
+                                    Log.Warn($"YouTube API 查無此頻道或回傳異常: {channelId}");
+                                }
+                            }
+                            db.SaveChanges();
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Warn($"YouTube API 批次查詢失敗: {ex.Message}");
+                        }
+                    }
+                }
+                Log.Info($"YouTube 頻道名稱每日檢查：已更新 {updatedCount} / {totalCount} 個頻道");
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Demystify(), $"每日 YouTube 頻道名稱檢查任務失敗");
             }
         }
 
