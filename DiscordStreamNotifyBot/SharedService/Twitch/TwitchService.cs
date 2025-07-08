@@ -112,7 +112,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
             Bot.RedisSub.Subscribe(new RedisChannel("twitch:stream_offline", RedisChannel.PatternMode.Literal), (channel, streamData) =>
             {
                 var data = JsonConvert.DeserializeObject<TwitchLib.EventSub.Core.SubscriptionTypes.Stream.StreamOffline>(streamData!)!;
-                Log.Info($"Twitch 直播離線: {data.BroadcasterUserId}，等待三分鐘後發送關台通知");
+                Log.Info($"Twitch 直播離線: {data.BroadcasterUserLogin} ({data.BroadcasterUserId})，等待三分鐘後發送關台通知");
 
                 // 先移除舊的 Timer
                 if (_streamOfflineReminders.TryRemove(data.BroadcasterUserId, out var oldTimer))
@@ -123,7 +123,11 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                 // 新增三分鐘倒數
                 var timer = new Timer(async _ =>
                 {
-                    //發送離線通知（原本的通知邏輯）
+                    // 發送離線通知（原本的通知邏輯
+
+                    // 減掉三分鐘的去抖動時間
+                    DateTime endAt = DateTime.Now.AddMinutes(-3);
+
                     try
                     {
                         var list = await TwitchApi.Value.Helix.EventSub.GetEventSubSubscriptionsAsync(userId: data.BroadcasterUserId);
@@ -143,31 +147,13 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                     {
                         var redisJson = await Bot.RedisDb.StringGetAsync(new RedisKey($"twitch:stream_data:{data.BroadcasterUserId}"));
                         if (redisJson.HasValue)
+                        {
                             twitchStream = JsonConvert.DeserializeObject<TwitchStream>(redisJson!);
+                        }
                     }
                     catch (Exception ex)
                     {
                         Log.Error(ex.Demystify(), $"Twitch Get Redis Data Error: {data.BroadcasterUserId}");
-                    }
-
-                    DateTime createAt = DateTime.Now.AddDays(-3), endAt = DateTime.Now;
-                    var video = await GetLatestVODAsync(data.BroadcasterUserId);
-                    if (video == null)
-                    {
-                        Log.Warn($"找不到對應的 Video 資料: {data.BroadcasterUserId}");
-                    }
-                    else
-                    {
-                        twitchStream = twitchStream ?? new()
-                        {
-                            // 這個會有問題，因為圖奇的 VOD 標題會直接以開播當下的標題為準，中途變更的話也不會改
-                            // 所以只有在 Redis 抓不到資料的時候再設定標題上去，否則以 Redis 最新的資料為準
-                            StreamTitle = video.Title,
-                        };
-                        twitchStream.StreamStartAt = DateTime.Parse(video.CreatedAt);
-
-                        createAt = DateTime.Parse(video.CreatedAt);
-                        endAt = createAt + ParseToTimeSpan(video.Duration);
                     }
 
                     var embedBuilder = new EmbedBuilder()
@@ -177,26 +163,56 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                         .WithDescription(Format.Url($"{data.BroadcasterUserName}", $"https://twitch.tv/{data.BroadcasterUserLogin}"))
                         .AddField("直播狀態", "已關台");
 
+                    string clipsValue = string.Empty;
+
+                    // Todo: 可能需要驗證 VOD 的開始直播時間，很多頻道不會開 VOD 紀錄，有時候會導致小幫手的通知資訊異常
+                    var video = await GetLatestVODAsync(data.BroadcasterUserId);
+                    if (video == null)
+                    {
+                        Log.Warn($"找不到對應的 Vod 紀錄資料: {data.BroadcasterUserLogin} ({data.BroadcasterUserId})");
+                    }
+                    else // 僅增加與該場直播有關的 Clip
+                    {
+                        DateTime createAt = DateTime.Parse(video.CreatedAt);
+
+                        var clips = await GetClipsAsync(data.BroadcasterUserId, createAt, createAt + ParseToTimeSpan(video.Duration));
+                        if (clips != null && clips.Any((x) => x.VideoId == video.Id))
+                        {
+                            int i = 0;
+                            clipsValue = string.Join('\n', clips.Where((x) => x.VideoId == video.Id)
+                                .Select((x) => $"{i++}. {Format.Url(x.Title, x.Url)} By `{x.CreatorName}` (`{x.ViewCount}` 次觀看)"));
+                        }
+                    }
+
+                    // 如果 Redis 沒有資料，則從 Video 資料中取得
+                    if (twitchStream == null && video != null)
+                    {
+                        twitchStream = new()
+                        {
+                            // 這個會有問題，因為圖奇的 VOD 標題會直接以開播當下的標題為準，中途變更的話也不會改
+                            // 所以只有在 Redis 抓不到資料的時候再設定標題上去，否則以 Redis 最新的資料為準
+                            StreamTitle = video.Title,
+                            StreamStartAt = DateTime.Parse(video.CreatedAt)
+                        };
+                    }
+
+                    // twitchStream 最後還是會有為 null 的可能 (Redis 沒資料然後也沒開 VOD 保存)
                     if (twitchStream != null)
                     {
-                        var streamTime = DateTime.Now.Subtract(twitchStream.StreamStartAt);
+                        // StreamStartAt 是 UTC+0 時間，因此 endAt 也需要先轉換成 UTC+0 之後再做計算
+                        var streamTime = endAt.ToUniversalTime().Subtract(twitchStream.StreamStartAt);
 
                         embedBuilder
                             .WithTitle(twitchStream.StreamTitle)
                             .AddField("直播時長", streamTime.TotalDays >= 1 ? $"{streamTime:d' 天 'h' 時 'm' 分 's' 秒'}" : $"{streamTime:h' 時 'm' 分 's' 秒'}");
                     }
 
-                    embedBuilder.AddField("關台時間", DateTime.UtcNow.ConvertDateTimeToDiscordMarkdown());
+                    embedBuilder.AddField("關台時間", endAt.ConvertDateTimeToDiscordMarkdown());
 
-                    if (video != null) // 僅增加與該場直播有關的 Clip
+                    // 最後才新增 Clip 資訊
+                    if (!string.IsNullOrEmpty(clipsValue))
                     {
-                        var clips = await GetClipsAsync(data.BroadcasterUserId, createAt, endAt);
-                        if (clips != null && clips.Any((x) => x.VideoId == video.Id))
-                        {
-                            int i = 0;
-                            embedBuilder.AddField("最多觀看的 Clip", string.Join('\n', clips.Where((x) => x.VideoId == video.Id)
-                                .Select((x) => $"{i++}. {Format.Url(x.Title, x.Url)} By `{x.CreatorName}` (`{x.ViewCount}` 次觀看)")));
-                        }
+                        embedBuilder.AddField("最多觀看的 Clip", clipsValue);
                     }
 
                     using var db = _dbService.GetDbContext();
@@ -209,7 +225,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
 
                     await Task.Run(() => SendStreamMessageAsync(data.BroadcasterUserId, embedBuilder.Build(), NoticeType.EndStream));
 
-                    // 移除 reminder
+                    // 移除 Reminder
                     if (_streamOfflineReminders.TryRemove(data.BroadcasterUserId, out var newTimer))
                     {
                         newTimer.Dispose();
