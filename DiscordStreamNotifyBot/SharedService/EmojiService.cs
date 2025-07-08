@@ -14,6 +14,10 @@ namespace DiscordStreamNotifyBot.SharedService
         {
             _client = client;
 
+#if DEBUG
+            return;
+#endif
+
             try
             {
                 YouTubeEmote = _client.GetApplicationEmoteAsync(botConfig.YouTubeEmoteId).GetAwaiter().GetResult();

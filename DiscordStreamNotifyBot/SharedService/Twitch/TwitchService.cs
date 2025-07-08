@@ -628,8 +628,8 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                 List<User> result = new();
                 foreach (var item in twitchUserLogins.Chunk(100))
                 {
-                    var users = await TwitchApi.Value.Helix.Users.GetUsersAsync(logins: new List<string>(twitchUserLogins));
-                    if (users.Users.Any())
+                    var users = await TwitchApi.Value.Helix.Users.GetUsersAsync(logins: [.. item]);
+                    if (users.Users.Length != 0)
                     {
                         result.AddRange(users.Users);
                     }
