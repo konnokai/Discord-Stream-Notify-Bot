@@ -351,6 +351,19 @@ namespace DiscordStreamNotifyBot
             {
                 Log.Info($"加入伺服器: {guild.Name}");
 
+                var hasInvitePermission = guild.GetUser(client.CurrentUser.Id)?.GuildPermissions.CreateInstantInvite ?? false;
+                if (!hasInvitePermission)
+                {
+                    serviceProvider.GetService<DiscordWebhookClient>().SendMessageToDiscord($"加入 {guild.Name} ({guild.Id})\n" +
+                        $"擁有者: {guild.OwnerId}\n" +
+                        $"未開放邀請權限，已離開");
+                    guild.LeaveAsync().GetAwaiter().GetResult();
+                    return Task.CompletedTask;
+                }
+
+                serviceProvider.GetService<DiscordWebhookClient>().SendMessageToDiscord($"加入 {guild.Name}({guild.Id})\n" +
+                    $"擁有者: {guild.OwnerId}");
+
                 using (var db = DbService.GetDbContext())
                 {
                     if (!db.GuildConfig.Any(x => x.GuildId == guild.Id))
@@ -360,7 +373,6 @@ namespace DiscordStreamNotifyBot
                     }
                 }
 
-                serviceProvider.GetService<DiscordWebhookClient>().SendMessageToDiscord($"加入 {guild.Name}({guild.Id})\n擁有者: {guild.OwnerId}");
                 return Task.CompletedTask;
             };
 
