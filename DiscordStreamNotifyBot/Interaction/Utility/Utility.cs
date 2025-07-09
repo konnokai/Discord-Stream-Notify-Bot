@@ -56,8 +56,10 @@ namespace DiscordStreamNotifyBot.Interaction.Utility
             await RespondAsync(embed: embedBuilder.Build());
         }
 
-        [SlashCommand("send-message-to-bot-owner", "聯繫 Bot 擁有者")]
+        [RequireContext(ContextType.Guild)]
         [DefaultMemberPermissions(GuildPermission.Administrator)]
+        [RequireUserPermission(GuildPermission.Administrator)]
+        [SlashCommand("send-message-to-bot-owner", "聯繫 Bot 擁有者")]
         public async Task SendMessageToBotOwner()
         {
             var modalBuilder = new ModalBuilder().WithTitle("聯繫 Bot 擁有者")
@@ -68,8 +70,10 @@ namespace DiscordStreamNotifyBot.Interaction.Utility
             await RespondWithModalAsync(modalBuilder.Build());
         }
 
-        [SlashCommand("set-global-notice-channel", "設定要接收 Bot 擁有者發送的訊息頻道")]
+        [RequireContext(ContextType.Guild)]
         [DefaultMemberPermissions(GuildPermission.Administrator)]
+        [RequireUserPermission(GuildPermission.Administrator)]
+        [SlashCommand("set-global-notice-channel", "設定要接收 Bot 擁有者發送的訊息頻道")]
         public async Task SetGlobalNoticeChannel([Summary("接收通知的頻道"), ChannelTypes(ChannelType.Text, ChannelType.News)] IChannel channel)
         {
             try

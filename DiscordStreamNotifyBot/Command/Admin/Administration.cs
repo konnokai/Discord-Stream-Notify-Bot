@@ -172,17 +172,18 @@ namespace DiscordStreamNotifyBot.Command.Admin
             {
                 if (cid == 0)
                 {
-                    IReadOnlyCollection<SocketTextChannel> socketTextChannels = guild.TextChannels;
+                    // 忽略 ticket- & closed- 開頭的頻道
+                    IReadOnlyCollection<SocketTextChannel> socketTextChannels = [.. guild.TextChannels.Where((x) => !x.Name.StartsWith("ticket-") && !x.Name.StartsWith("closed-"))];
 
                     await Context.SendPaginatedConfirmAsync(0, (cur) =>
                     {
                         EmbedBuilder embedBuilder = new EmbedBuilder()
                            .WithOkColor()
                            .WithTitle("以下為 " + guild.Name + " 所有的文字頻道")
-                           .WithDescription(string.Join('\n', socketTextChannels.Skip(cur * 10).Take(10).Select((x) => x.Id + " / " + x.Name)));
+                           .WithDescription(string.Join('\n', socketTextChannels.Skip(cur * 20).Take(20).Select((x) => x.Id + " / " + x.Name)));
 
                         return embedBuilder;
-                    }, socketTextChannels.Count, 10);
+                    }, socketTextChannels.Count, 20);
                 }
                 else
                 {
@@ -447,7 +448,7 @@ namespace DiscordStreamNotifyBot.Command.Admin
         [RequireOwner]
         public async Task ListOfficialListAsync(int page = 0)
         {
-            if (!Utility.OfficialGuildList.Any())
+            if (Utility.OfficialGuildList.Count == 0)
             {
                 await Context.Channel.SendErrorAsync("官方伺服器白名單為空");
                 return;
@@ -482,6 +483,71 @@ namespace DiscordStreamNotifyBot.Command.Admin
                     .WithTitle("官方伺服器白名單清單")
                     .WithDescription(string.Join('\n', officialList.Skip(page * 20).Take(20)))),
                 officialList.Count, 20);
+        }
+
+        [RequireContext(ContextType.DM)]
+        [Command("ListNoNotifyGuild")]
+        [Summary("顯示未設定通知的伺服器列表")]
+        [Alias("lnng")]
+        [RequireOwner]
+        public async Task ListNoNotifyGuildAsync(int page = 0)
+        {
+            try
+            {
+                var guilds = _service.GetNoNotifyGuilds();
+
+                File.WriteAllText(Utility.GetDataFilePath("NoNotifyGuildList.txt"), string.Join('\n', guilds.Select(g => $"{g.Name} | {g.Id} | {g.MemberCount} 人")));
+
+                if (page <= 0)
+                    page = 0;
+
+                await Context.SendPaginatedConfirmAsync(page, (page) =>
+                    new EmbedBuilder()
+                        .WithOkColor()
+                        .WithTitle("未設定通知的伺服器列表")
+                        .WithDescription(string.Join('\n', guilds.Skip(page * 20).Take(20).Select(g => $"{g.Name} | {g.Id} | {g.MemberCount} 人"))),
+                    guilds.Count, 20);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Demystify(), "ListNoNotifyGuild Error");
+                await Context.Channel.SendErrorAsync("取得未設定通知的伺服器列表失敗，請查看日誌").ConfigureAwait(false);
+            }
+        }
+
+
+        [RequireContext(ContextType.DM)]
+        [Command("LeaveNoNotifyGuild")]
+        [Summary("離開未設定通知的伺服器")]
+        [Alias("leavenng")]
+        [RequireOwner]
+        public async Task LeaveNoNotifyGuildAsync()
+        {
+            try
+            {
+                await Context.Channel.TriggerTypingAsync().ConfigureAwait(false);
+
+                var guilds = _service.GetNoNotifyGuilds();
+
+                if (guilds.Count == 0)
+                {
+                    await Context.Channel.SendErrorAsync("沒有未設定通知的伺服器");
+                    return;
+                }
+
+                foreach (var item in guilds)
+                {
+                    await item.LeaveAsync().ConfigureAwait(false);
+                    Log.Info($"已離開未設定通知的伺服器: {item.Name} ({item.Id})");
+                }
+
+                await Context.Channel.SendConfirmAsync($"已離開 {guilds.Count} 個未設定通知的伺服器").ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Demystify(), "LeaveNoNotifyGuild Error");
+                await Context.Channel.SendErrorAsync("取得未設定通知的伺服器列表失敗，請查看日誌").ConfigureAwait(false);
+            }
         }
     }
 }

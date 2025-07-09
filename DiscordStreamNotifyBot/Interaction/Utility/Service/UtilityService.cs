@@ -21,7 +21,8 @@
                                 .WithTitle("新的使用者訊息")
                                 .WithAuthor(modal.User)
                                 .AddField("訊息", message)
-                                .AddField("聯繫方式", contactMethod);
+                                .AddField("聯繫方式", contactMethod)
+                                .AddField("伺服器 Id", modal.GuildId ?? 0);
 
                             var componentBuilder = new ComponentBuilder()
                                 .WithButton("發送回覆", $"send-reply-to-user:{modal.User.Id}", ButtonStyle.Success);
@@ -54,7 +55,7 @@
                                         .Build());
 
                                 await modal.SendConfirmAsync($"發送成功\n" +
-                                    $"回覆訊息: {message}", true, true);
+                                    $"回覆訊息: {message}", true);
                             }
                             catch (Discord.Net.HttpException httpEx) when (httpEx.DiscordCode == DiscordErrorCode.CannotSendMessageToUser)
                             {
@@ -63,7 +64,7 @@
                             }
                             catch (Exception ex)
                             {
-                                await modal.SendErrorAsync($"無法發送訊息: {ex}", true, true);
+                                await modal.SendErrorAsync($"無法發送訊息: {ex.Demystify()}", true, true);
                                 return;
                             }
                         }

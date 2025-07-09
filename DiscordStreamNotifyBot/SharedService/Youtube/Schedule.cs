@@ -3,6 +3,7 @@ using DiscordStreamNotifyBot.SharedService.Youtube.Json;
 using HtmlAgilityPack;
 using Newtonsoft.Json.Linq;
 using Polly;
+using System.Collections.Concurrent;
 using System.Data;
 using System.Net;
 using System.Text.RegularExpressions;
@@ -13,7 +14,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
 {
     public partial class YoutubeStreamService
     {
-        private static Dictionary<string, DataBase.Table.Video> addNewStreamVideo = new();
+        private static ConcurrentDictionary<string, DataBase.Table.Video> addNewStreamVideo = new();
         private static HashSet<string> newStreamList = new();
         private bool isFirstHolo = true, isFirst2434 = true, isFirstOther = true;
 
@@ -864,7 +865,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                             }
                         }
 
-                        addNewStreamVideo.Remove(item.Key);
+                        addNewStreamVideo.Remove(item.Key, out _);
                     }
 
                     Log.Info($"Holo 資料庫已儲存: {db.SaveChanges()} 筆");
@@ -896,7 +897,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                             }
                         }
 
-                        addNewStreamVideo.Remove(item.Key);
+                        addNewStreamVideo.Remove(item.Key, out _);
                     }
 
                     Log.Info($"2434 資料庫已儲存: {db.SaveChanges()} 筆");
@@ -928,7 +929,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                             }
                         }
 
-                        addNewStreamVideo.Remove(item.Key);
+                        addNewStreamVideo.Remove(item.Key, out _);
                     }
 
                     Log.Info($"Other 資料庫已儲存: {db.SaveChanges()} 筆");
@@ -960,7 +961,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                             }
                         }
 
-                        addNewStreamVideo.Remove(item.Key);
+                        addNewStreamVideo.Remove(item.Key, out _);
                     }
 
                     Log.Info($"NonApproved 資料庫已儲存: {db.SaveChanges()} 筆");
