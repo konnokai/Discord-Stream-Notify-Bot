@@ -291,8 +291,7 @@ namespace DiscordStreamNotifyBot
                         }
                         catch (Exception ex)
                         {
-                            Log.Error("註冊伺服器專用Slash指令失敗");
-                            Log.Error(ex.ToString());
+                            Log.Error(ex, "註冊伺服器專用Slash指令失敗");
                         }
                     }
 #elif RELEASE
@@ -322,8 +321,7 @@ namespace DiscordStreamNotifyBot
                         }
                         catch (Exception ex)
                         {
-                            Log.Error("註冊伺服器專用Slash指令失敗");
-                            Log.Error(ex.ToString());
+                            Log.Error(ex, "註冊伺服器專用Slash指令失敗");
                         }
 
                         await interactionService.RegisterCommandsGloballyAsync();
@@ -331,8 +329,7 @@ namespace DiscordStreamNotifyBot
                     }
                     catch (Exception ex)
                     {
-                        Log.Error("取得指令數量失敗，請確認Redis伺服器是否可以存取");
-                        Log.Error(ex.Message);
+                        Log.Error(ex, "取得指令數量失敗，請確認Redis伺服器是否可以存取");
                         IsDisconnect = true;
                     }
 #endif
