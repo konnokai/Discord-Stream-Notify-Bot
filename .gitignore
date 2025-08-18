@@ -363,3 +363,8 @@ MigrationBackup/
 FodyWeavers.xsd
 
 /Discord Stream Notify Bot/DbTrackerLog.txt
+
+# bmad
+.bmad-core
+.github/chatmodes/*.md
+.gemini/bmad-method
